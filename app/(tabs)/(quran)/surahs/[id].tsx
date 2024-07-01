@@ -1,5 +1,5 @@
 import { View, Text, SafeAreaView, ScrollView, ActivityIndicator, StyleSheet, Image, TouchableOpacity } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useLocalSearchParams } from 'expo-router';
 import { fetchSurahText } from '../../../../api/surahs';
 import { AVPlaybackStatus, Audio } from 'expo-av';
@@ -23,7 +23,8 @@ const SurahTextScreen = () => {
     const [surahDetails, setSurahDetails] = useState<SurahDetails | null>(null);
     const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
     const [loading, setLoading] = useState<boolean>(true);
-    const [sound, setSound] = useState<Audio.Sound | null>(null);
+    const [isPlaying, setIsPlaying] = useState<boolean>(false);
+    const soundRef = useRef<Audio.Sound | null>(null);
     const { id } = useLocalSearchParams<{ id: string }>();
     const surahNum = id ? parseInt(id as string, 10) : 1;
 
@@ -44,21 +45,26 @@ const SurahTextScreen = () => {
 
     const playNextAyah = async (index: number) => {
         if (index >= surahDetails!.ayahs.length) {
+            setIsPlaying(false);
             return
         }
 
         const ayah = surahDetails!.ayahs[index];
-        console.log(ayah);
+        // console.log(ayah);
         try {
-            const { sound: newSound } = await Audio.Sound.createAsync(
+            if (soundRef.current) {
+                await soundRef.current.unloadAsync();
+            }
+
+            const { sound } = await Audio.Sound.createAsync(
                 { uri: ayah.audio },
                 { shouldPlay: true }
             );
-            setSound(newSound);
+            soundRef.current = sound;
 
-            newSound.setOnPlaybackStatusUpdate((status: AVPlaybackStatus) => {
-                if (status.isLoaded && status.didJustFinish) {
-                    newSound.unloadAsync().then(() => playNextAyah(index + 1));
+            sound.setOnPlaybackStatusUpdate((status: AVPlaybackStatus) => {
+                if (status.isLoaded && !status.isPlaying && !status.isBuffering && (status as any).didJustFinish) {
+                    playNextAyah(index + 1);
                 }
             });
 
@@ -68,11 +74,27 @@ const SurahTextScreen = () => {
         }
     }
 
-    const playRecitation = () => {
-        if (sound) {
-            sound.unloadAsync();
+    const togglePlayPause = async () => {
+        if (soundRef.current) {
+            if (isPlaying) {
+                await soundRef.current.pauseAsync();
+                setIsPlaying(false);
+            } else {
+                await soundRef.current.playAsync();
+                setIsPlaying(true);
+            }
+        } else {    
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: false,
+                playsInSilentModeIOS: true,
+                shouldDuckAndroid: true,
+                playThroughEarpieceAndroid: false,
+                staysActiveInBackground: true,
+            });
+
+            playNextAyah(0);
+            setIsPlaying(true);
         }
-        playNextAyah(0);
     }
 
     return (
@@ -90,8 +112,8 @@ const SurahTextScreen = () => {
 
                             <View style={{ width: '100%', height: 28, backgroundColor: '#D0D0D0', top: 30, flexDirection: 'row', alignItems: 'center' }}>
                                 <Text style={styles.surahAudio}>{surahNum}. {surahDetails.englishName}</Text>
-                                <TouchableOpacity style={{ left: 20 }} onPress={playRecitation}>
-                                    <Image source={require('../../../../assets/play.png')} style={{ objectFit: 'contain', width: 18, height: 18 }} />
+                                <TouchableOpacity style={{ left: 20 }} onPress={togglePlayPause}>
+                                    <Image source={isPlaying ? require('../../../../assets/pause.png') : require('../../../../assets/play.png')} style={{ objectFit: 'contain', width: 18, height: 18 }} />
                                 </TouchableOpacity>
                             </View>
                             <ScrollView style={{ overflow: 'hidden', top: 50, right: 10, width: 383 }} showsVerticalScrollIndicator={false}>
