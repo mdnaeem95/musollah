@@ -1,6 +1,6 @@
 import { View, Text } from 'react-native'
 import React from 'react'
-import MapView from 'react-native-maps'
+import MapView, { Marker } from 'react-native-maps'
 
 export interface Region {
     latitude: number,
@@ -10,10 +10,26 @@ export interface Region {
 }
 
 interface MapProps {
-    region: Region | undefined
+    region: Region | undefined;
+    bidetLocations: BidetLocation[];
 }
 
-const Map = ({ region }: MapProps) => {
+export interface BidetLocation {
+  id: string;
+  address: string;
+  building: string;
+  postal: number;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  female: string;
+  handicap: string;
+  male: string;
+  distance?: number;
+}
+
+const Map = ({ region, bidetLocations }: MapProps) => {
   return (
     <View>
       <MapView 
@@ -22,7 +38,20 @@ const Map = ({ region }: MapProps) => {
         showsUserLocation
         followsUserLocation
         scrollEnabled
-        zoomEnabled />
+        zoomEnabled
+      >
+        {bidetLocations.map((bidet) => (
+          <Marker 
+            key={bidet.id}
+            coordinate={{
+              latitude: bidet.coordinates.latitude,
+              longitude: bidet.coordinates.longitude,
+            }}
+            title={bidet.building}
+            description={`${bidet.address}, Singapore ${bidet.postal}`}
+          />
+        ))}
+      </MapView>
     </View>
   )
 }
