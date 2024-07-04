@@ -10,6 +10,16 @@ type Ayah = {
     audio: string;
 }
 
+type TranslationAyah = {
+    number: number,
+    text: string,
+}
+
+type TranslationDetails = {
+    number: number,
+    ayahs: TranslationAyah[];
+}
+
 type SurahDetails = {
     number: number;
     name: string;
@@ -21,6 +31,7 @@ type SurahDetails = {
 
 const SurahTextScreen = () => {
     const [surahDetails, setSurahDetails] = useState<SurahDetails | null>(null);
+    const [translationDetails, setTranslationDetails] = useState<TranslationDetails | null>(null);
     const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
     const [loading, setLoading] = useState<boolean>(true);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -31,8 +42,10 @@ const SurahTextScreen = () => {
     useEffect(() => {
         const loadSurahText = async () => {
             try {
-                const data = await fetchSurahText(surahNum);
+                const data = await fetchSurahText(surahNum, 'ar.alafasy');
+                const englishData = await fetchSurahText(surahNum, 'en.asad');
                 setSurahDetails(data.data);
+                setTranslationDetails(englishData.data);
             } catch (error) {
                 console.error('Failed to load surah text: ', error)
             } finally {
@@ -116,13 +129,21 @@ const SurahTextScreen = () => {
                                     <Image source={isPlaying ? require('../../../../assets/pause.png') : require('../../../../assets/play.png')} style={{ objectFit: 'contain', width: 18, height: 18 }} />
                                 </TouchableOpacity>
                             </View>
-                            <ScrollView style={{ overflow: 'hidden', top: 50, right: 10, width: 383 }} showsVerticalScrollIndicator={false}>
-                            {surahDetails.ayahs.map((ayah) => (
-                                <View key={ayah.number} style={{ marginBottom: 20 }}>
-                                    <Text style={styles.quranText}>{ayah.text}</Text>
-                                </View>
-                            ))}
-                            </ScrollView>
+                            <View style={{ flex: 1 }}>
+                                <ScrollView style={{ overflow: 'hidden', top: 50, width: 'auto' }} showsVerticalScrollIndicator={false}>
+                                {surahDetails.ayahs.map((ayah, index) => (
+                                    <View key={ayah.number} style={{ marginBottom: 20, gap: 10, paddingVertical: 10 }}>
+                                        <Text style={styles.quranText}>{ayah.text}</Text>
+                                        {translationDetails && (
+                                            <View style={{ width: 383 }}>
+                                                <Text style={styles.translationText}>{translationDetails.ayahs[index]?.text}</Text>
+                                            </View>
+                                        )}
+                                    <View style={{ width: 400, height: 1, backgroundColor: '#FFFFFF' }}></View>
+                                    </View>
+                                ))}
+                                </ScrollView>
+                            </View>
                         </>
                     )
                 )}
@@ -157,10 +178,20 @@ const styles = StyleSheet.create({
         fontFamily: 'Amiri_400Regular',
         fontWeight: '400',
         color: '#FFFFFF',
-        fontSize: 30,
+        fontSize: 28,
         lineHeight: 48,
-        textAlign: 'right'
+        textAlign: 'right',
+        right: 10
+    },
+    translationText: {
+        fontFamily: 'Outfit_400Regular',
+        fontWeight: '400',
+        fontSize: 12,
+        lineHeight: 15,
+        color: '#FFFFFF',
+        left: 5,
     }
 })
+
 
 export default SurahTextScreen
