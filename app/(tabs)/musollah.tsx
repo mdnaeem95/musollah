@@ -11,13 +11,6 @@ import * as Location from 'expo-location'
 import { collection, getDocs } from 'firebase/firestore'
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
 
-// const defaultRegion: Region = {
-//   latitude: 1.3521,  // Central location in Singapore
-//   longitude: 103.8198, // Central location in Singapore
-//   latitudeDelta: 0.0922,
-//   longitudeDelta: 0.0421,
-// };
-
 const MusollahTab = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [location, setLocation] = useState<Region | undefined>();
@@ -136,7 +129,7 @@ const MusollahTab = () => {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
-        <Map region={location} bidetLocations={bidetLocations} />
+        <Map region={location} bidetLocations={bidetLocations} onMarkerPress={handleMarkerPress} />
       </View>
 
       <View style={{ flex: 1, padding: 10 }}>
