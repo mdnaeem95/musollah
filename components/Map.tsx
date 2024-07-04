@@ -1,6 +1,7 @@
-import { View, Text } from 'react-native'
+import { View, Text, TouchableOpacity, Platform } from 'react-native'
 import React from 'react'
-import MapView, { Marker } from 'react-native-maps'
+import MapView, { Marker } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
 
 export interface Region {
     latitude: number,
@@ -10,9 +11,12 @@ export interface Region {
 }
 
 interface MapProps {
-    region: Region | undefined;
-    bidetLocations: BidetLocation[];
-    onMarkerPress: (location: BidetLocation) => void;
+    region: Region | undefined,
+    bidetLocations: BidetLocation[],
+    onMarkerPress: (location: BidetLocation) => void,
+    shouldFollowUserLocation: boolean,
+    onRegionChangeComplete: () => void,
+    onRefocusPress: () => void,
 }
 
 export interface BidetLocation {
@@ -30,16 +34,17 @@ export interface BidetLocation {
   distance?: number;
 }
 
-const Map = ({ region, bidetLocations, onMarkerPress }: MapProps) => {
+const Map = ({ region, bidetLocations, onMarkerPress, onRegionChangeComplete, shouldFollowUserLocation, onRefocusPress }: MapProps) => {
   return (
     <View>
       <MapView 
         style={{ width: '100%', height: '100%' }}
         initialRegion={region}
         showsUserLocation
-        followsUserLocation
+        followsUserLocation={shouldFollowUserLocation}
         scrollEnabled
         zoomEnabled
+        onRegionChangeComplete={onRegionChangeComplete}
       >
         {bidetLocations.map((bidet) => (
           <Marker 
@@ -54,6 +59,12 @@ const Map = ({ region, bidetLocations, onMarkerPress }: MapProps) => {
           />
         ))}
       </MapView>
+      <TouchableOpacity 
+        style={{ position: 'absolute', top: 50, left: 20, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 25, padding: 10 }}
+        onPress={onRefocusPress}
+      >
+        <Ionicons name='locate' size={24} color="white" />
+      </TouchableOpacity>
     </View>
   )
 }

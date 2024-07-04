@@ -1,5 +1,5 @@
 import { View, Text, SafeAreaView, FlatList, TouchableOpacity, StyleSheet } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import Map, { Region, BidetLocation } from '../../components/Map'
 import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../utils/locationTask'
 import { db } from '../../firebaseConfig'
@@ -13,11 +13,13 @@ import SegmentedControl from '@react-native-segmented-control/segmented-control'
 
 const MusollahTab = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [location, setLocation] = useState<Region | undefined>();
+  const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
+  const [region, setRegion] = useState<Region | undefined>(undefined);
   const [bidetLocations, setBidetLocations] = useState<BidetLocation[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [selectedLocation, setSelectedLocation] = useState<BidetLocation | null>(null);
+  const [shouldFollowUserLocation, setShouldFollowUserLocation] = useState<boolean>(true);
 
   const locationTypes = ['Bidets', 'Musollahs', 'Halal Food']
 
@@ -34,6 +36,23 @@ const MusollahTab = () => {
   const closeModal = () => {
     setSelectedLocation(null);
     setIsModalVisible(false);
+  }
+
+  const handleRegionChangeComplete = useCallback(() => {
+    setShouldFollowUserLocation(false)
+  }, [])
+
+  const handleRefocusPress = () => {
+    if (userLocation) {
+      const newRegion: Region = {
+        latitude: userLocation.coords.latitude,
+        longitude: userLocation.coords.longitude,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05
+      };
+      setRegion(newRegion);
+      setShouldFollowUserLocation(true);
+    }
   }
 
   const renderItem = ({ item }: { item: BidetLocation }) => (
@@ -54,16 +73,15 @@ const MusollahTab = () => {
       const userLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Highest
       });
+      setUserLocation(userLocation);
 
-      if (userLocation) {  
-        const region: Region = {
-          latitude: userLocation.coords.latitude,
-          longitude: userLocation.coords.longitude,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        }
-        setLocation(region);
+      const initialRegion: Region = {
+        latitude: userLocation.coords.latitude,
+        longitude: userLocation.coords.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
       }
+      setRegion(initialRegion);
     }
 
     let collectionName;
@@ -98,11 +116,11 @@ const MusollahTab = () => {
           } as BidetLocation
         });
 
-        if (location) {
+        if (userLocation) {
           bidetsData.forEach((bidet) => {
             bidet.distance = getDistanceFromLatLonInKm(
-              location.latitude,
-              location.longitude,
+              userLocation.coords.latitude,
+              userLocation.coords.longitude,
               bidet.coordinates.latitude,
               bidet.coordinates.longitude
             );
@@ -124,12 +142,19 @@ const MusollahTab = () => {
     // return () => {
     //   stopBackgroundLocationUpdates();
     // }
-  }, [selectedIndex, location])
+  }, [selectedIndex, userLocation])
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
-        <Map region={location} bidetLocations={bidetLocations} onMarkerPress={handleMarkerPress} />
+        <Map 
+          region={region} 
+          bidetLocations={bidetLocations} 
+          onMarkerPress={handleMarkerPress} 
+          onRegionChangeComplete={handleRegionChangeComplete}
+          shouldFollowUserLocation={shouldFollowUserLocation}
+          onRefocusPress={handleRefocusPress}
+        />
       </View>
 
       <View style={{ flex: 1, padding: 10 }}>
@@ -143,12 +168,25 @@ const MusollahTab = () => {
         <FlatList 
           data={bidetLocations}
           renderItem={renderItem}
-          initialNumToRender={7}
-          keyExtractor={(item) => item.id}/>
+          initialNumToRender={5}
+          windowSize={5}
+          keyExtractor={(item) => item.id}
+          getItemLayout={(data, index) => (
+            { length: 70, offset: 70 * index, index }
+          )}
+        />
       </View>
 
       {selectedLocation && (
-        <Modal isVisible={isModalVisible} onBackdropPress={closeModal} backdropOpacity={0.3} style={styles.modal}>
+        <Modal 
+          isVisible={isModalVisible} 
+          onBackdropPress={closeModal} 
+          backdropOpacity={0.3} 
+          style={styles.modal}
+          useNativeDriver
+          animationIn="zoomIn"
+          animationOut="zoomOut"
+        >
           <BlurView intensity={50} style={styles.modalBackground}>
             <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', padding: 20, borderRadius: 10 }}>
               <Text>{selectedLocation.building}</Text>
