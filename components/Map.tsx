@@ -12,6 +12,7 @@ export interface Region {
 interface MapProps {
     region: Region | undefined;
     bidetLocations: BidetLocation[];
+    onMarkerPress: (location: BidetLocation) => void;
 }
 
 export interface BidetLocation {
@@ -29,7 +30,7 @@ export interface BidetLocation {
   distance?: number;
 }
 
-const Map = ({ region, bidetLocations }: MapProps) => {
+const Map = ({ region, bidetLocations, onMarkerPress }: MapProps) => {
   return (
     <View>
       <MapView 
@@ -49,6 +50,7 @@ const Map = ({ region, bidetLocations }: MapProps) => {
             }}
             title={bidet.building}
             description={`${bidet.address}, Singapore ${bidet.postal}`}
+            onPress={() => onMarkerPress(bidet)}
           />
         ))}
       </MapView>
