@@ -1,16 +1,16 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import React from 'react'
-import { BidetLocation } from './Map';
+import { MosqueLocation } from './Map';
 import Modal from 'react-native-modal'
 import { BlurView } from 'expo-blur';
 
-interface BidetModalProps {
+interface MosqueModalProps {
     isVisible: boolean;
-    location: BidetLocation | null;
+    location: MosqueLocation | null;
     onClose: () => void;
 }
 
-const BidetModal = ({ isVisible, location, onClose }: BidetModalProps) => {
+const MosqueModal = ({ isVisible, location, onClose}: MosqueModalProps) => {
   return (
     <Modal
         isVisible={isVisible}
@@ -24,13 +24,13 @@ const BidetModal = ({ isVisible, location, onClose }: BidetModalProps) => {
         <BlurView intensity={50} style={styles.modalBackground}>
             <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', padding: 20, borderRadius: 10 }}>
                 <Text>{location?.building}</Text>
-                <Text>{location?.address}, Singapore {location?.postal}</Text>
+                <Text>{location?.address}</Text>
                 <TouchableOpacity onPress={onClose}>
                 <Text>Close</Text>
                 </TouchableOpacity>
             </View>
         </BlurView>
-    </Modal>
+    </Modal>      
   )
 }
 
@@ -48,4 +48,4 @@ const styles = StyleSheet.create({
       }
 })
 
-export default BidetModal
+export default MosqueModal
