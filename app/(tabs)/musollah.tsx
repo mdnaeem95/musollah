@@ -1,15 +1,13 @@
-import { View, Text, SafeAreaView, FlatList, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import Map, { Region, BidetLocation } from '../../components/Map'
-import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../utils/locationTask'
 import { db } from '../../firebaseConfig'
 import { getDistanceFromLatLonInKm } from '../../utils/distance'
-import { BlurView } from 'expo-blur'
-import Modal from 'react-native-modal';
 
 import * as Location from 'expo-location'
 import { collection, getDocs } from 'firebase/firestore'
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
+import BidetModal from '../../components/BidetModal'
 
 const MusollahTab = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -137,11 +135,6 @@ const MusollahTab = () => {
 
     getCurrentLocation();
     getBidetLocations();
-    // startBackgroundLocationUpdates();
-
-    // return () => {
-    //   stopBackgroundLocationUpdates();
-    // }
   }, [selectedIndex, userLocation])
 
   return (
@@ -178,42 +171,10 @@ const MusollahTab = () => {
       </View>
 
       {selectedLocation && (
-        <Modal 
-          isVisible={isModalVisible} 
-          onBackdropPress={closeModal} 
-          backdropOpacity={0.3} 
-          style={styles.modal}
-          useNativeDriver
-          animationIn="zoomIn"
-          animationOut="zoomOut"
-        >
-          <BlurView intensity={50} style={styles.modalBackground}>
-            <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', padding: 20, borderRadius: 10 }}>
-              <Text>{selectedLocation.building}</Text>
-              <Text>{selectedLocation.address}, Singapore {selectedLocation.postal}</Text>
-              <TouchableOpacity onPress={closeModal}>
-                <Text>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </BlurView>
-        </Modal>
+        <BidetModal isVisible={isModalVisible} location={selectedLocation} onClose={closeModal}/>
       )}
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  modal: {
-    margin: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalBackground: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  }
-})
 
 export default MusollahTab
