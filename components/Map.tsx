@@ -12,8 +12,8 @@ export interface Region {
 
 interface MapProps {
     region: Region | undefined,
-    bidetLocations: BidetLocation[],
-    onMarkerPress: (location: BidetLocation) => void,
+    markerLocations: (BidetLocation | MosqueLocation)[],
+    onMarkerPress: (location: BidetLocation | MosqueLocation) => void,
     shouldFollowUserLocation: boolean,
     onRegionChangeComplete: () => void,
     onRefocusPress: () => void,
@@ -34,7 +34,19 @@ export interface BidetLocation {
   distance?: number;
 }
 
-const Map = ({ region, bidetLocations, onMarkerPress, onRegionChangeComplete, shouldFollowUserLocation, onRefocusPress }: MapProps) => {
+export interface MosqueLocation {
+  id: string;
+  building: string;
+  address: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  shia: string;
+  distance?: number;
+}
+
+const Map = ({ region, markerLocations, onMarkerPress, onRegionChangeComplete, shouldFollowUserLocation, onRefocusPress }: MapProps) => {
   return (
     <View>
       <MapView 
@@ -46,16 +58,16 @@ const Map = ({ region, bidetLocations, onMarkerPress, onRegionChangeComplete, sh
         zoomEnabled
         onRegionChangeComplete={onRegionChangeComplete}
       >
-        {bidetLocations.map((bidet) => (
+        {markerLocations.map((location) => (
           <Marker 
-            key={bidet.id}
+            key={location.id}
             coordinate={{
-              latitude: bidet.coordinates.latitude,
-              longitude: bidet.coordinates.longitude,
+              latitude: location.coordinates.latitude,
+              longitude: location.coordinates.longitude,
             }}
-            title={bidet.building}
-            description={`${bidet.address}, Singapore ${bidet.postal}`}
-            onPress={() => onMarkerPress(bidet)}
+            title={location.building}
+            description={'postal' in location ? `${location.address}, Singapore ${location.postal}` : location.address}
+            onCalloutPress={() => onMarkerPress(location)}
           />
         ))}
       </MapView>
