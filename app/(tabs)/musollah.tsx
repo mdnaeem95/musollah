@@ -1,20 +1,20 @@
-import { View, Text, FlatList, TouchableOpacity } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import Map, { Region, BidetLocation, MosqueLocation } from '../../components/Map'
-import { db } from '../../firebaseConfig'
-import { getDistanceFromLatLonInKm } from '../../utils/distance'
 
 import * as Location from 'expo-location'
-import { collection, getDocs } from 'firebase/firestore'
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import BidetModal from '../../components/BidetModal'
 import MosqueModal from '../../components/MosqueModal'
+import { getBidetLocations, getMosqueLocations } from '../../api/firebase'
 
 const MusollahTab = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [region, setRegion] = useState<Region | undefined>(undefined);
-  const [markerLocations, setMarkerLocations] = useState<(BidetLocation | MosqueLocation)[]>([]);
+  const [bidetLocations, setBidetLocations] = useState<BidetLocation[]>([]);
+  const [mosqueLocations, setMosqueLocations] = useState<MosqueLocation[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [selectedLocation, setSelectedLocation] = useState<BidetLocation | MosqueLocation | null>(null);
@@ -83,82 +83,34 @@ const MusollahTab = () => {
       setRegion(initialRegion);
     }
 
-    let collectionName;
-    switch (locationTypes[selectedIndex]) {
-      case 'Musollahs':
-        collectionName = 'Musollahs';
-        break;
-      case 'Halal Food':
-        collectionName = 'HalalFoodPlaces';
-        break;
-      case 'Mosques':
-        collectionName = 'Mosques'
-        break;
-      default:
-        collectionName = 'Bidets';
-    }
-
-    const getMarkerLocations = async () => {
-      try {
-        const locationsSnapshot = await getDocs(collection(db, collectionName));
-        const locationsData = locationsSnapshot.docs.map(doc => {
-          const data = doc.data();
-          if (collectionName === 'Mosques') {
-            return {
-              id: doc.id,
-              building: data.Building,
-              address: data. Address,
-              coordinates: {
-                latitude: data.Coordinates.latitude,
-                longitude: data.Coordinates.longitude,
-              },
-              shia: data.Shia,
-            } as MosqueLocation;
-          }
-          return {
-            id: doc.id,
-            address: data.Address,
-            building: data.Building,
-            postal: data.Postal,
-            coordinates: {
-              latitude: data.Coordinates.latitude,
-              longitude: data.Coordinates.longitude,
-            },
-            female: data.Female,
-            handicap: data.Handicap,
-            male: data.Male,
-          } as BidetLocation
-        });
-
-        if (userLocation) {
-          locationsData.forEach((location) => {
-            location.distance = getDistanceFromLatLonInKm(
-              userLocation.coords.latitude,
-              userLocation.coords.longitude,
-              location.coordinates.latitude,
-              location.coordinates.longitude
-            );
-          });
-
-          locationsData.sort((a, b) => a.distance! - b.distance!);
-        }
-
-        setMarkerLocations(locationsData);
-      } catch (error) {
-        console.error('Error fetching location or bidets:', error);
+    const fetchLocations = async () => {
+      if (region) {
+        try {
+          const [bidetData, mosqueData] = await Promise.all([
+            getBidetLocations(region!),
+            getMosqueLocations(region!),
+          ]);
+          setBidetLocations(bidetData as BidetLocation[]);
+          setMosqueLocations(mosqueData as MosqueLocation[]);
+          setLoading(false);
+        } catch (error) {
+          console.error("Error fetching locations: ", error);
+          setLoading(false);
       }
-    }
-
+      } 
+    } 
     getCurrentLocation();
-    getMarkerLocations();
+    fetchLocations();
   }, [selectedIndex, userLocation])
+
+  const currentLocations = selectedIndex === 0 ? bidetLocations : mosqueLocations;
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
         <Map 
           region={region} 
-          markerLocations={markerLocations} 
+          markerLocations={currentLocations} 
           onMarkerPress={handleMarkerPress} 
           onRegionChangeComplete={handleRegionChangeComplete}
           shouldFollowUserLocation={shouldFollowUserLocation}
@@ -174,17 +126,21 @@ const MusollahTab = () => {
             setSelectedIndex(event.nativeEvent.selectedSegmentIndex);
           }} 
         />
-        <FlatList
-          style={{ margin: -10 }} 
-          data={markerLocations}
-          renderItem={renderItem}
-          initialNumToRender={5}
-          windowSize={5}
-          keyExtractor={(item) => item.id}
-          getItemLayout={(data, index) => (
-            { length: 70, offset: 70 * index, index }
-          )}
-        />
+        {loading ? (
+          <ActivityIndicator size="large" color="#0000FF" />
+        ) :(
+          <FlatList
+            style={{ margin: -10 }} 
+            data={currentLocations}
+            renderItem={renderItem}
+            initialNumToRender={5}
+            windowSize={5}
+            keyExtractor={(item) => item.id}
+            getItemLayout={(data, index) => (
+              { length: 70, offset: 70 * index, index }
+            )}
+          />
+        )}
       </View>
 
       {selectedLocation && (
