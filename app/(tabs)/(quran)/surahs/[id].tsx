@@ -123,10 +123,10 @@ const SurahTextScreen = () => {
                                 <Text style={styles.surahEnglishName}>{surahDetails.englishName}</Text>
                             </View>
 
-                            <View style={{ width: '100%', height: 28, backgroundColor: '#D0D0D0', top: 30, flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={{ width: '100%', height: 50, backgroundColor: '#D0D0D0', top: 30, flexDirection: 'row', alignItems: 'center' }}>
                                 <Text style={styles.surahAudio}>{surahNum}. {surahDetails.englishName}</Text>
-                                <TouchableOpacity style={{ left: 20 }} onPress={togglePlayPause}>
-                                    <Image source={isPlaying ? require('../../../../assets/pause.png') : require('../../../../assets/play.png')} style={{ objectFit: 'contain', width: 18, height: 18 }} />
+                                <TouchableOpacity style={{ left: 20 }} onPressIn={togglePlayPause}>
+                                    <Image source={isPlaying ? require('../../../../assets/pause.png') : require('../../../../assets/play.png')} style={{ objectFit: 'contain', width: 28, height: 28 }} />
                                 </TouchableOpacity>
                             </View>
                             <View style={{ flex: 1 }}>
@@ -169,8 +169,8 @@ const styles = StyleSheet.create({
     surahAudio: {
         fontFamily: 'Outfit_400Regular',
         fontWeight: '400',
-        fontSize: 14,
-        lineHeight: 15,
+        fontSize: 20,
+        lineHeight: 21,
         color: '#000000',
         left: 10
     },

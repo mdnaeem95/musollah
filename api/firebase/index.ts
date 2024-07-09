@@ -1,7 +1,6 @@
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
-import { BidetLocation, MosqueLocation, Region } from "../../components/Map";
-import * as Location from 'expo-location'
+import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
 
 export const getBidetLocations = async (userRegion: Region): Promise<BidetLocation[]> => {
@@ -72,7 +71,48 @@ export const getMosqueLocations = async (userRegion: Region): Promise<MosqueLoca
 
         return mosqueList.sort((a, b) => a.distance! - b.distance!);
     } catch (error) {
-        console.error("Error fetching bidet locations: ", error);
+        console.error("Error fetching mosques locations: ", error);
+        throw error;
+    }
+}
+
+export const getMusollahsLocations = async (userRegion: Region): Promise<MusollahLocation[]> => {
+    try {
+        const musollahSnapshot = await getDocs(collection(db, 'Musollahs'));
+        const musollahList = musollahSnapshot.docs.map(doc => {
+            const data = doc.data();
+
+            return {
+                id: doc.id,
+                building: data.Building,
+                address: data.Address,
+                coordinates: {
+                    latitude: data.Coordinates.latitude,
+                    longitude: data.Coordinates.longitude,
+                },
+                segregated: data.Segregated,
+                airConditioned: data.AirConditioned,
+                ablutionArea: data.AblutionArea,
+                slippers: data.Slippers,
+                prayerMats: data.PrayerMats,
+                telekung: data.Telekung,
+                directions: data.Directions
+            } as MusollahLocation;
+        });
+
+        // Calculate distance for each mosque location
+        musollahList.forEach((location) => {
+            location.distance = getDistanceFromLatLonInKm(
+                userRegion.latitude,
+                userRegion.longitude,
+                location.coordinates.latitude,
+                location.coordinates.longitude
+            )
+        });
+
+        return musollahList.sort((a, b) => a.distance! - b.distance!);
+    } catch (error) {
+        console.error("Error fetching musollahs locations: ", error);
         throw error;
     }
 }

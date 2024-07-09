@@ -1,12 +1,12 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
-import Map, { Region, BidetLocation, MosqueLocation } from '../../components/Map'
+import Map, { Region, BidetLocation, MosqueLocation, MusollahLocation } from '../../components/Map'
 
 import * as Location from 'expo-location'
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import BidetModal from '../../components/BidetModal'
 import MosqueModal from '../../components/MosqueModal'
-import { getBidetLocations, getMosqueLocations } from '../../api/firebase'
+import { getBidetLocations, getMosqueLocations, getMusollahsLocations } from '../../api/firebase'
 
 const MusollahTab = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -14,20 +14,21 @@ const MusollahTab = () => {
   const [region, setRegion] = useState<Region | undefined>(undefined);
   const [bidetLocations, setBidetLocations] = useState<BidetLocation[]>([]);
   const [mosqueLocations, setMosqueLocations] = useState<MosqueLocation[]>([]);
+  const [musollahLocations, setMusollahLocations] = useState<MusollahLocation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
-  const [selectedLocation, setSelectedLocation] = useState<BidetLocation | MosqueLocation | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<BidetLocation | MosqueLocation | MusollahLocation |null>(null);
   const [shouldFollowUserLocation, setShouldFollowUserLocation] = useState<boolean>(true);
 
   const locationTypes = ['Bidets', 'Musollahs', 'Mosques', 'Halal Food']
 
-  const handleMarkerPress = (location: BidetLocation | MosqueLocation) => {
+  const handleMarkerPress = (location: BidetLocation | MosqueLocation | MusollahLocation) => {
     setSelectedLocation(location);
     setIsModalVisible(true);
   }
 
-  const handleListItemPress = (location: BidetLocation | MosqueLocation) => {
+  const handleListItemPress = (location: BidetLocation | MosqueLocation | MusollahLocation) => {
     setSelectedLocation(location);
     setIsModalVisible(true);
   }
@@ -54,7 +55,7 @@ const MusollahTab = () => {
     }
   }
 
-  const renderItem = ({ item }: { item: BidetLocation | MosqueLocation }) => (
+  const renderItem = ({ item }: { item: BidetLocation | MosqueLocation | MusollahLocation }) => (
     <TouchableOpacity style={{ padding: 20, borderBottomColor: 'black', borderBottomWidth: 1 }} onPress={() => handleListItemPress(item)}>
       <Text>{item.building} </Text>
       <Text>Distance: {item.distance?.toFixed(2)}km</Text>
@@ -86,12 +87,14 @@ const MusollahTab = () => {
     const fetchLocations = async () => {
       if (region) {
         try {
-          const [bidetData, mosqueData] = await Promise.all([
+          const [bidetData, mosqueData, musollahData] = await Promise.all([
             getBidetLocations(region!),
             getMosqueLocations(region!),
+            getMusollahsLocations(region!),
           ]);
           setBidetLocations(bidetData as BidetLocation[]);
           setMosqueLocations(mosqueData as MosqueLocation[]);
+          setMusollahLocations(musollahData as MusollahLocation[]);
           setLoading(false);
         } catch (error) {
           console.error("Error fetching locations: ", error);
@@ -103,7 +106,7 @@ const MusollahTab = () => {
     fetchLocations();
   }, [selectedIndex, userLocation])
 
-  const currentLocations = selectedIndex === 0 ? bidetLocations : mosqueLocations;
+  const currentLocations = selectedIndex === 0 ? bidetLocations : (selectedIndex === 1 ? musollahLocations : mosqueLocations);
 
   return (
     <View style={{ flex: 1 }}>
