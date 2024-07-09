@@ -12,8 +12,8 @@ export interface Region {
 
 interface MapProps {
     region: Region | undefined,
-    markerLocations: (BidetLocation | MosqueLocation)[],
-    onMarkerPress: (location: BidetLocation | MosqueLocation) => void,
+    markerLocations: (BidetLocation | MosqueLocation | MusollahLocation)[],
+    onMarkerPress: (location: BidetLocation | MosqueLocation | MusollahLocation) => void,
     shouldFollowUserLocation: boolean,
     onRegionChangeComplete: () => void,
     onRefocusPress: () => void,
@@ -43,6 +43,24 @@ export interface MosqueLocation {
     longitude: number;
   };
   shia: string;
+  distance?: number;
+}
+
+export interface MusollahLocation {
+  id: string;
+  building: string;
+  address: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  segregated: string;
+  airConditioned: string;
+  ablutionArea: string;
+  slippers: string;
+  prayerMats: string;
+  telekung: string;
+  directions: string;
   distance?: number;
 }
 

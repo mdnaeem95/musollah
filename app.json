@@ -38,10 +38,11 @@
       "expo-font",
       [
         "expo-location",
-      {
-        "locationAlwaysAndWhenInUsePermission": "Allow Musollah to use your location." 
-      }
-    ]
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Musollah to use your location."
+        }
+      ],
+      "expo-asset"
     ]
   }
 }
