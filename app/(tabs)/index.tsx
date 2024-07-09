@@ -1,10 +1,15 @@
-import { View, Text, SafeAreaView, StyleSheet } from 'react-native'
+import { View, Text, SafeAreaView, StyleSheet, ImageBackground } from 'react-native'
 import React, { useEffect, useState } from 'react'
 
 import Clock from 'react-live-clock';
 import { formatIslamicDate, getFormattedDate, getPrayerTimesInfo, getShortFormattedDate } from '../../utils';
 import { fetchIslamicDate, fetchPrayerTimes } from '../../api/prayers';
 import PrayerTimeItem from '../../components/PrayerTimeItem';
+
+import SubuhBackground from '../../assets/subuh-background.png';
+import ZuhurBackground from '../../assets/zuhr-background.png';
+import MaghribBackground from '../../assets/maghrib-background.png';
+import IshaBackground from '../../assets/isya-background.png';
 
 interface PrayerTimes {
   Fajr: string;
@@ -19,7 +24,7 @@ const PrayerTab = () => {
   const [islamicDate, setIslamicDate] = useState<string | null>(null);
   const [currentPrayer, setCurrentPrayer] = useState<string | null>(null);
   const [nextPrayerInfo, setNextPrayerInfo] = useState<{ nextPrayer: string, timeUntilNextPrayer: string } | null>(null);
-  const desiredPrayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
+  const desiredPrayers: (keyof PrayerTimes)[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
 
   const currentDate = new Date();
   const formattedDate = getFormattedDate(currentDate);
@@ -47,45 +52,70 @@ const PrayerTab = () => {
     getPrayerTimes();
   }, [])
 
+  const getBackgroundImage = () => {
+    switch (currentPrayer) {
+      case 'Subuh':
+        return SubuhBackground;
+      case 'Zuhur':
+        return ZuhurBackground;
+      case 'Maghrib':
+        return MaghribBackground;
+      case 'Isha':
+        return IshaBackground;
+      default:
+        return SubuhBackground;
+    }
+  }
+
+  const getTextStyle = () => {
+    return currentPrayer === 'Isha' ? styles.ishaText: {};
+  }
+
   return (
-    <SafeAreaView style={{ backgroundColor: '#BFE1DB' }}>
-      <View style={{ height: '100%', width: '100%', backgroundColor: '#BFE1DB', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-        <View style={{ alignItems: 'center', justifyContent: 'center', top: -50 }}>
-          <Text style={styles.dateText}>{formattedDate}</Text>
-          <Text style={styles.clockText}>
-            <Clock format={'HH:mm'} timezone={'Asia/Singapore'} element={Text} ticking={true} interval={60}  />
-          </Text>
-          <Text>{islamicDate}</Text>
-        </View>
+    <ImageBackground source={getBackgroundImage()} style={styles.backgroundImage} >
+        <View style={{ flex: 1, height: '100%', width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ alignItems: 'center', justifyContent: 'center', top: -50 }}>
+            <Text style={[styles.dateText, getTextStyle()]}>{formattedDate}</Text>
+            <Text style={styles.clockText}>
+              <Clock format={'HH:mm'} timezone={'Asia/Singapore'} element={Text} ticking={true} interval={60}  />
+            </Text>
+            <Text style={[styles.dateText, getTextStyle()]}>{islamicDate}</Text>
+          </View>
 
-        <View>
-          <Text style={styles.nextPrayerText}>{currentPrayer}</Text>
-          <Text style={styles.dateText}>{nextPrayerInfo?.timeUntilNextPrayer} until {nextPrayerInfo?.nextPrayer}</Text>
-        </View>
+          <View>
+            <Text style={[styles.nextPrayerText, getTextStyle()]}>{currentPrayer}</Text>
+            <Text style={[styles.dateText, getTextStyle(), { top: 5 }]}>{nextPrayerInfo?.timeUntilNextPrayer} until {nextPrayerInfo?.nextPrayer}</Text>
+          </View>
 
-        <View style={{ gap: 20, top: 40 }}>
-          {prayerTimes ? (
-            <>
-              {desiredPrayers.map((prayer) => (
-                <PrayerTimeItem key={prayer} name={prayer} time={prayerTimes[prayer]} />
-              ))}
-            </>
-          ) : (
-            <Text>Loading...</Text>
-          )}
+          <View style={{ gap: 20, top: 40 }}>
+            {prayerTimes ? (
+              <>
+                {desiredPrayers.map((prayer) => (
+                  <PrayerTimeItem key={prayer} name={prayer} time={prayerTimes[prayer]} style={getTextStyle()} />
+                ))}
+              </>
+            ) : (
+              <Text>Loading...</Text>
+            )}
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+    </ImageBackground>
   )
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    resizeMode: 'cover',
+    justifyContent: 'center'
+  },
   dateText: {
     fontFamily: 'Outfit_400Regular',
     fontWeight: 400,
     fontSize: 14,
     lineHeight: 21,
-    color: '#314340'
+    color: '#314340',
+    marginVertical: -7
   },
   clockText: {
     fontFamily: 'Outfit_600SemiBold',
@@ -100,6 +130,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 36,
     color: '#314340'
+  },
+  ishaText: {
+    color: '#C3F0E9'
   }
 })
 

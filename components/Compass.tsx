@@ -19,14 +19,14 @@ const Compass = () => {
 
     useEffect(() => {
         (async () => {
-            // const { status } = await Location.requestForegroundPermissionsAsync();
-            // if (status !== 'granted') {
-            //     setErrorMsg('Permission to access location was denied');
-            //     return;
-            // }
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                setErrorMsg('Permission to access location was denied');
+                return;
+            }
 
-            // let location = await Location.getCurrentPositionAsync({});
-            // setLocation(location);
+            let location = await Location.getCurrentPositionAsync({});
+            setLocation(location);
 
             const heading = await Location.watchHeadingAsync((heading) => {
                 setUserHeading(heading.trueHeading);
@@ -42,8 +42,11 @@ const Compass = () => {
                 <Text style={styles.qiblatText}>When your heading and the Kaaba's heading match, you are facing the right direction.</Text>
             </View>
 
-            <View style={{ top: 200 }}>
-                <Image source={require('../assets/arrow-up.png')} style={{ transform: [{ rotate: `${QIBLA_HEADING - userHeading}deg`}], height: 96, width: 96 }} />
+            <View style={{ top: 150, justifyContent: 'center', alignItems: 'center' }}>
+                <View style={styles.compassCircle}>
+                    <Image source={require('../assets/kaabah.png')} style={styles.kaabahIcon} />
+                    <Image source={require('../assets/arrow-up.png')} style={{ transform: [{ rotate: `${QIBLA_HEADING - userHeading}deg`}], height: 80, width: 80, resizeMode: 'contain' }} />
+                </View>
             </View>
         </SafeAreaView>
     )
@@ -53,8 +56,29 @@ const styles = StyleSheet.create({
     qiblatText: {
         fontFamily: 'Outfit_300Light',
         fontWeight: '300',
-        fontSize: 14,
+        fontSize: 18,
         lineHeight: 21
+    },
+    compassCircle: {
+        width: 300, 
+        height: 300, 
+        borderRadius: 150,
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative'
+    },
+    kaabahIcon: {
+        position: 'absolute',
+        top: -120,
+        left: 100, 
+        height: 90,
+        width: 90,
+        resizeMode: 'contain'
+    },
+    compassArrow: {
+
     }
 })
 
