@@ -1,5 +1,5 @@
-import { View, Text, SafeAreaView, StyleSheet, ImageBackground } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import { View, Text, StyleSheet, ImageBackground } from 'react-native'
+import React, { useEffect, useState, useMemo } from 'react'
 
 import Clock from 'react-live-clock';
 import { formatIslamicDate, getFormattedDate, getPrayerTimesInfo, getShortFormattedDate } from '../../utils';
@@ -10,6 +10,7 @@ import SubuhBackground from '../../assets/subuh-background.png';
 import ZuhurBackground from '../../assets/zuhr-background.png';
 import MaghribBackground from '../../assets/maghrib-background.png';
 import IshaBackground from '../../assets/isya-background.png';
+import { useInterval } from '../../utils/intervalSync';
 
 interface PrayerTimes {
   Fajr: string;
@@ -17,6 +18,7 @@ interface PrayerTimes {
   Asr: string;
   Maghrib: string;
   Isha: string;
+  [key: string]: string;
 }
 
 const PrayerTab = () => {
@@ -26,31 +28,40 @@ const PrayerTab = () => {
   const [nextPrayerInfo, setNextPrayerInfo] = useState<{ nextPrayer: string, timeUntilNextPrayer: string } | null>(null);
   const desiredPrayers: (keyof PrayerTimes)[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
 
-  const currentDate = new Date();
-  const formattedDate = getFormattedDate(currentDate);
-  const shortFormattedDate = getShortFormattedDate(currentDate);
+  const currentDate = useMemo(() => new Date(), []);
+  const formattedDate = useMemo(() => getFormattedDate(currentDate), [currentDate]);
+  const shortFormattedDate = useMemo(() => getShortFormattedDate(currentDate), [currentDate]);
+
+  const updatePrayerTimes = async () => {
+    try {
+      const data = await fetchPrayerTimes();
+      const { Fajr, Dhuhr, Asr, Maghrib, Isha } = data.data.timings;
+      const newPrayerTimes = { Fajr, Dhuhr, Asr, Maghrib, Isha };
+      setPrayerTimes((prev) => (JSON.stringify(prev) !== JSON.stringify(newPrayerTimes) ? newPrayerTimes : prev));
+
+      const islamicDateData = await fetchIslamicDate(shortFormattedDate);
+      const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date)
+      setIslamicDate((prev) => (prev !== formattedIslamicDate ? formattedIslamicDate : prev));
+
+      const prayerInfo = getPrayerTimesInfo(newPrayerTimes, currentDate);
+      setCurrentPrayer(prayerInfo.currentPrayer);
+      setNextPrayerInfo({ nextPrayer: prayerInfo.nextPrayer, timeUntilNextPrayer: prayerInfo.timeUntilNextPrayer });
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   useEffect(() => {
-    const getPrayerTimes = async () => {
-      try {
-        const data = await fetchPrayerTimes();
-        const { Fajr, Dhuhr, Asr, Maghrib, Isha } = data.data.timings;
-        setPrayerTimes({ Fajr, Dhuhr, Asr, Maghrib, Isha });
-
-        const islamicDateData = await fetchIslamicDate(shortFormattedDate);
-        const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date)
-        setIslamicDate(formattedIslamicDate);
-
-        const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo({ Fajr, Dhuhr, Asr, Maghrib, Isha }, currentDate);
-        setCurrentPrayer(currentPrayer);
-        setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
-      } catch (error) {
-        console.log(error)
-      }
-    }
-
-    getPrayerTimes();
+    updatePrayerTimes();
   }, [])
+
+  useInterval(() => {
+    if (prayerTimes) {
+      const prayerInfo = getPrayerTimesInfo(prayerTimes, new Date());
+      setCurrentPrayer(prayerInfo.currentPrayer);
+      setNextPrayerInfo({ nextPrayer: prayerInfo.nextPrayer, timeUntilNextPrayer: prayerInfo.timeUntilNextPrayer });
+    }
+  }, 1); // Update every minute
 
   const getBackgroundImage = () => {
     switch (currentPrayer) {
@@ -91,7 +102,7 @@ const PrayerTab = () => {
             {prayerTimes ? (
               <>
                 {desiredPrayers.map((prayer) => (
-                  <PrayerTimeItem key={prayer} name={prayer} time={prayerTimes[prayer]} style={getTextStyle()} />
+                  <PrayerTimeItem key={prayer} name={prayer as string} time={prayerTimes[prayer]} style={getTextStyle()} />
                 ))}
               </>
             ) : (
