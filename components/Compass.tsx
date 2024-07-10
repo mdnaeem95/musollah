@@ -1,7 +1,8 @@
 import { View, Text, Image, StyleSheet } from 'react-native'
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import * as Location from 'expo-location'
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LocationContext } from '../providers/LocationProvider';
 
 interface LocationData {
     coords: {
@@ -13,26 +14,16 @@ interface LocationData {
 const QIBLA_HEADING = 293;
 
 const Compass = () => {
-    const [location, setLocation] = useState<LocationData | null>(null);
+    const { userLocation, errorMsg } = useContext(LocationContext);
     const [userHeading, setUserHeading] = useState(0);
-    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     useEffect(() => {
-        (async () => {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                setErrorMsg('Permission to access location was denied');
-                return;
-            }
-
-            let location = await Location.getCurrentPositionAsync({});
-            setLocation(location);
-
-            const heading = await Location.watchHeadingAsync((heading) => {
+        if (userLocation) {
+            Location.watchHeadingAsync((heading) => {
                 setUserHeading(heading.trueHeading);
             })
-        })();
-    }, [])
+        }
+    }, [userLocation]);
 
     return (
         <SafeAreaView style={{ justifyContent: 'center', alignItems: 'center' }}>

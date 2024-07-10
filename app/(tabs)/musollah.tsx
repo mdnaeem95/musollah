@@ -1,5 +1,5 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useState } from 'react'
 import Map, { Region, BidetLocation, MosqueLocation, MusollahLocation } from '../../components/Map'
 
 import * as Location from 'expo-location'
@@ -7,10 +7,10 @@ import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import BidetModal from '../../components/BidetModal'
 import MosqueModal from '../../components/MosqueModal'
 import { getBidetLocations, getMosqueLocations, getMusollahsLocations } from '../../api/firebase'
+import { LocationContext } from '../../providers/LocationProvider'
 
 const MusollahTab = () => {
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
+  const { userLocation, errorMsg } = useContext(LocationContext);
   const [region, setRegion] = useState<Region | undefined>(undefined);
   const [bidetLocations, setBidetLocations] = useState<BidetLocation[]>([]);
   const [mosqueLocations, setMosqueLocations] = useState<MosqueLocation[]>([]);
@@ -63,24 +63,13 @@ const MusollahTab = () => {
   )
 
   useEffect(() => {
-    const getCurrentLocation = async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
-        return;
-      }
-
-      const userLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest
-      });
-      setUserLocation(userLocation);
-
+    if (userLocation) {
       const initialRegion: Region = {
-        latitude: userLocation.coords.latitude,
-        longitude: userLocation.coords.longitude,
+        latitude: userLocation!.coords.latitude,
+        longitude: userLocation!.coords.longitude,
         latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      }
+        longitudeDelta: 0.005
+      };
       setRegion(initialRegion);
     }
 
@@ -101,8 +90,7 @@ const MusollahTab = () => {
           setLoading(false);
       }
       } 
-    } 
-    getCurrentLocation();
+    }
     fetchLocations();
   }, [selectedIndex, userLocation])
 
