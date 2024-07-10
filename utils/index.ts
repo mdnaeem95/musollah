@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 
-export const getFormattedDate = (date) => {
+export const getFormattedDate = (date: Date) => {
     return format(date, "EEEE, do MMMM yyyy");
 }
 
