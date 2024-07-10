@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { Stack, SplashScreen } from 'expo-router'
 import 'react-native-reanimated'
+import { LocationProvider } from '../providers/LocationProvider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,9 +29,11 @@ const RootLayout = () => {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
-    </Stack>
+    <LocationProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
+      </Stack>
+    </LocationProvider>
   )
 }
 
