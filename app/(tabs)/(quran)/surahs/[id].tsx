@@ -1,69 +1,29 @@
-import { View, Text, SafeAreaView, ScrollView, ActivityIndicator, StyleSheet, Image, TouchableOpacity } from 'react-native'
-import React, { useEffect, useRef, useState } from 'react'
+import { View, Text, SafeAreaView, ScrollView, ActivityIndicator, StyleSheet, Image, TouchableOpacity, FlatList } from 'react-native'
+import React, { useEffect, useRef, useState, useCallback, useContext } from 'react'
 import { useLocalSearchParams } from 'expo-router';
 import { fetchSurahText } from '../../../../api/surahs';
 import { AVPlaybackStatus, Audio } from 'expo-av';
-
-type Ayah = {
-    number: number;
-    text: string;
-    audio: string;
-}
-
-type TranslationAyah = {
-    number: number,
-    text: string,
-}
-
-type TranslationDetails = {
-    number: number,
-    ayahs: TranslationAyah[];
-}
-
-type SurahDetails = {
-    number: number;
-    name: string;
-    englishName: string;
-    englishNameTranslation: string;
-    revelationType: string;
-    ayahs: Ayah[];
-}
+import { QuranDataContext } from '../../../../providers/QuranDataProvider';
+import { Ayah } from '../../../../hooks/useLoadQuranData';
 
 const SurahTextScreen = () => {
-    const [surahDetails, setSurahDetails] = useState<SurahDetails | null>(null);
-    const [translationDetails, setTranslationDetails] = useState<TranslationDetails | null>(null);
+    const { surahDetails, translationDetails, loading } = useContext(QuranDataContext);
     const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
-    const [loading, setLoading] = useState<boolean>(true);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const soundRef = useRef<Audio.Sound | null>(null);
     const { id } = useLocalSearchParams<{ id: string }>();
     const surahNum = id ? parseInt(id as string, 10) : 1;
+    const surah = surahDetails[surahNum];
+    const translation = translationDetails[surahNum];
 
-    useEffect(() => {
-        const loadSurahText = async () => {
-            try {
-                const data = await fetchSurahText(surahNum, 'ar.alafasy');
-                const englishData = await fetchSurahText(surahNum, 'en.asad');
-                setSurahDetails(data.data);
-                setTranslationDetails(englishData.data);
-            } catch (error) {
-                console.error('Failed to load surah text: ', error)
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        loadSurahText();
-    }, [surahNum]);
-
-    const playNextAyah = async (index: number) => {
-        if (index >= surahDetails!.ayahs.length) {
+    const playNextAyah = useCallback(async (index: number) => {
+        if (index >= surah!.ayahs.length) {
             setIsPlaying(false);
-            return
+            return;
         }
 
-        const ayah = surahDetails!.ayahs[index];
-        // console.log(ayah);
+        const ayah = surah!.ayahs[index];
+
         try {
             if (soundRef.current) {
                 await soundRef.current.unloadAsync();
@@ -85,9 +45,9 @@ const SurahTextScreen = () => {
         } catch (error) {
             console.error('Failed to play recitation: ', error);
         }
-    }
+    }, [surahDetails]);
 
-    const togglePlayPause = async () => {
+    const togglePlayPause = useCallback(async () => {
         if (soundRef.current) {
             if (isPlaying) {
                 await soundRef.current.pauseAsync();
@@ -108,43 +68,46 @@ const SurahTextScreen = () => {
             playNextAyah(0);
             setIsPlaying(true);
         }
-    }
+    }, [isPlaying, playNextAyah]);
+
+    const renderAyah = useCallback(({ item, index }: { item: Ayah, index: number }) => (
+        <View key={item.number} style={styles.ayahContainer}>
+            <Text style={styles.quranText}>{item.text}</Text>
+            {translationDetails && (
+                <View style={styles.translationContainer}>
+                    <Text style={styles.translationText}>{translation.ayahs[index]?.text}</Text>
+                </View>
+            )}
+            <View style={styles.separator} />
+        </View>
+    ), [translationDetails]);
 
     return (
-        <SafeAreaView style={{ backgroundColor: '#4D6561' }}>
-            <View style={{ backgroundColor: '#4D6561', height: '100%' }}>
+        <SafeAreaView style={{ backgroundColor: '#4D6561', flex: 1 }}>
+            <View style={{ backgroundColor: '#4D6561', flex: 1 }}>
                 {loading ? (
                     <ActivityIndicator />
                 ) : (
-                    surahDetails && (
-                        <>
-                            <View style={{ justifyContent: 'center', alignItems: 'center', gap: 2, top: 10 }}>
-                                <Text style={styles.surahName}>{surahDetails.name}</Text>
-                                <Text style={styles.surahEnglishName}>{surahDetails.englishName}</Text>
+                    surah && (
+                        <View style={{ justifyContent: 'center', alignItems: 'center' }}>  
+                            <View style={{ justifyContent: 'center', alignItems: 'center', paddingVertical: 20, borderRadius: 40, backgroundColor: '#D9D9D9', width: '50%', marginBottom: 20 }}>
+                                <Text style={styles.surahName}>{surah.name}</Text>
+                                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', display: 'flex', gap: 10 }}>
+                                    <Text style={styles.surahEnglishName}>{surah.englishName}</Text>
+                                    <TouchableOpacity onPressIn={togglePlayPause}>
+                                        <Image source={isPlaying ? require('../../../../assets/pause.png') : require('../../../../assets/play.png')} style={{ objectFit: 'contain', width: 28, height: 28 }} />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
 
-                            <View style={{ width: '100%', height: 50, backgroundColor: '#D0D0D0', top: 30, flexDirection: 'row', alignItems: 'center' }}>
-                                <Text style={styles.surahAudio}>{surahNum}. {surahDetails.englishName}</Text>
-                                <TouchableOpacity style={{ left: 20 }} onPressIn={togglePlayPause}>
-                                    <Image source={isPlaying ? require('../../../../assets/pause.png') : require('../../../../assets/play.png')} style={{ objectFit: 'contain', width: 28, height: 28 }} />
-                                </TouchableOpacity>
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <ScrollView style={{ overflow: 'hidden', top: 50, width: 'auto' }} showsVerticalScrollIndicator={false}>
-                                {surahDetails.ayahs.map((ayah, index) => (
-                                    <View key={ayah.number} style={{ marginBottom: 20, gap: 10, paddingVertical: 10 }}>
-                                        <Text style={styles.quranText}>{ayah.text}</Text>
-                                        {translationDetails && (
-                                            <View style={{ width: 383 }}>
-                                                <Text style={styles.translationText}>{translationDetails.ayahs[index]?.text}</Text>
-                                            </View>
-                                        )}
-                                    <View style={{ width: 400, height: 1, backgroundColor: '#FFFFFF' }}></View>
-                                    </View>
-                                ))}
-                                </ScrollView>
-                            </View>
-                        </>
+                            <FlatList 
+                                data={surah.ayahs}
+                                renderItem={renderAyah}
+                                keyExtractor={(item) => item.number.toString()}
+                                contentContainerStyle={styles.listContainer}
+                                showsVerticalScrollIndicator={false}
+                            />
+                        </View>
                     )
                 )}
             </View>
@@ -164,7 +127,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         fontSize: 20,
         lineHeight: 30,
-        color: '#D7E4E2'
+        color: '#314340'
     },
     surahAudio: {
         fontFamily: 'Outfit_400Regular',
@@ -172,16 +135,15 @@ const styles = StyleSheet.create({
         fontSize: 20,
         lineHeight: 21,
         color: '#000000',
-        left: 10
     },
     quranText: {
         fontFamily: 'Amiri_400Regular',
         fontWeight: '400',
         color: '#FFFFFF',
-        fontSize: 28,
+        fontSize: 26,
         lineHeight: 48,
         textAlign: 'right',
-        right: 10
+        paddingHorizontal: 20
     },
     translationText: {
         fontFamily: 'Outfit_400Regular',
@@ -189,7 +151,23 @@ const styles = StyleSheet.create({
         fontSize: 12,
         lineHeight: 15,
         color: '#FFFFFF',
-        left: 5,
+        paddingHorizontal: 20
+    },
+    ayahContainer: {
+        marginBottom: 20,
+        gap: 10,
+        paddingVertical: 10,
+    },
+    translationContainer: {
+        width: '100%'
+    },
+    listContainer: {
+        paddingTop: 20, 
+    },
+    separator: {
+        width: '100%',
+        height: 1,
+        backgroundColor: '#FFFFFF'
     }
 })
 

@@ -1,21 +1,18 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native'
-import React, { useCallback, useContext, useEffect, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useState, useMemo } from 'react'
 import Map, { Region, BidetLocation, MosqueLocation, MusollahLocation } from '../../components/Map'
 
-import * as Location from 'expo-location'
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import BidetModal from '../../components/BidetModal'
 import MosqueModal from '../../components/MosqueModal'
 import { getBidetLocations, getMosqueLocations, getMusollahsLocations } from '../../api/firebase'
 import { LocationContext } from '../../providers/LocationProvider'
+import { LocationDataContext } from '../../providers/LocationDataProvider'
 
 const MusollahTab = () => {
+  const { bidetLocations, mosqueLocations, musollahLocations, loading } = useContext(LocationDataContext);
   const { userLocation, errorMsg } = useContext(LocationContext);
   const [region, setRegion] = useState<Region | undefined>(undefined);
-  const [bidetLocations, setBidetLocations] = useState<BidetLocation[]>([]);
-  const [mosqueLocations, setMosqueLocations] = useState<MosqueLocation[]>([]);
-  const [musollahLocations, setMusollahLocations] = useState<MusollahLocation[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [selectedLocation, setSelectedLocation] = useState<BidetLocation | MosqueLocation | MusollahLocation |null>(null);
@@ -23,26 +20,26 @@ const MusollahTab = () => {
 
   const locationTypes = ['Bidets', 'Musollahs', 'Mosques', 'Halal Food']
 
-  const handleMarkerPress = (location: BidetLocation | MosqueLocation | MusollahLocation) => {
+  const handleMarkerPress = useCallback((location: BidetLocation | MosqueLocation | MusollahLocation) => {
     setSelectedLocation(location);
     setIsModalVisible(true);
-  }
+  }, []);
 
-  const handleListItemPress = (location: BidetLocation | MosqueLocation | MusollahLocation) => {
+  const handleListItemPress = useCallback((location: BidetLocation | MosqueLocation | MusollahLocation) => {
     setSelectedLocation(location);
     setIsModalVisible(true);
-  }
+  }, []);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setSelectedLocation(null);
     setIsModalVisible(false);
-  }
+  }, []);
 
   const handleRegionChangeComplete = useCallback(() => {
     setShouldFollowUserLocation(false)
   }, [])
 
-  const handleRefocusPress = () => {
+  const handleRefocusPress = useCallback(() => {
     if (userLocation) {
       const newRegion: Region = {
         latitude: userLocation.coords.latitude,
@@ -53,14 +50,16 @@ const MusollahTab = () => {
       setRegion(newRegion);
       setShouldFollowUserLocation(true);
     }
-  }
+  }, [userLocation]);
 
-  const renderItem = ({ item }: { item: BidetLocation | MosqueLocation | MusollahLocation }) => (
+  const renderItem = useCallback(({ item }: { item: BidetLocation | MosqueLocation | MusollahLocation }) => (
     <TouchableOpacity style={{ padding: 20, borderBottomColor: 'black', borderBottomWidth: 1 }} onPress={() => handleListItemPress(item)}>
       <Text>{item.building} </Text>
       <Text>Distance: {item.distance?.toFixed(2)}km</Text>
     </TouchableOpacity>
-  )
+  ), [handleListItemPress]);
+
+  const keyExtractor = useCallback((item: BidetLocation | MosqueLocation | MusollahLocation) => item.id, []);
 
   useEffect(() => {
     if (userLocation) {
@@ -72,29 +71,20 @@ const MusollahTab = () => {
       };
       setRegion(initialRegion);
     }
+  }, [userLocation])
 
-    const fetchLocations = async () => {
-      if (region) {
-        try {
-          const [bidetData, mosqueData, musollahData] = await Promise.all([
-            getBidetLocations(region!),
-            getMosqueLocations(region!),
-            getMusollahsLocations(region!),
-          ]);
-          setBidetLocations(bidetData as BidetLocation[]);
-          setMosqueLocations(mosqueData as MosqueLocation[]);
-          setMusollahLocations(musollahData as MusollahLocation[]);
-          setLoading(false);
-        } catch (error) {
-          console.error("Error fetching locations: ", error);
-          setLoading(false);
-      }
-      } 
+  const currentLocations = useMemo(() => {
+    switch (selectedIndex) {
+      case 0:
+        return bidetLocations;
+      case 1:
+        return musollahLocations;
+      case 2:
+        return mosqueLocations;
+      default:
+        return [];
     }
-    fetchLocations();
-  }, [selectedIndex, userLocation])
-
-  const currentLocations = selectedIndex === 0 ? bidetLocations : (selectedIndex === 1 ? musollahLocations : mosqueLocations);
+  }, [selectedIndex, bidetLocations, musollahLocations, mosqueLocations]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -126,7 +116,7 @@ const MusollahTab = () => {
             renderItem={renderItem}
             initialNumToRender={5}
             windowSize={5}
-            keyExtractor={(item) => item.id}
+            keyExtractor={keyExtractor}
             getItemLayout={(data, index) => (
               { length: 70, offset: 70 * index, index }
             )}
