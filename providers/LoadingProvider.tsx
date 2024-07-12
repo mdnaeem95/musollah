@@ -7,10 +7,6 @@ import { QuranDataContext } from './QuranDataProvider'
 
 const LoadingContext = createContext<{ isAppReady: boolean }>({ isAppReady: false })
 
-const useLoading = () => {
-    return useContext(LoadingContext);
-  };
-
 const LoadingProvider = ({ children }: { children: ReactNode }) => {
     const [isAppReady, setIsAppReady] = useState(false);
     const { isLoading: isUserLocationLoading } = useContext(LocationContext);
@@ -30,7 +26,6 @@ const LoadingProvider = ({ children }: { children: ReactNode }) => {
                 console.warn(error);
             } finally {
                 setIsAppReady(true);
-                SplashScreen.hideAsync();
             }
         }
 
@@ -44,4 +39,4 @@ const LoadingProvider = ({ children }: { children: ReactNode }) => {
     )
 }
 
-export { LoadingContext, useLoading, LoadingProvider }
+export { LoadingContext, LoadingProvider }
