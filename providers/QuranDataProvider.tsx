@@ -18,16 +18,7 @@ const defaultValue: QuranDataContextProps = {
 const QuranDataContext = createContext<QuranDataContextProps>(defaultValue);
 
 const QuranDataProvider = ({ children }: { children: ReactNode }) => {
-  const { surahs, surahDetails, translationDetails, loading: loadLoading } = useLoadQuranData();
-  const [isLoading, setLoading] = useState(true);
-
-  useEffect(() => {
-    console.log('Loading Quran data...');
-    if (!loadLoading) {
-      setLoading(false);
-      console.log('Quran data loaded.');
-    }
-  }, [loadLoading]);
+  const { surahs, surahDetails, translationDetails, isLoading } = useLoadQuranData();
 
   return (
     <QuranDataContext.Provider value={{ surahs, surahDetails, translationDetails, isLoading }}>

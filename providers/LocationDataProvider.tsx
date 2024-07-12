@@ -20,17 +20,8 @@ const defaultValue: LocationDataContextProps = {
 const LocationDataContext = createContext<LocationDataContextProps>(defaultValue);
 
 const LocationDataProvider = ({ children }: { children: ReactNode }) => {
-  const { bidetLocations, mosqueLocations, musollahLocations, loading: fetchLoading } = useLoadMusollahData();
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    console.log('Loading user location...');
-    if (!fetchLoading) {
-      setIsLoading(false);
-      console.log('User location loaded.');
-    }
-  }, [fetchLoading]);
-
+  const { bidetLocations, mosqueLocations, musollahLocations, isLoading } = useLoadMusollahData();
+  
   return (
     <LocationDataContext.Provider value={{ bidetLocations, mosqueLocations, musollahLocations, isLoading }}>
       {children}

@@ -29,16 +29,7 @@ const defaultValue: PrayerTimesContextProps = {
 const PrayerTimeContext = createContext<PrayerTimesContextProps>(defaultValue)
 
 const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
-    const { prayerTimes, islamicDate, currentPrayer, nextPrayerInfo, isLoading: loadLoading } = useLoadPrayerTimes();
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        console.log('Loading prayer times...');
-        if (!loadLoading) {
-          setIsLoading(false);
-          console.log('Prayer times loaded.');
-        }
-      }, [loadLoading]);
+    const { prayerTimes, islamicDate, currentPrayer, nextPrayerInfo, isLoading } = useLoadPrayerTimes();
 
     return (
         <PrayerTimeContext.Provider value={{ prayerTimes, islamicDate, currentPrayer, nextPrayerInfo, isLoading }}>
