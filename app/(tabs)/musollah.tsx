@@ -5,7 +5,6 @@ import Map, { Region, BidetLocation, MosqueLocation, MusollahLocation } from '..
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import BidetModal from '../../components/BidetModal'
 import MosqueModal from '../../components/MosqueModal'
-import { getBidetLocations, getMosqueLocations, getMusollahsLocations } from '../../api/firebase'
 import { LocationContext } from '../../providers/LocationProvider'
 import { LocationDataContext } from '../../providers/LocationDataProvider'
 
