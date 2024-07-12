@@ -4,6 +4,7 @@ import { LocationProvider } from './LocationProvider';
 import { LocationDataProvider } from './LocationDataProvider';
 import { QuranDataProvider } from './QuranDataProvider';
 import { PrayerTimesProvider } from './PrayerTimesProvider';
+import { LoadingProvider } from './LoadingProvider' 
 
 const Providers = ({ children }: { children: ReactNode }) => {
   return (
@@ -11,7 +12,9 @@ const Providers = ({ children }: { children: ReactNode }) => {
       <LocationDataProvider>
         <QuranDataProvider>
           <PrayerTimesProvider>
-          {children}
+            <LoadingProvider>
+              {children}
+            </LoadingProvider>
           </PrayerTimesProvider>
         </QuranDataProvider>
       </LocationDataProvider>
