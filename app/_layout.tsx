@@ -1,5 +1,6 @@
 import React, { useContext, useEffect } from 'react'
-import { Stack, SplashScreen } from 'expo-router'
+import { Stack } from 'expo-router'
+import * as SplashScreen  from 'expo-splash-screen'
 import 'react-native-reanimated'
 import { Providers } from '../providers/index'
 import { Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold } from "@expo-google-fonts/outfit"
@@ -21,8 +22,15 @@ const RootLayout = () => {
   });
 
   useEffect(() => {
-    if (fontsLoaded && fontsLoaded) {
-      SplashScreen.hideAsync();
+    console.log('Fonts loaded:', fontsLoaded);
+    console.log('App ready:', isAppReady);
+
+    if (fontsLoaded && isAppReady) {
+      SplashScreen.hideAsync().then(() => {
+        console.log('SplashScreen hidden');
+      }).catch(error => {
+        console.error('Error hiding SplashScreen', error)
+      });
     }
   }, [fontsLoaded, isAppReady])
   
