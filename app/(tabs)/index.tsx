@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, ImageBackground } from 'react-native'
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo, useContext } from 'react'
 
 import Clock from 'react-live-clock';
 import { formatIslamicDate, getFormattedDate, getPrayerTimesInfo, getShortFormattedDate } from '../../utils';
@@ -11,6 +11,7 @@ import ZuhurBackground from '../../assets/zuhr-background.png';
 import MaghribBackground from '../../assets/maghrib-background.png';
 import IshaBackground from '../../assets/isya-background.png';
 import { useInterval } from '../../utils/intervalSync';
+import { PrayerTimeContext } from '../../providers/PrayerTimesProvider';
 
 interface PrayerTimes {
   Fajr: string;
@@ -22,47 +23,12 @@ interface PrayerTimes {
 }
 
 const PrayerTab = () => {
-  const [prayerTimes, setPrayerTimes] = useState<PrayerTimes | null>(null);
-  const [islamicDate, setIslamicDate] = useState<string | null>(null);
-  const [currentPrayer, setCurrentPrayer] = useState<string | null>(null);
-  const [nextPrayerInfo, setNextPrayerInfo] = useState<{ nextPrayer: string, timeUntilNextPrayer: string } | null>(null);
+  const { prayerTimes, islamicDate, currentPrayer, nextPrayerInfo, isLoading } = useContext(PrayerTimeContext);
   const desiredPrayers: (keyof PrayerTimes)[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
 
   const currentDate = useMemo(() => new Date(), []);
   const formattedDate = useMemo(() => getFormattedDate(currentDate), [currentDate]);
-  const shortFormattedDate = useMemo(() => getShortFormattedDate(currentDate), [currentDate]);
-
-  const updatePrayerTimes = async () => {
-    try {
-      const data = await fetchPrayerTimes();
-      const { Fajr, Dhuhr, Asr, Maghrib, Isha } = data.data.timings;
-      const newPrayerTimes = { Fajr, Dhuhr, Asr, Maghrib, Isha };
-      setPrayerTimes((prev) => (JSON.stringify(prev) !== JSON.stringify(newPrayerTimes) ? newPrayerTimes : prev));
-
-      const islamicDateData = await fetchIslamicDate(shortFormattedDate);
-      const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date)
-      setIslamicDate((prev) => (prev !== formattedIslamicDate ? formattedIslamicDate : prev));
-
-      const prayerInfo = getPrayerTimesInfo(newPrayerTimes, currentDate);
-      setCurrentPrayer(prayerInfo.currentPrayer);
-      setNextPrayerInfo({ nextPrayer: prayerInfo.nextPrayer, timeUntilNextPrayer: prayerInfo.timeUntilNextPrayer });
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  useEffect(() => {
-    updatePrayerTimes();
-  }, [])
-
-  useInterval(() => {
-    if (prayerTimes) {
-      const prayerInfo = getPrayerTimesInfo(prayerTimes, new Date());
-      setCurrentPrayer(prayerInfo.currentPrayer);
-      setNextPrayerInfo({ nextPrayer: prayerInfo.nextPrayer, timeUntilNextPrayer: prayerInfo.timeUntilNextPrayer });
-    }
-  }, 1); // Update every minute
-
+  
   const getBackgroundImage = () => {
     switch (currentPrayer) {
       case 'Subuh':

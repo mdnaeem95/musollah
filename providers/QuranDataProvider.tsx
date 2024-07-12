@@ -1,5 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { fetchSurahs, fetchSurahText } from '../api/surahs';
+import React, { createContext, ReactNode } from 'react';
 import useLoadQuranData, { Surah, SurahDetails, TranslationDetails } from '../hooks/useLoadQuranData'
 
 export type QuranDataContextProps = {
