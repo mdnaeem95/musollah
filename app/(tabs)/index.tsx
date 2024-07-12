@@ -1,17 +1,16 @@
 import { View, Text, StyleSheet, ImageBackground } from 'react-native'
-import React, { useEffect, useState, useMemo, useContext } from 'react'
+import React, { useMemo } from 'react'
 
 import Clock from 'react-live-clock';
-import { formatIslamicDate, getFormattedDate, getPrayerTimesInfo, getShortFormattedDate } from '../../utils';
-import { fetchIslamicDate, fetchPrayerTimes } from '../../api/prayers';
+import { getFormattedDate } from '../../utils';
 import PrayerTimeItem from '../../components/PrayerTimeItem';
 
 import SubuhBackground from '../../assets/subuh-background.png';
 import ZuhurBackground from '../../assets/zuhr-background.png';
 import MaghribBackground from '../../assets/maghrib-background.png';
 import IshaBackground from '../../assets/isya-background.png';
-import { useInterval } from '../../utils/intervalSync';
-import { PrayerTimeContext } from '../../providers/PrayerTimesProvider';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../redux/store/store';
 
 interface PrayerTimes {
   Fajr: string;
@@ -23,7 +22,7 @@ interface PrayerTimes {
 }
 
 const PrayerTab = () => {
-  const { prayerTimes, islamicDate, currentPrayer, nextPrayerInfo, isLoading } = useContext(PrayerTimeContext);
+  const { prayerTimes, islamicDate, currentPrayer, nextPrayerInfo, isLoading } = useSelector((state: RootState) => state.prayer);
   const desiredPrayers: (keyof PrayerTimes)[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
 
   const currentDate = useMemo(() => new Date(), []);
@@ -73,7 +72,7 @@ const PrayerTab = () => {
               </>
             ) : (
               <Text>Loading...</Text>
-            )}
+            )} 
           </View>
         </View>
     </ImageBackground>

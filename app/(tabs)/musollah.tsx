@@ -7,10 +7,12 @@ import BidetModal from '../../components/BidetModal'
 import MosqueModal from '../../components/MosqueModal'
 import { LocationContext } from '../../providers/LocationProvider'
 import { LocationDataContext } from '../../providers/LocationDataProvider'
+import { useSelector } from 'react-redux'
+import { RootState } from '../../redux/store/store'
 
 const MusollahTab = () => {
-  const { bidetLocations, mosqueLocations, musollahLocations, loading } = useContext(LocationDataContext);
-  const { userLocation, errorMsg } = useContext(LocationContext);
+  const { bidetLocations, mosqueLocations, musollahLocations, isLoading } = useSelector((state: RootState) => state.musollah);
+  const { userLocation, errorMsg } = useSelector((state: RootState) => state.location);
   const [region, setRegion] = useState<Region | undefined>(undefined);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
@@ -106,7 +108,7 @@ const MusollahTab = () => {
             setSelectedIndex(event.nativeEvent.selectedSegmentIndex);
           }} 
         />
-        {loading ? (
+        {isLoading ? (
           <ActivityIndicator size="large" color="#0000FF" />
         ) :(
           <FlatList
