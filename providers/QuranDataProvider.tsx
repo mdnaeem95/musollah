@@ -1,27 +1,36 @@
-import React, { createContext, ReactNode } from 'react';
+import React, { createContext, ReactNode, useEffect, useState } from 'react';
 import useLoadQuranData, { Surah, SurahDetails, TranslationDetails } from '../hooks/useLoadQuranData'
 
 export type QuranDataContextProps = {
     surahs: Surah[],
     surahDetails: { [key: number]: SurahDetails };
     translationDetails: { [key: number]: TranslationDetails };
-    loading: boolean;
+    isLoading: boolean;
 }
 
 const defaultValue: QuranDataContextProps = {
     surahs: [],
     surahDetails: {},
     translationDetails: {},
-    loading: true,
+    isLoading: true,
 }
 
 const QuranDataContext = createContext<QuranDataContextProps>(defaultValue);
 
 const QuranDataProvider = ({ children }: { children: ReactNode }) => {
-  const { surahs, surahDetails, translationDetails, loading } = useLoadQuranData();
+  const { surahs, surahDetails, translationDetails, loading: loadLoading } = useLoadQuranData();
+  const [isLoading, setLoading] = useState(true);
+
+  useEffect(() => {
+    console.log('Loading Quran data...');
+    if (!loadLoading) {
+      setLoading(false);
+      console.log('Quran data loaded.');
+    }
+  }, [loadLoading]);
 
   return (
-    <QuranDataContext.Provider value={{ surahs, surahDetails, translationDetails, loading }}>
+    <QuranDataContext.Provider value={{ surahs, surahDetails, translationDetails, isLoading }}>
       {children}
     </QuranDataContext.Provider>
   );

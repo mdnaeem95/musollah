@@ -1,5 +1,4 @@
 import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import * as SplashScreen from 'expo-splash-screen';
 import { LocationContext } from './LocationProvider';
 import { LocationDataContext } from './LocationDataProvider'
 import { PrayerTimeContext } from './PrayerTimesProvider'
@@ -10,22 +9,28 @@ const LoadingContext = createContext<{ isAppReady: boolean }>({ isAppReady: fals
 const LoadingProvider = ({ children }: { children: ReactNode }) => {
     const [isAppReady, setIsAppReady] = useState(false);
     const { isLoading: isUserLocationLoading } = useContext(LocationContext);
-    const { loading: isLocationDataLoading } = useContext(LocationDataContext);
+    const { isLoading: isLocationDataLoading } = useContext(LocationDataContext);
     const { isLoading: isPrayerTimesLoading } = useContext(PrayerTimeContext);
-    const { loading: isQuranDataLoading } = useContext(QuranDataContext);
+    const { isLoading: isQuranDataLoading } = useContext(QuranDataContext);
 
     useEffect(() => {
         const prepare = async () => {
             try {
-                SplashScreen.preventAutoHideAsync();
-
+                console.log('Starting data loading check...');
                 while (isLocationDataLoading || isPrayerTimesLoading || isQuranDataLoading || isUserLocationLoading) {
+                    console.log('Loading states:', {
+                        isLocationDataLoading,
+                        isPrayerTimesLoading,
+                        isQuranDataLoading,
+                        isUserLocationLoading,
+                      });
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
             } catch (error) {
                 console.warn(error);
             } finally {
                 setIsAppReady(true);
+                console.log('App is ready');
             }
         }
 
