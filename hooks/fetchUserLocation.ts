@@ -7,13 +7,12 @@ const fetchUserLocation = () => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     
     useEffect(() => {
-        (async () => {
+        const fetchUserLocation = async () => {
             try {
-
-                let { status } = await Location.requestForegroundPermissionsAsync();
-                
+                const { status } = await Location.requestForegroundPermissionsAsync();
                 if (status !== 'granted') {
                     setErrorMsg('Permission to access location was denied');
+                    setIsLoading(false);
                     return;
                 };
                 
@@ -34,7 +33,9 @@ const fetchUserLocation = () => {
             } finally {
                 setIsLoading(false);
             }
-            })();
+        };
+
+        fetchUserLocation();
     }, []);
 
     return { userLocation, errorMsg, isLoading };

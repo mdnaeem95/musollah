@@ -24,7 +24,6 @@ const LoadingProvider = ({ children }: { children: ReactNode }) => {
                         isQuranDataLoading,
                         isUserLocationLoading,
                       });
-                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
             } catch (error) {
                 console.warn(error);

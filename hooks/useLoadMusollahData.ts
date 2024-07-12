@@ -11,8 +11,8 @@ const useLoadMusollahData = () => {
     const [loading, setLoading] = useState<boolean>(true);
 
     const fetchLocations = useCallback(async (region: Region) => {
-        setLoading(true);
         try {
+          console.log('Fetching locations for region:', region);
           const [bidetData, mosqueData, musollahData] = await Promise.all([
             getBidetLocations(region),
             getMosqueLocations(region),
@@ -21,10 +21,12 @@ const useLoadMusollahData = () => {
           setBidetLocations(bidetData);
           setMosqueLocations(mosqueData);
           setMusollahLocations(musollahData);
+          console.log('Locations fetched successfully');
         } catch (error) {
           console.error("Error fetching locations: ", error);
         } finally {
           setLoading(false);
+          console.log('Fetching locations complete');
         }
       }, []);
 
@@ -37,6 +39,9 @@ const useLoadMusollahData = () => {
             longitudeDelta: 0.05,
           };
           fetchLocations(initialRegion);
+        } else {
+          console.log('User location not available');
+          setLoading(false)
         }
       }, [userLocation, fetchLocations]);
 
