@@ -14,7 +14,7 @@ const defaultValue: LocationDataContextProps = {
   bidetLocations: [],
   mosqueLocations: [],
   musollahLocations: [],
-  loading: false,
+  loading: true,
 }
 
 const LocationDataContext = createContext<LocationDataContextProps>(defaultValue);

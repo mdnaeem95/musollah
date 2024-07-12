@@ -1,16 +1,16 @@
-import React, { useEffect } from 'react'
+import React, { useContext, useEffect } from 'react'
 import { Stack, SplashScreen } from 'expo-router'
 import 'react-native-reanimated'
 import { Providers } from '../providers/index'
 import { Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold } from "@expo-google-fonts/outfit"
 import { Amiri_400Regular } from "@expo-google-fonts/amiri"
 import { useFonts } from 'expo-font'
-import { useLoading } from '../providers/LoadingProvider'
+import { LoadingContext } from '../providers/LoadingProvider'
 
 SplashScreen.preventAutoHideAsync();
 
 const RootLayout = () => {
-  const { isAppReady } = useLoading();
+  const { isAppReady } = useContext(LoadingContext);
   
   const [fontsLoaded] = useFonts({
     Outfit_300Light,

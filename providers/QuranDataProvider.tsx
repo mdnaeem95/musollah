@@ -12,7 +12,7 @@ const defaultValue: QuranDataContextProps = {
     surahs: [],
     surahDetails: {},
     translationDetails: {},
-    loading: false,
+    loading: true,
 }
 
 const QuranDataContext = createContext<QuranDataContextProps>(defaultValue);
