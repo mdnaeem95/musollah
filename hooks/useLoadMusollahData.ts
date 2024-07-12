@@ -1,51 +1,42 @@
-import { useState, useEffect, useContext, useCallback } from 'react';
-import { LocationContext } from '../providers/LocationProvider'
-import { BidetLocation, MosqueLocation, MusollahLocation, Region } from '../components/Map'
-import { getBidetLocations, getMosqueLocations, getMusollahsLocations } from '../api/firebase/index'
+import { useContext } from 'react';
+import { useQuery } from 'react-query';
+import { LocationContext } from '../providers/LocationProvider';
+import { BidetLocation, MosqueLocation, MusollahLocation, Region } from '../components/Map';
+import { getBidetLocations, getMosqueLocations, getMusollahsLocations } from '../api/firebase/index';
 
 const useLoadMusollahData = () => {
-    const { userLocation } = useContext(LocationContext);
-    const [bidetLocations, setBidetLocations] = useState<BidetLocation[]>([]);
-    const [mosqueLocations, setMosqueLocations] = useState<MosqueLocation[]>([]);
-    const [musollahLocations, setMusollahLocations] = useState<MusollahLocation[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
+  const { userLocation } = useContext(LocationContext);
 
-    const fetchLocations = useCallback(async (region: Region) => {
-        try {
-          console.log('Fetching locations for region:', region);
-          const [bidetData, mosqueData, musollahData] = await Promise.all([
-            getBidetLocations(region),
-            getMosqueLocations(region),
-            getMusollahsLocations(region),
-          ]);
-          setBidetLocations(bidetData);
-          setMosqueLocations(mosqueData);
-          setMusollahLocations(musollahData);
-          console.log('Locations fetched successfully');
-        } catch (error) {
-          console.error("Error fetching locations: ", error);
-        } finally {
-          setLoading(false);
-          console.log('Fetching locations complete');
-        }
-      }, []);
+  const fetchLocations = async () => {
+    if (!userLocation) throw new Error('User location not available');
 
-      useEffect(() => {
-        if (userLocation) {
-          const initialRegion: Region = {
-            latitude: userLocation.coords.latitude,
-            longitude: userLocation.coords.longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          };
-          fetchLocations(initialRegion);
-        } else {
-          console.log('User location not available');
-          setLoading(false)
-        }
-      }, [userLocation, fetchLocations]);
+    const region: Region = {
+      latitude: userLocation.coords.latitude,
+      longitude: userLocation.coords.longitude,
+      latitudeDelta: 0.05,
+      longitudeDelta: 0.05,
+    };
 
-      return { bidetLocations, mosqueLocations, musollahLocations, loading };
-}
+    const [bidetData, mosqueData, musollahData] = await Promise.all([
+      getBidetLocations(region),
+      getMosqueLocations(region),
+      getMusollahsLocations(region),
+    ]);
+
+    return { bidetData, mosqueData, musollahData };
+  };
+
+  const { data, error, isLoading } = useQuery('musollahLocations', fetchLocations, {
+    enabled: !!userLocation,
+  });
+
+  return {
+    bidetLocations: data?.bidetData ?? [],
+    mosqueLocations: data?.mosqueData ?? [],
+    musollahLocations: data?.musollahData ?? [],
+    isLoading,
+    error,
+  };
+};
 
 export default useLoadMusollahData;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from 'react-query';
 import { fetchSurahs, fetchSurahText } from '../api/surahs';
 
 export type Surah = {
@@ -25,59 +25,52 @@ export type TranslationDetails = {
 };
 
 export type Ayah = {
-    number: number;
-    text: string;
-    audio: string;
-}
+  number: number;
+  text: string;
+  audio: string;
+};
 
 export type TranslationAyah = {
-    number: number,
-    text: string,
-}
+  number: number;
+  text: string;
+};
 
 const useLoadQuranData = () => {
-  const [surahs, setSurahs] = useState<Surah[]>([]);
-  const [surahDetails, setSurahDetails] = useState<{ [key: number]: SurahDetails }>({});
-  const [translationDetails, setTranslationDetails] = useState<{ [key: number]: TranslationDetails }>({});
-  const [loading, setLoading] = useState<boolean>(true);
+  const fetchQuranData = async () => {
+    const surahData = await fetchSurahs();
 
-  useEffect(() => {
-    const loadQuranData = async () => {
-      try {
-        const surahData = await fetchSurahs();
-        setSurahs(surahData.data);
+    const fetchDetailsPromises = surahData.data.map(async (surah: Surah) => {
+      const surahText = await fetchSurahText(surah.number, 'ar.alafasy');
+      const translationText = await fetchSurahText(surah.number, 'en.asad');
 
-        const fetchDetailsPromises = surahData.data.map(async (surah: Surah) => {
-          try {
-            const surahText = await fetchSurahText(surah.number, 'ar.alafasy');
-            const translationText = await fetchSurahText(surah.number, 'en.asad');
+      return {
+        surahNumber: surah.number,
+        surahDetails: surahText.data,
+        translationDetails: translationText.data,
+      };
+    });
 
-            setSurahDetails(prev => ({
-              ...prev,
-              [surah.number]: surahText.data,
-            }));
+    const detailsData = await Promise.all(fetchDetailsPromises);
+    const surahDetails: { [key: number]: SurahDetails } = {};
+    const translationDetails: { [key: number]: TranslationDetails } = {};
 
-            setTranslationDetails(prev => ({
-              ...prev,
-              [surah.number]: translationText.data,
-            }));
-          } catch (error) {
-            console.error(`Failed to fetch surah ${surah.number} text or translation: `, error);
-          }
-        });
+    detailsData.forEach((data) => {
+      surahDetails[data.surahNumber] = data.surahDetails;
+      translationDetails[data.surahNumber] = data.translationDetails;
+    });
 
-        await Promise.all(fetchDetailsPromises);
-      } catch (error) {
-        console.error('Failed to load Quran data: ', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    return { surahs: surahData.data, surahDetails, translationDetails };
+  };
 
-    loadQuranData();
-  }, []);
+  const { data, error, isLoading } = useQuery('quranData', fetchQuranData);
 
-  return { surahs, surahDetails, translationDetails, loading };
+  return {
+    surahs: data?.surahs ?? [],
+    surahDetails: data?.surahDetails ?? {},
+    translationDetails: data?.translationDetails ?? {},
+    isLoading,
+    error,
+  };
 };
 
 export default useLoadQuranData;
