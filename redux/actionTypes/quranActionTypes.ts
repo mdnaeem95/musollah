@@ -1,0 +1,5 @@
+export const SET_SURAHS = 'SET_SURAHS';
+export const SET_SURAH_DETAILS = 'SET_SURAH_DETAILS';
+export const SET_TRANSLATION_DETAILS = 'SET_TRANSLATION_DETAILS';
+export const SET_LOADING = 'SET_LOADING';
+export const SET_ERROR = 'SET_ERROR';

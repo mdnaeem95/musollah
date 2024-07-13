@@ -1,12 +1,10 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native'
-import React, { useCallback, useContext, useEffect, useState, useMemo } from 'react'
+import React, { useCallback, useEffect, useState, useMemo } from 'react'
 import Map, { Region, BidetLocation, MosqueLocation, MusollahLocation } from '../../components/Map'
 
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import BidetModal from '../../components/BidetModal'
 import MosqueModal from '../../components/MosqueModal'
-import { LocationContext } from '../../providers/LocationProvider'
-import { LocationDataContext } from '../../providers/LocationDataProvider'
 import { useSelector } from 'react-redux'
 import { RootState } from '../../redux/store/store'
 

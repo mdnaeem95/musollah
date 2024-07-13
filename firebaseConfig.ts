@@ -4,14 +4,14 @@ import { signInAnonymously, getReactNativePersistence, initializeAuth } from 'fi
 import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
 
 const firebaseConfig = {
-    apiKey: process.env.FIREBASE_APIKEY,
-    authDomain: process.env.FIREBASE_AUTHDOMAIN,
-    databaseURL: process.env.FIREBASE_DATABASEURL,
-    projectId: process.env.FIREBASE_PROJECTID,
-    storageBucket: process.env.FIREBASE_STORAGEBUCKET,
-    messagingSenderId: process.env.FIREBASE_MESSAGINGSENDERID,
-    appId: process.env.FIREBASE_APPID,
-    measurementId: process.env.FIREBASE_MEASUREMENTID
+    apiKey: process.env.EXPO_PUBLIC_FIREBASEAPIKEY,
+    authDomain: process.env.EXPO_PUBLIC_FIREBASEAUTHDOMAIN,
+    databaseURL: process.env.EXPO_PUBLIC_FIREBASEDATABASEURL,
+    projectId: process.env.EXPO_PUBLIC_FIREBASEPROJECTID,
+    storageBucket: process.env.EXPO_PUBLIC_FIREBASESTORAGEBUCKET,
+    messagingSenderId: process.env.EXPO_PUBLIC_FIREBASEMESSAGINGSENDERID,
+    appId: process.env.EXPO_PUBLIC_FIREBASEAPPID,
+    measurementId: process.env.EXPO_PUBLIC_FIREBASEMEASUREMENTID
 };
 
 // Initialize Firebase

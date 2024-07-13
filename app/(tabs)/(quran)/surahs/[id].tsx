@@ -1,13 +1,13 @@
-import { View, Text, SafeAreaView, ScrollView, ActivityIndicator, StyleSheet, Image, TouchableOpacity, FlatList } from 'react-native'
-import React, { useEffect, useRef, useState, useCallback, useContext } from 'react'
+import { View, Text, SafeAreaView, ActivityIndicator, StyleSheet, Image, TouchableOpacity, FlatList } from 'react-native'
+import React, { useRef, useState, useCallback } from 'react'
 import { useLocalSearchParams } from 'expo-router';
-import { fetchSurahText } from '../../../../api/surahs';
 import { AVPlaybackStatus, Audio } from 'expo-av';
-import { QuranDataContext } from '../../../../providers/QuranDataProvider';
 import { Ayah } from '../../../../hooks/useLoadQuranData';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../../redux/store/store';
 
 const SurahTextScreen = () => {
-    const { surahDetails, translationDetails, loading } = useContext(QuranDataContext);
+    const { surahDetails, translationDetails, isLoading } = useSelector((state: RootState) => state.quran);
     const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const soundRef = useRef<Audio.Sound | null>(null);
@@ -85,7 +85,7 @@ const SurahTextScreen = () => {
     return (
         <SafeAreaView style={{ backgroundColor: '#4D6561', flex: 1 }}>
             <View style={{ backgroundColor: '#4D6561', flex: 1 }}>
-                {loading ? (
+                {isLoading ? (
                     <ActivityIndicator />
                 ) : (
                     surah && (
