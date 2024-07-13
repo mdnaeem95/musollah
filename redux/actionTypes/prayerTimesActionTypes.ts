@@ -1,4 +1,3 @@
-// redux/actionTypes/prayerTimesActionTypes.ts
 export const SET_PRAYER_TIMES = 'SET_PRAYER_TIMES';
 export const SET_ISLAMIC_DATE = 'SET_ISLAMIC_DATE';
 export const SET_CURRENT_PRAYER = 'SET_CURRENT_PRAYER';

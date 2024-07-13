@@ -1,4 +1,3 @@
-// redux/reducer/musollahReducer.ts
 import { SET_BIDET_LOCATIONS, SET_MOSQUE_LOCATIONS, SET_MUSOLLAH_LOCATIONS, SET_LOADING, SET_ERROR } from '../actionTypes/musollahActionTypes';
 
 interface MusollahState {

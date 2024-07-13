@@ -1,4 +1,3 @@
-// redux/reducer/locationReducer.ts
 import { SET_USER_LOCATION, SET_ERROR_MESSAGE, SET_LOADING } from '../actionTypes/userLocationActionTypes';
 import { LocationObject } from 'expo-location';
 

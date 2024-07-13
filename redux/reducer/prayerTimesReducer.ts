@@ -1,4 +1,3 @@
-// redux/reducer/prayerReducer.ts
 import { SET_PRAYER_TIMES, SET_ISLAMIC_DATE, SET_CURRENT_PRAYER, SET_NEXT_PRAYER_INFO, SET_PRAYER_LOADING, SET_PRAYER_ERROR } from '../actionTypes/prayerTimesActionTypes';
 
 interface PrayerState {

@@ -1,4 +1,3 @@
-// redux/actions/musollahActions.ts
 import { SET_BIDET_LOCATIONS, SET_MOSQUE_LOCATIONS, SET_MUSOLLAH_LOCATIONS, SET_LOADING, SET_ERROR } from '../actionTypes/musollahActionTypes';
 import { AppDispatch } from '../store/store';
 import { getBidetLocations, getMosqueLocations, getMusollahsLocations } from '../../api/firebase/index';

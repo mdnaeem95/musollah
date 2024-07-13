@@ -1,4 +1,3 @@
-// RootLayout.tsx
 import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -11,12 +10,16 @@ import { AppDispatch, RootState } from '../redux/store/store'
 import { fetchUserLocation } from '../redux/actions/userLocationActions';
 import { fetchPrayerTimesData } from '../redux/actions/prayerTimesActions';
 import { fetchMusollahData } from '../redux/actions/musollahActions'
+import { fetchQuranData } from '../redux/actions/quranActions'
 
 SplashScreen.preventAutoHideAsync();
 
 const RootLayout = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { isLoading, errorMsg, userLocation } = useSelector((state: RootState) => state.location);
+  const { isLoading: prayerLoading } = useSelector((state: RootState) => state.prayer);
+  const { isLoading: musollahLoading } = useSelector((state: RootState) => state.musollah);
+  const { isLoading: quranLoading } = useSelector((state: RootState) => state.quran);
 
   const [fontsLoaded] = useFonts({
     Outfit_300Light,
@@ -29,6 +32,7 @@ const RootLayout = () => {
   useEffect(() => {
     dispatch(fetchUserLocation());
     dispatch(fetchPrayerTimesData());
+    dispatch(fetchQuranData());
   }, [dispatch]);
 
   useEffect(() => {
@@ -40,16 +44,16 @@ const RootLayout = () => {
   useEffect(() => {
     console.log('Fonts loaded:', fontsLoaded);
 
-    if (fontsLoaded && !isLoading) {
+    if (!isLoading && !prayerLoading && !musollahLoading && !quranLoading && fontsLoaded) {
       SplashScreen.hideAsync().then(() => {
         console.log('SplashScreen hidden');
       }).catch(error => {
         console.error('Error hiding SplashScreen', error)
       });
     }
-  }, [fontsLoaded, isLoading]);
+  }, [isLoading, prayerLoading, musollahLoading, quranLoading, fontsLoaded]);
 
-  if (!fontsLoaded || isLoading) {
+  if (!fontsLoaded || isLoading || prayerLoading || musollahLoading || quranLoading) {
     return null;
   }
 
