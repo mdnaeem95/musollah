@@ -10,7 +10,7 @@ import { AppDispatch, RootState } from '../redux/store/store'
 import { fetchUserLocation } from '../redux/actions/userLocationActions';
 import { fetchPrayerTimesData } from '../redux/actions/prayerTimesActions';
 import { fetchMusollahData } from '../redux/actions/musollahActions'
-import { fetchQuranData } from '../redux/actions/quranActions'
+import { fetchSurahsData } from '../redux/actions/quranActions'
 
 SplashScreen.preventAutoHideAsync();
 
@@ -19,7 +19,7 @@ const RootLayout = () => {
   const { isLoading, errorMsg, userLocation } = useSelector((state: RootState) => state.location);
   const { isLoading: prayerLoading } = useSelector((state: RootState) => state.prayer);
   const { isLoading: musollahLoading } = useSelector((state: RootState) => state.musollah);
-  const { isLoading: quranLoading } = useSelector((state: RootState) => state.quran);
+  const { isLoading: surahsLoading } = useSelector((state: RootState) => state.quran);
 
   const [fontsLoaded] = useFonts({
     Outfit_300Light,
@@ -32,7 +32,7 @@ const RootLayout = () => {
   useEffect(() => {
     dispatch(fetchUserLocation());
     dispatch(fetchPrayerTimesData());
-    dispatch(fetchQuranData());
+    dispatch(fetchSurahsData());
   }, [dispatch]);
 
   useEffect(() => {
@@ -43,17 +43,21 @@ const RootLayout = () => {
 
   useEffect(() => {
     console.log('Fonts loaded:', fontsLoaded);
+    console.log('Location loading:', isLoading);
+    console.log('Prayer loading:', prayerLoading);
+    console.log('Musollah loading:', musollahLoading);
+    console.log('Quran loading:', surahsLoading);
 
-    if (!isLoading && !prayerLoading && !musollahLoading && !quranLoading && fontsLoaded) {
+    if (!isLoading && !prayerLoading && !musollahLoading && !surahsLoading &&  fontsLoaded) {
       SplashScreen.hideAsync().then(() => {
         console.log('SplashScreen hidden');
       }).catch(error => {
         console.error('Error hiding SplashScreen', error)
       });
     }
-  }, [isLoading, prayerLoading, musollahLoading, quranLoading, fontsLoaded]);
+  }, [isLoading, prayerLoading, musollahLoading, surahsLoading, fontsLoaded]);
 
-  if (!fontsLoaded || isLoading || prayerLoading || musollahLoading || quranLoading) {
+  if (!fontsLoaded || isLoading || prayerLoading || musollahLoading || surahsLoading) {
     return null;
   }
 

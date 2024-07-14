@@ -1,20 +1,20 @@
-import { View, Text, SafeAreaView, ActivityIndicator, StyleSheet, Image, TouchableOpacity, FlatList } from 'react-native'
-import React, { useRef, useState, useCallback } from 'react'
+import { View, Text, SafeAreaView, ScrollView, ActivityIndicator, StyleSheet, Image, TouchableOpacity, FlatList } from 'react-native'
+import React, { useRef, useState, useCallback, useContext } from 'react'
 import { useLocalSearchParams } from 'expo-router';
 import { AVPlaybackStatus, Audio } from 'expo-av';
 import { Ayah } from '../../../../hooks/useLoadQuranData';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../../../redux/store/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../../../redux/store/store';
 
 const SurahTextScreen = () => {
-    const { surahDetails, translationDetails, isLoading } = useSelector((state: RootState) => state.quran);
+    const dispatch = useDispatch<AppDispatch>();
+    const { surahDetails, isLoading } = useSelector((state: RootState) => state.surahText);
     const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const soundRef = useRef<Audio.Sound | null>(null);
     const { id } = useLocalSearchParams<{ id: string }>();
     const surahNum = id ? parseInt(id as string, 10) : 1;
     const surah = surahDetails[surahNum];
-    const translation = translationDetails[surahNum];
 
     const playNextAyah = useCallback(async (index: number) => {
         if (index >= surah!.ayahs.length) {
@@ -45,7 +45,7 @@ const SurahTextScreen = () => {
         } catch (error) {
             console.error('Failed to play recitation: ', error);
         }
-    }, [surahDetails]);
+    }, [surah]);
 
     const togglePlayPause = useCallback(async () => {
         if (soundRef.current) {
@@ -73,14 +73,14 @@ const SurahTextScreen = () => {
     const renderAyah = useCallback(({ item, index }: { item: Ayah, index: number }) => (
         <View key={item.number} style={styles.ayahContainer}>
             <Text style={styles.quranText}>{item.text}</Text>
-            {translationDetails && (
+            {surahDetails && (
                 <View style={styles.translationContainer}>
-                    <Text style={styles.translationText}>{translation.ayahs[index]?.text}</Text>
+                    <Text style={styles.translationText}>{surah.ayahs[index]?.text}</Text>
                 </View>
             )}
             <View style={styles.separator} />
         </View>
-    ), [translationDetails]);
+    ), []);
 
     return (
         <SafeAreaView style={{ backgroundColor: '#4D6561', flex: 1 }}>

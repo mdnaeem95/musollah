@@ -20,7 +20,7 @@ const SurahItem = ({ surah, onPress }: SurahProps) => {
             </View>
             
             <View style={{ top: 5 }}>
-                <Text style={styles.surahName}>{surah.name}</Text>
+                <Text style={styles.surahName}>{surah.arabicName}</Text>
             </View>
         </View>
       </View>

@@ -1,8 +1,9 @@
 import { View, Text, Image, StyleSheet } from 'react-native'
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import * as Location from 'expo-location'
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LocationContext } from '../providers/LocationProvider';
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store/store';
 
 interface LocationData {
     coords: {
@@ -14,7 +15,7 @@ interface LocationData {
 const QIBLA_HEADING = 293;
 
 const Compass = () => {
-    const { userLocation, errorMsg } = useContext(LocationContext);
+    const { isLoading, errorMsg, userLocation } = useSelector((state: RootState) => state.location);
     const [userHeading, setUserHeading] = useState(0);
 
     useEffect(() => {
