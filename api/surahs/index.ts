@@ -1,4 +1,5 @@
 const BASE_URL = 'http://api.alquran.cloud/v1/surah';
+import axios from 'axios';
 
 export const fetchSurahs = async () => {
     try {
@@ -18,16 +19,9 @@ export const fetchSurahs = async () => {
 
 export const fetchSurahText = async (surahNumber: number, language: string = 'ar.alafasy') => {
     try {
-        const response = await fetch(`${BASE_URL}/${surahNumber}/${language}`)
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch surah text');
-        }
-
-        const data = await response.json();
-        return data;
+        const response = await axios.get(`${BASE_URL}/${surahNumber}/${language}`)
+        return response.data
     } catch (error) {
-        console.error('Failed to fetch surah: ', error);
-        throw error;
+        console.error('Error fetching surahText:', error);
     }
 }

@@ -15,7 +15,7 @@ const QuranTab = () => {
   }, [router]);
 
   const renderSurahItem = useCallback(({ item }: { item: Surah }) => (
-    <SurahItem key={item.number} surah={item} onPress={handleSurahPress} />
+    <SurahItem key={item.id} surah={item} onPress={handleSurahPress} />
   ), [handleSurahPress]);
 
   return (

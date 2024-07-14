@@ -4,6 +4,7 @@ import locationReducer from '../reducer/userLocationReducer';
 import prayerTimesReducer from '../reducer/prayerTimesReducer';
 import musollahReducer from '../reducer/musollahReducer';
 import quranReducer from '../reducer/quranReducer'
+import surahTextReducer from '../reducer/surahTextReducer'
 
 const store = configureStore({
   reducer: {
@@ -11,10 +12,11 @@ const store = configureStore({
     prayer: prayerTimesReducer,
     musollah: musollahReducer,
     quran: quranReducer,
+    surahText: surahTextReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware(
-    { immutableCheck: {warnAfter: 500}, 
-      serializableCheck: {warnAfter: 500},
+    { immutableCheck: false, 
+      serializableCheck: false,
     }
   ).concat(thunk),
 });

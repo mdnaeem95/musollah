@@ -19,6 +19,7 @@
     "@react-native-segmented-control/segmented-control": "2.5.2",
     "@react-navigation/bottom-tabs": "^6.5.20",
     "@reduxjs/toolkit": "^2.2.6",
+    "axios": "^1.7.2",
     "date-fns": "^3.6.0",
     "expo": "~51.0.20",
     "expo-asset": "~10.0.10",
