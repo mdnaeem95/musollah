@@ -2,7 +2,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
-import { Surah } from "../../hooks/useLoadQuranData";
+import { Surah } from "../../app/(tabs)/(quran)/index"
 
 export const getBidetLocations = async (userRegion: Region): Promise<BidetLocation[]> => {
     try {
@@ -123,20 +123,21 @@ export const fetchSurahs = async (): Promise<Surah[]> => {
         const surahSnapshot = await getDocs(collection(db, 'Surahs'));
         const surahList = surahSnapshot.docs.map(doc =>{
             const data = doc.data();
-
             return {
                 id: doc.id,
                 arabicName: data.ArabicName,
                 englishName: data.EnglishName,
                 englishNameTranslation: data.EnglishNameTranslation,
                 number: data.Number,
-                numberOfAyahs: data.NumberOfAyahs
+                numberOfAyahs: data.NumberOfAyahs,
+                arabicText: data.arabicText,
+                audioLinks: data.audioLinks,
+                englishTranslation: data.englishTranslation
             } as Surah;
         });
 
         // Sort by number
         surahList.sort((a, b) => a.number - b.number);
-
         return surahList
     } catch (error) {
         console.error("Error fetching surahs: ", error);

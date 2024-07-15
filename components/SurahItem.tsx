@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Surah } from '../hooks/useLoadQuranData';
+import { Surah } from "../app/(tabs)/(quran)/index"
 
 interface SurahProps {
     surah: Surah,

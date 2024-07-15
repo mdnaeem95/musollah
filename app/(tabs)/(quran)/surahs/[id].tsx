@@ -1,28 +1,47 @@
-import { View, Text, SafeAreaView, ScrollView, ActivityIndicator, StyleSheet, Image, TouchableOpacity, FlatList } from 'react-native'
-import React, { useRef, useState, useCallback, useContext } from 'react'
+import { View, Text, SafeAreaView, ActivityIndicator, StyleSheet, Image, TouchableOpacity, FlatList } from 'react-native';
+import React, { useRef, useState, useCallback } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { AVPlaybackStatus, Audio } from 'expo-av';
-import { Ayah } from '../../../../hooks/useLoadQuranData';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../../../redux/store/store';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../../redux/store/store';
+
+interface Surah {
+    id: string;
+    arabicName: string;
+    englishName: string;
+    englishNameTranslation: string;
+    number: number;
+    numberOfAyahs: number;
+    arabicText: string;
+    audioLinks: string;
+    englishTranslation: string;
+}
 
 const SurahTextScreen = () => {
-    const dispatch = useDispatch<AppDispatch>();
-    const { surahDetails, isLoading } = useSelector((state: RootState) => state.surahText);
+    const { surahs, isLoading } = useSelector((state: RootState) => state.quran);
     const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const soundRef = useRef<Audio.Sound | null>(null);
     const { id } = useLocalSearchParams<{ id: string }>();
     const surahNum = id ? parseInt(id as string, 10) : 1;
-    const surah = surahDetails[surahNum];
+    const surah: Surah | undefined = surahs.find((surah: Surah) => surah.number === surahNum);
+
+    if (surah) {
+        console.log("Surah found:", surah);
+        console.log("Arabic Text:", surah.arabicText);
+        console.log("English Translation:", surah.englishTranslation);
+    } else {
+        console.log("Surah not found");
+    }
 
     const playNextAyah = useCallback(async (index: number) => {
-        if (index >= surah!.ayahs.length) {
+        if (!surah || index >= surah.numberOfAyahs) {
             setIsPlaying(false);
             return;
         }
 
-        const ayah = surah!.ayahs[index];
+        const audioLinks = surah.audioLinks ? surah.audioLinks.split(',') : [];
+        const ayahAudioLink = audioLinks[index];
 
         try {
             if (soundRef.current) {
@@ -30,7 +49,7 @@ const SurahTextScreen = () => {
             }
 
             const { sound } = await Audio.Sound.createAsync(
-                { uri: ayah.audio },
+                { uri: ayahAudioLink },
                 { shouldPlay: true }
             );
             soundRef.current = sound;
@@ -56,7 +75,7 @@ const SurahTextScreen = () => {
                 await soundRef.current.playAsync();
                 setIsPlaying(true);
             }
-        } else {    
+        } else {
             await Audio.setAudioModeAsync({
                 allowsRecordingIOS: false,
                 playsInSilentModeIOS: true,
@@ -70,17 +89,25 @@ const SurahTextScreen = () => {
         }
     }, [isPlaying, playNextAyah]);
 
-    const renderAyah = useCallback(({ item, index }: { item: Ayah, index: number }) => (
-        <View key={item.number} style={styles.ayahContainer}>
-            <Text style={styles.quranText}>{item.text}</Text>
-            {surahDetails && (
+    const renderAyah = ({ item, index }: { item: string, index: number }) => (
+        <View key={index} style={styles.ayahContainer}>
+            <Text style={styles.quranText}>{item}</Text>
+            {surah && surah.englishTranslation && (
                 <View style={styles.translationContainer}>
-                    <Text style={styles.translationText}>{surah.ayahs[index]?.text}</Text>
+                    <Text style={styles.translationText}>{surah.englishTranslation.split('|')[index]}</Text>
                 </View>
             )}
             <View style={styles.separator} />
         </View>
-    ), []);
+    );
+
+    if (!surah) {
+        return (
+            <SafeAreaView style={{ backgroundColor: '#4D6561', flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ color: '#FFF' }}>Surah not found</Text>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={{ backgroundColor: '#4D6561', flex: 1 }}>
@@ -88,53 +115,44 @@ const SurahTextScreen = () => {
                 {isLoading ? (
                     <ActivityIndicator />
                 ) : (
-                    surah && (
-                        <View style={{ justifyContent: 'center', alignItems: 'center' }}>  
-                            <View style={{ justifyContent: 'center', alignItems: 'center', paddingVertical: 20, borderRadius: 40, backgroundColor: '#D9D9D9', width: '50%', marginBottom: 20 }}>
-                                <Text style={styles.surahName}>{surah.name}</Text>
-                                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', display: 'flex', gap: 10 }}>
-                                    <Text style={styles.surahEnglishName}>{surah.englishName}</Text>
-                                    <TouchableOpacity onPressIn={togglePlayPause}>
-                                        <Image source={isPlaying ? require('../../../../assets/pause.png') : require('../../../../assets/play.png')} style={{ objectFit: 'contain', width: 28, height: 28 }} />
-                                    </TouchableOpacity>
-                                </View>
+                    <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                        <View style={{ justifyContent: 'center', alignItems: 'center', paddingVertical: 20, borderRadius: 40, backgroundColor: '#D9D9D9', width: '50%', marginBottom: 20 }}>
+                            <Text style={styles.surahName}>{surah.arabicName}</Text>
+                            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', display: 'flex', gap: 10 }}>
+                                <Text style={styles.surahEnglishName}>{surah.englishName}</Text>
+                                <TouchableOpacity onPressIn={togglePlayPause}>
+                                    <Image source={isPlaying ? require('../../../../assets/pause.png') : require('../../../../assets/play.png')} style={{ objectFit: 'contain', width: 28, height: 28 }} />
+                                </TouchableOpacity>
                             </View>
-
-                            <FlatList 
-                                data={surah.ayahs}
-                                renderItem={renderAyah}
-                                keyExtractor={(item) => item.number.toString()}
-                                contentContainerStyle={styles.listContainer}
-                                showsVerticalScrollIndicator={false}
-                            />
                         </View>
-                    )
+
+                        <FlatList
+                            data={surah.arabicText ? surah.arabicText.split('|') : []}
+                            renderItem={renderAyah}
+                            keyExtractor={(item, index) => index.toString()}
+                            contentContainerStyle={styles.listContainer}
+                            showsVerticalScrollIndicator={false}
+                        />
+                    </View>
                 )}
             </View>
         </SafeAreaView>
-    )
-}
+    );
+};
 
 const styles = StyleSheet.create({
     surahName: {
         fontFamily: 'Amiri_400Regular',
         fontWeight: '400',
         fontSize: 30,
-        lineHeight: 48
+        lineHeight: 48,
     },
     surahEnglishName: {
         fontFamily: 'Outfit_500Medium',
         fontWeight: '500',
         fontSize: 20,
         lineHeight: 30,
-        color: '#314340'
-    },
-    surahAudio: {
-        fontFamily: 'Outfit_400Regular',
-        fontWeight: '400',
-        fontSize: 20,
-        lineHeight: 21,
-        color: '#000000',
+        color: '#314340',
     },
     quranText: {
         fontFamily: 'Amiri_400Regular',
@@ -143,7 +161,7 @@ const styles = StyleSheet.create({
         fontSize: 26,
         lineHeight: 48,
         textAlign: 'right',
-        paddingHorizontal: 20
+        paddingHorizontal: 20,
     },
     translationText: {
         fontFamily: 'Outfit_400Regular',
@@ -151,7 +169,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         lineHeight: 15,
         color: '#FFFFFF',
-        paddingHorizontal: 20
+        paddingHorizontal: 20,
     },
     ayahContainer: {
         marginBottom: 20,
@@ -159,17 +177,16 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
     },
     translationContainer: {
-        width: '100%'
+        width: '100%',
     },
     listContainer: {
-        paddingTop: 20, 
+        paddingTop: 20,
     },
     separator: {
         width: '100%',
         height: 1,
-        backgroundColor: '#FFFFFF'
-    }
-})
+        backgroundColor: '#FFFFFF',
+    },
+});
 
-
-export default SurahTextScreen
+export default SurahTextScreen;
