@@ -49,7 +49,8 @@ const styles = StyleSheet.create({
         fontFamily: 'Outfit_300Light',
         fontWeight: '300',
         fontSize: 18,
-        lineHeight: 21
+        lineHeight: 21,
+        color: '#EAFFFC'
     },
     compassCircle: {
         width: 300, 

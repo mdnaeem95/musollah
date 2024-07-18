@@ -90,10 +90,10 @@ const Map = ({ region, markerLocations, onMarkerPress, onRegionChangeComplete, s
         ))}
       </MapView>
       <TouchableOpacity 
-        style={{ position: 'absolute', top: 50, left: 20, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 25, padding: 10 }}
+        style={{ position: 'absolute', top: 50, left: 10, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 25, padding: 10 }}
         onPress={onRefocusPress}
       >
-        <Ionicons name='locate' size={24} color="white" />
+        <Ionicons name='locate' size={24} color="black" />
       </TouchableOpacity>
     </View>
   )

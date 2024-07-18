@@ -1,16 +1,18 @@
-import { View, Text, StyleSheet, ImageBackground } from 'react-native'
-import React, { useMemo } from 'react'
+import { View, Text, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native'
+import React, { useCallback, useMemo } from 'react'
 
 import Clock from 'react-live-clock';
-import { getFormattedDate } from '../../utils';
-import PrayerTimeItem from '../../components/PrayerTimeItem';
+import { getFormattedDate } from '../../../utils';
+import PrayerTimeItem from '../../../components/PrayerTimeItem';
+import { useRouter } from 'expo-router';
 
-import SubuhBackground from '../../assets/subuh-background.png';
-import ZuhurBackground from '../../assets/zuhr-background.png';
-import MaghribBackground from '../../assets/maghrib-background.png';
-import IshaBackground from '../../assets/isya-background.png';
+import SubuhBackground from '../../../assets/subuh-background.png';
+import ZuhurBackground from '../../../assets/zuhr-background.png';
+import MaghribBackground from '../../../assets/maghrib-background.png';
+import IshaBackground from '../../../assets/isya-background.png';
 import { useSelector } from 'react-redux';
-import { RootState } from '../../redux/store/store';
+import { RootState } from '../../../redux/store/store';
+import { FontAwesome6 } from '@expo/vector-icons';
 
 interface PrayerTimes {
   Fajr: string;
@@ -22,6 +24,7 @@ interface PrayerTimes {
 }
 
 const PrayerTab = () => {
+  const router = useRouter();
   const { prayerTimes, islamicDate, currentPrayer, nextPrayerInfo, isLoading } = useSelector((state: RootState) => state.prayer);
   const desiredPrayers: (keyof PrayerTimes)[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
 
@@ -46,6 +49,14 @@ const PrayerTab = () => {
   const getTextStyle = () => {
     return currentPrayer === 'Isha' ? styles.ishaText: {};
   }
+
+  const handleQiblatPress = useCallback(() => {
+    router.push("/qiblat")
+  }, [router]);
+
+  const handleDoaPress = useCallback(() => {
+    router.push("/doa")
+  }, [router]);
 
   return (
     <ImageBackground source={getBackgroundImage()} style={styles.backgroundImage} >
@@ -75,6 +86,18 @@ const PrayerTab = () => {
             )} 
           </View>
         </View>
+
+        <View style={{ position: 'absolute', top: 50, right: 20, backgroundColor: '#DFF3E3', borderRadius: 25, padding: 10 }}>
+          <TouchableOpacity onPress={handleQiblatPress}>
+            <FontAwesome6 name="compass" size={24} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ position: 'absolute', top: 100, right: 20, backgroundColor: '#DFF3E3', borderRadius: 25, padding: 10 }}>
+          <TouchableOpacity onPress={handleDoaPress}>
+            <FontAwesome6 name="hands-praying" size={24} />
+          </TouchableOpacity>
+        </View>
     </ImageBackground>
   )
 }
@@ -88,7 +111,7 @@ const styles = StyleSheet.create({
   dateText: {
     fontFamily: 'Outfit_400Regular',
     fontWeight: 400,
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: 21,
     color: '#314340',
     marginVertical: -7
