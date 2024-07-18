@@ -1,6 +1,6 @@
 import { SafeAreaView, View } from 'react-native'
 import React from 'react'
-import Compass from '../../components/Compass'
+import Compass from '../../../../components/Compass';
 
 const QiblatTab = () => {
   return (

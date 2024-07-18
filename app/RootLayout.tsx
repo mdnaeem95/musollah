@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import 'react-native-reanimated';
@@ -20,6 +20,7 @@ const RootLayout = () => {
   const { isLoading: prayerLoading } = useSelector((state: RootState) => state.prayer);
   const { isLoading: musollahLoading } = useSelector((state: RootState) => state.musollah);
   const { isLoading: surahsLoading } = useSelector((state: RootState) => state.quran);
+  const [isAppReady, setIsAppReady] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Outfit_300Light,
@@ -42,22 +43,29 @@ const RootLayout = () => {
   }, [userLocation, dispatch]);
 
   useEffect(() => {
+    if (!isLoading && !prayerLoading && !musollahLoading && !surahsLoading && fontsLoaded) {
+      setIsAppReady(true);
+      console.log('App is ready...')
+    }
+  }, [isLoading, prayerLoading, musollahLoading, surahsLoading, fontsLoaded]);
+
+  useEffect(() => {
     console.log('Fonts loaded:', fontsLoaded);
     console.log('Location loading:', isLoading);
     console.log('Prayer loading:', prayerLoading);
     console.log('Musollah loading:', musollahLoading);
     console.log('Quran loading:', surahsLoading);
 
-    if (!isLoading && !prayerLoading && !musollahLoading && !surahsLoading &&  fontsLoaded) {
+    if (isAppReady) {
       SplashScreen.hideAsync().then(() => {
         console.log('SplashScreen hidden');
       }).catch(error => {
         console.error('Error hiding SplashScreen', error)
       });
     }
-  }, [isLoading, prayerLoading, musollahLoading, surahsLoading, fontsLoaded]);
+  }, [isAppReady]);
 
-  if (!fontsLoaded || isLoading || prayerLoading || musollahLoading || surahsLoading) {
+  if (!isAppReady) {
     return null;
   }
 

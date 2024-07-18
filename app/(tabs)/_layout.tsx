@@ -18,14 +18,14 @@ const TabLayout = () => {
         tabBarIcon: ({ color, focused }) => {
           let iconName;
           switch (route.name) {
-            case 'index':
+            case '(prayer)':
               iconName = 'person-praying';
+              break;
+            case 'education':
+              iconName = 'book-open-reader';
               break;
             case 'musollah':
               iconName = 'location-dot';
-              break;
-            case 'qiblat':
-              iconName = 'compass';
               break;
             case '(quran)':
               iconName = 'book-quran';
@@ -41,9 +41,16 @@ const TabLayout = () => {
       })}
     >
       <Tabs.Screen
-        name="index"
+        name="(prayer)"
         options={{
           title: 'Prayers',
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen 
+        name="education"
+        options={{
+          title: 'Education',
           headerShown: false,
         }}
       />
@@ -51,13 +58,6 @@ const TabLayout = () => {
         name="musollah"
         options={{
           title: 'Musollah',
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
-        name="qiblat"
-        options={{
-          title: 'Qiblat',
           headerShown: false,
         }}
       />
