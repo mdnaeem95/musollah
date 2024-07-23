@@ -4,11 +4,11 @@ import Compass from '../../../../components/Compass';
 
 const QiblatTab = () => {
   return (
-    <SafeAreaView style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: '#4D6561' }}>
-      <View style={{ alignItems: 'center', backgroundColor: '#4D6561', width: '100%', height: '100%' }}>
-        <Compass />
-      </View>
-    </SafeAreaView>
+    <View style={{ height: '100%', width: '100%', flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#4D6561' }}>
+        <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1, marginBottom: 80 }}>
+          <Compass />
+        </View>
+    </View>
   )
 }
 

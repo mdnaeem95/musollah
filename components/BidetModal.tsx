@@ -3,6 +3,7 @@ import React from 'react'
 import { BidetLocation } from './Map';
 import Modal from 'react-native-modal'
 import { BlurView } from 'expo-blur';
+import { FontAwesome6 } from '@expo/vector-icons';
 
 interface BidetModalProps {
     isVisible: boolean;
@@ -22,12 +23,14 @@ const BidetModal = ({ isVisible, location, onClose }: BidetModalProps) => {
         style={styles.modal}
     >
         <BlurView intensity={50} style={styles.modalBackground}>
-            <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', padding: 20, borderRadius: 10 }}>
-                <Text>{location?.building}</Text>
-                <Text>{location?.address}, Singapore {location?.postal}</Text>
-                <TouchableOpacity onPress={onClose}>
-                <Text>Close</Text>
+            <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', padding: 30, borderRadius: 10 }}>
+                <TouchableOpacity onPress={onClose} style={{ height: 40, width: 40, borderRadius: 20, backgroundColor: '#A3C0BB', alignItems: 'center', justifyContent: 'center', left: -110, top: -15 }}>
+                  <FontAwesome6 name='xmark' size={20} color='white' solid />
                 </TouchableOpacity>
+                <View style={{ width: '70%', alignItems: 'center', justifyContent: 'center', marginTop: 20, top: -20 }}>
+                  <Text style={styles.locationText}>{location?.building}</Text>
+                  <Text style={styles.distanceText}>{location?.address}, Singapore {location?.postal}</Text>
+                </View>
             </View>
         </BlurView>
     </Modal>
@@ -45,6 +48,19 @@ const styles = StyleSheet.create({
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
+      },
+      locationText: {
+        fontFamily: 'Outfit_500Medium',
+        fontWeight: '500',
+        fontSize: 20,
+        lineHeight: 21,
+      },
+      distanceText: {
+        fontFamily: 'Outfit_400Regular',
+        fontWeight: '400',
+        fontSize: 16,
+        lineHeight: 21,
+        textAlign: 'center'
       }
 })
 
