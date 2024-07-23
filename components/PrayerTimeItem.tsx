@@ -1,5 +1,8 @@
-import { View, Text, StyleSheet, TextStyle } from 'react-native'
+import { View, Text, StyleSheet, TextStyle, Dimensions } from 'react-native'
 import React from 'react'
+
+const screenWidth = Dimensions.get('window').width;
+const containerWidth = screenWidth * 0.75;
 
 interface PrayerTimeItemProps {
     name: string;
@@ -9,7 +12,7 @@ interface PrayerTimeItemProps {
 
 const PrayerTimeItem = ({ name, time, style }: PrayerTimeItemProps) => {
   return (
-    <View style={{ justifyContent: 'space-between', width: 283, height: 54, borderRadius: 15, borderColor: '#FFFFFF', borderWidth: 2, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10 }}>
+    <View style={styles.container}>
       <Text style={[styles.text, style]}>{name}</Text>
       <Text style={[styles.text, style]}>{time}</Text>
     </View>
@@ -17,6 +20,17 @@ const PrayerTimeItem = ({ name, time, style }: PrayerTimeItemProps) => {
 }
 
 const styles = StyleSheet.create({
+    container: {
+      justifyContent: 'space-between',
+      width: containerWidth,
+      minHeight: 54,
+      borderRadius: 15,
+      borderColor: '#FFFFFF',
+      borderWidth: 2,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 10
+    },
     text: {
         fontFamily: 'Outfit_400Regular',
         fontWeight: 400,

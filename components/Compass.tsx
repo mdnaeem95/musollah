@@ -1,4 +1,4 @@
-import { View, Text, Image, StyleSheet } from 'react-native'
+import { View, Text, Image, StyleSheet, Dimensions } from 'react-native'
 import React, { useEffect, useState } from 'react';
 import * as Location from 'expo-location'
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,6 +11,9 @@ interface LocationData {
         longitude: number;
     }
 }
+
+const screenWidth = Dimensions.get('window').width;
+const compassSize = screenWidth * 0.8;
 
 const QIBLA_HEADING = 293;
 
@@ -27,8 +30,8 @@ const Compass = () => {
     }, [userLocation]);
 
     return (
-        <SafeAreaView style={{ justifyContent: 'center', alignItems: 'center' }}>
-            <View style={{ width: 343, alignItems: 'center', gap: 10 }}>
+        <View style={styles.mainContainer}>
+            <View style={styles.textContainer}>
                 <Text style={styles.qiblatText}>Your heading: {Math.round(userHeading)} deg</Text>
                 <Text style={styles.qiblatText}>Kaabah's heading: {QIBLA_HEADING} deg</Text>
                 <Text style={styles.qiblatText}>When your heading and the Kaaba's heading match, you are facing the right direction.</Text>
@@ -37,14 +40,23 @@ const Compass = () => {
             <View style={{ top: 150, justifyContent: 'center', alignItems: 'center' }}>
                 <View style={styles.compassCircle}>
                     <Image source={require('../assets/kaabah.png')} style={styles.kaabahIcon} />
-                    <Image source={require('../assets/arrow-up.png')} style={{ transform: [{ rotate: `${QIBLA_HEADING - userHeading}deg`}], height: 80, width: 80, resizeMode: 'contain' }} />
+                    <Image source={require('../assets/arrow-up.png')} style={[styles.compassArrow, { transform: [{ rotate: `${QIBLA_HEADING - userHeading}deg`}] }]} />
                 </View>
             </View>
-        </SafeAreaView>
+        </View>
     )
 }
 
 const styles = StyleSheet.create({
+    mainContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    textContainer: {
+        alignItems: 'center',
+        marginVertical: 20,
+        gap: 10
+    },
     qiblatText: {
         fontFamily: 'Outfit_300Light',
         fontWeight: '300',
@@ -53,9 +65,9 @@ const styles = StyleSheet.create({
         color: '#EAFFFC'
     },
     compassCircle: {
-        width: 300, 
-        height: 300, 
-        borderRadius: 150,
+        width: compassSize, 
+        height: compassSize, 
+        borderRadius: compassSize /2,
         borderWidth: 2,
         borderColor: '#FFFFFF',
         justifyContent: 'center',
@@ -71,7 +83,9 @@ const styles = StyleSheet.create({
         resizeMode: 'contain'
     },
     compassArrow: {
-
+        height: 80, 
+        width: 80, 
+        resizeMode: 'contain'
     }
 })
 

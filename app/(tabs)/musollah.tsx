@@ -1,7 +1,7 @@
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
 import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import Map, { Region, BidetLocation, MosqueLocation, MusollahLocation } from '../../components/Map'
-import { SearchBar } from '@rneui/themed'
+import { SearchBar, Chip } from '@rneui/themed'
 
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import BidetModal from '../../components/BidetModal'
@@ -69,8 +69,8 @@ const MusollahTab = () => {
 
   const renderItem = useCallback(({ item }: { item: BidetLocation | MosqueLocation | MusollahLocation }) => (
     <TouchableOpacity style={{ padding: 20, borderBottomColor: 'black', borderBottomWidth: 1 }} onPress={() => handleListItemPress(item)}>
-      <Text>{item.building} </Text>
-      <Text>Distance: {item.distance?.toFixed(2)}km</Text>
+      <Text style={styles.locationText}>{item.building} </Text>
+      <Text style={styles.distanceText}>Distance: {item.distance?.toFixed(2)}km</Text>
     </TouchableOpacity>
   ), [handleListItemPress]);
 
@@ -168,7 +168,9 @@ const MusollahTab = () => {
       </View>
 
       <View style={{ flex: 1, padding: 10 }}>
-        <SegmentedControl 
+        <SegmentedControl
+          backgroundColor='#A3C0BB'
+          fontStyle={{ fontFamily: 'Outfit_400Regular', fontWeight: '400', fontSize: 14 }} 
           values={locationTypes}
           selectedIndex={selectedIndex}
           onChange={(event) => {
@@ -202,5 +204,20 @@ const MusollahTab = () => {
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  locationText: {
+    fontFamily: 'Outfit_500Medium',
+    fontWeight: '500',
+    fontSize: 16,
+    lineHeight: 21,
+  },
+  distanceText: {
+    fontFamily: 'Outfit_400Regular',
+    fontWeight: '400',
+    fontSize: 14,
+    lineHeight: 21,
+  }
+})
 
 export default MusollahTab
