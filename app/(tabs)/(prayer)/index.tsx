@@ -1,5 +1,6 @@
-import { View, Text, StyleSheet, ImageBackground, Dimensions } from 'react-native'
-import React, { useCallback, useMemo } from 'react'
+import { View, Text, StyleSheet, ImageBackground, Dimensions, Modal, TouchableOpacity } from 'react-native'
+import React, { useCallback, useMemo, useState } from 'react'
+import { Calendar } from 'react-native-calendars';
 
 import Clock from 'react-live-clock';
 import { getFormattedDate } from '../../../utils';
@@ -10,7 +11,7 @@ import SubuhBackground from '../../../assets/subuh-background.png';
 import ZuhurBackground from '../../../assets/zuhr-background.png';
 import MaghribBackground from '../../../assets/maghrib-background.png';
 import IshaBackground from '../../../assets/isya-background.png';
-import AsrBackground from '../../../assets/asar-background.png';
+import AsrBackground from '../../../assets/test1.png';
 
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../redux/store/store';
@@ -29,6 +30,9 @@ const PrayerTab = () => {
   const router = useRouter();
   const { prayerTimes, islamicDate, currentPrayer, nextPrayerInfo, isLoading } = useSelector((state: RootState) => state.prayer);
   const desiredPrayers: (keyof PrayerTimes)[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
+
+  const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
+  const [selectedDate, setSelectedDate] = useState<string>(getFormattedDate(new Date()));
 
   const currentDate = useMemo(() => new Date(), []);
   const formattedDate = useMemo(() => getFormattedDate(currentDate), [currentDate]);
@@ -62,6 +66,10 @@ const PrayerTab = () => {
     router.push("/doa")
   }, [router]);
 
+  const handleCalendarPress = useCallback(() => {
+    setIsCalendarVisible(true);
+  }, []);
+
   return (
     <ImageBackground source={getBackgroundImage()} style={styles.backgroundImage} >
         <View style={styles.mainContainer}>
@@ -80,7 +88,7 @@ const PrayerTab = () => {
           </View>
 
           <View style={styles.bottomView}>
-            <Text style={[styles.nextPrayerText, getTextStyle()]}>{currentPrayer}</Text>
+            <Text style={[styles.currentText, getTextStyle()]}>{currentPrayer}</Text>
             <Text style={[styles.dateText, getTextStyle(), styles.spacing]}>{nextPrayerInfo?.timeUntilNextPrayer} until {nextPrayerInfo?.nextPrayer}</Text>
           </View>
 
@@ -111,7 +119,25 @@ const PrayerTab = () => {
             style={{ top: screenHeight * 0.15 }}
             size={24} 
           />
+
+          <RoundButton 
+            iconName="calendar-alt"
+            onPress={handleCalendarPress}
+            style={{ top: screenHeight * 0.2 }}
+            size={24}
+          />
         </View>
+
+        <Modal transparent={true} visible={isCalendarVisible} onRequestClose={() => setIsCalendarVisible(false)}>
+          <View style={styles.modalBackground}>
+            <View style={styles.calendarContainer}>
+              <Calendar />
+              <TouchableOpacity onPress={() => setIsCalendarVisible(false)} style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
     </ImageBackground>
   )
 }
@@ -137,10 +163,10 @@ const styles = StyleSheet.create({
   },
   centeredView: {
     alignItems: 'center',
-    marginBottom: 50,
+    marginBottom: 20,
   },
   bottomView: {
-     alignItems: 'flex-start'
+     alignItems: 'flex-start',
   },
   dateText: {
     fontFamily: 'Outfit_400Regular',
@@ -153,13 +179,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_600SemiBold',
     fontSize: scaleSize(64),
     lineHeight: scaleSize(96) * 1.5,
-    color: '#FFFFFF',
+    color: '#000000',
     textAlign: 'center',
   },
-  nextPrayerText: {
+  currentText: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: scaleSize(24),
-    lineHeight: scaleSize(36),
+    fontSize: scaleSize(30),
+    lineHeight: scaleSize(46),
     color: '#314340'
   },
   spacing: {
@@ -169,14 +195,14 @@ const styles = StyleSheet.create({
     color: '#C3F0E9'
   },
   prayerTimesContainer: {
-    marginTop: 40,
+    marginTop: 20,
     marginBottom: 20,
     gap: 15
   },
   buttonContainer: {
     position: 'absolute',
     right: 20,
-    top: -20
+    top: 0
   },
   button: {
     alignItems: 'center',
@@ -185,6 +211,28 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     padding: 10,
     marginBottom: -30
+  },
+  modalBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  calendarContainer: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  closeButton: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#314340',
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    color: 'white',
+    fontSize: 16,
   }
 })
 

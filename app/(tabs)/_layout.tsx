@@ -21,7 +21,7 @@ const TabLayout = () => {
             case '(prayer)':
               iconName = 'person-praying';
               break;
-            case 'education':
+            case '(education)':
               iconName = 'book-open-reader';
               break;
             case 'musollah':
@@ -48,7 +48,7 @@ const TabLayout = () => {
         }}
       />
       <Tabs.Screen 
-        name="education"
+        name="(education)"
         options={{
           title: 'Education',
           headerShown: false,
