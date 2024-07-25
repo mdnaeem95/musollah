@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import 'react-native-reanimated';
-import { Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold } from "@expo-google-fonts/outfit";
+import { Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from "@expo-google-fonts/outfit";
 import { Amiri_400Regular } from "@expo-google-fonts/amiri";
 import { useFonts } from 'expo-font';
 import { useDispatch, useSelector } from 'react-redux'
@@ -27,6 +27,7 @@ const RootLayout = () => {
     Outfit_500Medium,
     Outfit_400Regular,
     Outfit_600SemiBold,
+    Outfit_700Bold,
     Amiri_400Regular
   });
 

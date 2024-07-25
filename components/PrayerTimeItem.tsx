@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
         fontWeight: 400,
         fontSize: 20,
         lineHeight: 30,
-        color: '#314340'
+        color: '#333333'
     }
 })
 

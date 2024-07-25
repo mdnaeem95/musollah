@@ -12,7 +12,6 @@ const store = configureStore({
     prayer: prayerTimesReducer,
     musollah: musollahReducer,
     quran: quranReducer,
-    surahText: surahTextReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware(
     { immutableCheck: false, 

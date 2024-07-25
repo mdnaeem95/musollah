@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { SearchBar } from '@rneui/themed'
 import { FontAwesome6 } from '@expo/vector-icons'
 import { StyleSheet } from 'react-native'
+import { useRouter } from 'expo-router'
 
 interface CategoryData {
   icon: string,
@@ -50,13 +51,6 @@ const cardData = [
     header: 'Benefits of Tahajjud Prayer',
     description:
       "Explore the spiritual and physical benefits of performing the Tahajjud prayer, a voluntary night prayer in Islam that brings one closer to Allah.",
-  },
-  {
-    backgroundColour: '#A6C9FF',
-    icon: 'book',
-    hashtag: 'Quran',
-    header: 'Understanding Surah Al-Fatiha',
-    description: 'A comprehensive guide to understanding the meanings and teachings of Surah Al-Fatiha.',
   },
   {
     backgroundColour: '#FFB29A',
@@ -138,10 +132,16 @@ const cardData = [
 ];
 
 const EducationTab = () => {
+  const router = useRouter();
   const [activeCategory, setactiveCategory] = useState<string | null>('All Courses');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const handleCategoryPress = (title: string) => {
     setactiveCategory(title);
+  }
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
   }
 
   const renderCategories = ({ item }: { item : CategoryData }) => (
@@ -172,14 +172,19 @@ const EducationTab = () => {
     </View>
   )
 
-  const filteredCardData = activeCategory === 'All Courses'
-    ? cardData
-    : cardData.filter((card) => card.hashtag === activeCategory);
+  const filteredCardData = cardData.filter((card) => {
+    const matchesCategory = activeCategory === 'All Courses' || card.hashtag === activeCategory;
+    const matchesSearchQuery = card.header.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    card.description.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesCategory && matchesSearchQuery;
+  })
 
   return (
     <View style={styles.mainContainer}>
       <View style={styles.searchBarContainer}>
         <SearchBar
+          value={searchQuery}
+          onChangeText={handleSearchChange}
           placeholder='Search'
           lightTheme
           platform='default'
@@ -187,14 +192,22 @@ const EducationTab = () => {
           containerStyle={styles.searchBar}
           inputContainerStyle={{ backgroundColor: 'rgba(255,255,255,0.5)' }} 
         />
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={data}
-          renderItem={renderCategories}
-          keyExtractor={(item) => item.title}
-          style={styles.categoryList} 
-        />
+        <View style={styles.categoryContainer}>
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={data}
+            renderItem={renderCategories}
+            keyExtractor={(item) => item.title}
+            style={styles.categoryList} 
+            />
+        </View>
+        <TouchableOpacity
+          style={styles.physicalClassesButton}
+          onPress={() => router.push('physicalclasses')}
+        >
+          <Text style={styles.physicalClassesButtonText}>View Physical Classes</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList 
@@ -211,30 +224,28 @@ const EducationTab = () => {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    height: '100%',
-    width: '100%',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     backgroundColor: '#4D6561',
   },
   searchBarContainer: {
-    flex: 1,
-    width: 360,
-    height: 188,
-    marginTop: 50,
+    width: '100%',
+    paddingTop: 50,
     alignItems: 'center',
   },
   searchBar: {
     margin: 0,
     padding: 0,
     borderRadius: 20,
-    width: 340,
+    width: '90%',
+  },
+  categoryContainer: {
+    marginTop: 10,
+    height: 45,
+    width: '90%'
   },
   categoryList: {
-    width: 340,
-    marginTop: 20,
-    height: 35,
-    flexGrow: 0,
+    width: '100%',
   },
   category: {
     justifyContent: 'center',
@@ -250,43 +261,46 @@ const styles = StyleSheet.create({
   categoryActive: {
     backgroundColor: '#C3F0E9'
   },
+  physicalClassesButton: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginVertical: 10,
+  },
+  physicalClassesButtonText: {
+    fontSize: 16,
+    fontFamily: 'Outfit_500Medium',
+  },
   categoryText: {
     fontSize: 14,
     lineHeight: 19,
     fontFamily: 'Outfit_500Medium',
   },
   cardList: {
-    width: 340, 
-    height: 600,
-    flexGrow: 0,
-    top: -10
+    width: '90%'
   },
   cardContainer: {
-    width: 340,
-    height: 120,
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    marginBottom: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginVertical: 8,
     flexDirection: 'row',
-    gap: 10,
+    padding: 10,
     shadowOffset: {width: -2, height: 4},
     shadowOpacity: 0.2,
     shadowRadius: 3,    
   },
   cardIcon: {
-    width: 112,
-    height: 96,
+    width: 80,
+    height: 80,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardContent: {
-    width: 176,
-    height: 96,
-    flexDirection: 'column',
-    gap: 8,
+    flex: 1,
+    justifyContent: 'center',
+    paddingLeft: 10
   },
   cardHashTag: {
     borderWidth: 0.5,
@@ -304,9 +318,8 @@ const styles = StyleSheet.create({
     color: '#333333',
   },
   cardDescription: {
-    width: 176,
-    height: 48,
-    gap: 8,
+    marginTop: 5,
+    gap: 5
   },
   headerText: {
     fontFamily: 'Outfit_500Medium',
