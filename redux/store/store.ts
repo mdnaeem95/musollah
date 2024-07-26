@@ -4,7 +4,6 @@ import locationReducer from '../reducer/userLocationReducer';
 import prayerTimesReducer from '../reducer/prayerTimesReducer';
 import musollahReducer from '../reducer/musollahReducer';
 import quranReducer from '../reducer/quranReducer'
-import surahTextReducer from '../reducer/surahTextReducer'
 
 const store = configureStore({
   reducer: {

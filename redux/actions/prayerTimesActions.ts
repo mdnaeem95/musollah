@@ -1,7 +1,7 @@
-import { SET_PRAYER_TIMES, SET_ISLAMIC_DATE, SET_CURRENT_PRAYER, SET_NEXT_PRAYER_INFO, SET_PRAYER_LOADING, SET_PRAYER_ERROR } from '../actionTypes/prayerTimesActionTypes';
+import { SET_PRAYER_TIMES, SET_ISLAMIC_DATE, SET_CURRENT_PRAYER, SET_NEXT_PRAYER_INFO, SET_PRAYER_LOADING, SET_PRAYER_ERROR, SET_SELECTED_DATE } from '../actionTypes/prayerTimesActionTypes';
 import { AppDispatch } from '../store/store';
 import { getShortFormattedDate, formatIslamicDate, getPrayerTimesInfo } from '../../utils/index';
-import { fetchPrayerTimes, fetchIslamicDate } from '../../api/prayers';
+import { fetchPrayerTimes, fetchIslamicDate, fetchTimesByDate } from '../../api/prayers';
 
 export const setPrayerTimes = (prayerTimes: any) => ({
   type: SET_PRAYER_TIMES,
@@ -32,6 +32,11 @@ export const setError = (error: string | null) => ({
   type: SET_PRAYER_ERROR,
   payload: error,
 });
+
+export const setSelectedDate = (date: string) => ({
+  type: SET_SELECTED_DATE,
+  payload: date,
+})
 
 export const fetchPrayerTimesData = () => {
   return async (dispatch: AppDispatch) => {
@@ -64,3 +69,32 @@ export const fetchPrayerTimesData = () => {
     }
   };
 };
+
+export const fetchPrayerTimesByDate = (date: string) => {
+  return async (dispatch: AppDispatch) => {
+    dispatch(setLoading(true));
+    try {
+      const response = await fetchTimesByDate(date);
+      const { Fajr, Dhuhr, Asr, Maghrib, Isha } = response.data.timings;
+      const newPrayerTimes = { Fajr, Dhuhr, Asr, Maghrib, Isha };
+
+      const islamicDateData = await fetchIslamicDate(date);
+      const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date);
+
+      const prayerInfo = getPrayerTimesInfo(newPrayerTimes, new Date(date));
+
+      dispatch(setPrayerTimes(newPrayerTimes));
+      dispatch(setIslamicDate(formattedIslamicDate));
+      dispatch(setCurrentPrayer(prayerInfo.currentPrayer));
+      dispatch(setNextPrayerInfo({
+        nextPrayer: prayerInfo.nextPrayer,
+        timeUntilNextPrayer: prayerInfo.timeUntilNextPrayer,
+      }));
+    } catch (error) {
+      console.error(`Failed to fetch prayer times for ${date}: `, error)
+      dispatch(setError('Failed to fetch prayer times'));
+    } finally {
+      dispatch(setLoading(false));
+    }
+  }
+}
