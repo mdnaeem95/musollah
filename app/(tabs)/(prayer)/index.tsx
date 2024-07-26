@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, ImageBackground, Dimensions, Modal, TouchableOpacity } from 'react-native'
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Calendar } from 'react-native-calendars';
 
 import Clock from 'react-live-clock';
@@ -15,7 +15,7 @@ import AsrBackground from '../../../assets/test1.png';
 
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../redux/store/store';
-import RoundButton from '../../../components/RoundButton';
+import ExpandableButton from '../../../components/ExpandableButton';
 
 interface PrayerTimes {
   Fajr: string;
@@ -24,6 +24,14 @@ interface PrayerTimes {
   Maghrib: string;
   Isha: string;
   [key: string]: string;
+}
+
+interface CalendarObject {
+  day: number,
+  month: number,
+  year: number,
+  timestamp: string,
+  dateString: string,
 }
 
 const PrayerTab = () => {
@@ -57,18 +65,6 @@ const PrayerTab = () => {
   const getTextStyle = () => {
     return currentPrayer === 'Isha' ? styles.ishaText: {};
   }
-
-  const handleQiblatPress = useCallback(() => {
-    router.push("/qiblat")
-  }, [router]);
-
-  const handleDoaPress = useCallback(() => {
-    router.push("/doa")
-  }, [router]);
-
-  const handleCalendarPress = useCallback(() => {
-    setIsCalendarVisible(true);
-  }, []);
 
   return (
     <ImageBackground source={getBackgroundImage()} style={styles.backgroundImage} >
@@ -105,39 +101,27 @@ const PrayerTab = () => {
           </View>
         </View>
 
-        <View style={styles.buttonContainer}>
-          <RoundButton
-            iconName="compass"
-            onPress={handleQiblatPress}
-            style={{ top: screenHeight * 0.10 }}
-            size={24} 
-          />
-
-          <RoundButton
-            iconName="hands-praying"
-            onPress={handleDoaPress}
-            style={{ top: screenHeight * 0.15 }}
-            size={24} 
-          />
-
-          <RoundButton 
-            iconName="calendar-alt"
-            onPress={handleCalendarPress}
-            style={{ top: screenHeight * 0.2 }}
-            size={24}
-          />
-        </View>
-
         <Modal transparent={true} visible={isCalendarVisible} onRequestClose={() => setIsCalendarVisible(false)}>
           <View style={styles.modalBackground}>
             <View style={styles.calendarContainer}>
-              <Calendar />
+              <Calendar
+                onDayPress={(day: CalendarObject) => {
+                  setSelectedDate(day.dateString)
+                  setIsCalendarVisible(false);
+                }} 
+              />
               <TouchableOpacity onPress={() => setIsCalendarVisible(false)} style={styles.closeButton}>
                 <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
+
+        <ExpandableButton
+          onQiblatPress={() => router.push("/qiblat")}
+          onDoaPress={() => router.push("/doa")}
+          onCalendarPress={() => setIsCalendarVisible(!isCalendarVisible)} 
+        />
     </ImageBackground>
   )
 }

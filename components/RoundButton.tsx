@@ -10,30 +10,21 @@ interface CustomButtonProps {
 }
 
 const RoundButton = ({ iconName, onPress, size, style }: CustomButtonProps) => {
-    const scaledSize = scaleSize(size!);
-
     return (
         <TouchableOpacity style={[styles.button, style]} onPress={onPress}>
-            <FontAwesome6 name={iconName} size={scaledSize} /> 
+            <FontAwesome6 name={iconName} size={size} /> 
         </TouchableOpacity>
     )
 }
 
-// Get screen width for scaling
-const screenWidth = Dimensions.get('window').width;
-const screenHeight = Dimensions.get('window').height;
-
-function scaleSize(size: number) {
-    const scaleFactor = screenWidth / 375; // Base screen width (iPhone standard)
-    return size * scaleFactor;
-}
-
 const styles = StyleSheet.create({
     button: {
+        width: 46,
+        height: 46,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#DFF3E3',
-        borderRadius: 25,
+        borderRadius: 22,
         padding: 10,
         marginBottom: -30
     }
