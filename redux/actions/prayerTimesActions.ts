@@ -1,4 +1,4 @@
-import { SET_PRAYER_TIMES, SET_ISLAMIC_DATE, SET_CURRENT_PRAYER, SET_NEXT_PRAYER_INFO, SET_PRAYER_LOADING, SET_PRAYER_ERROR, SET_SELECTED_DATE } from '../actionTypes/prayerTimesActionTypes';
+import { SET_PRAYER_TIMES, SET_ISLAMIC_DATE, SET_CURRENT_PRAYER, SET_NEXT_PRAYER_INFO, SET_PRAYER_LOADING, SET_PRAYER_ERROR, SET_SELECTED_DATE  } from '../actionTypes/prayerTimesActionTypes';
 import { AppDispatch } from '../store/store';
 import { getShortFormattedDate, formatIslamicDate, getPrayerTimesInfo } from '../../utils/index';
 import { fetchPrayerTimes, fetchIslamicDate, fetchTimesByDate } from '../../api/prayers';
@@ -36,7 +36,7 @@ export const setError = (error: string | null) => ({
 export const setSelectedDate = (date: string) => ({
   type: SET_SELECTED_DATE,
   payload: date,
-})
+});
 
 export const fetchPrayerTimesData = () => {
   return async (dispatch: AppDispatch) => {
@@ -74,8 +74,8 @@ export const fetchPrayerTimesByDate = (date: string) => {
   return async (dispatch: AppDispatch) => {
     dispatch(setLoading(true));
     try {
-      const response = await fetchTimesByDate(date);
-      const { Fajr, Dhuhr, Asr, Maghrib, Isha } = response.data.timings;
+      const prayerData = await fetchTimesByDate(date);
+      const { Fajr, Dhuhr, Asr, Maghrib, Isha } = prayerData.data.timings;
       const newPrayerTimes = { Fajr, Dhuhr, Asr, Maghrib, Isha };
 
       const islamicDateData = await fetchIslamicDate(date);
@@ -90,11 +90,12 @@ export const fetchPrayerTimesByDate = (date: string) => {
         nextPrayer: prayerInfo.nextPrayer,
         timeUntilNextPrayer: prayerInfo.timeUntilNextPrayer,
       }));
+      dispatch(setSelectedDate(date));
     } catch (error) {
-      console.error(`Failed to fetch prayer times for ${date}: `, error)
-      dispatch(setError('Failed to fetch prayer times'));
+      console.error('Failed to fetch prayer times by date', error);
+      dispatch(setError('Failed to fetch prayer times by date'));
     } finally {
       dispatch(setLoading(false));
     }
-  }
-}
+  };
+};

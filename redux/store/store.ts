@@ -1,14 +1,14 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { thunk } from 'redux-thunk';
 import locationReducer from '../reducer/userLocationReducer';
-import prayerTimesReducer from '../reducer/prayerTimesReducer';
+import prayerReducer  from '../slices/prayerSlice';
 import musollahReducer from '../reducer/musollahReducer';
 import quranReducer from '../reducer/quranReducer'
 
 const store = configureStore({
   reducer: {
     location: locationReducer,
-    prayer: prayerTimesReducer,
+    prayer: prayerReducer,
     musollah: musollahReducer,
     quran: quranReducer,
   },

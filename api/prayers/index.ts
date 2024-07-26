@@ -18,11 +18,10 @@ export const fetchPrayerTimes = async () => {
 
 export const fetchTimesByDate = async (date: string) => {
     try {
-        const response = await fetch(`http://api.aladhan.com/v1/timings/${date}?method=11&timezonestring=Asia/Singapore`)
+        const response = await fetch(`http://api.aladhan.com/v1/timingsByCity?${date}&city=Singapore&country=Singapore&method=11`)
 
         if (!response.ok) {
             throw new Error(`Failed to fetch prayer times for date ${date}`)
-
         }
 
         const data = await response.json();

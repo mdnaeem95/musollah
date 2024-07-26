@@ -8,7 +8,7 @@ import { useFonts } from 'expo-font';
 import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch, RootState } from '../redux/store/store'
 import { fetchUserLocation } from '../redux/actions/userLocationActions';
-import { fetchPrayerTimesData } from '../redux/actions/prayerTimesActions';
+import { fetchPrayerTimesData } from '../redux/slices/prayerSlice';
 import { fetchMusollahData } from '../redux/actions/musollahActions'
 import { fetchSurahsData } from '../redux/actions/quranActions'
 

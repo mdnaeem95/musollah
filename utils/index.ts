@@ -57,3 +57,9 @@ export const getPrayerTimesInfo  = (prayerTimes: { [key: string]: string }, curr
 
     return { currentPrayer, nextPrayer, timeUntilNextPrayer}; 
 }
+
+export const formatDateForAPI = (date: string) => {
+    const [year, month, day] = date.split('-');
+    return `${day}-${month}-${year}`;
+  };
+  
