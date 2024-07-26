@@ -1,4 +1,4 @@
-import { SET_PRAYER_TIMES, SET_ISLAMIC_DATE, SET_CURRENT_PRAYER, SET_NEXT_PRAYER_INFO, SET_PRAYER_LOADING, SET_PRAYER_ERROR } from '../actionTypes/prayerTimesActionTypes';
+import { SET_PRAYER_TIMES, SET_ISLAMIC_DATE, SET_CURRENT_PRAYER, SET_NEXT_PRAYER_INFO, SET_PRAYER_LOADING, SET_PRAYER_ERROR, SET_SELECTED_DATE } from '../actionTypes/prayerTimesActionTypes';
 
 interface PrayerState {
   prayerTimes: { [key: string]: string } | null;
@@ -32,6 +32,8 @@ const prayerReducer = (state = initialState, action: any) => {
       return { ...state, isLoading: action.payload };
     case SET_PRAYER_ERROR:
       return { ...state, error: action.payload };
+    case SET_SELECTED_DATE:
+      return { ...state, selectedDate: action.payload };
     default:
       return state;
   }

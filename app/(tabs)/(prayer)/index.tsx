@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, ImageBackground, Dimensions, Modal, TouchableOpacity } from 'react-native'
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Calendar } from 'react-native-calendars';
 
 import Clock from 'react-live-clock';
@@ -13,11 +13,12 @@ import MaghribBackground from '../../../assets/maghrib-background.png';
 import IshaBackground from '../../../assets/isya-background.png';
 import AsrBackground from '../../../assets/test1.png';
 
-import { useSelector } from 'react-redux';
-import { RootState } from '../../../redux/store/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../../redux/store/store';
 import ExpandableButton from '../../../components/ExpandableButton';
+import { fetchPrayerTimesByDate } from '../../../redux/slices/prayerSlice';
 
-interface PrayerTimes {
+export interface PrayerTimes {
   Fajr: string;
   Dhuhr: string;
   Asr: string;
@@ -35,12 +36,12 @@ interface CalendarObject {
 }
 
 const PrayerTab = () => {
+  const dispatch = useDispatch<AppDispatch>()
   const router = useRouter();
-  const { prayerTimes, islamicDate, currentPrayer, nextPrayerInfo, isLoading } = useSelector((state: RootState) => state.prayer);
+  const { prayerTimes, islamicDate, currentPrayer, nextPrayerInfo, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
   const desiredPrayers: (keyof PrayerTimes)[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
 
   const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
-  const [selectedDate, setSelectedDate] = useState<string>(getFormattedDate(new Date()));
 
   const currentDate = useMemo(() => new Date(), []);
   const formattedDate = useMemo(() => getFormattedDate(currentDate), [currentDate]);
@@ -66,11 +67,22 @@ const PrayerTab = () => {
     return currentPrayer === 'Isha' ? styles.ishaText: {};
   }
 
+  const handleDayPress = (day: CalendarObject) => {
+    dispatch(fetchPrayerTimesByDate(day.dateString));
+    setIsCalendarVisible(false);
+  };
+
+  useEffect(() => {
+    if (selectedDate) {
+      dispatch(fetchPrayerTimesByDate(selectedDate));
+    }
+  }, [selectedDate, dispatch]);
+
   return (
     <ImageBackground source={getBackgroundImage()} style={styles.backgroundImage} >
         <View style={styles.mainContainer}>
           <View style={styles.centeredView}>
-            <Text style={[styles.dateText, getTextStyle(), { marginBottom: -30 }]}>{formattedDate}</Text>
+            <Text style={[styles.dateText, getTextStyle(), { marginBottom: -30 }]}>{selectedDate ? getFormattedDate(new Date(selectedDate)) : getFormattedDate(new Date())}</Text>
             <Text style={styles.clockText}>
               <Clock 
                 format={'HH:mm'} 
@@ -105,10 +117,7 @@ const PrayerTab = () => {
           <View style={styles.modalBackground}>
             <View style={styles.calendarContainer}>
               <Calendar
-                onDayPress={(day: CalendarObject) => {
-                  setSelectedDate(day.dateString)
-                  setIsCalendarVisible(false);
-                }} 
+                onDayPress={handleDayPress} 
               />
               <TouchableOpacity onPress={() => setIsCalendarVisible(false)} style={styles.closeButton}>
                 <Text style={styles.closeButtonText}>Close</Text>
