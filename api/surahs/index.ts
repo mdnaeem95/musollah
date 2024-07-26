@@ -3,17 +3,10 @@ import axios from 'axios';
 
 export const fetchSurahs = async () => {
     try {
-        const response = await fetch(`${BASE_URL}`)
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch surahs');
-        }
-
-        const data = await response.json();
-        return data;
+        const response = await axios.get(`${BASE_URL}`)
+        return response.data
     } catch (error) {
         console.error('Failed to fetch surahs: ', error);
-        throw error;
     }
 }
 

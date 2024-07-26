@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 export const fetchPrayerTimes = async () => {
     try {
         const response = await fetch(`http://api.aladhan.com/v1/timingsByCity?city=Singapore&country=Singapore&method=11`)
@@ -7,11 +9,26 @@ export const fetchPrayerTimes = async () => {
         }
 
         const data = await response.json();
-        //console.log(data);
         return data;
     } catch (error) {
         console.error('Error fetching prayer times: ', error);
         throw error;
+    }
+}
+
+export const fetchTimesByDate = async (date: string) => {
+    try {
+        const response = await fetch(`http://api.aladhan.com/v1/timings/${date}?method=11&timezonestring=Asia/Singapore`)
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch prayer times for date ${date}`)
+
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error (`Error fetching prayer times for ${date}: `, error)
     }
 }
 
@@ -24,7 +41,6 @@ export const fetchIslamicDate = async (date: string) => {
         }
 
         const data = await response.json();
-
         return data;
     } catch (error) {
         console.error('Error fetching Islamic date: ', error);
