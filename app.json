@@ -17,7 +17,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We use your location to show you relevant data.",
         "NSLocationAlwaysUsageDescription": "We use your location to show you relevant data even when the app is in the background."
-      }
+      },
+      "bundleIdentifier": "com.naeemsani95.rihlah"
     },
     "android": {
       "adaptiveIcon": {
@@ -27,13 +28,23 @@
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION"
+        "ACCESS_BACKGROUND_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFramework": "static"
+          }
+        }
+      ],
       "expo-router",
       "expo-font",
       [
@@ -42,7 +53,16 @@
           "locationAlwaysAndWhenInUsePermission": "Allow Musollah to use your location."
         }
       ],
-      "expo-asset"
-    ]
+      "expo-asset",
+      "@react-native-firebase/app"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "386c1019-2436-4371-83b3-31df44b8591b"
+      }
+    }
   }
 }

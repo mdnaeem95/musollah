@@ -82,7 +82,7 @@ const PrayerTab = () => {
     <ImageBackground source={getBackgroundImage()} style={styles.backgroundImage} >
         <View style={styles.mainContainer}>
           <View style={styles.centeredView}>
-            <Text style={[styles.dateText, getTextStyle(), { marginBottom: -30 }]}>{selectedDate ? getFormattedDate(new Date(selectedDate)) : getFormattedDate(new Date())}</Text>
+            <Text style={[styles.dateText, getTextStyle(), { marginBottom: -30 }]}>{selectedDate ? getFormattedDate(new Date(selectedDate)) : formattedDate}</Text>
             <Text style={styles.clockText}>
               <Clock 
                 format={'HH:mm'} 

@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { getShortFormattedDate, formatIslamicDate, getPrayerTimesInfo, formatDateForAPI } from '../../utils/index';
+import { getShortFormattedDate, formatIslamicDate, getPrayerTimesInfo } from '../../utils/index';
 import { fetchPrayerTimes, fetchIslamicDate, fetchTimesByDate } from '../../api/prayers';
 import { PrayerTimes } from '../../app/(tabs)/(prayer)';
 
