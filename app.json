@@ -32,7 +32,7 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
-      "package": "com.naeemsani95.rihlah",
+      "package": "com.musollah",
       "googleServicesFile": "./android/app/google-services.json"
     },
     "web": {
