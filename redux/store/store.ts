@@ -1,13 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { thunk } from 'redux-thunk';
-import locationReducer from '../reducer/userLocationReducer';
+import userLocationReducer from '../slices/userLocationSlice';
 import prayerReducer  from '../slices/prayerSlice';
-import musollahReducer from '../reducer/musollahReducer';
-import quranReducer from '../reducer/quranReducer'
+import musollahReducer from '../slices/musollahSlice';
+import quranReducer from '../slices/quranSlice'
 
 const store = configureStore({
   reducer: {
-    location: locationReducer,
+    location: userLocationReducer,
     prayer: prayerReducer,
     musollah: musollahReducer,
     quran: quranReducer,
