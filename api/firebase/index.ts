@@ -3,6 +3,30 @@ import { db } from "../../firebaseConfig";
 import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
 import { Surah } from "../../app/(tabs)/(quran)/index"
+import { DoaAfterPrayer } from "../../app/(tabs)/(prayer)/doa";
+
+export const getDoaAfterPrayer  = async (): Promise<DoaAfterPrayer[]> => {
+    try {
+        const doaSnapshot = await getDocs(collection(db, 'DoaAfterPrayer'));
+        const doaList = doaSnapshot.docs.map(doc => {
+            const data = doc.data();
+
+            return {
+                id: doc.id,
+                step: data.step,
+                title: data.title,
+                arabicText: data.arabicText,
+                romanized: data.romanized,
+                englishTranslation: data.englishTranslation
+            } as DoaAfterPrayer
+        })
+
+        return doaList.sort((a, b) => a.step - b.step);
+    } catch (error) {
+        console.error('Error fetching doa after prayers: ', error);
+        throw error
+    }
+}
 
 export const getBidetLocations = async (userRegion: Region): Promise<BidetLocation[]> => {
     try {
