@@ -4,6 +4,7 @@ import userLocationReducer from '../slices/userLocationSlice';
 import prayerReducer  from '../slices/prayerSlice';
 import musollahReducer from '../slices/musollahSlice';
 import quranReducer from '../slices/quranSlice'
+import userReducer from '../slices/userSlice'
 
 const store = configureStore({
   reducer: {
@@ -11,6 +12,7 @@ const store = configureStore({
     prayer: prayerReducer,
     musollah: musollahReducer,
     quran: quranReducer,
+    user: userReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware(
     { immutableCheck: false, 

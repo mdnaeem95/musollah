@@ -12,6 +12,8 @@ import { fetchUserLocation } from '../redux/slices/userLocationSlice';
 import { fetchPrayerTimesData } from '../redux/slices/prayerSlice';
 import { fetchMusollahData } from '../redux/slices/musollahSlice'
 import { fetchSurahsData } from '../redux/slices/quranSlice'
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import AuthScreen from './(auth)/AuthScreen';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -21,6 +23,9 @@ const RootLayout = () => {
   const { isLoading: prayerLoading } = useSelector((state: RootState) => state.prayer);
   const { isLoading: musollahLoading } = useSelector((state: RootState) => state.musollah);
   const { isLoading: surahsLoading } = useSelector((state: RootState) => state.quran);
+
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAppReady, setIsAppReady] = useState(false);
 
   const [fontsLoaded] = useFonts({
@@ -31,6 +36,19 @@ const RootLayout = () => {
     Outfit_700Bold,
     Amiri_400Regular
   });
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     dispatch(fetchUserLocation());
@@ -69,6 +87,10 @@ const RootLayout = () => {
 
   if (!isAppReady) {
     return null;
+  }
+
+  if (!isAuthenticated) {
+    return <AuthScreen />
   }
 
   return (

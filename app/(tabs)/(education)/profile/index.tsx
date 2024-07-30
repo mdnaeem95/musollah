@@ -1,12 +1,12 @@
 import { View, Text } from 'react-native'
 import React from 'react'
 
-const PhysicalClasses = () => {
+const Profile = () => {
   return (
     <View>
-      <Text>PhysicalClasses</Text>
+      <Text>Profile</Text>
     </View>
   )
 }
 
-export default PhysicalClasses
+export default Profile
