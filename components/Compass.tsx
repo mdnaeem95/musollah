@@ -1,7 +1,6 @@
-import { View, Text, Image, StyleSheet, Dimensions } from 'react-native'
+import { View, Text, Image, StyleSheet, Dimensions, Vibration, Animated } from 'react-native'
 import React, { useEffect, useState } from 'react';
 import * as Location from 'expo-location'
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store/store';
 
@@ -20,6 +19,7 @@ const QIBLA_HEADING = 293;
 const Compass = () => {
     const { isLoading, errorMsg, userLocation } = useSelector((state: RootState) => state.location);
     const [userHeading, setUserHeading] = useState(0);
+    const [bgColor, setBgColor] = useState(new Animated.Value(0));
 
     useEffect(() => {
         if (userLocation) {
@@ -28,6 +28,24 @@ const Compass = () => {
             })
         }
     }, [userLocation]);
+
+    useEffect(() => {
+        if (Math.abs(userHeading - QIBLA_HEADING) < 0.5) {
+            Vibration.vibrate();
+        }
+
+        const proximity = Math.min(Math.abs(userHeading - QIBLA_HEADING) / 5, 1);
+        Animated.timing(bgColor, {
+            toValue: 1 - proximity,
+            duration: 200,
+            useNativeDriver: false
+        }).start();
+    }, [userHeading])
+
+    const interpolateColor = bgColor.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['#4D6561', '#C3F0E9']
+    })
 
     return (
         <View style={styles.mainContainer}>
@@ -38,10 +56,10 @@ const Compass = () => {
             </View>
 
             <View style={{ top: 150, justifyContent: 'center', alignItems: 'center' }}>
-                <View style={styles.compassCircle}>
+                <Animated.View style={[styles.compassCircle, { backgroundColor: interpolateColor }]}>
                     <Image source={require('../assets/kaabah.png')} style={styles.kaabahIcon} />
                     <Image source={require('../assets/arrow-up.png')} style={[styles.compassArrow, { transform: [{ rotate: `${QIBLA_HEADING - userHeading}deg`}] }]} />
-                </View>
+                </Animated.View>
             </View>
         </View>
     )
@@ -55,7 +73,7 @@ const styles = StyleSheet.create({
     textContainer: {
         alignItems: 'center',
         marginVertical: 20,
-        gap: 10
+        gap: 10,
     },
     qiblatText: {
         fontFamily: 'Outfit_300Light',
