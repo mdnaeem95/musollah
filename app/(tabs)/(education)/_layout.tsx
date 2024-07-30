@@ -1,13 +1,40 @@
-import React from 'react';
-import { Stack } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Drawer } from 'expo-router/drawer';
+ 
+import React from 'react'
+import { FontAwesome6 } from '@expo/vector-icons';
 
-const Layout = () => {
+const EducationLayout = () => {
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="physicalclasses/index" options={{ title: 'Physical Classes', headerShown: false }} />
-    </Stack>
-  );
-};
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Drawer>
+        <Drawer.Screen
+          name="index"
+          options={{
+            drawerLabel: 'Dashboard',
+            title: 'Dashboard',
+            drawerIcon: () => <FontAwesome6 name="tachometer-alt" />
+          }}
+          />
+        <Drawer.Screen
+          name="courses/index"
+          options={{
+            drawerLabel: 'Courses',
+            title: 'Courses',
+            drawerIcon: () => <FontAwesome6 name="book" />
+          }}
+          />
+        <Drawer.Screen
+          name="profile/index"
+          options={{
+            drawerLabel: 'Profile',
+            title: 'Profile',
+            drawerIcon: () => <FontAwesome6 name="user" />
+          }}
+          />
+      </Drawer>
+    </GestureHandlerRootView>
+  )
+}
 
-export default Layout;
+export default EducationLayout

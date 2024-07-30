@@ -1,8 +1,7 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native'
 import React from 'react'
 import { BidetLocation } from './Map';
 import Modal from 'react-native-modal'
-import { BlurView } from 'expo-blur';
 import { FontAwesome6 } from '@expo/vector-icons';
 
 interface BidetModalProps {
@@ -12,6 +11,12 @@ interface BidetModalProps {
 }
 
 const BidetModal = ({ isVisible, location, onClose }: BidetModalProps) => {
+
+  const openMaps = () => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${location?.building}, ${location?.address}`
+    Linking.openURL(url);
+  }
+
   return (
     <Modal
         isVisible={isVisible}
@@ -22,17 +27,37 @@ const BidetModal = ({ isVisible, location, onClose }: BidetModalProps) => {
         useNativeDriver
         style={styles.modal}
     >
-        <BlurView intensity={50} style={styles.modalBackground}>
-            <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', padding: 30, borderRadius: 10 }}>
-                <TouchableOpacity onPress={onClose} style={{ height: 40, width: 40, borderRadius: 20, backgroundColor: '#A3C0BB', alignItems: 'center', justifyContent: 'center', left: -110, top: -15 }}>
-                  <FontAwesome6 name='xmark' size={20} color='white' solid />
-                </TouchableOpacity>
-                <View style={{ width: '70%', alignItems: 'center', justifyContent: 'center', marginTop: 20, top: -20 }}>
-                  <Text style={styles.locationText}>{location?.building}</Text>
-                  <Text style={styles.distanceText}>{location?.address}, Singapore {location?.postal}</Text>
-                </View>
-            </View>
-        </BlurView>
+      <View style={styles.contentContainer}>
+          <View style={{ width: '100%' }}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <FontAwesome6 name='xmark' size={18} color='white' solid />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.textContainer}>
+            <Text style={styles.locationText}>{location?.building}</Text>
+            <Text style={styles.distanceText}>{location?.address}, Singapore {location?.postal}</Text>
+          </View>
+
+          <View style={styles.infoContainer}>
+              <View style={styles.genderContainer}>
+                <FontAwesome6 name="person" size={24} />
+                <Text style={styles.statusText}>{location?.male}</Text>
+              </View>
+              <View style={styles.genderContainer}>
+                <FontAwesome6 name="person-dress" size={24} />
+                <Text style={styles.statusText}>{location?.female}</Text>
+              </View>
+              <View style={styles.genderContainer}>
+                <FontAwesome6 name="accessible-icon" size={24} />
+                <Text style={styles.statusText}>{location?.handicap}</Text>
+              </View>
+          </View>
+
+          <TouchableOpacity onPress={openMaps} style={styles.googleMapsButton}>
+            <Text style={styles.googleMapsButtonText}>Open in Maps</Text>
+          </TouchableOpacity>
+      </View>
     </Modal>
   )
 }
@@ -43,24 +68,69 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
       },
-      modalBackground: {
-        width: '100%',
-        height: '100%',
+      contentContainer: {
+        width: '80%',
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        backgroundColor: 'white', 
+        padding: 15, 
+        borderRadius: 10,
+      },
+      closeButton: {
+        height: 38, 
+        width: 38, 
+        borderRadius: 19, 
+        backgroundColor: '#A3C0BB', 
+        alignItems: 'center', 
         justifyContent: 'center',
-        alignItems: 'center',
+        marginBottom: 10, 
+      },
+      textContainer: {
+        width: '100%', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        gap: 10
       },
       locationText: {
         fontFamily: 'Outfit_500Medium',
-        fontWeight: '500',
         fontSize: 20,
         lineHeight: 21,
       },
       distanceText: {
         fontFamily: 'Outfit_400Regular',
-        fontWeight: '400',
         fontSize: 16,
         lineHeight: 21,
         textAlign: 'center'
+      },
+      infoContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-evenly', 
+        gap: 20, 
+        marginTop: 20,
+        width: '100%'
+      },
+      genderContainer: {
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        gap: 10
+      },
+      statusText: {
+        fontFamily: 'Outfit_400Regular',
+        fontSize: 14,
+      },
+      googleMapsButton: {
+        alignItems: 'center',
+        marginTop: 20,
+        width: '100%',
+        backgroundColor: '#A3C0BB',
+        paddingHorizontal: 8,
+        paddingVertical: 12,
+        borderRadius: 10
+      },
+      googleMapsButtonText: {
+        fontFamily: 'Outfit_400Regular',
+        fontSize: 16,
+        color: '#FFFFFF'
       }
 })
 

@@ -1,5 +1,6 @@
 {
   "expo": {
+    "main": "expo-router/entry",
     "name": "musollah",
     "slug": "musollah",
     "scheme": "musollah",
