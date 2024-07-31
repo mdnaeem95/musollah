@@ -1,14 +1,25 @@
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native'
 import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import Map, { Region, BidetLocation, MosqueLocation, MusollahLocation } from '../../components/Map'
 import { SearchBar } from '@rneui/themed'
-
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
+
 import BidetModal from '../../components/BidetModal'
 import MosqueModal from '../../components/MosqueModal'
+import MusollahModal from '../../components/MusollahModal'
+
 import { useSelector } from 'react-redux'
 import { RootState } from '../../redux/store/store'
-import MusollahModal from '../../components/MusollahModal'
+
+const locationTypes = ['Bidets', 'Musollahs', 'Mosques', 'Halal Food']
+
+const LOCATION_UPDATE_THRESHOLD = 0.005; // Threshold for significant location change - to determine if a location change is significant enough to trigger a refresh
+const DEBOUNCE_DELAY = 1000; // Delay in milliseconds - to delay location updates
+
+interface ItemProps {
+  item: BidetLocation | MosqueLocation | MusollahLocation;
+  onPress: (location: BidetLocation | MosqueLocation | MusollahLocation) => void;
+}
 
 const MusollahTab = () => {
   const { bidetLocations, mosqueLocations, musollahLocations, isLoading } = useSelector((state: RootState) => state.musollah);
@@ -19,14 +30,9 @@ const MusollahTab = () => {
   const [selectedLocation, setSelectedLocation] = useState<BidetLocation | MosqueLocation | MusollahLocation |null>(null);
   const [shouldFollowUserLocation, setShouldFollowUserLocation] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [filteredLocations, setFilteredLocations] = useState<BidetLocation | MosqueLocation | MusollahLocation[]>([]);
+  const [filteredLocations, setFilteredLocations] = useState<(BidetLocation | MosqueLocation | MusollahLocation)[]>([]);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const lastLocation = useRef<{ latitude: number; longitude: number } | null>(null);
-
-  const locationTypes = ['Bidets', 'Musollahs', 'Mosques', 'Halal Food']
-
-  const LOCATION_UPDATE_THRESHOLD = 0.001; // Threshold for significant location change - to determine if a location change is significant enough to trigger a refresh
-  const DEBOUNCE_DELAY = 500; // Delay in milliseconds - to delay location updates
 
   const handleMarkerPress = useCallback((location: BidetLocation | MosqueLocation | MusollahLocation) => {
     setSelectedLocation(location);
@@ -69,11 +75,15 @@ const MusollahTab = () => {
   }, [searchQuery, selectedIndex, bidetLocations, musollahLocations, mosqueLocations]);
 
   const renderItem = useCallback(({ item }: { item: BidetLocation | MosqueLocation | MusollahLocation }) => (
-    <TouchableOpacity style={{ padding: 20, borderBottomColor: 'black', borderBottomWidth: 1 }} onPress={() => handleListItemPress(item)}>
+    <Item item={item} onPress={handleListItemPress} />
+  ), [handleListItemPress]);
+
+  const Item = React.memo(({ item, onPress }: ItemProps) => (
+    <TouchableOpacity style={{ padding: 20, borderBottomColor: 'black', borderBottomWidth: 1 }} onPress={() => onPress(item)}>
       <Text style={styles.locationText}>{item.building} </Text>
       <Text style={styles.distanceText}>Distance: {item.distance?.toFixed(2)}km</Text>
-    </TouchableOpacity>
-  ), [handleListItemPress]);
+    </TouchableOpacity>  
+  ))
 
   const keyExtractor = useCallback((item: BidetLocation | MosqueLocation | MusollahLocation) => item.id, []);
 
@@ -168,7 +178,9 @@ const MusollahTab = () => {
         />
       </View>
 
-      <View style={{ flex: 1, padding: 10 }}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1, padding: 10 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} >
         <SegmentedControl
           backgroundColor='#A3C0BB'
           fontStyle={{ fontFamily: 'Outfit_400Regular', fontWeight: '400', fontSize: 14 }} 
@@ -193,7 +205,7 @@ const MusollahTab = () => {
             )}
           />
         )}
-      </View>
+      </KeyboardAvoidingView>
 
       {selectedLocation && (
         selectedIndex === 1 ? (
