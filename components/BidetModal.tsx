@@ -10,8 +10,40 @@ interface BidetModalProps {
     onClose: () => void;
 }
 
-const BidetModal = ({ isVisible, location, onClose }: BidetModalProps) => {
+const InfoRow = ({ label, value }: { label: string, value: string }) => {
+  let iconName;
+  let iconColor;
 
+  switch (value.toLowerCase()) {
+    case 'yes':
+      iconName = 'check';
+      iconColor = 'green';
+      break;
+    case 'no':
+      iconName = 'xmark';
+      iconColor = 'red';
+      break;
+    case 'unknown':
+      iconName = 'question';
+      iconColor = 'black';
+      break;
+    default:
+      iconName = null;
+  }
+
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.label}>{label}</Text>
+      {iconName ? (
+        <FontAwesome6 name={iconName} size={20} color={iconColor} />
+      ) : (
+        <Text style={styles.valueText}>{value}</Text>
+      )}
+    </View>
+  )
+}
+
+const BidetModal = ({ isVisible, location, onClose }: BidetModalProps) => {
   const openMaps = () => {
     const url = `https://www.google.com/maps/search/?api=1&query=${location?.building}, ${location?.address}`
     Linking.openURL(url);
@@ -40,18 +72,9 @@ const BidetModal = ({ isVisible, location, onClose }: BidetModalProps) => {
           </View>
 
           <View style={styles.infoContainer}>
-              <View style={styles.genderContainer}>
-                <FontAwesome6 name="person" size={24} />
-                <Text style={styles.statusText}>{location?.male}</Text>
-              </View>
-              <View style={styles.genderContainer}>
-                <FontAwesome6 name="person-dress" size={24} />
-                <Text style={styles.statusText}>{location?.female}</Text>
-              </View>
-              <View style={styles.genderContainer}>
-                <FontAwesome6 name="accessible-icon" size={24} />
-                <Text style={styles.statusText}>{location?.handicap}</Text>
-              </View>
+              <InfoRow label="Male" value={location?.male || 'No'} />
+              <InfoRow label="Female" value={location?.female || 'No'} />
+              <InfoRow label="Handicap" value={location?.handicap || 'No'} />
           </View>
 
           <TouchableOpacity onPress={openMaps} style={styles.googleMapsButton}>
@@ -63,75 +86,94 @@ const BidetModal = ({ isVisible, location, onClose }: BidetModalProps) => {
 }
 
 const styles = StyleSheet.create({
-    modal: {
-        margin: 0,
-        justifyContent: 'center',
-        alignItems: 'center',
-      },
-      contentContainer: {
-        width: '80%',
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        backgroundColor: 'white', 
-        padding: 15, 
-        borderRadius: 10,
-      },
-      closeButton: {
-        height: 38, 
-        width: 38, 
-        borderRadius: 19, 
-        backgroundColor: '#A3C0BB', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        marginBottom: 10, 
-      },
-      textContainer: {
-        width: '100%', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        gap: 10
-      },
-      locationText: {
-        fontFamily: 'Outfit_500Medium',
-        fontSize: 20,
-        lineHeight: 21,
-      },
-      distanceText: {
-        fontFamily: 'Outfit_400Regular',
-        fontSize: 16,
-        lineHeight: 21,
-        textAlign: 'center'
-      },
-      infoContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-evenly', 
-        gap: 20, 
-        marginTop: 20,
-        width: '100%'
-      },
-      genderContainer: {
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        gap: 10
-      },
-      statusText: {
-        fontFamily: 'Outfit_400Regular',
-        fontSize: 14,
-      },
-      googleMapsButton: {
-        alignItems: 'center',
-        marginTop: 20,
-        width: '100%',
-        backgroundColor: '#A3C0BB',
-        paddingHorizontal: 8,
-        paddingVertical: 12,
-        borderRadius: 10
-      },
-      googleMapsButtonText: {
-        fontFamily: 'Outfit_400Regular',
-        fontSize: 16,
-        color: '#FFFFFF'
-      }
+  modal: {
+    margin: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  contentContainer: {
+    width: '80%',
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    backgroundColor: 'white', 
+    padding: 15, 
+    borderRadius: 10,
+  },
+  closeButton: {
+    height: 38, 
+    width: 38, 
+    borderRadius: 19, 
+    backgroundColor: '#A3C0BB', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    marginBottom: 10, 
+  },
+  textContainer: {
+    width: '100%', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    gap: 10
+    },
+  locationText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 20,
+    lineHeight: 21,
+  },
+  distanceText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 16,
+    lineHeight: 21,
+    textAlign: 'center'
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly', 
+    gap: 20, 
+    marginTop: 20,
+    width: '100%'
+  },
+  genderContainer: {
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    gap: 10
+  },
+  statusText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+  },
+  googleMapsButton: {
+    alignItems: 'center',
+    marginTop: 20,
+    width: '100%',
+    backgroundColor: '#A3C0BB',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    borderRadius: 10
+  },
+  googleMapsButtonText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 16,
+    color: '#FFFFFF'
+  },
+  infoRow: {
+    width: '48%',
+    marginBottom: 10,
+    alignItems: 'center',
+    gap: 5
+  },
+  label: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  valueText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    color: 'black'
+  },
 })
 
 export default BidetModal

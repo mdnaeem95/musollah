@@ -1,13 +1,14 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
 import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import Map, { Region, BidetLocation, MosqueLocation, MusollahLocation } from '../../components/Map'
-import { SearchBar, Chip } from '@rneui/themed'
+import { SearchBar } from '@rneui/themed'
 
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import BidetModal from '../../components/BidetModal'
 import MosqueModal from '../../components/MosqueModal'
 import { useSelector } from 'react-redux'
 import { RootState } from '../../redux/store/store'
+import MusollahModal from '../../components/MusollahModal'
 
 const MusollahTab = () => {
   const { bidetLocations, mosqueLocations, musollahLocations, isLoading } = useSelector((state: RootState) => state.musollah);
@@ -196,6 +197,8 @@ const MusollahTab = () => {
 
       {selectedLocation && (
         selectedIndex === 1 ? (
+          <MusollahModal isVisible={isModalVisible} location={selectedLocation as MusollahLocation} onClose={closeModal} />
+        ) : selectedIndex === 2 ? (
           <MosqueModal isVisible={isModalVisible} location={selectedLocation as MosqueLocation} onClose={closeModal} />
         ) : (
           <BidetModal isVisible={isModalVisible} location={selectedLocation as BidetLocation} onClose={closeModal}/>
