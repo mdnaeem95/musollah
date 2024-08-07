@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import React, { useEffect, useState } from 'react'
 import { getDoaAfterPrayer } from '../../../../api/firebase'
 import { FontAwesome6 } from '@expo/vector-icons'
+import BackArrow from '../../../../components/BackArrow'
 
 export interface DoaAfterPrayer {
   id: string,
@@ -19,7 +20,7 @@ const Doa = () => {
 
   useEffect(() => {
     const fetchdoasData = async () => {
-      const data = await getDoaAfterPrayer().then((data) => {
+      await getDoaAfterPrayer().then((data) => {
         setDoas(data)
       });
          
@@ -29,16 +30,18 @@ const Doa = () => {
   }, [])
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#637E7A' }}>
-      <View style={{ marginTop: 20, alignItems: 'center', justifyContent: 'center', gap: 10, flexDirection: 'row' }}>
+    <SafeAreaView style={styles.mainContainer}>
+      <View style={{ paddingHorizontal: 16 }}>
+        <BackArrow />
+      </View>
+      <View style={styles.headerContainer}>
         <Text style={styles.headerText}>Doa After Prayer</Text>
-        <TouchableOpacity style={{ alignItems: 'center', justifyContent: 'center', marginTop: 7 }} onPress={() => setTooltipVisible(true)}>
+        <TouchableOpacity style={styles.tooltipIcon} onPress={() => setTooltipVisible(true)}>
           <FontAwesome6 name="circle-info" size={15} color="#CCC" />
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        style={{ marginTop: 20 }} 
+      <FlatList 
         data={doas}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -54,7 +57,12 @@ const Doa = () => {
       />
 
       {tooltipVisible && (
-        <Modal transparent={true} animationType="fade" visible={tooltipVisible} onRequestClose={() => setTooltipVisible(false)} >
+        <Modal 
+          transparent={true} 
+          animationType="fade" 
+          visible={tooltipVisible} 
+          onRequestClose={() => setTooltipVisible(false)}
+        >
           <View style={styles.tooltipContainer}>
             <View style={styles.tooltip}>
               <TouchableOpacity onPress={() => setTooltipVisible(false)} style={{ width: '100%', marginBottom: 10 }}>
@@ -71,11 +79,27 @@ const Doa = () => {
 }
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1, 
+    backgroundColor: '#637E7A'
+  },
+  headerContainer: {
+    marginTop: 20, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: 10, 
+    flexDirection: 'row'
+  },
   headerText: {
     color: '#FFFFFF',
     fontFamily: 'Outfit_600SemiBold',
     fontSize: 30,
     lineHeight: 45
+  },
+  tooltipIcon: {
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    marginTop: 7 
   },
   doaContainer: {
     padding: 20,

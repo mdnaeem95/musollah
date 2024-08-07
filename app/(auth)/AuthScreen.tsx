@@ -4,7 +4,7 @@ import { useForm, Controller, SubmitHandler } from 'react-hook-form'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch, RootState } from '../../redux/store/store'
-import { signIn, signUp, signInAnonymous } from '../../redux/slices/userSlice'
+import { signIn, signUp } from '../../redux/slices/userSlice'
 import { useRouter } from 'expo-router'
 
 interface UserInfo {
@@ -13,46 +13,43 @@ interface UserInfo {
 }
 
 const AuthScreen = () => {
-  const { control, handleSubmit } = useForm<UserInfo>()
+  const { control, handleSubmit, formState: { errors } } = useForm<UserInfo>()
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error } = useSelector((state: RootState) => state.user)
   const router = useRouter();
 
-  const onSignIn: SubmitHandler<UserInfo> = async ({ email, password }) => {
-    const resultAction = await dispatch(signIn({ email, password }));
-    if (signIn.fulfilled.match(resultAction)) {
-      router.push('(prayer)/index');
-    }
-  };
+  // const onSignIn: SubmitHandler<UserInfo> = async ({ email, password }) => {
+  //   const resultAction = await dispatch(signIn({ email, password }));
+  //   if (signIn.fulfilled.match(resultAction)) {
+  //     router.push('(prayer)/index');
+  //   }
+  // };
 
   const onSignUp: SubmitHandler<UserInfo> = async ({ email, password }) => {
+    console.log('Sign Up button clicked');
     const resultAction = await dispatch(signUp({ email, password }));
-    if (signIn.fulfilled.match(resultAction)) {
-      router.push('(prayer)/index');
-    }
-  };
-
-  const onAnonymousSignIn = async () => {
-    const resultAction = await dispatch(signInAnonymous());
-    if (signIn.fulfilled.match(resultAction)) {
-      router.push('(prayer)/index');
+    if (signUp.fulfilled.match(resultAction)) {
+      console.log('Sign Up successful');
+      router.push('(tabs)');
+    } else {
+      console.error('Sign Up failed: ', resultAction.error.message);
     }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#B9D0CC', alignItems: 'center', justifyContent: 'center' }}>
+    <SafeAreaView style={styles.mainContainer}>
       <View style={{ marginBottom: 60 }}>
         <Text style={styles.headerText}>RIHLAH</Text>
       </View>
 
-      <View style={{ alignItems: 'center', justifyContent: 'center', gap: 5, marginBottom: 20 }}>
+      <View style={styles.formDescContainer}>
         <Text style={styles.signUpText}>Create An Account</Text>
         <Text style={styles.signUpSubText}>Enter your email to sign up for this app.</Text>
       </View>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-        style={{ alignItems: 'center', justifyContent: 'center', width: '80%', gap: 20 }}
+        style={styles.formContainer}
       >
         <Controller 
           control={control}
@@ -63,7 +60,7 @@ const AuthScreen = () => {
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
-              style={{ backgroundColor: '#FFFFFF', width: '100%', paddingHorizontal: 8, paddingVertical: 16, borderRadius: 8 }}
+              style={styles.fieldContainer}
             />
           )}
           name="email"
@@ -71,7 +68,7 @@ const AuthScreen = () => {
 
         <Controller 
           control={control}
-          rules={{ required: true }}
+          rules={{ required: true, minLength: 6 }}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
               placeholder='Password'
@@ -79,27 +76,52 @@ const AuthScreen = () => {
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
-              style={{ backgroundColor: '#FFFFFF', width: '100%', paddingHorizontal: 8, paddingVertical: 16, borderRadius: 8 }}
+              style={styles.fieldContainer}
             />
           )}
           name="password"
         />
+        {errors.password && <Text>Password should be at least 6 characters.</Text>}
 
-        <TouchableOpacity onPress={handleSubmit(onSignUp)} style={{ backgroundColor: '#4D6561', width: '100%', paddingHorizontal: 8, paddingVertical: 16, borderRadius: 8, alignItems: 'center' }}>
-          <Text style={{ color: '#FFFFFF' }}>Sign up with email</Text>
+        <TouchableOpacity onPress={handleSubmit(onSignUp)} style={styles.btn}>
+          <Text style={styles.btnText}>Sign Up</Text>
         </TouchableOpacity>
+
+        {/* <TouchableOpacity onPress={handleSubmit(onSignIn)} style={styles.btn}>
+            <Text style={{ color: '#000000' }}>Sign In</Text>
+        </TouchableOpacity> */}
       </KeyboardAvoidingView>
 
-      <Text>Or continue anonymously</Text>
-
-      <TouchableOpacity onPress={onAnonymousSignIn} style={{ backgroundColor: '#EEEEEE', width: '80%', paddingHorizontal: 8, paddingVertical: 16, borderRadius: 8, alignItems: 'center' }}>
-          <Text style={{ color: '#000000' }}>Sign up anonymously</Text>
-      </TouchableOpacity>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1, 
+    backgroundColor: '#B9D0CC', 
+    alignItems: 'center', 
+    justifyContent: 'center'
+  },
+  formDescContainer: {
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: 5, 
+    marginBottom: 20
+  },
+  formContainer: {
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    width: '80%', 
+    gap: 20
+  },
+  fieldContainer: {
+    backgroundColor: '#FFFFFF', 
+    width: '100%', 
+    paddingHorizontal: 8, 
+    paddingVertical: 16, 
+    borderRadius: 8
+  },
   headerText: {
     fontFamily: 'Outfit_600SemiBold',
     fontSize: 32,
@@ -114,6 +136,19 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_300Light',
     fontSize: 14,
     color: '#000000'
+  },
+  btn: {
+    backgroundColor: '#4D6561', 
+    width: '100%', 
+    paddingHorizontal: 8, 
+    paddingVertical: 16, 
+    borderRadius: 8, 
+    alignItems: 'center'
+  },
+  btnText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 16,
+    color: '#FFFFFF'
   }
 })
 

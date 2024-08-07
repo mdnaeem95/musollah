@@ -29,10 +29,11 @@ const styles = StyleSheet.create({
       borderWidth: 2,
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 10
+      paddingHorizontal: 10,
+      backgroundColor: 'rgba(255, 255, 255, 0.5)'
     },
     text: {
-        fontFamily: 'Outfit_400Regular',
+        fontFamily: 'Outfit_500Medium',
         fontWeight: 400,
         fontSize: 20,
         lineHeight: 30,

@@ -7,11 +7,11 @@ import { getFormattedDate } from '../../../utils';
 import PrayerTimeItem from '../../../components/PrayerTimeItem';
 import { useRouter } from 'expo-router';
 
-import SubuhBackground from '../../../assets/subuh-background.png';
-import ZuhurBackground from '../../../assets/zuhr-background.png';
-import MaghribBackground from '../../../assets/maghrib-background.png';
-import IshaBackground from '../../../assets/isya-background.png';
-import AsrBackground from '../../../assets/test1.png';
+import SubuhBackground from '../../../assets/prayerBackgroundImages/subuhBackground.png';
+import ZuhurBackground from '../../../assets/prayerBackgroundImages/zuhurBackground.png';
+import AsrBackground from '../../../assets/prayerBackgroundImages/asarBackground.png';
+import MaghribBackground from '../../../assets/prayerBackgroundImages/maghribBackground.png';
+import IshaBackground from '../../../assets/prayerBackgroundImages/isyaBackground.png';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../redux/store/store';
