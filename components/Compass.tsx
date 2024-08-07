@@ -55,7 +55,7 @@ const Compass = () => {
                 <Text style={styles.qiblatText}>When your heading and the Kaaba's heading match, you are facing the right direction.</Text>
             </View>
 
-            <View style={{ top: 150, justifyContent: 'center', alignItems: 'center' }}>
+            <View style={styles.compassContainer}>
                 <Animated.View style={[styles.compassCircle, { backgroundColor: interpolateColor }]}>
                     <Image source={require('../assets/kaabah.png')} style={styles.kaabahIcon} />
                     <Image source={require('../assets/arrow-up.png')} style={[styles.compassArrow, { transform: [{ rotate: `${QIBLA_HEADING - userHeading}deg`}] }]} />
@@ -81,6 +81,11 @@ const styles = StyleSheet.create({
         fontSize: 18,
         lineHeight: 21,
         color: '#EAFFFC'
+    },
+    compassContainer: {
+        top: 150,
+        justifyContent: 'center',
+        alignItems: 'center'
     },
     compassCircle: {
         width: compassSize, 

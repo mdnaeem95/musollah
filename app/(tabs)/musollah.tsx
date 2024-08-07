@@ -183,7 +183,6 @@ const MusollahTab = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'} >
         <SegmentedControl
           backgroundColor='#A3C0BB'
-          fontStyle={{ fontFamily: 'Outfit_400Regular', fontWeight: '400', fontSize: 14 }} 
           values={locationTypes}
           selectedIndex={selectedIndex}
           onChange={(event) => {

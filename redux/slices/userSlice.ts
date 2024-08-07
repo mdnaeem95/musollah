@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getAuth, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../../firebaseConfig';
 
 interface UserState {
     user: any,
@@ -27,16 +29,21 @@ export const signUp = createAsyncThunk(
 async ({ email, password }: { email: string; password: string }) => {
     const auth = getAuth();
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    return userCredential.user;
+    const user = userCredential.user;
+
+    // Add user to Firestore\
+    const userDoc = doc(db, 'users', user.uid);
+    await setDoc(userDoc, {
+        name: user.displayName || 'New User',
+        email: user.email,
+        avatarUrl: 'https://via.placeholder.com/100',
+        enrolledCourses: []
+    })
+
+    return user
 }
 );
-  
-export const signInAnonymous = createAsyncThunk('user/signInAnonymously', async () => {
-const auth = getAuth();
-const userCredential = await signInAnonymously(auth);
-return userCredential.user;
-});
-  
+   
 const userSlice = createSlice({
 name: 'user',
 initialState,
@@ -71,18 +78,6 @@ extraReducers: (builder) => {
         state.error = action.error.message || 'Failed to sign up';
         state.loading = false;
     })
-    .addCase(signInAnonymous.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-    })
-    .addCase(signInAnonymous.fulfilled, (state, action) => {
-        state.user = action.payload;
-        state.loading = false;
-    })
-    .addCase(signInAnonymous.rejected, (state, action) => {
-        state.error = action.error.message || 'Failed to sign in anonymously';
-        state.loading = false;
-    });
 },
 });
 

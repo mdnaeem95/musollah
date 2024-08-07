@@ -1,9 +1,77 @@
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
 import { Surah } from "../../app/(tabs)/(quran)/index"
 import { DoaAfterPrayer } from "../../app/(tabs)/(prayer)/doa";
+import { CourseData, TeacherData, UserData } from "../../redux/slices/dashboardSlice"
+
+export const fetchUserData = async (userId: string ): Promise<UserData> => {
+    try {
+        const userSnapshot = await getDoc(doc(db, 'users', userId))
+        const data = userSnapshot.data();
+
+        return {
+            id: userSnapshot.id,
+            avatarUrl: data!.avatarUrl,
+            email: data!.email,
+            enrolledCourses: data!.enrolledCourses,
+            name: data!.name
+        } as UserData
+    } catch (error) {
+        console.error('Error fetching user data: ', error);
+        throw error;
+    }
+}
+
+export const fetchCoursesData = async (): Promise<CourseData[]> => {
+    try {
+        const coursesSnapshot = await getDocs(collection(db, 'courses'));
+        const coursesList = coursesSnapshot.docs.map(doc => {
+            const data = doc.data();
+
+            return {
+                id: doc.id,
+                backgroundColour: data.backgroundColour,
+                category: data.category,
+                description: data.description,
+                icon: data.icon,
+                teacherId: data.teacherId,
+                title: data.title,
+                modules: data.modules,
+                type: data.type
+            } as CourseData
+        })
+
+        return coursesList
+    } catch (error) {
+        console.error('Error fetching courses: ', error);
+        throw error;
+    }
+}
+
+export const fetchTeachersData = async (): Promise<TeacherData[]> => {
+    try {
+        const teachersSnapshot = await getDocs(collection(db, 'teachers'));
+        const teachersList = teachersSnapshot.docs.map(doc => {
+            const data = doc.data();
+
+            return {
+                id: doc.id,
+                courses: data.courses,
+                expertise: data.expertise,
+                imagePath: data.imagePath,
+                name: data.name,
+                background: data.background,
+            } as TeacherData
+        })
+
+        return teachersList
+    } catch (error) {
+        console.error('Error fetching teachers: ', error);
+        throw error;
+    }
+}
 
 export const getDoaAfterPrayer  = async (): Promise<DoaAfterPrayer[]> => {
     try {
@@ -168,3 +236,4 @@ export const fetchSurahs = async (): Promise<Surah[]> => {
         throw error;
     }
 }
+
