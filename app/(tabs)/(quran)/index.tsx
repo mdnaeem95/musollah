@@ -34,7 +34,7 @@ const QuranTab = () => {
       {isLoading ? (
         <ActivityIndicator />
       ) : (
-        <FlatList data={surahs} renderItem={renderSurahItem} keyExtractor={(item) => item.number.toString()} contentContainerStyle={{ right: 20  }} />
+        <FlatList data={surahs} renderItem={renderSurahItem} keyExtractor={(item) => item.number.toString()} />
       )}
     </SafeAreaView>
   )

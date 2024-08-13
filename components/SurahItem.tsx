@@ -11,13 +11,14 @@ const SurahItem = ({ surah, onPress }: SurahProps) => {
   return (
     <TouchableOpacity onPress={() => onPress(surah)}>
       <View style={styles.container}>
-        <View style={{ width: 283, height: 55, gap: 10, justifyContent: 'flex-start', alignItems: 'center', flexDirection: 'row', left: 30 }}>
+        <View style={styles.contentContainer}>
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={styles.surahNumber}>{surah.number}</Text>
-
             <View>
                 <Text style={styles.surahInfo}>{surah.englishName}</Text>
                 <Text style={styles.surahInfo}>({surah.englishNameTranslation})</Text>
             </View>
+          </View>
             
             <View style={{ top: 5 }}>
                 <Text style={styles.surahName}>{surah.arabicName}</Text>
@@ -33,6 +34,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     width: '100%',
+  },
+  contentContainer: {
+    height: 55, 
+    gap: 10, 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    flexDirection: 'row', 
   },
   surahNumber: {
     fontFamily: 'Outfit_600SemiBold',
@@ -52,7 +60,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Amiri_400Regular',
     fontWeight: 400,
     fontSize: 24,
-    textAlign: 'right'
+    textAlign: 'right',
+    color: '#FFFFFF'
   }
 });
 
