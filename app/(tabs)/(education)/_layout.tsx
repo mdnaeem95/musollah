@@ -29,7 +29,7 @@ const EducationLayout = () => {
           }}
         />
         <Drawer.Screen
-          name="courses/index"
+          name="courses"
           options={{
             drawerLabel: 'Courses',
             title: 'Courses',
@@ -37,7 +37,7 @@ const EducationLayout = () => {
           }}
         />
         <Drawer.Screen 
-          name="teachers/index"
+          name="teachers"
           options={{
             drawerLabel: 'Teachers',
             title: 'Teachers',

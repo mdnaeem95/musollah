@@ -63,10 +63,6 @@ const PrayerTab = () => {
     }
   }
 
-  const getTextStyle = () => {
-    return currentPrayer === 'Isha' ? styles.ishaText: {};
-  }
-
   const handleDayPress = (day: CalendarObject) => {
     dispatch(fetchPrayerTimesByDate(day.dateString));
     setIsCalendarVisible(false);
@@ -82,7 +78,7 @@ const PrayerTab = () => {
     <ImageBackground source={getBackgroundImage()} style={styles.backgroundImage} >
         <View style={styles.mainContainer}>
           <View style={styles.centeredView}>
-            <Text style={[styles.dateText, getTextStyle(), { marginBottom: -30 }]}>{selectedDate ? getFormattedDate(new Date(selectedDate)) : formattedDate}</Text>
+            <Text style={[styles.dateText, { marginBottom: -30 }]}>{selectedDate ? getFormattedDate(new Date(selectedDate)) : formattedDate}</Text>
             <Text style={styles.clockText}>
               <Clock 
                 format={'HH:mm'} 
@@ -92,19 +88,19 @@ const PrayerTab = () => {
                 interval={60}
               />
             </Text>
-            <Text style={[styles.dateText, getTextStyle(), { marginTop: -25 }]}>{islamicDate}</Text>
+            <Text style={[styles.dateText, { marginTop: -25 }]}>{islamicDate}</Text>
           </View>
 
           <View style={styles.bottomView}>
-            <Text style={[styles.currentText, getTextStyle()]}>{currentPrayer}</Text>
-            <Text style={[styles.dateText, getTextStyle(), styles.spacing]}>{nextPrayerInfo?.timeUntilNextPrayer} until {nextPrayerInfo?.nextPrayer}</Text>
+            <Text style={styles.currentText}>{currentPrayer}</Text>
+            <Text style={[styles.dateText, styles.spacing]}>{nextPrayerInfo?.timeUntilNextPrayer} until {nextPrayerInfo?.nextPrayer}</Text>
           </View>
 
           <View style={styles.prayerTimesContainer}>
             {prayerTimes ? (
               <>
                 {desiredPrayers.map((prayer) => (
-                  <PrayerTimeItem key={prayer} name={prayer as string} time={prayerTimes[prayer]} style={getTextStyle()} />
+                  <PrayerTimeItem key={prayer} name={prayer as string} time={prayerTimes[prayer]} />
                 ))}
               </>
             ) : (
@@ -165,7 +161,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_400Regular',
     fontSize: scaleSize(16),
     lineHeight: scaleSize(21) * 1.3,
-    color: '#314340',
+    color: '#000000',
     textAlign: 'center',
   },
   clockText: {
@@ -179,7 +175,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_400Regular',
     fontSize: scaleSize(30),
     lineHeight: scaleSize(46),
-    color: '#314340'
+    color: '#000000'
   },
   spacing: {
     marginTop: 5
