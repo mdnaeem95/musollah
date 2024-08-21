@@ -33,6 +33,11 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDTIIDN0wON_VgheCfUN5LGECUL8UaGrS0"
+        }
+      },
       "googleServicesFile": "./android/app/google-services.json",
       "package": "com.naeemsani.rihlah"
     },

@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
+import { useDispatch, useSelector } from 'react-redux'
+import { AppDispatch, RootState } from '../redux/store/store'
+import { Platform } from 'react-native';
+import Purchases, { LOG_LEVEL } from 'react-native-purchases'
 import 'react-native-reanimated';
+import * as SplashScreen from 'expo-splash-screen';
+
 import { Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from "@expo-google-fonts/outfit";
 import { Amiri_400Regular } from "@expo-google-fonts/amiri";
 import { useFonts } from 'expo-font';
-import { useDispatch, useSelector } from 'react-redux'
-import { AppDispatch, RootState } from '../redux/store/store'
 
 import { fetchUserLocation } from '../redux/slices/userLocationSlice';
 import { fetchPrayerTimesData } from '../redux/slices/prayerSlice';
@@ -57,6 +60,17 @@ const RootLayout = () => {
       dispatch(fetchMusollahData(userLocation))
     }
   }, [userLocation, dispatch]);
+
+  // To-do: Insert API Key for RevenueCat purchases.
+  useEffect(() => {
+    Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+
+    if (Platform.OS === 'ios') {
+      Purchases.configure({ apiKey: '' });
+    } else if (Platform.OS === 'android') {
+      Purchases.configure({ apiKey: 'goog_eNONXJAXWNVctmKATKkiJgdtZoB' })
+    }
+  })
 
   useEffect(() => {
     if (!isLoading && !prayerLoading && !musollahLoading && !surahsLoading && fontsLoaded) {
