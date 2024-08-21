@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, Platform } from 'react-native'
 import React from 'react'
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 
 export interface Region {
@@ -71,6 +71,7 @@ const Map = ({ region, markerLocations, onMarkerPress, onRegionChangeComplete, s
         style={{ width: '100%', height: '100%' }}
         initialRegion={region}
         showsUserLocation
+        provider={PROVIDER_GOOGLE}
         followsUserLocation={shouldFollowUserLocation}
         scrollEnabled
         zoomEnabled

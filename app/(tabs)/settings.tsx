@@ -6,6 +6,8 @@ import { Switch } from '@rneui/themed'
 
 const SettingsTab = () => {
   const [soundChecked, setsoundChecked] = useState<boolean>(true);
+  const [notificationsChecked, setNotificationsChecked] = useState<boolean>(true);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#4D6561', paddingHorizontal: 16, gap: 16 }}>
       <View style={styles.headerContainer}>
@@ -29,8 +31,8 @@ const SettingsTab = () => {
               <Text style={styles.settingsName}>Sounds</Text>
             </View>
             <Switch
-              value={soundChecked}
-              onValueChange={(value) => setsoundChecked(value)} 
+              value={notificationsChecked}
+              onValueChange={(value) => setNotificationsChecked(value)} 
             />
           </View>
 
