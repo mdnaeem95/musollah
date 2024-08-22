@@ -11,12 +11,14 @@ export const fetchUserData = async (userId: string ): Promise<UserData> => {
         const userSnapshot = await getDoc(doc(db, 'users', userId))
         const data = userSnapshot.data();
 
+        console.log('Fetched user data', data);
+
         return {
             id: userSnapshot.id,
-            avatarUrl: data!.avatarUrl,
-            email: data!.email,
-            enrolledCourses: data!.enrolledCourses,
-            name: data!.name
+            avatarUrl: data?.avatarUrl || 'https://via.placeholder.com/100', // Default avatar
+            email: data?.email || 'No email provided',
+            enrolledCourses: data?.enrolledCourses || [], // Default to an empty array
+            name: data?.name || 'Unnamed User',
         } as UserData
     } catch (error) {
         console.error('Error fetching user data: ', error);

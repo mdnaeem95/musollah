@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native'
-import React, { useEffect } from 'react'
+import React, { useCallback, useEffect } from 'react'
 
 import { FontAwesome6 } from '@expo/vector-icons'
 import * as Progress from 'react-native-progress'
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { fetchDashboardData } from '../../../../redux/slices/dashboardSlice';
@@ -15,15 +15,18 @@ const Dashboard = () => {
     const { user, courses, progress, teachers, loading, error } = useSelector((state: RootState) => state.dashboard);
     const router = useRouter();
 
-    useEffect(() => {
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                dispatch(fetchDashboardData(user.uid));
-            }
-        })
-    }, [dispatch]);
+    useFocusEffect(
+        useCallback(() => {
+            const unsubscribe = onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    dispatch(fetchDashboardData(user.uid));      
+                }
+            })
+            return () => unsubscribe();
+        }, [dispatch])
+    )
 
-    if (loading) {
+    if (loading || !user) {
         return (
             <View style={[styles.mainContainer, { justifyContent: 'center', alignItems: 'center' }]}>
                 <ActivityIndicator />
@@ -51,15 +54,15 @@ const Dashboard = () => {
                         </View>
 
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            {progress.map((course) => (
-                                <View key={course.id} style={styles.progressCard}>
+                            {progress.map((course, index) => (
+                                <View key={index} style={styles.progressCard}>
                                     <View style={styles.progressCardContent}>
                                         <Text style={styles.progressCourseTitle}>{course.title}</Text>
                                         <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
                                             <TouchableOpacity style={{ width: 25, height: 25, borderRadius: 12.5, backgroundColor: 'rgba(63, 52, 131, 0.2)', alignItems: 'center', justifyContent: 'center' }}>
                                                 <FontAwesome6 name="user" color="purple" />
                                             </TouchableOpacity>
-                                            <Text>Amir Mikasa</Text>
+                                            <Text>{course.teacherId}</Text>
                                         </View>
                                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                                             <View>
@@ -160,6 +163,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         lineHeight: 22,
         color: '#FFFFFF',
+        marginBottom: 16
     },
     section: {
         marginVertical: 20,
@@ -192,7 +196,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         lineHeight: 22,
         color: '#FFFFFF',
-        marginBottom: 10
+        marginBottom: 16
     },
     courseCard: {
         backgroundColor: "#FFFFFF",

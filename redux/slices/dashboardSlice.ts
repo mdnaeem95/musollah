@@ -59,15 +59,25 @@ const initialState: DashboardState = {
 export const fetchDashboardData = createAsyncThunk('dashboard/fetchDashboardData', async (userId: string, { rejectWithValue }) => {
 try {
     const userData = await fetchUserData(userId);
+
+    if (!userData || !Array.isArray(userData.enrolledCourses)) {
+      throw new Error("User data or enrolled courses not found");
+    }
+
     const coursesData = await fetchCoursesData();
     const teachersData = await fetchTeachersData();
     
-    const progress = userData?.enrolledCourses.map((module: any) => ({
-        id: module.moduleId,
-        title: module.title,
-        progress: module.progress,
-    }));
+    const progress = userData.enrolledCourses.map((course: any) => {
+        const courseData = coursesData.find((c: CourseData) => c.id === course.courseId)
+        return {
+          id: course.courseId ?? '',  // Ensure safe access
+          title: courseData?.title ?? 'Untitled',
+          progress: course?.progress ?? 0,
+        }
+    }) || [];
     
+    console.log('User Data', userData)
+
     return { userData, coursesData, teachersData, progress };
 } catch (error) {
     console.error('Failed to fetch dashboard data', error);

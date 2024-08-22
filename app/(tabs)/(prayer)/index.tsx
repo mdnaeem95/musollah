@@ -101,9 +101,7 @@ const PrayerTab = () => {
     }
 
     updatePrayerTimes();
-
     const intervalId = setInterval(updatePrayerTimes, 60000);
-
     return () => clearInterval(intervalId);
   }, [prayerTimes]);
 
