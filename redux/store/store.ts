@@ -6,6 +6,7 @@ import musollahReducer from '../slices/musollahSlice';
 import quranReducer from '../slices/quranSlice'
 import userReducer from '../slices/userSlice'
 import dashboardReducer from '../slices/dashboardSlice';
+import courseReducer from '../slices/courseSlice';
 
 const store = configureStore({
   reducer: {
@@ -15,6 +16,7 @@ const store = configureStore({
     quran: quranReducer,
     user: userReducer,
     dashboard: dashboardReducer,
+    course: courseReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware(
     { immutableCheck: false, 
