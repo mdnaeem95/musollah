@@ -93,6 +93,20 @@ const PrayerTab = () => {
     }
   }, [prayerTimes, selectedDate])
 
+  useEffect(() => {
+    const updatePrayerTimes = () => {
+      const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes!, new Date());
+      setCurrentPrayer(currentPrayer);
+      setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
+    }
+
+    updatePrayerTimes();
+
+    const intervalId = setInterval(updatePrayerTimes, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [prayerTimes]);
+
   return (
     <ImageBackground source={getBackgroundImage()} style={styles.backgroundImage} >
         <View style={styles.mainContainer}>
