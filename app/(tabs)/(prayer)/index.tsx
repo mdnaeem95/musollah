@@ -1,10 +1,12 @@
 import { View, Text, StyleSheet, ImageBackground, Dimensions, Modal, TouchableOpacity } from 'react-native'
 import React, { useEffect, useMemo, useState } from 'react'
 import { Calendar } from 'react-native-calendars';
-
 import Clock from 'react-live-clock';
-import { getFormattedDate } from '../../../utils';
+import { useDispatch, useSelector } from 'react-redux';
+
+import { getFormattedDate, getPrayerTimesInfo } from '../../../utils';
 import PrayerTimeItem from '../../../components/PrayerTimeItem';
+import ExpandableButton from '../../../components/ExpandableButton';
 import { useRouter } from 'expo-router';
 
 import SubuhBackground from '../../../assets/prayerBackgroundImages/subuhBackground.png';
@@ -13,9 +15,7 @@ import AsrBackground from '../../../assets/prayerBackgroundImages/asarBackground
 import MaghribBackground from '../../../assets/prayerBackgroundImages/maghribBackground.png';
 import IshaBackground from '../../../assets/prayerBackgroundImages/isyaBackground.png';
 
-import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../redux/store/store';
-import ExpandableButton from '../../../components/ExpandableButton';
 import { fetchPrayerTimesByDate } from '../../../redux/slices/prayerSlice';
 
 export interface PrayerTimes {
@@ -38,19 +38,21 @@ interface CalendarObject {
 const PrayerTab = () => {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter();
-  const { prayerTimes, islamicDate, currentPrayer, nextPrayerInfo, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
+  const { prayerTimes, islamicDate, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
   const desiredPrayers: (keyof PrayerTimes)[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
 
   const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
+  const [currentPrayer, setCurrentPrayer] = useState<string>('');
+  const [nextPrayerInfo, setNextPrayerInfo] = useState<{ nextPrayer: string, timeUntilNextPrayer: string } | null>(null);
 
   const currentDate = useMemo(() => new Date(), []);
   const formattedDate = useMemo(() => getFormattedDate(currentDate), [currentDate]);
   
   const getBackgroundImage = () => {
     switch (currentPrayer) {
-      case 'Subuh':
+      case 'Fajr':
         return SubuhBackground;
-      case 'Zuhur':
+      case 'Dhuhr':
         return ZuhurBackground;
       case 'Asr':
         return AsrBackground;
@@ -68,11 +70,28 @@ const PrayerTab = () => {
     setIsCalendarVisible(false);
   };
 
+  const isSameDay = (date1: Date, date2: Date) => {
+    return date1.getDate() === date2.getDate() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getFullYear() === date2.getFullYear();
+  }
+
   useEffect(() => {
     if (selectedDate) {
       dispatch(fetchPrayerTimesByDate(selectedDate));
     }
   }, [selectedDate, dispatch]);
+
+  useEffect(() => {
+    if (prayerTimes && isSameDay(new Date(), new Date(selectedDate!))) {
+      const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes, new Date());
+      setCurrentPrayer(currentPrayer);
+      setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
+    } else {
+      setCurrentPrayer('');
+      setNextPrayerInfo(null);
+    }
+  }, [prayerTimes, selectedDate])
 
   return (
     <ImageBackground source={getBackgroundImage()} style={styles.backgroundImage} >
@@ -92,8 +111,12 @@ const PrayerTab = () => {
           </View>
 
           <View style={styles.bottomView}>
-            <Text style={styles.currentText}>{currentPrayer}</Text>
-            <Text style={[styles.dateText, styles.spacing]}>{nextPrayerInfo?.timeUntilNextPrayer} until {nextPrayerInfo?.nextPrayer}</Text>
+            {isSameDay(new Date(), new Date(selectedDate!)) && (
+              <>
+                <Text style={styles.currentText}>{currentPrayer}</Text>
+                <Text style={[styles.dateText, styles.spacing]}>{nextPrayerInfo?.timeUntilNextPrayer} until {nextPrayerInfo?.nextPrayer}</Text>
+              </>
+            )}
           </View>
 
           <View style={styles.prayerTimesContainer}>

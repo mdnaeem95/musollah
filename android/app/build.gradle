@@ -103,6 +103,9 @@ android {
             keyPassword 'android'
         }
     }
+    buildFeatures {
+        buildConfig = true
+    }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
@@ -145,6 +148,7 @@ android {
 
 dependencies {
     implementation platform('com.google.firebase:firebase-bom:33.1.2')
+    implementation("com.google.android.gms:play-services-maps:19.0.0")
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 

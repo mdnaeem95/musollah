@@ -29,6 +29,8 @@ export const getPrayerTimesInfo  = (prayerTimes: { [key: string]: string }, curr
     });
 
     const currentMinutes = timeInMinutes(currentTime);
+    console.log('Current Time in Minutes:', currentMinutes);
+    console.log('Prayer Times in Minutes:', prayerTimesInMinutes);
 
     let currentPrayer = '';
     let nextPrayer = '';
@@ -43,6 +45,7 @@ export const getPrayerTimesInfo  = (prayerTimes: { [key: string]: string }, curr
             const hours = Math.floor(minutesUntilNextPrayer / 60);
             const minutes = minutesUntilNextPrayer % 60;
             timeUntilNextPrayer = `${hours} hr ${minutes} min`;
+            console.log(`Current Prayer: ${currentPrayer}, Next Prayer: ${nextPrayer}, Time Until Next Prayer: ${timeUntilNextPrayer}`);
             return { currentPrayer, nextPrayer, timeUntilNextPrayer}; 
         }
     }
@@ -54,6 +57,7 @@ export const getPrayerTimesInfo  = (prayerTimes: { [key: string]: string }, curr
     const hours = Math.floor(minutesUntilNextPrayer / 60);
     const minutes = minutesUntilNextPrayer % 60;
     timeUntilNextPrayer = `${hours} hr ${minutes} min`;
+    console.log(`Current Prayer (Post-Isha): ${currentPrayer}, Next Prayer: ${nextPrayer}, Time Until Next Prayer: ${timeUntilNextPrayer}`);
 
     return { currentPrayer, nextPrayer, timeUntilNextPrayer}; 
 }
