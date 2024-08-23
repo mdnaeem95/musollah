@@ -1,10 +1,10 @@
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { startCourse } from '../redux/slices/courseSlice';
-import { AppDispatch } from '../redux/store/store';
+import { AppDispatch, RootState } from '../redux/store/store';
 import { getAuth } from 'firebase/auth';
 
 interface OnlineCourseProps {
@@ -25,6 +25,15 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course : O
     const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
     const auth = getAuth();
+    const user = useSelector((state: RootState) => state.dashboard.user)
+    const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
+
+    useEffect(() => {
+        if (user) {
+            const enrolled = user.enrolledCourses.some((c: any) => c.courseId === course.id);
+            setIsEnrolled(enrolled);
+        }
+    }, [user, course.id]);
 
     const handleStartLearning = () => {
         const user = auth.currentUser;
@@ -81,8 +90,12 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course : O
                 </View>
 
                 <View style={{ marginTop: 16 }}>
-                    <TouchableOpacity style={{ width: '100%', backgroundColor: '#FFFFFF', borderRadius: 10, padding: 20, alignItems: 'center' }} onPress={handleStartLearning}>
-                        <Text style={styles.btnText}>Start Learning</Text>
+                    <TouchableOpacity 
+                        style={{ width: '100%', backgroundColor: '#FFFFFF', borderRadius: 10, padding: 20, alignItems: 'center' }} 
+                        onPress={handleStartLearning}
+                        disabled={isEnrolled}
+                    >
+                        <Text style={styles.btnText}>{isEnrolled ? 'Enrolled' : 'Start Learning'}</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
