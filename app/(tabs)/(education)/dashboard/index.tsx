@@ -34,6 +34,19 @@ const Dashboard = () => {
         )
     }
 
+    const handleCourseProgressClick = (courseId: string) => {
+        const course = courses.find((c) => c.id === courseId);
+        const userProgress = progress.find((p) => p.id === courseId);
+
+        if (course && userProgress) {
+            const totalModules = course.modules.length;
+            const completedModules = Math.floor((userProgress.progress) / 100)
+            const currentModuleIndex = completedModules >= totalModules ? totalModules - 1 : completedModules
+
+            router.push(`/education/courses/modules/${course.modules[currentModuleIndex]}`);
+        }
+    }
+
     return (
         <View style={styles.mainContainer}>
             <View style={styles.headerContainer}>
@@ -55,7 +68,7 @@ const Dashboard = () => {
 
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                             {progress.map((course, index) => (
-                                <View key={index} style={styles.progressCard}>
+                                <TouchableOpacity key={index} style={styles.progressCard} onPress={() => handleCourseProgressClick(course.id)}>
                                     <View style={styles.progressCardContent}>
                                         <Text style={styles.progressCourseTitle}>{course.title}</Text>
                                         <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
@@ -75,7 +88,7 @@ const Dashboard = () => {
                                             <Text>{course.progress}%</Text>
                                         </View>
                                     </View>
-                                </View>
+                                </TouchableOpacity>
                             ))}
                         </ScrollView>
                         </View>
