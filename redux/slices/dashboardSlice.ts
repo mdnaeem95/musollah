@@ -17,8 +17,21 @@ export interface CourseData {
     icon: string;
     teacherId: string;
     title: string;
-    modules: string[];
+    modules: ModuleData[];
     type: string;
+}
+
+export interface ModuleData {
+  moduleId: string;
+  title: string;
+  content: ContentData[];
+}
+
+export interface ContentData {
+  contentId: string;
+  title: string;
+  type: string;
+  data: string
 }
 
 export interface TeacherData {

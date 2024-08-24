@@ -4,7 +4,7 @@ import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../c
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
 import { Surah } from "../../app/(tabs)/(quran)/index"
 import { DoaAfterPrayer } from "../../app/(tabs)/(prayer)/doa";
-import { CourseData, TeacherData, UserData } from "../../redux/slices/dashboardSlice"
+import { ContentData, CourseData, ModuleData, TeacherData, UserData } from "../../redux/slices/dashboardSlice"
 
 export const fetchUserData = async (userId: string ): Promise<UserData> => {
     try {
@@ -32,6 +32,17 @@ export const fetchCoursesData = async (): Promise<CourseData[]> => {
         const coursesList = coursesSnapshot.docs.map(doc => {
             const data = doc.data();
 
+            const modules = data.modules.map((module: ModuleData) => ({
+                moduleId: module.moduleId,
+                title: module.title,
+                content: module.content.map((contentItem: ContentData) => ({
+                    contentId: contentItem.contentId,
+                    title: contentItem.title,
+                    type: contentItem.type,
+                    data: contentItem.data
+                }))
+            }))
+
             return {
                 id: doc.id,
                 backgroundColour: data.backgroundColour,
@@ -40,7 +51,7 @@ export const fetchCoursesData = async (): Promise<CourseData[]> => {
                 icon: data.icon,
                 teacherId: data.teacherId,
                 title: data.title,
-                modules: data.modules,
+                modules: modules,
                 type: data.type
             } as CourseData
         })

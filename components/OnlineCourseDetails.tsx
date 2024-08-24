@@ -83,7 +83,7 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course : O
                     <Text style={styles.subText}>Modules</Text>
                     {course.modules.map((module, index) => (
                         <View key={index} style={{ width: '100%', backgroundColor: '#FFFFFF', borderRadius: 10, padding: 10, gap: 4 }}>
-                            <Text style={[styles.subText, { color: '#000000' }]}>{`${index + 1}. ${module}`}</Text>
+                            <Text style={[styles.subText, { color: '#000000' }]}>{`${index + 1}. ${module.title}`}</Text>
                             <Text style={[styles.contentText, { color: '#000000' }]}>1 hour</Text>
                         </View>
                     ))}
