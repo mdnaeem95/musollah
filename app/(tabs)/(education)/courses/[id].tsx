@@ -6,27 +6,7 @@ import { RootState } from '../../../../redux/store/store';
 import { useSelector } from 'react-redux';
 import OnlineCourseDetails from '../../../../components/OnlineCourseDetails';
 import PhysicalCourseDetails from '../../../../components/PhysicalCourseDetails';
-
-interface CourseDetail {
-  id: string;
-  backgroundColour: string;
-  icon: string;
-  category: string;
-  title: string;
-  description: string;
-  modules: string[];
-  type: string;
-  teacherId: string;
-}
-
-interface TeacherDetail {
-  id: string;
-  expertise: string;
-  name: string;
-  imagePath: string;
-  background: string;
-  courses: string[];
-}
+import { CourseData, TeacherData } from '../../../../redux/slices/dashboardSlice';
 
 type Params = {
   id: string;
@@ -34,10 +14,10 @@ type Params = {
 
 const CourseDetails = () => {
   const { id } = useLocalSearchParams<Params>();
-  const course: CourseDetail = useSelector((state: RootState) => 
+  const course: CourseData = useSelector((state: RootState) => 
     state.dashboard.courses.find((course) => course.id === id)
   )
-  const teacher: TeacherDetail = useSelector((state: RootState) => (
+  const teacher: TeacherData = useSelector((state: RootState) => (
     state.dashboard.teachers.find((teacher) => teacher.id === course.teacherId)
   ))
 
@@ -70,7 +50,7 @@ const CourseDetails = () => {
         {course.type === 'online' ? (
           <OnlineCourseDetails course={course} teacherName={teacherName} teacherImage={teacherImage} />
         ): (
-          <PhysicalCourseDetails course={course} />
+          <></>
         )}
     </View>
   );
