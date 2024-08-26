@@ -31,7 +31,7 @@ export interface ContentData {
   contentId: string;
   title: string;
   type: string;
-  data: string
+  data: string;
 }
 
 export interface TeacherData {

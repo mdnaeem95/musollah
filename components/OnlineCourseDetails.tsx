@@ -6,22 +6,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { startCourse } from '../redux/slices/courseSlice';
 import { AppDispatch, RootState } from '../redux/store/store';
 import { getAuth } from 'firebase/auth';
+import { ContentData, CourseData, ModuleData } from '../redux/slices/dashboardSlice';
 
-interface OnlineCourseProps {
-    id: string,
-    backgroundColour: string;
-    category: string;
-    description: string;
-    icon: string;
-    teacherId: string;
-    title: string;
-    modules: string[];
-    type: string;
-}
-
-
-
-const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course : OnlineCourseProps, teacherName: string, teacherImage: string }) => {
+const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course : CourseData, teacherName: string, teacherImage: string }) => {
     const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
     const auth = getAuth();
@@ -40,7 +27,13 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course : O
 
         if (user) {
             const userId = user.uid;
-            dispatch(startCourse({ courseId: course.id, userId }));
+            dispatch(startCourse({ courseId: course.id, userId })).then(() => {
+                if (course.modules.length > 0) {
+                    const firstModuleId = course.modules[0].content[0].contentId;
+                    console.log(firstModuleId)
+                    router.push(`/education/courses/${course.id}/modules/${firstModuleId}`);
+                }
+            });
         } else {
             console.error("No user is logged in.")
         }
