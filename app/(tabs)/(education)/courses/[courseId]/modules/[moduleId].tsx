@@ -1,11 +1,9 @@
 import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import React from 'react';
+import { ModuleData } from '../../../../../../redux/slices/dashboardSlice';
 
 interface ModuleContentProps {
-  moduleData: {
-    title: string;
-    data: string;
-  };
+  moduleData: ModuleData;
 }
 
 const ModuleContent = ({ moduleData }: ModuleContentProps) => {
@@ -21,7 +19,12 @@ const ModuleContent = ({ moduleData }: ModuleContentProps) => {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>{moduleData.title}</Text>
-        <Text style={styles.content}>{moduleData.data}</Text>
+        {moduleData.content.map((contentItem, index) => (
+          <View key={index} style={styles.contentItem}>
+            <Text style={styles.contentTitle}>{contentItem.title}</Text>
+            <Text style={styles.content}>{contentItem.data}</Text>
+          </View>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -44,6 +47,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
     color: '#333', // Adjust as per your theme
+  },
+  contentItem: {
+    marginBottom: 20,
+  },
+  contentTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
   },
   content: {
     fontSize: 16,

@@ -2,24 +2,43 @@ import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'rea
 import React, { useLayoutEffect } from 'react';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { RootState } from '../../../../redux/store/store';
+import { RootState } from '../../../../../redux/store/store';
 import { useSelector } from 'react-redux';
-import OnlineCourseDetails from '../../../../components/OnlineCourseDetails';
-import PhysicalCourseDetails from '../../../../components/PhysicalCourseDetails';
-import { CourseData, TeacherData } from '../../../../redux/slices/dashboardSlice';
+import OnlineCourseDetails from '../../../../../components/OnlineCourseDetails';
+import PhysicalCourseDetails from '../../../../../components/PhysicalCourseDetails';
+import { CourseData, TeacherData } from '../../../../../redux/slices/dashboardSlice';
 
 type Params = {
-  id: string;
+  courseId: string;
 }
 
 const CourseDetails = () => {
-  const { id } = useLocalSearchParams<Params>();
+  const { courseId } = useLocalSearchParams<Params>();
+  console.log("Course ID:", courseId);  // Debugging line
   const course: CourseData = useSelector((state: RootState) => 
-    state.dashboard.courses.find((course) => course.id === id)
-  )
+    state.dashboard.courses.find((course) => course.id === courseId)
+  );
+  console.log("Course:", course);  // Debugging line
+
+  if (!course) {
+    return (
+      <View>
+        <Text>Course not Found</Text>
+      </View>
+    );
+  }
+
   const teacher: TeacherData = useSelector((state: RootState) => (
     state.dashboard.teachers.find((teacher) => teacher.id === course.teacherId)
-  ))
+  ));
+
+  if (!teacher) {
+    return (
+      <View>
+        <Text>Teacher not Found</Text>
+      </View>
+    );
+  }
 
   const { name: teacherName, imagePath: teacherImage } = teacher;
   const navigation = useNavigation();
@@ -30,14 +49,6 @@ const CourseDetails = () => {
       navigation.setOptions({ title: "" });
     }
   }, [navigation, course?.title]);
-
-  if (!course) {
-    return (
-      <View>
-        <Text>Course not Found</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={{ backgroundColor: '#4D6561', flex: 1 }}>
@@ -81,6 +92,6 @@ const styles = StyleSheet.create({
         lineHeight: 22,
         color: '#000000'
     }
-})
+});
 
 export default CourseDetails;

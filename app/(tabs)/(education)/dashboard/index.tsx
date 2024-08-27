@@ -3,7 +3,7 @@ import React, { useCallback, useEffect } from 'react'
 
 import { FontAwesome6 } from '@expo/vector-icons'
 import * as Progress from 'react-native-progress'
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { fetchDashboardData } from '../../../../redux/slices/dashboardSlice';
@@ -103,18 +103,23 @@ const Dashboard = () => {
                     </View>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                         {courses.map((course) => (
-                            <TouchableOpacity style={styles.courseCard} key={course.title} onPress={() => router.push(`courses/${course.id}`)}>
-                                <View style={styles.courseContentContainer}>
-                                    <View style={{ width: 185, height: 98,  backgroundColor: `${course.backgroundColour}`, alignItems: 'center', justifyContent: 'center' }}>
-                                        <FontAwesome6 name={course.icon} size={54} />
-                                    </View>
+                                <TouchableOpacity style={styles.courseCard} key={course.id}>
+                                    <Link href={{
+                                        pathname: '/courses/[courseId]',
+                                        params: { courseId: `${course.id}` }
+                                    }} >
+                                        <View style={styles.courseContentContainer}>
+                                            <View style={{ width: 185, height: 98,  backgroundColor: `${course.backgroundColour}`, alignItems: 'center', justifyContent: 'center' }}>
+                                                <FontAwesome6 name={course.icon} size={54} />
+                                            </View>
 
-                                    <View style={styles.textContentContainer}>
-                                        <Text style={styles.courseCategoryText}>{course.category}</Text>
-                                        <Text style={styles.courseHeaderText}>{course.title}</Text>
-                                    </View>
-                                </View>
-                            </TouchableOpacity>
+                                            <View style={styles.textContentContainer}>
+                                                <Text style={styles.courseCategoryText}>{course.category}</Text>
+                                                <Text style={styles.courseHeaderText}>{course.title}</Text>
+                                            </View>
+                                        </View>
+                                    </Link>
+                                </TouchableOpacity>
                         ))}
                     </ScrollView>
 
