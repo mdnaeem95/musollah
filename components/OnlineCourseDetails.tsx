@@ -31,7 +31,10 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course : C
             dispatch(startCourse({ courseId: course.id, userId })).then(() => {
                 if (course.modules.length > 0) {
                     const firstModuleId = course.modules[0].moduleId;
-                    router.push(`/education/courses/${course.id}/modules/${firstModuleId}`);
+                    console.log('Course ID: ', course.id)
+                    console.log('Module ID: ', firstModuleId)
+                    console.log(`Routing to: /courses/${course.id}/modules/${firstModuleId}`)
+                    router.push(`/courses/${course.id}/modules/${firstModuleId}`);
                 }
             });
         } else {
@@ -88,20 +91,19 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course : C
                                 key={index} 
                                 style={[styles.module, isLocked && styles.lockedModule]}
                                 disabled={isLocked}
+                                onPress={() => router.push(`/courses/${course.id}/modules/${module.moduleId}`)}
                             >
-                                <Link href={`/courses/${course.id}/modules/${module.moduleId}`} asChild>
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <View>
-                                            <Text style={[styles.subText, { color: '#000000' }]}>{`${index + 1}. ${module.title}`}</Text>
-                                            <Text style={[styles.contentText, { color: '#000000' }]}>1 hour</Text>
-                                        </View>
-                                        <View>
-                                            {isLocked && (
-                                                <FontAwesome6 name="lock" size={20} color="#888" />
-                                            )}
-                                        </View>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <View>
+                                        <Text style={[styles.subText, { color: '#000000' }]}>{`${index + 1}. ${module.title}`}</Text>
+                                        <Text style={[styles.contentText, { color: '#000000' }]}>1 hour</Text>
                                     </View>
-                                </Link>
+                                    <View>
+                                        {isLocked && (
+                                            <FontAwesome6 name="lock" size={20} color="#888" />
+                                        )}
+                                    </View>
+                                </View>
                             </TouchableOpacity>
                         )
                     })}
