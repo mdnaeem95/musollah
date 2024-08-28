@@ -71,10 +71,10 @@ const Dashboard = () => {
             <View style={styles.headerContainer}>
                 <Text style={styles.greetingText}>Salam, {user.name}</Text>
                 <View style={styles.headerRight}>
-                    <TouchableOpacity>
+                    {/* <TouchableOpacity>
                         <FontAwesome6 name="bell" size={24} regular />
                     </TouchableOpacity>
-                    <Image source={{ uri: user.avatarUrl }} style={styles.avatarContainer}/>
+                    <Image source={{ uri: user.avatarUrl }} style={styles.avatarContainer}/> */}
                 </View>
             </View>
 
