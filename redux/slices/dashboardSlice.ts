@@ -1,6 +1,4 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebaseConfig';
 import { fetchCoursesData, fetchTeachersData, fetchUserData } from '../../api/firebase';
 
 export interface CourseProgressData {

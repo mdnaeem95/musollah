@@ -58,14 +58,23 @@ export const startCourse = createAsyncThunk('courses/startCourse', async ({ cour
 
 export const completeModule = createAsyncThunk('courses/completeModule', async ({ courseId, userId, moduleId }: { courseId: string, userId: string, moduleId: string}, { rejectWithValue, getState }) => {
   try {
-    const state = getState() as RootState;
-    const courseProgress = state.course.courses.find(c => c.courseId === courseId);
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+      throw new Error('User not found');
+    }
+
+    const userData = userDoc.data();
+    const enrolledCourses = userData?.enrolledCourses || [];
+
+    const courseProgress = enrolledCourses.find((course: any) => course.courseId === courseId);
 
     if (!courseProgress) {
       throw new Error('Course progress not found');
     }
 
-    const updatedModules = courseProgress.modules.map((module, index) => {
+    const updatedModules = courseProgress.modules.map((module: any, index: number) => {
       if (module.moduleId === moduleId) {
         return { ...module, status: 'completed' as 'completed' };
       } else if (courseProgress.modules[index - 1]?.moduleId === moduleId) {
@@ -75,17 +84,16 @@ export const completeModule = createAsyncThunk('courses/completeModule', async (
     });
 
     // If all modules are completed, mark the course as completed
-    const allModulesCompleted = updatedModules.every(module => module.status === 'completed');
+    const allModulesCompleted = updatedModules.every((module: any) => module.status === 'completed');
     const courseStatus: 'in progress' | 'completed' = allModulesCompleted ? 'completed' : 'in progress';
 
-    const userRef = doc(db, 'users', userId);
-    const enrolledCourses = state.course.courses.map(course =>
+    const updatedEnrolledCourses = enrolledCourses.map((course: any) =>
       course.courseId === courseId
         ? { ...course, status: courseStatus, modules: updatedModules }
         : course
     );
 
-    await updateDoc(userRef, { enrolledCourses });
+    await updateDoc(userRef, { enrolledCourses: updatedEnrolledCourses });
 
     return { courseId, status: courseStatus, modules: updatedModules };
   } catch (error) {

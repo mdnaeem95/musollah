@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../../../redux/store/store';
 import { completeModule } from '../../../../../../redux/slices/courseSlice';
 import { CourseData, ModuleData } from '../../../../../../redux/slices/dashboardSlice';
+import { getAuth } from 'firebase/auth';
 
 type Params = {
   courseId: string;
@@ -15,13 +16,15 @@ const ModuleDetails = () => {
   const { courseId, moduleId } = useLocalSearchParams<Params>(); // Extract courseId and moduleId from the URL
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+  const [moduleData, setModuleData] = useState<ModuleData | null>(null);
+
+  const auth = getAuth();
+  const userId = auth.currentUser?.uid;
   
   const course: CourseData = useSelector((state: RootState) =>
     state.dashboard.courses.find((c) => c.id === courseId)
   );
   
-  const [moduleData, setModuleData] = useState<ModuleData | null>(null);
-
   useEffect(() => {
     if (course) {
       // Fetch the full module data, not just progress
@@ -32,12 +35,27 @@ const ModuleDetails = () => {
     }
   }, [course, moduleId]);
 
-  const handleCompleteModule = () => {
-    if (courseId && moduleId) {
-      dispatch(completeModule({ courseId, moduleId, userId: 'currentUserId' })) // Replace with actual user ID
-        .then(() => {
-          router.back(); // Navigate back or to the next module
-        });
+  const handleCompleteModule = async () => {
+    if (courseId && moduleId && userId) {
+      try {
+        console.log('Current course state:', course);
+        await dispatch(completeModule({ courseId, moduleId, userId })).unwrap(); // Replace with actual user ID
+        
+        // Find the index of the current module
+        const currentModuleIndex = course?.modules.findIndex((m) => m.moduleId === moduleId);
+        
+        // Determine the next module
+        if (currentModuleIndex !== undefined && currentModuleIndex < course!.modules.length - 1) {
+          const nextModule = course!.modules[currentModuleIndex + 1];
+          router.push(`/courses/${courseId}/modules/${nextModule.moduleId}`);
+        } else {
+          // If this was the last module, show a completion message or route to a course completion page
+          alert('Congratulations! You have completed the course.');
+          router.push('/dashboard'); // Or route to a different page
+        }
+      } catch (error) {
+        console.error('Failed to complete module:', error);
+      }
     }
   };
 
@@ -52,6 +70,14 @@ const ModuleDetails = () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>{moduleData.title}</Text>
+
+      {/* Render the module content */}
+      {moduleData.content.map((contentItem, index) => (
+        <View key={index} style={styles.contentContainer}>
+          <Text style={styles.contentTitle}>{contentItem.title}</Text>
+          <Text style={styles.textContent}>{contentItem.data}</Text>
+        </View>
+      ))}
       
       {/* Button to mark module as complete */}
       <TouchableOpacity style={styles.completeButton} onPress={handleCompleteModule}>
@@ -73,14 +99,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
+    fontFamily: 'Outfit_600SemiBold', 
     fontSize: 24,
-    fontWeight: 'bold',
     marginBottom: 16,
   },
-  content: {
+  contentContainer: {
+    marginBottom: 16,
+  },
+  contentTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  textContent: {
     fontSize: 16,
     lineHeight: 24,
-    marginBottom: 32,
   },
   completeButton: {
     backgroundColor: '#4CAF50',
