@@ -52,7 +52,7 @@ const EducationTab = () => {
   
   const renderCardContent = ({ item }: { item: CourseData }) => (
     <TouchableOpacity key={item.title} style={styles.cardContainer}>
-      <Link href={`/courses/courseId/${item.id}`} >
+      <Link href={`/courses/${item.id}`} >
         <View style={[styles.cardIcon, { backgroundColor: item.backgroundColour }]}>
           <FontAwesome6 size={54} name={item.icon} color="black" />
         </View>
