@@ -1,12 +1,10 @@
-import { Stack } from "expo-router";
-import React from 'react'
+// courses/[courseId]/modules/layout.tsx
+import { Stack } from 'expo-router';
 
-const CoursesLayout = () => {
-    return (
-        <Stack screenOptions={{
-          headerShown: false
-        }} />
-    )
+export default function ModulesLayout() {
+  return (
+    <Stack>
+      <Stack.Screen name="[moduleId]" options={{ title: 'Module Details' }} />
+    </Stack>
+  );
 }
-
-export default CoursesLayout
