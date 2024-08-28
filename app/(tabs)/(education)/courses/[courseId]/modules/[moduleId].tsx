@@ -1,12 +1,46 @@
-import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
-import React from 'react';
-import { ModuleData } from '../../../../../../redux/slices/dashboardSlice';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../../../../../redux/store/store';
+import { completeModule } from '../../../../../../redux/slices/courseSlice';
+import { CourseData, ModuleData } from '../../../../../../redux/slices/dashboardSlice';
 
-interface ModuleContentProps {
-  moduleData: ModuleData;
+type Params = {
+  courseId: string;
+  moduleId: string;
 }
 
-const ModuleContent = ({ moduleData }: ModuleContentProps) => {
+const ModuleDetails = () => {
+  const { courseId, moduleId } = useLocalSearchParams<Params>(); // Extract courseId and moduleId from the URL
+  const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  
+  const course: CourseData = useSelector((state: RootState) =>
+    state.dashboard.courses.find((c) => c.id === courseId)
+  );
+  
+  const [moduleData, setModuleData] = useState<ModuleData | null>(null);
+
+  useEffect(() => {
+    if (course) {
+      // Fetch the full module data, not just progress
+      const module = course.modules.find((m) => m.moduleId === moduleId);
+      if (module) {
+        setModuleData(module)
+      }
+    }
+  }, [course, moduleId]);
+
+  const handleCompleteModule = () => {
+    if (courseId && moduleId) {
+      dispatch(completeModule({ courseId, moduleId, userId: 'currentUserId' })) // Replace with actual user ID
+        .then(() => {
+          router.back(); // Navigate back or to the next module
+        });
+    }
+  };
+
   if (!moduleData) {
     return (
       <View style={styles.loadingContainer}>
@@ -16,51 +50,49 @@ const ModuleContent = ({ moduleData }: ModuleContentProps) => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>{moduleData.title}</Text>
-        {moduleData.content.map((contentItem, index) => (
-          <View key={index} style={styles.contentItem}>
-            <Text style={styles.contentTitle}>{contentItem.title}</Text>
-            <Text style={styles.content}>{contentItem.data}</Text>
-          </View>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>{moduleData.title}</Text>
+      
+      {/* Button to mark module as complete */}
+      <TouchableOpacity style={styles.completeButton} onPress={handleCompleteModule}>
+        <Text style={styles.completeButtonText}>Complete Module</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
+  container: {
+    padding: 16,
+    backgroundColor: '#f5f5f5',
+    flexGrow: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  container: {
-    padding: 20,
-  },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333', // Adjust as per your theme
-  },
-  contentItem: {
-    marginBottom: 20,
-  },
-  contentTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    marginBottom: 16,
   },
   content: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#555', // Adjust as per your theme
+    marginBottom: 32,
+  },
+  completeButton: {
+    backgroundColor: '#4CAF50',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  completeButtonText: {
+    fontSize: 18,
+    color: '#ffffff',
+    fontWeight: 'bold',
   },
 });
 
-export default ModuleContent;
+export default ModuleDetails;
