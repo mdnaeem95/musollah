@@ -51,7 +51,7 @@ const ModuleDetails = () => {
         } else {
           // If this was the last module, show a completion message or route to a course completion page
           alert('Congratulations! You have completed the course.');
-          router.push('/dashboard'); // Or route to a different page
+          router.push('/courses'); // Or route to a different page
         }
       } catch (error) {
         console.error('Failed to complete module:', error);

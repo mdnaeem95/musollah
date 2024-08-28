@@ -86,8 +86,6 @@ try {
           progress: course?.progress ?? 0,
         }
     }) || [];
-    
-    console.log('User Data', userData)
 
     return { userData, coursesData, teachersData, progress };
 } catch (error) {

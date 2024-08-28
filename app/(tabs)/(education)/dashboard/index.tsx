@@ -14,6 +14,7 @@ const Dashboard = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { user, courses, progress, teachers, loading, error } = useSelector((state: RootState) => state.dashboard);
     const router = useRouter();
+    const inProgressCourses = user?.enrolledCourses?.filter((course: any) => course.status !== 'completed') || [];
 
     useFocusEffect(
         useCallback(() => {
@@ -36,15 +37,33 @@ const Dashboard = () => {
 
     const handleCourseProgressClick = (courseId: string) => {
         const course = courses.find((c) => c.id === courseId);
-        const userProgress = progress.find((p) => p.id === courseId);
-
-        if (course && userProgress) {
-            const totalModules = course.modules.length;
-            const completedModules = Math.floor((userProgress.progress) / 100)
-            const currentModuleIndex = completedModules >= totalModules ? totalModules - 1 : completedModules
-
-            router.push(`/education/courses/modules/${course.modules[currentModuleIndex]}`);
+        
+        if (!course) {
+            console.error(`Course with ID ${courseId} not found.`);
+            return;
         }
+
+        // Get the user's progress for this course from the enrolledCourses in the user's collection
+        const userProgress = user?.enrolledCourses.find((p: any) => p.courseId === courseId);
+
+        if (!userProgress) {
+            console.error(`Progress for course ID ${courseId} not found.`);
+            return;
+        }
+
+        const totalModules = course.modules.length;
+
+        // Find the first module that is either in progress or not started yet
+        const currentModule = userProgress.modules.find(
+            (module: any) => module.status === 'in progress' || module.status === 'locked'
+        ) || userProgress.modules[totalModules - 1]; // Fallback to the last module if everything is completed
+        
+        if (currentModule) {
+            router.push(`/courses/${courseId}/modules/${currentModule.moduleId}`);
+        } else {
+            console.error('No current module found.');
+        }
+        
     }
 
     return (
@@ -60,36 +79,42 @@ const Dashboard = () => {
             </View>
 
             <View style={styles.section}>
-                {progress.length > 0 && (
+                {inProgressCourses.length > 0 && (
                     <View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <Text style={styles.progressHeader}>In Progress</Text>
                         </View>
 
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            {progress.map((course, index) => (
-                                <TouchableOpacity key={index} style={styles.progressCard} onPress={() => handleCourseProgressClick(course.id)}>
-                                    <View style={styles.progressCardContent}>
-                                        <Text style={styles.progressCourseTitle}>{course.title}</Text>
-                                        <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
-                                            <TouchableOpacity style={{ width: 25, height: 25, borderRadius: 12.5, backgroundColor: 'rgba(63, 52, 131, 0.2)', alignItems: 'center', justifyContent: 'center' }}>
-                                                <FontAwesome6 name="user" color="purple" />
-                                            </TouchableOpacity>
-                                            <Text>{course.teacherId}</Text>
-                                        </View>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                            <View>
-                                                <Progress.Bar 
-                                                    progress={course.progress / 100}
-                                                    height={7}
-                                                    color="#4D6561" 
-                                                />
+                            {user.enrolledCourses
+                            .filter((course: any) => course.status !== 'completed')
+                            .map((course: any, index: number) => {
+                                const courseData = courses.find((c) => c.id === course.courseId); // Find the course details
+                                const progress = course.modules.filter((m: any) => m.status === 'completed').length / course.modules.length;
+                                return (
+                                    <TouchableOpacity key={index} style={styles.progressCard} onPress={() => handleCourseProgressClick(course.courseId)}>
+                                        <View style={styles.progressCardContent}>
+                                            <Text style={styles.progressCourseTitle}>{courseData?.title || 'Course Title'}</Text>
+                                            <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
+                                                <TouchableOpacity style={{ width: 25, height: 25, borderRadius: 12.5, backgroundColor: 'rgba(63, 52, 131, 0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <FontAwesome6 name="user" color="purple" />
+                                                </TouchableOpacity>
+                                                <Text>{courseData?.teacherId || 'Teacher ID'}</Text>
                                             </View>
-                                            <Text>{course.progress}%</Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                                <View>
+                                                    <Progress.Bar 
+                                                        progress={progress}
+                                                        height={7}
+                                                        color="#4D6561" 
+                                                        />
+                                                </View>
+                                                <Text>{progress}%</Text>
+                                            </View>
                                         </View>
-                                    </View>
-                                </TouchableOpacity>
-                            ))}
+                                    </TouchableOpacity>
+                                )
+                            })}
                         </ScrollView>
                         </View>
                 )}
