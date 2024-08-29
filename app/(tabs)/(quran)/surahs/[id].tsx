@@ -103,36 +103,38 @@ const SurahTextScreen = () => {
 
     if (!surah) {
         return (
-            <SafeAreaView style={{ backgroundColor: '#4D6561', flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <SafeAreaView style={{ backgroundColor: '#4D6561', flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 }}>
                 <Text style={{ color: '#FFF' }}>Surah not found</Text>
             </SafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView style={{ backgroundColor: '#4D6561', flex: 1 }}>
+        <SafeAreaView style={{ backgroundColor: '#4D6561', flex: 1, paddingTop: 30 }}>
             <View style={{ backgroundColor: '#4D6561', flex: 1 }}>
                 {isLoading ? (
                     <ActivityIndicator />
                 ) : (
-                    <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                        <View style={{ justifyContent: 'center', alignItems: 'center', paddingVertical: 20, borderRadius: 40, backgroundColor: '#D9D9D9', width: '50%', marginBottom: 20 }}>
-                            <Text style={styles.surahName}>{surah.arabicName}</Text>
-                            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', display: 'flex', gap: 10 }}>
-                                <Text style={styles.surahEnglishName}>{surah.englishName}</Text>
-                                <TouchableOpacity onPressIn={togglePlayPause}>
-                                    <Image source={isPlaying ? require('../../../../assets/pause.png') : require('../../../../assets/play.png')} style={{ objectFit: 'contain', width: 28, height: 28 }} />
-                                </TouchableOpacity>
+                    <View style={{ flex: 1 }}>
+                        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                            <View style={{ justifyContent: 'center', alignItems: 'center', paddingVertical: 20, borderRadius: 40, backgroundColor: '#D9D9D9', width: '50%', marginBottom: 20 }}>
+                                <Text style={styles.surahName}>{surah.arabicName}</Text>
+                                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', display: 'flex', gap: 10 }}>
+                                    <Text style={styles.surahEnglishName}>{surah.englishName}</Text>
+                                    <TouchableOpacity onPressIn={togglePlayPause}>
+                                        <Image source={isPlaying ? require('../../../../assets/pause.png') : require('../../../../assets/play.png')} style={{ objectFit: 'contain', width: 28, height: 28 }} />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-                        </View>
 
-                        <FlatList
-                            data={surah.arabicText ? surah.arabicText.split('|') : []}
-                            renderItem={renderAyah}
-                            keyExtractor={(item, index) => index.toString()}
-                            contentContainerStyle={styles.listContainer}
-                            showsVerticalScrollIndicator={false}
-                        />
+                            <FlatList
+                                data={surah.arabicText ? surah.arabicText.split('|') : []}
+                                renderItem={renderAyah}
+                                keyExtractor={(item, index) => index.toString()}
+                                contentContainerStyle={styles.listContainer}
+                                showsVerticalScrollIndicator={false}
+                                />
+                        </View>
                     </View>
                 )}
             </View>
@@ -180,7 +182,7 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     listContainer: {
-        paddingTop: 20,
+        paddingBottom: 50
     },
     separator: {
         width: '100%',
