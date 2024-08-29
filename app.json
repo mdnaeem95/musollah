@@ -53,6 +53,14 @@
           }
         }
       ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "naeem-th",
+          "project": "rihlah-android",
+          "url": "https://sentry.io/"
+        }
+      ],
       "expo-router",
       "expo-font",
       [
