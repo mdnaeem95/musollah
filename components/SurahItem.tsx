@@ -32,7 +32,6 @@ const SurahItem = ({ surah, onPress }: SurahProps) => {
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 10,
-    paddingHorizontal: 20,
     width: '100%',
   },
   contentContainer: {
@@ -44,21 +43,18 @@ const styles = StyleSheet.create({
   },
   surahNumber: {
     fontFamily: 'Outfit_600SemiBold',
-    fontWeight: 600,
     fontSize: 30,
     lineHeight: 45,
     color: '#FFFFFF'
   },
   surahInfo: {
     fontFamily: 'Outfit_500Medium',
-    fontWeight: 500,
     fontSize: 14,
     lineHeight: 18,
     color: '#EAFFFC'
   },
   surahName: {
     fontFamily: 'Amiri_400Regular',
-    fontWeight: 400,
     fontSize: 24,
     textAlign: 'right',
     color: '#FFFFFF'
