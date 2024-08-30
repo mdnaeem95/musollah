@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, ImageBackground, Dimensions, Modal, TouchableOpacity } from 'react-native'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Calendar } from 'react-native-calendars';
 import Clock from 'react-live-clock';
 import { useDispatch, useSelector } from 'react-redux';
@@ -93,7 +93,7 @@ const PrayerTab = () => {
     }
   }, [prayerTimes, selectedDate])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const updatePrayerTimes = () => {
       const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes!, new Date());
       setCurrentPrayer(currentPrayer);
