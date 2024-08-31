@@ -59,7 +59,7 @@
         "@sentry/react-native/expo",
         {
           "organization": "naeem-th",
-          "project": "rihlah-android",
+          "project": "react-native",
           "url": "https://sentry.io/"
         }
       ],
