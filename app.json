@@ -39,7 +39,7 @@
           "apiKey": "AIzaSyDTIIDN0wON_VgheCfUN5LGECUL8UaGrS0"
         }
       },
-      "googleServicesFile": "./android/app/google-services.json",
+      "googleServicesFile": "./google-services.json",
       "package": "com.naeemsani.rihlah"
     },
     "web": {
@@ -47,8 +47,6 @@
     },
     "plugins": [
       "@react-native-firebase/app",
-      "@react-native-firebase/auth",
-      "@react-native-firebase/crashlytics",
       [
         "expo-build-properties",
         {
@@ -73,8 +71,7 @@
           "locationAlwaysAndWhenInUsePermission": "Allow Musollah to use your location."
         }
       ],
-      "expo-asset",
-      "@react-native-firebase/app"
+      "expo-asset"
     ],
     "extra": {
       "router": {
