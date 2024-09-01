@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Stack, useNavigationContainerRef } from 'expo-router';
+import { Slot, Stack, useNavigationContainerRef } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch, RootState } from '../redux/store/store'
 import { Platform } from 'react-native';
