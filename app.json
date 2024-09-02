@@ -13,12 +13,12 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "We use your location to show you relevant data.",
         "NSLocationAlwaysUsageDescription": "We use your location to show you relevant data even when the app is in the background."
       },
-      "googleServicesFile": "./GoogleService-Info.plist",
       "bundleIdentifier": "com.naeemsani95.rihlah"
     },
     "android": {
