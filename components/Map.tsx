@@ -71,7 +71,6 @@ const Map = ({ region, markerLocations, onMarkerPress, onRegionChangeComplete, s
         style={{ width: '100%', height: '100%' }}
         initialRegion={region}
         showsUserLocation
-        provider={PROVIDER_GOOGLE}
         followsUserLocation={shouldFollowUserLocation}
         scrollEnabled
         zoomEnabled
