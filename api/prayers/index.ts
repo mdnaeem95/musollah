@@ -1,8 +1,8 @@
-import axios from 'axios';
 import { formatDateForAPI } from '../../utils';
 
 export const fetchPrayerTimes = async () => {
     try {
+        console.log('Fetching prayer times...')
         const response = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=Singapore&country=Singapore&method=11`)
 
         if (!response.ok) {
@@ -20,7 +20,8 @@ export const fetchPrayerTimes = async () => {
 export const fetchTimesByDate = async (date: string) => {
     try {
         const formattedDate = formatDateForAPI(date);
-        console.log(formattedDate)
+        console.log('Formatted Date: ', formattedDate)
+        console.log('Fetfching prayer times by date for...', formattedDate)
         const response = await fetch(`https://api.aladhan.com/v1/timings/${formattedDate}?latitude=1.290270&longitude=103.851959&method=11`)
 
         if (!response.ok) {
@@ -36,7 +37,8 @@ export const fetchTimesByDate = async (date: string) => {
 
 export const fetchIslamicDate = async (date: string) => {
     try {
-        const response = await fetch(`http://api.aladhan.com/v1/gToH/${date}`)
+        console.log('Fetching Islamic Date for...', date);
+        const response = await fetch(`https://api.aladhan.com/v1/gToH/${date}`)
 
         if (!response.ok) {
             throw new Error('Failed to fetch Islamic Date');
