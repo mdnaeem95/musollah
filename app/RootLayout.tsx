@@ -90,7 +90,7 @@ const RootLayout = () => {
     Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
 
     if (Platform.OS === 'ios') {
-      Purchases.configure({ apiKey: '' });
+      Purchases.configure({ apiKey: 'appl_MajNlUmfjhcjaiAeGxrjxxmNlMl' });
     } else if (Platform.OS === 'android') {
       Purchases.configure({ apiKey: 'goog_eNONXJAXWNVctmKATKkiJgdtZoB' })
     }
