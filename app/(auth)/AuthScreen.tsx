@@ -12,11 +12,30 @@ interface UserInfo {
   password: string
 }
 
+const emailRules = {
+  required: 'Email is required',
+  pattern: {
+    value: /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/,
+    message: 'Enter a valid email address',
+  },
+};
+
+const passwordRules = {
+  required: 'Password is required',
+  minLength: {
+    value: 6,
+    message: 'Password should be at least 6 characters long',
+  },
+};
+
+
 const AuthScreen = () => {
   const { control, handleSubmit, formState: { errors } } = useForm<UserInfo>()
-  const dispatch = useDispatch<AppDispatch>();
   const { loading, error } = useSelector((state: RootState) => state.user)
+  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  console.log('AuthScreen rendered');
 
   // const onSignIn: SubmitHandler<UserInfo> = async ({ email, password }) => {
   //   const resultAction = await dispatch(signIn({ email, password }));
@@ -27,12 +46,14 @@ const AuthScreen = () => {
 
   const onSignUp: SubmitHandler<UserInfo> = async ({ email, password }) => {
     console.log('Sign Up button clicked');
-    const resultAction = await dispatch(signUp({ email, password }));
-    if (signUp.fulfilled.match(resultAction)) {
-      console.log('Sign Up successful');
+    console.log('Form data:', { email, password });
+
+    try {
+      const resultAction = await dispatch(signUp({ email, password })).unwrap();
+      console.log('Sign Up successful:', resultAction);
       router.push('(tabs)');
-    } else {
-      console.error('Sign Up failed: ', resultAction.error.message);
+    } catch (error) {
+      console.error('Sign Up failed: ', error);
     }
   };
 
@@ -47,13 +68,10 @@ const AuthScreen = () => {
         <Text style={styles.signUpSubText}>Enter your email to sign up for this app.</Text>
       </View>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-        style={styles.formContainer}
-      >
+      <View>
         <Controller 
           control={control}
-          rules={{ required: true }}
+          rules={emailRules}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
               placeholder='email@domain.com'
@@ -65,10 +83,11 @@ const AuthScreen = () => {
           )}
           name="email"
         />
+        {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
 
         <Controller 
           control={control}
-          rules={{ required: true, minLength: 6 }}
+          rules={passwordRules}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
               placeholder='Password'
@@ -81,7 +100,7 @@ const AuthScreen = () => {
           )}
           name="password"
         />
-        {errors.password && <Text>Password should be at least 6 characters.</Text>}
+        {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
 
         <TouchableOpacity onPress={handleSubmit(onSignUp)} style={styles.btn}>
           <Text style={styles.btnText}>Sign Up</Text>
@@ -90,7 +109,7 @@ const AuthScreen = () => {
         {/* <TouchableOpacity onPress={handleSubmit(onSignIn)} style={styles.btn}>
             <Text style={{ color: '#000000' }}>Sign In</Text>
         </TouchableOpacity> */}
-      </KeyboardAvoidingView>
+      </View>
 
     </SafeAreaView>
   )
@@ -149,7 +168,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_500Medium',
     fontSize: 16,
     color: '#FFFFFF'
-  }
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 14,
+    marginTop: -10,
+    marginBottom: 10,
+  },
 })
 
 export default AuthScreen

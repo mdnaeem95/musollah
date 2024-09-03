@@ -46,18 +46,36 @@ const RootLayout = () => {
       setIsAuthenticated(!!user);
     });
 
-    return unsubscribe;
+    return () => {
+      console.log('Unsubscribing from auth state changes.');
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
-    dispatch(fetchUserLocation());
-    dispatch(fetchPrayerTimesData());
-    dispatch(fetchSurahsData());
+    const fetchData = async () => {
+      try {
+        await dispatch(fetchUserLocation()).unwrap();
+        await dispatch(fetchPrayerTimesData()).unwrap();
+        await dispatch(fetchSurahsData()).unwrap();
+      } catch (error) {
+        console.log('Error fetching initial data: ', error);
+      }
+    }
+
+    fetchData();
   }, [dispatch]);
 
   useEffect(() => {
     if (userLocation) {
-      dispatch(fetchMusollahData(userLocation))
+      const fetchLocations = async () => {
+        try {
+          await dispatch(fetchMusollahData(userLocation)).unwrap();
+        } catch (error) {
+          console.error('Error fetching Locations data: ', error);
+        }
+      }
+      fetchLocations();
     }
   }, [userLocation, dispatch]);
 
@@ -85,12 +103,17 @@ const RootLayout = () => {
     console.log('Musollah loading:', musollahLoading);
     console.log('Quran loading:', surahsLoading);
 
+    const hideSplashScreen = async () => {
+      try {
+        await SplashScreen.hideAsync();
+        console.log('SplashScreen hidden')
+      } catch (error) {
+        console.error('Error hiding SplashScreen: ', error);
+      }
+    }
+
     if (isAppReady) {
-      SplashScreen.hideAsync().then(() => {
-        console.log('SplashScreen hidden');
-      }).catch(error => {
-        console.error('Error hiding SplashScreen', error)
-      });
+      hideSplashScreen();
     }
   }, [isAppReady]);
 
