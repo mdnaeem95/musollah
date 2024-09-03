@@ -30,11 +30,17 @@ const QuranTab = () => {
   ), [handleSurahPress]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#4D6561', padding: 30 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#4D6561' }}>
       {isLoading ? (
         <ActivityIndicator />
       ) : (
-        <FlatList data={surahs} renderItem={renderSurahItem} keyExtractor={(item) => item.number.toString()} showsVerticalScrollIndicator={false} />
+        <FlatList 
+          data={surahs} 
+          renderItem={renderSurahItem} 
+          keyExtractor={(item) => item.number.toString()} 
+          showsVerticalScrollIndicator={false}
+          style={{ padding: 30 }} 
+        />
       )}
     </SafeAreaView>
   )
