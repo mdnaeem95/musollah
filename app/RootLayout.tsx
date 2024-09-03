@@ -19,22 +19,22 @@ import { fetchSurahsData } from '../redux/slices/quranSlice'
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import AuthScreen from './(auth)/AuthScreen';
 
-import * as Sentry from '@sentry/react-native';
+// import * as Sentry from '@sentry/react-native';
 
 SplashScreen.preventAutoHideAsync();
 
-const routingInstrumentation = new Sentry.ReactNavigationInstrumentation();
+// const routingInstrumentation = new Sentry.ReactNavigationInstrumentation();
 
-Sentry.init({
-  dsn: 'https://6273527f044ad3d726f911727730fdf7@o4507860915257344.ingest.us.sentry.io/4507860932034560',
-  debug: true,
-  integrations: [
-    new Sentry.ReactNativeTracing({
-      routingInstrumentation,
-      enableNativeFramesTracking: !isRunningInExpoGo(),
-    })
-  ]
-})
+// Sentry.init({
+//   dsn: 'https://6273527f044ad3d726f911727730fdf7@o4507860915257344.ingest.us.sentry.io/4507860932034560',
+//   debug: true,
+//   integrations: [
+//     new Sentry.ReactNativeTracing({
+//       routingInstrumentation,
+//       enableNativeFramesTracking: !isRunningInExpoGo(),
+//     })
+//   ]
+// })
 
 const RootLayout = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -49,11 +49,11 @@ const RootLayout = () => {
 
   const ref = useNavigationContainerRef();
 
-  useEffect(() => {
-    if (ref) {
-      routingInstrumentation.registerNavigationContainer(ref);
-    }
-  }, [ref])
+  // useEffect(() => {
+  //   if (ref) {
+  //     routingInstrumentation.registerNavigationContainer(ref);
+  //   }
+  // }, [ref])
 
   const [fontsLoaded] = useFonts({
     Outfit_300Light,
@@ -134,4 +134,4 @@ const RootLayout = () => {
   );
 }
 
-export default Sentry.wrap(RootLayout);
+export default RootLayout;
