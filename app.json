@@ -47,20 +47,14 @@
     },
     "plugins": [
       "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-firebase/crashlytics",
       [
         "expo-build-properties",
         {
           "ios": {
             "useFramework": "static"
           }
-        }
-      ],
-      [
-        "@sentry/react-native/expo",
-        {
-          "organization": "naeem-th",
-          "project": "react-native",
-          "url": "https://sentry.io/"
         }
       ],
       "expo-router",
