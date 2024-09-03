@@ -66,8 +66,12 @@ const PrayerTab = () => {
   }
 
   const handleDayPress = (day: CalendarObject) => {
-    dispatch(fetchPrayerTimesByDate(day.dateString));
-    setIsCalendarVisible(false);
+    try {
+      dispatch(fetchPrayerTimesByDate(day.dateString));
+      setIsCalendarVisible(false);
+    } catch (error) {
+      console.error('Error fetching prayer times by date: ', error);
+    }
   };
 
   const isSameDay = (date1: Date, date2: Date) => {
@@ -78,7 +82,11 @@ const PrayerTab = () => {
 
   useEffect(() => {
     if (selectedDate) {
-      dispatch(fetchPrayerTimesByDate(selectedDate));
+      try {
+        dispatch(fetchPrayerTimesByDate(selectedDate));
+      } catch (error) {
+        console.error('Error fetching prayer times:', error);
+      }
     }
   }, [selectedDate, dispatch]);
 
