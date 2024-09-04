@@ -5,7 +5,7 @@
     "scheme": "rihlah",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/RihlahIcon.jpg",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splashscreen.png",
@@ -60,7 +60,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Musollah to use your location."
+          "locationAlwaysAndWhenInUsePermission": "Allow Rihlah to use your location."
         }
       ],
       "expo-asset"
@@ -70,8 +70,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "386c1019-2436-4371-83b3-31df44b8591b"
+        "projectId": "deec8169-b934-4eff-8714-421a695e3d9b"
       }
-    }
+    },
+    "owner": "naeemsani95"
   }
 }
