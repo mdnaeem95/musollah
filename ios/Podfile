@@ -44,7 +44,7 @@ target 'musollah' do
 
   pod 'FirebaseCoreInternal', :modular_headers => true
   pod 'FirebaseCrashlytics', :modular_headers => true
-  pod 'FirebaseSession', :modular_headers => true
+  pod 'FirebaseSessions', :modular_headers => true
   $RNFirebaseAsStaticFramework = true
 
   use_react_native!(
