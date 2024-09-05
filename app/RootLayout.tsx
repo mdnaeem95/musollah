@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch, RootState } from '../redux/store/store'
-import { Platform } from 'react-native';
+import { ActivityIndicator, Animated, Platform, StyleSheet, View } from 'react-native';
 import Purchases, { LOG_LEVEL } from 'react-native-purchases'
 import 'react-native-reanimated';
 import * as SplashScreen from 'expo-splash-screen';
@@ -17,6 +17,7 @@ import { fetchMusollahData } from '../redux/slices/musollahSlice'
 import { fetchSurahsData } from '../redux/slices/quranSlice'
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import AuthScreen from './(auth)/AuthScreen';
+import LoadingScreen from '../components/LoadingScreen';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -27,7 +28,6 @@ const RootLayout = () => {
   const { isLoading: musollahLoading } = useSelector((state: RootState) => state.musollah);
   const { isLoading: surahsLoading } = useSelector((state: RootState) => state.quran);
 
-  const [loading, setLoading] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAppReady, setIsAppReady] = useState(false);
 
@@ -55,6 +55,7 @@ const RootLayout = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log('Fetching initial data...')
         await dispatch(fetchUserLocation()).unwrap();
         await dispatch(fetchPrayerTimesData()).unwrap();
         await dispatch(fetchSurahsData()).unwrap();
@@ -82,12 +83,21 @@ const RootLayout = () => {
   useEffect(() => {
     Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
 
-    if (Platform.OS === 'ios') {
-      Purchases.configure({ apiKey: 'appl_MajNlUmfjhcjaiAeGxrjxxmNlMl' });
-    } else if (Platform.OS === 'android') {
-      Purchases.configure({ apiKey: 'goog_eNONXJAXWNVctmKATKkiJgdtZoB' })
+    const configurePurchases = () => {
+      try {
+        if (Platform.OS === 'ios') {
+          Purchases.configure({ apiKey: 'appl_MajNlUmfjhcjaiAeGxrjxxmNlMl' });
+        } else if (Platform.OS === 'android') {
+          Purchases.configure({ apiKey: 'goog_eNONXJAXWNVctmKATKkiJgdtZoB' })
+        }
+        console.log('Purchases SDK configured.')
+      } catch (error) {
+        console.error('Error configuring Purchases SDK: ', error);
+      }
     }
-  })
+
+    configurePurchases();
+  }, [])
 
   useEffect(() => {
     if (!isLoading && !prayerLoading && !musollahLoading && !surahsLoading && fontsLoaded) {
@@ -118,7 +128,7 @@ const RootLayout = () => {
   }, [isAppReady]);
 
   if (!isAppReady) {
-    return null;
+    return <LoadingScreen />
   }
 
   if (!isAuthenticated) {
@@ -131,5 +141,26 @@ const RootLayout = () => {
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent', // This ensures we don't hide the splash screen
+    position: 'absolute', // Ensures this view overlays the splash screen
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  loadingText: {
+    marginTop: 20,
+    fontSize: 18,
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#4D6561',
+  },
+})
 
 export default RootLayout;
