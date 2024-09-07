@@ -8,6 +8,20 @@ interface LocationState {
   isLoading: boolean;
 }
 
+// Define a default location in central Singapore (e.g., Marina Bay Sands)
+const DEFAULT_LOCATION: LocationObject = {
+  coords: {
+    latitude: 1.2831,
+    longitude: 103.8603,
+    altitude: null,
+    accuracy: null,
+    heading: null,
+    speed: null,
+    altitudeAccuracy: null,
+  },
+  timestamp: new Date().getTime(),
+};
+
 const initialState: LocationState = {
   userLocation: null,
   errorMsg: null,
@@ -16,14 +30,13 @@ const initialState: LocationState = {
 
 export const fetchUserLocation = createAsyncThunk<LocationObject, void, { rejectValue: string }>(
   'location/fetchUserLocation',
-  async (_, { dispatch, rejectWithValue }) => {
-    dispatch(setLoading(true));
+  async (_, { rejectWithValue }) => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
+
       if (status !== 'granted') {
         const errorMsg = 'Permission to access location was denied';
-        dispatch(setErrorMessage(errorMsg));
-        dispatch(setLoading(false));
+        console.warn(errorMsg);
         return rejectWithValue(errorMsg);
       }
 
@@ -33,35 +46,16 @@ export const fetchUserLocation = createAsyncThunk<LocationObject, void, { reject
 
       if (!userLocation) {
         const errorMsg = 'Failed to get user location';
-        dispatch(setErrorMessage(errorMsg));
-        dispatch(setLoading(false));
+        console.error(errorMsg);
         return rejectWithValue(errorMsg);
       }
-
-      dispatch(setUserLocation(userLocation));
-
-      Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 10000,
-          distanceInterval: 10,
-        },
-        (newLocation) => {
-          if (newLocation) {
-            dispatch(setUserLocation(newLocation));
-          }
-        }
-      );
 
       return userLocation;
     } catch (error) {
       const errorMsg = 'Failed to fetch user location';
       console.error(errorMsg, error);
-      dispatch(setErrorMessage(errorMsg));
       return rejectWithValue(errorMsg);
-    } finally {
-      dispatch(setLoading(false));
-    }
+    } 
   }
 );
 
@@ -91,6 +85,7 @@ const userLocationSlice = createSlice({
       })
       .addCase(fetchUserLocation.rejected, (state, action) => {
         state.errorMsg = action.payload as string;
+        state.userLocation = DEFAULT_LOCATION;
         state.isLoading = false;
       });
   },
