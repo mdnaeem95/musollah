@@ -68,7 +68,7 @@ const AuthScreen = () => {
         <Text style={styles.signUpSubText}>Enter your email to sign up for this app.</Text>
       </View>
 
-      <View>
+      <View style={{ width: '100%', paddingHorizontal: 16, gap: 20 }}>
         <Controller 
           control={control}
           rules={emailRules}

@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 import * as SplashScreen from 'expo-splash-screen';
+import { Platform } from 'react-native';
 
 import { Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from "@expo-google-fonts/outfit";
 import { Amiri_400Regular } from "@expo-google-fonts/amiri";
@@ -16,14 +17,13 @@ import { fetchSurahsData } from '../redux/slices/quranSlice';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import AuthScreen from './(auth)/AuthScreen';
 import LoadingScreen from '../components/LoadingScreen';
-import { Platform } from 'react-native';
 
 // Prevent SplashScreen from hiding automatically
 SplashScreen.preventAutoHideAsync();
 
 const RootLayout = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { isLoading, userLocation } = useSelector((state: RootState) => state.location);
+  const { userLocation } = useSelector((state: RootState) => state.location);
   const { isLoading: prayerLoading } = useSelector((state: RootState) => state.prayer);
   const { isLoading: musollahLoading } = useSelector((state: RootState) => state.musollah);
   const { isLoading: surahsLoading } = useSelector((state: RootState) => state.quran);
@@ -39,6 +39,7 @@ const RootLayout = () => {
     Amiri_400Regular,
   });
 
+  // Monitor Authentication State
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -47,31 +48,43 @@ const RootLayout = () => {
     });
 
     return () => {
-      console.log('Unsubscribing from auth state changes.');
       unsubscribe();
     };
   }, []);
 
-  // Fetch initial data during loading screen
+  // Fetch Data (User Location, Prayer Times, Surahs)
   useEffect(() => {
     const fetchData = async () => {
       try {
         console.log('Fetching initial data...');
-        await dispatch(fetchUserLocation()).unwrap();
-        await dispatch(fetchPrayerTimesData()).unwrap();
-        await dispatch(fetchSurahsData()).unwrap();
-
-        if (userLocation) {
-          await dispatch(fetchMusollahData(userLocation)).unwrap();
-        }
-        // Mark data fetching as complete
+        await dispatch(fetchUserLocation()).unwrap();  // Fetch user location first
+        await dispatch(fetchPrayerTimesData()).unwrap();  // Fetch prayer times
+        await dispatch(fetchSurahsData()).unwrap();  // Fetch Quran surahs
         setIsDataFetched(true);
       } catch (error) {
         console.error('Error fetching initial data:', error);
       }
     };
 
-    fetchData();
+    // Only fetch data if it hasn't been fetched yet
+    if (!isDataFetched) {
+      fetchData();
+    }
+  }, [dispatch, isDataFetched]);
+
+  // Fetch Musollah Data once user location is available
+  useEffect(() => {
+    if (userLocation) {
+      const fetchMusollah = async () => {
+        try {
+          await dispatch(fetchMusollahData(userLocation)).unwrap();
+        } catch (error) {
+          console.error('Error fetching Musollah data:', error);
+        }
+      };
+
+      fetchMusollah();
+    }
   }, [dispatch, userLocation]);
 
   // Configure Purchases SDK
@@ -94,33 +107,33 @@ const RootLayout = () => {
     configurePurchases();
   }, []);
 
-  // Hide the SplashScreen once the app is ready
+  // Hide SplashScreen when fonts and data are loaded
   useEffect(() => {
     const hideSplashScreen = async () => {
       try {
         await SplashScreen.hideAsync();
         console.log('SplashScreen hidden');
       } catch (error) {
-        console.error('Error hiding SplashScreen: ', error);
+        console.error('Error hiding SplashScreen:', error);
       }
     };
 
-    if (isFontsLoaded) {
+    if (isFontsLoaded && isDataFetched) {
       hideSplashScreen();
     }
-  }, [isFontsLoaded]);
+  }, [isFontsLoaded, isDataFetched]);
 
-  // Show the Loading Screen while data is being fetched and the user isn't authenticated
+  // Display the loading screen while the app is setting up
   if (!isFontsLoaded || !isDataFetched) {
     return <LoadingScreen message="Setting up the app..." />;
   }
 
-  // If user is not authenticated, show the AuthScreen
+  // If the user is not authenticated, show the authentication screen
   if (!isAuthenticated) {
     return <AuthScreen />;
   }
 
-  // Return the main app layout once the user is authenticated
+  // Return the main app layout once the user is authenticated and data is loaded
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
