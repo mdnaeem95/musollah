@@ -30,7 +30,7 @@ const TabLayout = () => {
             case '(quran)':
               iconName = 'book-quran';
               break;
-            case 'settings':
+            case '(settings)':
               iconName = 'gear';
               break;
             default:
@@ -69,7 +69,7 @@ const TabLayout = () => {
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="(settings)"
         options={{
           title: 'Settings',
           headerShown: false,

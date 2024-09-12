@@ -14,35 +14,27 @@ type Params = {
 
 const CourseDetails = () => {
   const { courseId } = useLocalSearchParams<Params>();
-  console.log("Course ID:", courseId);  // Debugging line
-  const course: CourseData = useSelector((state: RootState) => 
-    state.dashboard.courses.find((course) => course.id === courseId)
-  );
-  console.log("Course:", course);  // Debugging line
+  const navigation = useNavigation();
+  const router = useRouter();
+  console.log("Course ID:", courseId);
 
-  if (!course) {
+  const { course, teacher } = useSelector((state: RootState) => {
+    const course = state.dashboard.courses.find(c => c.id === courseId);
+    const teacher = course ? state.dashboard.teachers.find(t => t.id === course.teacherId) : null;
+    return { course, teacher };
+  });
+  console.log("Course:", course);
+  console.log("Teacher:", teacher);
+
+  if (!course || !teacher) {
     return (
-      <View>
-        <Text>Course not Found</Text>
-      </View>
-    );
-  }
-
-  const teacher: TeacherData = useSelector((state: RootState) => (
-    state.dashboard.teachers.find((teacher) => teacher.id === course.teacherId)
-  ));
-
-  if (!teacher) {
-    return (
-      <View>
-        <Text>Teacher not Found</Text>
+      <View style={styles.notFound}>
+        <Text>{!course ? "Course not Found" : "Teacher not Found"}</Text>
       </View>
     );
   }
 
   const { name: teacherName, imagePath: teacherImage } = teacher;
-  const navigation = useNavigation();
-  const router = useRouter();
 
   useLayoutEffect(() => {
     if (course) {
@@ -51,8 +43,8 @@ const CourseDetails = () => {
   }, [navigation, course?.title]);
 
   return (
-    <View style={{ backgroundColor: '#4D6561', flex: 1 }}>
-        <View style={{ width: '100%', paddingHorizontal: 16 }}>
+    <View style={styles.mainContainer}>
+        <View style={styles.backButtonContainer}>
           <TouchableOpacity onPress={() => router.back()}>
             <FontAwesome6 name="arrow-left" color='white' size={24} />
           </TouchableOpacity>
@@ -68,30 +60,46 @@ const CourseDetails = () => {
 };
 
 const styles = StyleSheet.create({
-    subText: {
-        fontFamily: 'Outfit_500Medium',
-        fontSize: 14,
-        lineHeight: 18,
-        color: '#FFFFFF'
-    },
-    mainText: {
-        fontFamily: 'Outfit_500Medium',
-        fontSize: 16,
-        lineHeight: 21,
-        color: '#FFFFFF'
-    },
-    contentText: {
-        fontFamily: 'Outfit_400Regular',
-        fontSize: 14,
-        lineHeight: 18,
-        color: '#FFFFFF'
-    },
-    btnText: {
-        fontFamily: 'Outfit_500Medium', 
-        fontSize: 16,
-        lineHeight: 22,
-        color: '#000000'
-    }
+  notFound: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#4D6561',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  backButtonContainer: {
+    width: '100%',
+    paddingHorizontal: 16,
+    marginTop: 16
+  },
+  subText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 14,
+    lineHeight: 18,
+    color: '#FFFFFF'
+  },
+   mainText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 16,
+    lineHeight: 21,
+    color: '#FFFFFF'
+  },
+  contentText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+    lineHeight: 18,
+    color: '#FFFFFF'
+  },
+  btnText: {
+    fontFamily: 'Outfit_500Medium', 
+    fontSize: 16,
+    lineHeight: 22,
+    color: '#000000'
+  }
 });
 
 export default CourseDetails;

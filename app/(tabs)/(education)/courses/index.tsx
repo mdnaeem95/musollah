@@ -1,14 +1,15 @@
 import { View, Text, FlatList, ScrollView, TouchableOpacity } from 'react-native'
-import React, { useLayoutEffect, useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { Searchbar } from 'react-native-paper';
 import { FontAwesome6 } from '@expo/vector-icons'
 import { StyleSheet } from 'react-native'
-import { Link, useNavigation, useRouter } from 'expo-router'
+import { Link } from 'expo-router'
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import { useSelector } from 'react-redux'
 import { RootState } from '../../../../redux/store/store'
 import { CourseData } from '../../../../redux/slices/dashboardSlice'
 import BackArrow from '../../../../components/BackArrow';
+import CourseCard from '../../../../components/CourseCard';
 
 export interface CategoryData {
   icon: string,
@@ -25,8 +26,6 @@ const data = [
 ]
 
 const EducationTab = () => {
-  const router = useRouter();
-  const navigation = useNavigation();
   const { courses } = useSelector((state: RootState) => state.dashboard);
   const [activeCategory, setactiveCategory] = useState<string | null>('All Courses');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -47,26 +46,6 @@ const EducationTab = () => {
       onPress={() => handleCategoryPress(item.title)}
     >
       <Text style={styles.categoryText}>{item.title}</Text>
-    </TouchableOpacity>
-  )
-  
-  const renderCardContent = ({ item }: { item: CourseData }) => (
-    <TouchableOpacity key={item.title} style={styles.cardContainer}>
-      <Link href={`/courses/${item.id}`} >
-        <View style={[styles.cardIcon, { backgroundColor: item.backgroundColour }]}>
-          <FontAwesome6 size={54} name={item.icon} color="black" />
-        </View>
-    
-        <View style={styles.cardContent}>
-          <View style={styles.cardHashTag}>
-            <Text style={styles.hashtagText}>{item.category}</Text>
-          </View>
-          <View style={styles.cardDescription}>
-            <Text style={styles.headerText}>{item.title}</Text>
-            <Text style={styles.descriptionText} numberOfLines={2} ellipsizeMode='tail'>{item.description}</Text>
-          </View>
-        </View>
-      </Link>
     </TouchableOpacity>
   )
 
@@ -110,7 +89,16 @@ const EducationTab = () => {
 
       <FlatList 
         data={filteredCardData}
-        renderItem={renderCardContent}
+        renderItem={({ item }: { item: CourseData }) => (
+          <CourseCard
+            id={item.id}
+            title={item.title}
+            description={item.description}
+            category={item.category}
+            icon={item.icon}
+            backgroundColour={item.backgroundColour}
+          />
+        )}
         keyExtractor={(item) => item.title}
         showsVerticalScrollIndicator={false}
       />

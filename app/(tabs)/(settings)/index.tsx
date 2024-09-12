@@ -3,13 +3,15 @@ import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FontAwesome6 } from '@expo/vector-icons'
 import { Switch } from '@rneui/themed'
+import { useRouter } from 'expo-router'
 
 const SettingsTab = () => {
-  const [soundChecked, setsoundChecked] = useState<boolean>(true);
-  const [notificationsChecked, setNotificationsChecked] = useState<boolean>(true);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
+  const router = useRouter();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#4D6561', paddingHorizontal: 16, gap: 16 }}>
+    <SafeAreaView style={styles.mainContainer}>
       <View style={styles.headerContainer}>
         <Text style={styles.headerText}>S E T T I N G S</Text>
       </View>
@@ -17,13 +19,13 @@ const SettingsTab = () => {
       <View style={{ gap: 16 }}>
         <Text style={styles.generalHeader}>G E N E R A L</Text>
         <View style={styles.generalSettingsContainer}>
-          <View style={styles.settingsField}>
+          <TouchableOpacity style={styles.settingsField} onPress={() => router.push(`/account`)}>
             <View style={styles.settingsLeftField}>
               <FontAwesome6 name='user' color='white' size={20} />
               <Text style={styles.settingsName}>Account</Text>
             </View>
             <FontAwesome6 name='chevron-right' color='white' size={20} />
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.settingsField}>
             <View style={styles.settingsLeftField}>
@@ -31,8 +33,8 @@ const SettingsTab = () => {
               <Text style={styles.settingsName}>Sounds</Text>
             </View>
             <Switch
-              value={notificationsChecked}
-              onValueChange={(value) => setNotificationsChecked(value)} 
+              value={notificationsEnabled}
+              onValueChange={(value) => setNotificationsEnabled(value)} 
             />
           </View>
 
@@ -42,8 +44,8 @@ const SettingsTab = () => {
               <Text style={styles.settingsName}>Notifications</Text>
             </View>
             <Switch
-              value={soundChecked}
-              onValueChange={(value) => setsoundChecked(value)} 
+              value={soundEnabled}
+              onValueChange={(value) => setSoundEnabled(value)} 
             />
           </View>
         </View>
@@ -52,20 +54,20 @@ const SettingsTab = () => {
       <View style={{ gap: 16 }}>
         <Text style={styles.generalHeader}>S U P P O R T</Text>
         <View style={styles.generalSettingsContainer}>
-          <View style={styles.settingsField}>
+          <TouchableOpacity style={styles.settingsField} onPress={() => router.push('/support')}>
             <View style={styles.settingsLeftField}>
               <FontAwesome6 name='envelope' color='white' size={20} />
               <Text style={styles.settingsName}>Support</Text>
             </View>
             <FontAwesome6 name='chevron-right' color='white' size={20} />
-          </View>
+          </TouchableOpacity>
 
           <TouchableOpacity style={styles.settingsField}>
             <View style={styles.settingsLeftField}>
               <FontAwesome6 name='dollar-sign' color='white' size={20} />
               <Text style={styles.settingsName}>One Time Donation</Text>
             </View>
-            <Text style={styles.settingsName}>$5.00</Text>
+            <Text style={styles.settingsName}>$4.98</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.settingsField}>
@@ -73,7 +75,7 @@ const SettingsTab = () => {
               <FontAwesome6 name='ban' color='white' size={20} />
               <Text style={styles.settingsName}>Remove Ads</Text>
             </View>
-            <Text style={styles.settingsName}>$2.99</Text>
+            <Text style={styles.settingsName}>$2.98</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -82,6 +84,12 @@ const SettingsTab = () => {
 }
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1, 
+    backgroundColor: '#4D6561', 
+    paddingHorizontal: 16, 
+    gap: 16
+  },
   headerContainer: {
     justifyContent: 'center',
     alignItems: 'center'
