@@ -45,8 +45,19 @@ const PrayerTab = () => {
   const [currentPrayer, setCurrentPrayer] = useState<string>('');
   const [nextPrayerInfo, setNextPrayerInfo] = useState<{ nextPrayer: string, timeUntilNextPrayer: string } | null>(null);
 
-  const currentDate = useMemo(() => new Date(), []);
-  const formattedDate = useMemo(() => getFormattedDate(currentDate), [currentDate]);
+  // Default to today's date when the component is loaded for the first time.
+  useEffect(() => {
+    if (!selectedDate) {
+      const today = new Date().toISOString().split('T')[0]; // Get today's date in yyyy-mm-dd format.
+      dispatch(fetchPrayerTimesByDate(today));
+    }
+  }, [dispatch, selectedDate]);
+  
+  const formattedDate = useMemo(() => 
+    {
+      const date = selectedDate ? new Date(selectedDate) : new Date();
+      return getFormattedDate(date);
+    }, [selectedDate]);
   
   const getBackgroundImage = () => {
     switch (currentPrayer) {
@@ -80,18 +91,29 @@ const PrayerTab = () => {
     date1.getFullYear() === date2.getFullYear();
   }
 
+  // Fetch prayer times for the current day if selectedDate is not set
   useEffect(() => {
-    if (selectedDate) {
+    const today = getFormattedDate(new Date());
+
+    // If no date is selected, default's to today's date
+    if (!selectedDate || selectedDate === today) {
+      try {
+        dispatch(fetchPrayerTimesByDate(today));
+      } catch (error) {
+        console.error(`Error fetching prayer times for today date ${today}:`, error);
+      }
+    } else {
       try {
         dispatch(fetchPrayerTimesByDate(selectedDate));
       } catch (error) {
-        console.error('Error fetching prayer times:', error);
+        console.error(`Error fetching date for selected date ${selectedDate}:`, error)
       }
     }
   }, [selectedDate, dispatch]);
 
+  // Update current and next prayer info once prayer times are fetched 
   useEffect(() => {
-    if (prayerTimes && isSameDay(new Date(), new Date(selectedDate!))) {
+    if (prayerTimes && isSameDay(new Date(), new Date(selectedDate || new Date()))) {
       const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes, new Date());
       setCurrentPrayer(currentPrayer);
       setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
@@ -101,15 +123,18 @@ const PrayerTab = () => {
     }
   }, [prayerTimes, selectedDate])
 
+  // Periodically update current and next prayer information every 1 minute
   useLayoutEffect(() => {
     const updatePrayerTimes = () => {
-      const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes!, new Date());
-      setCurrentPrayer(currentPrayer);
-      setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
+      if (prayerTimes) {
+        const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes!, new Date());
+        setCurrentPrayer(currentPrayer);
+        setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
+      }
     }
 
-    updatePrayerTimes();
     const intervalId = setInterval(updatePrayerTimes, 60000);
+    updatePrayerTimes();
     return () => clearInterval(intervalId);
   }, [prayerTimes]);
 

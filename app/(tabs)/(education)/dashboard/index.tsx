@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { fetchDashboardData } from '../../../../redux/slices/dashboardSlice';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import CourseCardShort from '../../../../components/CourseCardShort';
 
 const Dashboard = () => {
     const auth = getAuth();
@@ -68,6 +69,7 @@ const Dashboard = () => {
 
     return (
         <View style={styles.mainContainer}>
+            {/* Header Section - Name */}
             <View style={styles.headerContainer}>
                 <Text style={styles.greetingText}>Salam, {user.name}</Text>
                 <View style={styles.headerRight}>
@@ -78,6 +80,7 @@ const Dashboard = () => {
                 </View>
             </View>
 
+            {/* Progress Section - if any */}
             <View style={styles.section}>
                 {inProgressCourses.length > 0 && (
                     <View>
@@ -119,6 +122,7 @@ const Dashboard = () => {
                         </View>
                 )}
 
+                {/* Courses Section */}
                 <ScrollView contentContainerStyle={{ paddingBottom: 250 }} showsVerticalScrollIndicator={false}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Text style={styles.coursesHeader}>Courses</Text>
@@ -128,23 +132,15 @@ const Dashboard = () => {
                     </View>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                         {courses.map((course) => (
-                                <TouchableOpacity style={styles.courseCard} key={course.id}>
-                                    <Link href={{
-                                        pathname: '/courses/[courseId]',
-                                        params: { courseId: `${course.id}` }
-                                    }} >
-                                        <View style={styles.courseContentContainer}>
-                                            <View style={{ width: 185, height: 98,  backgroundColor: `${course.backgroundColour}`, alignItems: 'center', justifyContent: 'center' }}>
-                                                <FontAwesome6 name={course.icon} size={54} />
-                                            </View>
-
-                                            <View style={styles.textContentContainer}>
-                                                <Text style={styles.courseCategoryText}>{course.category}</Text>
-                                                <Text style={styles.courseHeaderText}>{course.title}</Text>
-                                            </View>
-                                        </View>
-                                    </Link>
-                                </TouchableOpacity>
+                            <CourseCardShort
+                                key={course.id}
+                                id={course.id}
+                                title={course.title}
+                                description={course.description}
+                                category={course.category}
+                                icon={course.icon}
+                                backgroundColour={course.backgroundColour} 
+                            />
                         ))}
                     </ScrollView>
 
@@ -245,6 +241,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#FFFFFF",
         borderRadius: 10,
         padding: 10,
+        paddingVertical: 20,
         marginRight: 20,
         shadowColor: "#000",
         shadowOffset: {
@@ -259,8 +256,8 @@ const styles = StyleSheet.create({
         width: '90%'
     },
     textContentContainer: {
-        gap: 10,
-        marginTop: 10
+        gap: 5,
+        marginTop: 5
     },
     courseCategoryText: {
         fontFamily: 'Outfit_400Regular',
