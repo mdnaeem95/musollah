@@ -90,13 +90,16 @@ const RootLayout = () => {
     }
   }, [dispatch, userLocation]);
 
-  // Configure Purchases SDK
   useEffect(() => {
     OneSignal.Debug.setLogLevel(LogLevel.Verbose);
-    OneSignal.initialize(Constants.expoConfig.extra.oneSignalAppId);
+    OneSignal.initialize(Constants.expoConfig?.extra?.oneSignalAppId);
 
     // Also need enable notifications to complete OneSignal setup
     OneSignal.Notifications.requestPermission(true);
+  }, [])
+
+  // Configure Purchases SDK
+  useEffect(() => {
     Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
 
     const configurePurchases = async () => {
