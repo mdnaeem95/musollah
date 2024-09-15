@@ -9,6 +9,9 @@ import { Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBol
 import { Amiri_400Regular } from "@expo-google-fonts/amiri";
 import { useFonts } from 'expo-font';
 
+import { LogLevel, OneSignal } from 'react-native-onesignal';
+import Constants from "expo-constants";
+
 import { AppDispatch, RootState } from '../redux/store/store';
 import { fetchUserLocation } from '../redux/slices/userLocationSlice';
 import { fetchPrayerTimesData } from '../redux/slices/prayerSlice';
@@ -89,6 +92,11 @@ const RootLayout = () => {
 
   // Configure Purchases SDK
   useEffect(() => {
+    OneSignal.Debug.setLogLevel(LogLevel.Verbose);
+    OneSignal.initialize(Constants.expoConfig.extra.oneSignalAppId);
+
+    // Also need enable notifications to complete OneSignal setup
+    OneSignal.Notifications.requestPermission(true);
     Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
 
     const configurePurchases = async () => {
