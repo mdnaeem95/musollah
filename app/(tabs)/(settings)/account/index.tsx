@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Button, Alert } from 'react-native';
 import Modal from 'react-native-modal'
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getAuth, updateEmail, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { getAuth, updateEmail, updateProfile } from '@react-native-firebase/auth';
+import { getFirestore, doc, getDoc, updateDoc } from '@react-native-firebase/firestore';
 import { FontAwesome6 } from '@expo/vector-icons'; // For consistent icons
 import BackArrow from '../../../../components/BackArrow';
 
@@ -37,11 +37,11 @@ const AccountSettings = () => {
         const userDocRef = doc(firestore, 'users', currentUser.uid);
         const userDoc = await getDoc(userDocRef);
 
-        if (userDoc.exists()) {
+        if (userDoc.exists) {
         const userData = userDoc.data();
-        setName(userData.name || '');
-        setEmail(userData.email || '');
-        setCoursesCompleted(userData.coursesCompleted || 0);
+        setName(userData?.name || '');
+        setEmail(userData?.email || '');
+        setCoursesCompleted(userData?.coursesCompleted || 0);
         }
     }
     };

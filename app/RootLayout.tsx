@@ -14,7 +14,7 @@ import { fetchUserLocation } from '../redux/slices/userLocationSlice';
 import { fetchPrayerTimesData } from '../redux/slices/prayerSlice';
 import { fetchMusollahData } from '../redux/slices/musollahSlice';
 import { fetchSurahsData } from '../redux/slices/quranSlice';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import AuthScreen from './(auth)/AuthScreen';
 import LoadingScreen from '../components/LoadingScreen';
 
@@ -39,7 +39,7 @@ const RootLayout = () => {
   // Monitor Authentication State
   useEffect(() => {
     const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user: any) => {
       setIsAuthenticated(!!user);
       console.log('Authentication state changed, user:', user ? user.email : 'None');
     });

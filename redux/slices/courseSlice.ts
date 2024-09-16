@@ -1,7 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getFirestore, doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
-import { db } from '../../firebaseConfig';
-import { useSelector } from 'react-redux';
+import firestore from '@react-native-firebase/firestore';
 import { RootState } from '../store/store';
 import { ModuleData } from './dashboardSlice';
 
@@ -42,12 +40,24 @@ export const startCourse = createAsyncThunk('courses/startCourse', async ({ cour
       moduleId: module.moduleId,
       status: (index === 0 ? 'in progress' : 'locked') as 'in progress' | 'locked', // First module is in progress, others are locked
     }));
-    const userRef = doc(db, 'users', userId);
 
-    // Update user's enrolled courses
-    await updateDoc(userRef, {
-      enrolledCourses: arrayUnion({ courseId, status: 'in progress' as 'in progress', modules: initialModulesProgress }),
-    });
+    const userRef = firestore().collection('users').doc(userId)
+    const userSnapshot = await userRef.get();
+
+    if (!userSnapshot.exists) {
+      throw new Error('User not found.')
+    }
+
+    const userData = userSnapshot.data();
+
+    const updatedEnrolledCourses = [
+      ...(userData?.enrolledCourses || []),
+      { courseId, status: 'in progress', modules: initialModulesProgress }
+    ]
+
+    await userRef.update({
+      enrolledCourses: updatedEnrolledCourses
+    })
 
     return { courseId, status: 'in progress' as 'in progress', modules: initialModulesProgress };
   } catch (error) {
@@ -56,51 +66,62 @@ export const startCourse = createAsyncThunk('courses/startCourse', async ({ cour
   }
 });
 
-export const completeModule = createAsyncThunk('courses/completeModule', async ({ courseId, userId, moduleId }: { courseId: string, userId: string, moduleId: string}, { rejectWithValue, getState }) => {
-  try {
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
+export const completeModule = createAsyncThunk(
+  'courses/completeModule',
+  async (
+    { courseId, userId, moduleId }: { courseId: string; userId: string; moduleId: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      // Firestore reference to the user document
+      const userRef = firestore().collection('users').doc(userId);
+      const userDoc = await userRef.get();
 
-    if (!userDoc.exists()) {
-      throw new Error('User not found');
-    }
-
-    const userData = userDoc.data();
-    const enrolledCourses = userData?.enrolledCourses || [];
-
-    const courseProgress = enrolledCourses.find((course: any) => course.courseId === courseId);
-
-    if (!courseProgress) {
-      throw new Error('Course progress not found');
-    }
-
-    const updatedModules = courseProgress.modules.map((module: any, index: number) => {
-      if (module.moduleId === moduleId) {
-        return { ...module, status: 'completed' as 'completed' };
-      } else if (courseProgress.modules[index - 1]?.moduleId === moduleId) {
-        return { ...module, status: 'in progress' as 'in progress' };
+      if (!userDoc.exists) {
+        throw new Error('User not found');
       }
-      return module;
-    });
 
-    // If all modules are completed, mark the course as completed
-    const allModulesCompleted = updatedModules.every((module: any) => module.status === 'completed');
-    const courseStatus: 'in progress' | 'completed' = allModulesCompleted ? 'completed' : 'in progress';
+      const userData = userDoc.data();
+      const enrolledCourses = userData?.enrolledCourses || [];
 
-    const updatedEnrolledCourses = enrolledCourses.map((course: any) =>
-      course.courseId === courseId
-        ? { ...course, status: courseStatus, modules: updatedModules }
-        : course
-    );
+      const courseProgress = enrolledCourses.find((course: any) => course.courseId === courseId);
 
-    await updateDoc(userRef, { enrolledCourses: updatedEnrolledCourses });
+      if (!courseProgress) {
+        throw new Error('Course progress not found');
+      }
 
-    return { courseId, status: courseStatus, modules: updatedModules };
-  } catch (error) {
-    console.error('Failed to complete module:', error);
-    return rejectWithValue('Failed to complete module')
+      // Update the module status
+      const updatedModules = courseProgress.modules.map((module: any, index: number) => {
+        if (module.moduleId === moduleId) {
+          return { ...module, status: 'completed' as 'completed' };
+        } else if (courseProgress.modules[index - 1]?.moduleId === moduleId) {
+          return { ...module, status: 'in progress' as 'in progress' };
+        }
+        return module;
+      });
+
+      // Check if all modules are completed
+      const allModulesCompleted = updatedModules.every((module: any) => module.status === 'completed');
+      const courseStatus: 'in progress' | 'completed' = allModulesCompleted ? 'completed' : 'in progress';
+
+      // Update the user's enrolled courses with the updated module progress
+      const updatedEnrolledCourses = enrolledCourses.map((course: any) =>
+        course.courseId === courseId
+          ? { ...course, status: courseStatus, modules: updatedModules }
+          : course
+      );
+
+      // Update the user's enrolledCourses field in Firestore
+      await userRef.update({ enrolledCourses: updatedEnrolledCourses });
+
+      return { courseId, status: courseStatus, modules: updatedModules };
+    } catch (error) {
+      console.error('Failed to complete module:', error);
+      return rejectWithValue('Failed to complete module');
+    }
   }
-})
+);
+
 
 const coursesSlice = createSlice({
   name: 'courses',
