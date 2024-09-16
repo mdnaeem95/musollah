@@ -17,6 +17,7 @@ import IshaBackground from '../../../assets/prayerBackgroundImages/isyaBackgroun
 
 import { AppDispatch, RootState } from '../../../redux/store/store';
 import { fetchPrayerTimesByDate } from '../../../redux/slices/prayerSlice';
+import { useNotification } from '../../../context/NotificationContext';
 
 export interface PrayerTimes {
   Fajr: string;
@@ -36,6 +37,7 @@ interface CalendarObject {
 }
 
 const PrayerTab = () => {
+  const { error: notificationError, expoPushToken, notification } = useNotification()
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter();
   const { prayerTimes, islamicDate, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
@@ -44,6 +46,10 @@ const PrayerTab = () => {
   const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
   const [currentPrayer, setCurrentPrayer] = useState<string>('');
   const [nextPrayerInfo, setNextPrayerInfo] = useState<{ nextPrayer: string, timeUntilNextPrayer: string } | null>(null);
+
+  if (notificationError) {
+    return null;
+  }
 
   // Default to today's date when the component is loaded for the first time.
   useEffect(() => {

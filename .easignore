@@ -75,7 +75,5 @@ yarn-error.*
 # @end expo-cli
 .env.local
 
-GoogleService-Info.plist
-google-services.json
 /ios
 /android
