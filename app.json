@@ -63,13 +63,7 @@
           "locationAlwaysAndWhenInUsePermission": "Allow Rihlah to use your location."
         }
       ],
-      "expo-asset",
-      [
-        "onesignal-expo-plugin",
-        {
-          "mode": "production"
-        }
-      ]
+      "expo-asset"
     ],
     "extra": {
       "router": {
