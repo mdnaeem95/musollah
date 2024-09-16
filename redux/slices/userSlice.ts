@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../../firebaseConfig';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@react-native-firebase/auth'
+import firestore from '@react-native-firebase/firestore';
 
 interface UserState {
     user: any,
@@ -25,24 +24,23 @@ export const signIn = createAsyncThunk(
   );
   
 export const signUp = createAsyncThunk(
-'user/signUp',
-async ({ email, password }: { email: string; password: string }) => {
-    const auth = getAuth();
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
+    'user/signUp',
+    async ({ email, password }: { email: string; password: string }) => {
+        const auth = getAuth();
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-    // Add user to Firestore\
-    const userDoc = doc(db, 'users', user.uid);
-    await setDoc(userDoc, {
-        name: user.displayName || 'New User',
-        email: user.email,
-        avatarUrl: 'https://via.placeholder.com/100',
-        enrolledCourses: []
+        // Add user to Firestore\
+        const userDoc = firestore().collection('users').doc(user.uid);
+        await userDoc.set({
+            name: user.displayName || 'New User',
+            email: user.email,
+            avatarUrl: 'https://via.placeholder.com/100',
+            enrolledCourses: []
     })
 
     return user
-}
-);
+})
    
 const userSlice = createSlice({
 name: 'user',

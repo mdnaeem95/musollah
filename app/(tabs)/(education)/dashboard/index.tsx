@@ -7,7 +7,7 @@ import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { fetchDashboardData } from '../../../../redux/slices/dashboardSlice';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import CourseCardShort from '../../../../components/CourseCardShort';
 
 const Dashboard = () => {
@@ -19,7 +19,7 @@ const Dashboard = () => {
 
     useFocusEffect(
         useCallback(() => {
-            const unsubscribe = onAuthStateChanged(auth, (user) => {
+            const unsubscribe = onAuthStateChanged(auth, (user: any) => {
                 if (user) {
                     dispatch(fetchDashboardData(user.uid));      
                 }

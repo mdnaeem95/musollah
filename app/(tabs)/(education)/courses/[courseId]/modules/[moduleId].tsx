@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../../../redux/store/store';
 import { completeModule } from '../../../../../../redux/slices/courseSlice';
 import { CourseData, ModuleData } from '../../../../../../redux/slices/dashboardSlice';
-import { getAuth } from 'firebase/auth';
+import { getAuth } from '@react-native-firebase/auth';
 
 type Params = {
   courseId: string;

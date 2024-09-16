@@ -1,5 +1,4 @@
-import { collection, doc, getDoc, getDocs } from "firebase/firestore";
-import { db } from "../../firebaseConfig";
+import firestore from "@react-native-firebase/firestore";
 import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
 import { Surah } from "../../app/(tabs)/(quran)/index"
@@ -8,7 +7,7 @@ import { ContentData, CourseData, ModuleData, TeacherData, UserData } from "../.
 
 export const fetchUserData = async (userId: string ): Promise<UserData> => {
     try {
-        const userSnapshot = await getDoc(doc(db, 'users', userId))
+        const userSnapshot = await firestore().collection('users').doc(userId).get();
         const data = userSnapshot.data();
 
         console.log('Fetched user data', data);
@@ -28,7 +27,7 @@ export const fetchUserData = async (userId: string ): Promise<UserData> => {
 
 export const fetchCoursesData = async (): Promise<CourseData[]> => {
     try {
-        const coursesSnapshot = await getDocs(collection(db, 'courses'));
+        const coursesSnapshot = await firestore().collection('courses').get();
         const coursesList = coursesSnapshot.docs.map(doc => {
             const data = doc.data();
 
@@ -65,7 +64,7 @@ export const fetchCoursesData = async (): Promise<CourseData[]> => {
 
 export const fetchTeachersData = async (): Promise<TeacherData[]> => {
     try {
-        const teachersSnapshot = await getDocs(collection(db, 'teachers'));
+        const teachersSnapshot = await firestore().collection('teachers').get();
         const teachersList = teachersSnapshot.docs.map(doc => {
             const data = doc.data();
 
@@ -88,7 +87,7 @@ export const fetchTeachersData = async (): Promise<TeacherData[]> => {
 
 export const getDoaAfterPrayer  = async (): Promise<DoaAfterPrayer[]> => {
     try {
-        const doaSnapshot = await getDocs(collection(db, 'DoaAfterPrayer'));
+        const doaSnapshot = await firestore().collection('DoaAfterPrayer').get();
         const doaList = doaSnapshot.docs.map(doc => {
             const data = doc.data();
 
@@ -111,7 +110,7 @@ export const getDoaAfterPrayer  = async (): Promise<DoaAfterPrayer[]> => {
 
 export const getBidetLocations = async (userRegion: Region): Promise<BidetLocation[]> => {
     try {
-        const bidetSnapshot = await getDocs(collection(db, 'Bidets'));
+        const bidetSnapshot = await firestore().collection('Bidets').get();
         const bidetList = bidetSnapshot.docs.map(doc => {
             const data = doc.data();
 
@@ -149,7 +148,7 @@ export const getBidetLocations = async (userRegion: Region): Promise<BidetLocati
 
 export const getMosqueLocations = async (userRegion: Region): Promise<MosqueLocation[]> => {
     try {
-        const mosqueSnapshot = await getDocs(collection(db, 'Mosques'));
+        const mosqueSnapshot = await firestore().collection('Mosques').get();
         const mosqueList = mosqueSnapshot.docs.map(doc => {
             const data = doc.data();
 
@@ -184,7 +183,7 @@ export const getMosqueLocations = async (userRegion: Region): Promise<MosqueLoca
 
 export const getMusollahsLocations = async (userRegion: Region): Promise<MusollahLocation[]> => {
     try {
-        const musollahSnapshot = await getDocs(collection(db, 'Musollahs'));
+        const musollahSnapshot = await firestore().collection('Musollahs').get();
         const musollahList = musollahSnapshot.docs.map(doc => {
             const data = doc.data();
 
@@ -225,7 +224,7 @@ export const getMusollahsLocations = async (userRegion: Region): Promise<Musolla
 
 export const fetchSurahs = async (): Promise<Surah[]> => {
     try {
-        const surahSnapshot = await getDocs(collection(db, 'Surahs'));
+        const surahSnapshot = await firestore().collection('Surahs').get();
         const surahList = surahSnapshot.docs.map(doc =>{
             const data = doc.data();
             return {

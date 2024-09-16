@@ -5,7 +5,7 @@ import { Link, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { startCourse } from '../redux/slices/courseSlice';
 import { AppDispatch, RootState } from '../redux/store/store';
-import { getAuth } from 'firebase/auth';
+import { getAuth } from '@react-native-firebase/auth';
 import { ContentData, CourseData, ModuleData } from '../redux/slices/dashboardSlice';
 
 const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course : CourseData, teacherName: string, teacherImage: string }) => {

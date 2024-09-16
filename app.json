@@ -46,6 +46,8 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "@react-native-firebase/auth",
+      "@react-native-firebase/crashlytics",
       "@react-native-firebase/app",
       [
         "expo-build-properties",
