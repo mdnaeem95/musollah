@@ -15,54 +15,57 @@ const SurahTextScreen = () => {
     const surahNum = id ? parseInt(id as string, 10) : 1;
     const surah: Surah | undefined = surahs.find((surah: Surah) => surah.number === surahNum);
 
-    if (surah) {
-        console.log("Surah found:", surah);
-        console.log("Arabic Text:", surah.arabicText);
-        console.log("English Translation:", surah.englishTranslation);
-    } else {
-        console.log("Surah not found");
-    }
+    const audioLinks = surah?.audioLinks ? surah.audioLinks.split(',') : [];
 
-    const playNextAyah = useCallback(async (index: number) => {
-        if (!surah || index >= surah.numberOfAyahs) {
-            setIsPlaying(false);
-            return;
-        }
-
-        const audioLinks = surah.audioLinks ? surah.audioLinks.split(',') : [];
-        const ayahAudioLink = audioLinks[index];
-
-        try {
-            if (soundRef.current) {
-                await soundRef.current.unloadAsync();
+    const playNextAyah = useCallback(
+        async (index: number) => {
+            if (!surah || index >= audioLinks.length) {
+                setIsPlaying(false);
+                return;
             }
 
-            const { sound } = await Audio.Sound.createAsync(
-                { uri: ayahAudioLink },
-                { shouldPlay: true }
-            );
-            soundRef.current = sound;
+            const ayahAudioLink = audioLinks[index];
 
-            sound.setOnPlaybackStatusUpdate((status: AVPlaybackStatus) => {
-                if (status.isLoaded && !status.isPlaying && !status.isBuffering && (status as any).didJustFinish) {
-                    playNextAyah(index + 1);
+            try {
+                if (soundRef.current) {
+                    await soundRef.current.unloadAsync();  // Unload previous sound
                 }
-            });
 
-            setCurrentAyahIndex(index);
-        } catch (error) {
-            console.error('Failed to play recitation: ', error);
-        }
-    }, [surah]);
+                const { sound } = await Audio.Sound.createAsync(
+                    { uri: ayahAudioLink.trim() },
+                    { shouldPlay: true }
+                );
+                soundRef.current = sound;
+
+                sound.setOnPlaybackStatusUpdate(async (status: AVPlaybackStatus) => {
+                    if (status.isLoaded && status.didJustFinish) {
+                        playNextAyah(index + 1);  // Play the next Ayah
+                    }
+                });
+
+                setCurrentAyahIndex(index);  // Track the current Ayah
+            } catch (error) {
+                console.error('Failed to play Ayah: ', error);
+            }
+        },
+        [surah, audioLinks]
+    );
 
     const togglePlayPause = useCallback(async () => {
         if (soundRef.current) {
-            if (isPlaying) {
-                await soundRef.current.pauseAsync();
-                setIsPlaying(false);
-            } else {
-                await soundRef.current.playAsync();
-                setIsPlaying(true);
+            const status = await soundRef.current.getStatusAsync();
+            if (status.isLoaded) {
+                try {
+                    if (status.isPlaying) {
+                        await soundRef.current.pauseAsync();
+                        setIsPlaying(false);
+                    } else {
+                        await soundRef.current.playAsync();
+                        setIsPlaying(true);
+                    }
+                } catch (error) {
+                    console.error('Error toggling play/pause: ', error);
+                }
             }
         } else {
             await Audio.setAudioModeAsync({
@@ -73,15 +76,15 @@ const SurahTextScreen = () => {
                 staysActiveInBackground: true,
             });
 
-            playNextAyah(0);
+            playNextAyah(currentAyahIndex || 0);  // Start playing from the first Ayah
             setIsPlaying(true);
         }
-    }, [isPlaying, playNextAyah]);
+    }, [playNextAyah, currentAyahIndex]);
 
     const renderAyah = ({ item, index }: { item: string, index: number }) => (
         <View key={index} style={styles.ayahContainer}>
             <Text style={styles.quranText}>{item}</Text>
-            {surah && surah.englishTranslation && (
+            {surah?.englishTranslation && (
                 <View style={styles.translationContainer}>
                     <Text style={styles.translationText}>{surah.englishTranslation.split('|')[index]}</Text>
                 </View>
@@ -122,7 +125,7 @@ const SurahTextScreen = () => {
                                 keyExtractor={(item, index) => index.toString()}
                                 contentContainerStyle={styles.listContainer}
                                 showsVerticalScrollIndicator={false}
-                                />
+                            />
                         </View>
                     </View>
                 )}
@@ -171,7 +174,7 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     listContainer: {
-        paddingBottom: 50
+        paddingBottom: 50,
     },
     separator: {
         width: '100%',

@@ -11,7 +11,7 @@ import MusollahModal from '../../components/MusollahModal'
 import { useSelector } from 'react-redux'
 import { RootState } from '../../redux/store/store'
 
-const locationTypes = ['Bidets', 'Musollahs', 'Mosques', 'Halal Food']
+const locationTypes = ['Bidets', 'Musollahs', 'Mosques']
 
 const LOCATION_UPDATE_THRESHOLD = 0.005; // Threshold for significant location change - to determine if a location change is significant enough to trigger a refresh
 const DEBOUNCE_DELAY = 1000; // Delay in milliseconds - to delay location updates

@@ -1,9 +1,8 @@
 import firestore from "@react-native-firebase/firestore";
 import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
-import { Surah } from "../../app/(tabs)/(quran)/index"
-import { DoaAfterPrayer } from "../../app/(tabs)/(prayer)/doa";
-import { ContentData, CourseData, ModuleData, TeacherData, UserData } from "../../redux/slices/dashboardSlice"
+import { ContentData, CourseData, DoaAfterPrayer, ModuleData, Surah, TeacherData, UserData } from "../../utils/types";
+
 
 export const fetchUserData = async (userId: string ): Promise<UserData> => {
     try {

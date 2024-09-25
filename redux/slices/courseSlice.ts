@@ -9,8 +9,15 @@ const initialState: CoursesState = {
   error: null,
 };
 
+export const updateDashboardEnrolledCourses = createAsyncThunk(
+  'dashboard/updateEnrolledCourses',
+  async ({ courseId, userId, enrolledCourses }: { courseId: string, userId: string, enrolledCourses: any[] }) => {
+    return { courseId, userId, enrolledCourses };
+  }
+)
+
 // Async thunk to start a course for a user
-export const startCourse = createAsyncThunk('courses/startCourse', async ({ courseId, userId }: { courseId: string, userId: string }, { rejectWithValue, getState }) => {
+export const startCourse = createAsyncThunk('courses/startCourse', async ({ courseId, userId }: { courseId: string, userId: string }, { rejectWithValue, getState, dispatch }) => {
   try {
     const state = getState() as RootState;
     const course = state.dashboard.courses.find((course) => course.id === courseId);
@@ -41,6 +48,9 @@ export const startCourse = createAsyncThunk('courses/startCourse', async ({ cour
     await userRef.update({
       enrolledCourses: updatedEnrolledCourses
     })
+
+    // update the dashboard after enrollment
+    dispatch(updateDashboardEnrolledCourses({ courseId, userId, enrolledCourses: updatedEnrolledCourses }));    
 
     return { courseId, status: 'in progress' as 'in progress', modules: initialModulesProgress };
   } catch (error) {

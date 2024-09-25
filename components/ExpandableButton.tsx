@@ -64,8 +64,8 @@ const ExpandableButton = ({ onQiblatPress, onDoaPress, onCalendarPress }: Expend
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        right: 30,
-        top: 80
+        right: 20,
+        top: 120
     },
     expandedButtonsContainer: {
         gap: 40,

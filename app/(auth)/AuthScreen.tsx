@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native'
 import React from 'react'
 import { useForm, Controller, SubmitHandler } from 'react-hook-form'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -7,6 +7,7 @@ import { AppDispatch, RootState } from '../../redux/store/store'
 import { signIn, signUp } from '../../redux/slices/userSlice'
 import { useRouter } from 'expo-router'
 import { UserInfo } from '../../utils/types'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 
 const emailRules = {
   required: 'Email is required',
@@ -55,7 +56,11 @@ const AuthScreen = () => {
 
   return (
     <SafeAreaView style={styles.mainContainer}>
-      <View style={{ marginBottom: 60 }}>
+      <KeyboardAwareScrollView
+        style={{ flex: 1, width: '100%', marginTop: 120 }}
+        enableOnAndroid={true}
+      >
+      <View style={{ marginBottom: 30, alignSelf: 'center' }}>
         <Text style={styles.headerText}>RIHLAH</Text>
       </View>
 
@@ -70,15 +75,15 @@ const AuthScreen = () => {
           rules={emailRules}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              placeholder='email@domain.com'
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              style={styles.fieldContainer}
+            placeholder='email@domain.com'
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+            style={styles.fieldContainer}
             />
           )}
           name="email"
-        />
+          />
         {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
 
         <Controller 
@@ -86,16 +91,16 @@ const AuthScreen = () => {
           rules={passwordRules}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              placeholder='Password'
-              secureTextEntry
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              style={styles.fieldContainer}
+            placeholder='Password'
+            secureTextEntry
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+            style={styles.fieldContainer}
             />
           )}
           name="password"
-        />
+          />
         {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
 
         <TouchableOpacity onPress={handleSubmit(onSignUp)} style={styles.btn}>
@@ -104,9 +109,9 @@ const AuthScreen = () => {
 
         {/* <TouchableOpacity onPress={handleSubmit(onSignIn)} style={styles.btn}>
             <Text style={{ color: '#000000' }}>Sign In</Text>
-        </TouchableOpacity> */}
+            </TouchableOpacity> */}
       </View>
-
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   )
 }

@@ -143,3 +143,13 @@ export interface DoaAfterPrayer {
     romanized: string,
     englishTranslation: string
 }
+
+export interface DashboardState {
+    user: any;
+    courses: any[]
+    progress: any[];
+    teachers: any[];
+    loading: boolean;
+    error: string | null;
+    lastFetched: number | null;
+}
