@@ -13,7 +13,7 @@ import CourseCardShort from '../../../../components/CourseCardShort';
 const Dashboard = () => {
     const auth = getAuth();
     const dispatch = useDispatch<AppDispatch>();
-    const { user, courses, progress, teachers, loading, error, lastFetched } = useSelector((state: RootState) => state.dashboard);
+    const { user, courses, teachers, loading } = useSelector((state: RootState) => state.dashboard);
     const router = useRouter();
     const inProgressCourses = user?.enrolledCourses?.filter((course: any) => course.status !== 'completed') || [];
 
@@ -33,23 +33,15 @@ const Dashboard = () => {
     </TouchableOpacity>
     ));
 
-    const isDataStale = () => {
-        if (!lastFetched) return true;
-        const now = Date.now();
-        return now - lastFetched > 1800000;
-    }
-
     useFocusEffect(
         useCallback(() => {
             const unsubscribe = onAuthStateChanged(auth, (user: any) => {
                 if (user) {
-                    if (!courses.length || isDataStale()) {
-                        dispatch(fetchDashboardData(user.uid));      
-                    }
+                    dispatch(fetchDashboardData(user.uid));      
                 }
             })
             return () => unsubscribe();
-        }, [dispatch, courses, lastFetched])
+        }, [dispatch])
     )
 
     if (loading || !user) {
@@ -69,7 +61,7 @@ const Dashboard = () => {
         }
 
         // Get the user's progress for this course from the enrolledCourses in the user's collection
-        const userProgress = user?.enrolledCourses.find((p: any) => p.courseId === courseId);
+        const userProgress = user?.enrolledCourses.find((p: any) => p.id === courseId);
 
         if (!userProgress) {
             console.error(`Progress for course ID ${courseId} not found.`);
@@ -88,7 +80,6 @@ const Dashboard = () => {
         } else {
             console.error('No current module found.');
         }
-        
     }
 
     return (
@@ -116,18 +107,12 @@ const Dashboard = () => {
                             {user.enrolledCourses
                             .filter((course: any) => course.status !== 'completed')
                             .map((course: any, index: number) => {
-                                const courseData = courses.find((c) => c.id === course.courseId); // Find the course details
+                                const courseData = courses.find((c) => c.id === course.id); // Find the course details
                                 const progress = course.modules.filter((m: any) => m.status === 'completed').length / course.modules.length;
                                 return (
-                                    <TouchableOpacity key={index} style={styles.progressCard} onPress={() => handleCourseProgressClick(course.courseId)}>
+                                    <TouchableOpacity key={index} style={styles.progressCard} onPress={() => handleCourseProgressClick(course.id)}>
                                         <View style={styles.progressCardContent}>
                                             <Text style={styles.progressCourseTitle}>{courseData?.title || 'Course Title'}</Text>
-                                            <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
-                                                <TouchableOpacity style={{ width: 25, height: 25, borderRadius: 12.5, backgroundColor: 'rgba(63, 52, 131, 0.2)', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <FontAwesome6 name="user" color="purple" />
-                                                </TouchableOpacity>
-                                                <Text>{courseData?.teacherId || 'Teacher ID'}</Text>
-                                            </View>
                                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                                                 <View>
                                                     <Progress.Bar 
@@ -136,7 +121,7 @@ const Dashboard = () => {
                                                         color="#4D6561" 
                                                         />
                                                 </View>
-                                                <Text>{progress}%</Text>
+                                                <Text>{progress * 100}%</Text>
                                             </View>
                                         </View>
                                     </TouchableOpacity>

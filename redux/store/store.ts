@@ -34,7 +34,7 @@ const store = configureStore({
   middleware: (getDefaultMiddleware) => getDefaultMiddleware({
     serializableCheck: {
       ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
-      ignoredPaths: ['user.user'] 
+      ignoredPaths: ['user.user', 'payload'] 
     }
   })
 });
