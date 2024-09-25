@@ -4,18 +4,7 @@ import SurahItem from '../../../components/SurahItem';
 import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../redux/store/store';
-
-export interface Surah {
-  id: string;
-  arabicName: string;
-  englishName: string;
-  englishNameTranslation: string;
-  number: number;
-  numberOfAyahs: number;
-  arabicText: string;
-  audioLinks: string;
-  englishTranslation: string;
-}
+import { Surah } from '../../../utils/types';
 
 const QuranTab = () => {
   const { surahs, isLoading } = useSelector((state: RootState) => state.quran);

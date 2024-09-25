@@ -18,23 +18,7 @@ import IshaBackground from '../../../assets/prayerBackgroundImages/isyaBackgroun
 import { AppDispatch, RootState } from '../../../redux/store/store';
 import { fetchPrayerTimesByDate } from '../../../redux/slices/prayerSlice';
 import { useNotification } from '../../../context/NotificationContext';
-
-export interface PrayerTimes {
-  Fajr: string;
-  Dhuhr: string;
-  Asr: string;
-  Maghrib: string;
-  Isha: string;
-  [key: string]: string;
-}
-
-interface CalendarObject {
-  day: number,
-  month: number,
-  year: number,
-  timestamp: string,
-  dateString: string,
-}
+import { CalendarObject, PrayerTimes } from '../../../utils/types';
 
 const PrayerTab = () => {
   const { error: notificationError, expoPushToken, notification } = useNotification()

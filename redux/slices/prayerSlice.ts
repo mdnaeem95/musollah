@@ -1,17 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getShortFormattedDate, formatIslamicDate, getPrayerTimesInfo } from '../../utils/index';
 import { fetchPrayerTimes, fetchIslamicDate, fetchTimesByDate } from '../../api/prayers';
-import { PrayerTimes } from '../../app/(tabs)/(prayer)';
-
-interface PrayerState {
-  prayerTimes: PrayerTimes | null;
-  islamicDate: string | null;
-  currentPrayer: string | null;
-  nextPrayerInfo: { nextPrayer: string | null, timeUntilNextPrayer: string | null } | null;
-  isLoading: boolean;
-  error: string | null;
-  selectedDate: string | null;
-}
+import { PrayerState } from '../../utils/types';
 
 const initialState: PrayerState = {
   prayerTimes: null,

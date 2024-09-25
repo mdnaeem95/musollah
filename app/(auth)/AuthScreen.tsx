@@ -6,11 +6,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch, RootState } from '../../redux/store/store'
 import { signIn, signUp } from '../../redux/slices/userSlice'
 import { useRouter } from 'expo-router'
-
-interface UserInfo {
-  email: string,
-  password: string
-}
+import { UserInfo } from '../../utils/types'
 
 const emailRules = {
   required: 'Email is required',

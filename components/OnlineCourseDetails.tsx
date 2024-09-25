@@ -1,12 +1,12 @@
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { FontAwesome6 } from '@expo/vector-icons';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { startCourse } from '../redux/slices/courseSlice';
 import { AppDispatch, RootState } from '../redux/store/store';
 import { getAuth } from '@react-native-firebase/auth';
-import { ContentData, CourseData, ModuleData } from '../redux/slices/dashboardSlice';
+import { CourseData } from '../utils/types';
 
 const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course : CourseData, teacherName: string, teacherImage: string }) => {
     const auth = getAuth();

@@ -1,24 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import firestore from '@react-native-firebase/firestore';
 import { RootState } from '../store/store';
-import { ModuleData } from './dashboardSlice';
-
-interface ModuleProgress {
-  moduleId: string;
-  status: 'locked' | 'in progress' | 'completed'
-}
-
-interface CourseProgress {
-  courseId: string;
-  status: 'unenrolled' | 'in progress' | 'completed'
-  modules: ModuleProgress[];
-}
-
-interface CoursesState {
-  courses: CourseProgress[];
-  loading: boolean;
-  error: string | null;
-}
+import { CoursesState, ModuleData, ModuleProgress } from '../../utils/types';
 
 const initialState: CoursesState = {
   courses: [],

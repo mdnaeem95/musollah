@@ -4,15 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { getDoaAfterPrayer } from '../../../../api/firebase'
 import { FontAwesome6 } from '@expo/vector-icons'
 import BackArrow from '../../../../components/BackArrow'
-
-export interface DoaAfterPrayer {
-  id: string,
-  step: number,
-  title: string,
-  arabicText: string,
-  romanized: string,
-  englishTranslation: string
-}
+import { DoaAfterPrayer } from '../../../../utils/types'
 
 const Doa = () => {
   const [doas, setDoas] = useState<DoaAfterPrayer[]>([]);
