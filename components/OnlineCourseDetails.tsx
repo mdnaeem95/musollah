@@ -7,12 +7,13 @@ import { startCourse } from '../redux/slices/courseSlice';
 import { AppDispatch, RootState } from '../redux/store/store';
 import { getAuth } from '@react-native-firebase/auth';
 import { CourseData } from '../utils/types';
+import { fetchDashboardData } from '../redux/slices/dashboardSlice';
 
 const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: CourseData, teacherName: string, teacherImage: string }) => {
   const auth = getAuth();
   const router = useRouter();
   const user = useSelector((state: RootState) => state.dashboard.user);
-  const userProgress = useSelector((state: RootState) => state.course.courses.find(c => c.courseId === course.id));
+  const userProgress = useSelector((state: RootState) => state.course.courses.find(c => c.id === course.id));
   const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
   const [isEnrolling, setIsEnrolling] = useState<boolean>(false);
   const dispatch = useDispatch<AppDispatch>();
@@ -34,6 +35,8 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
         try {
             await dispatch(startCourse({ courseId: course.id, userId })).unwrap();
             // Once enrolled, redirect to the first module
+            await dispatch(fetchDashboardData(userId));
+
             if (course.modules.length > 0) {
                 const firstModuleId = course.modules[0].moduleId;
                 router.push(`/courses/${course.id}/modules/${firstModuleId}`);

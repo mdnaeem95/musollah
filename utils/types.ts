@@ -1,28 +1,11 @@
 import { LocationObject } from 'expo-location';
 
-export interface ModuleProgress {
-    moduleId: string;
-    status: 'locked' | 'in progress' | 'completed'
-}
-  
-export interface CourseProgress {
-    courseId: string;
-    status: 'unenrolled' | 'in progress' | 'completed'
-    modules: ModuleProgress[];
-}
-  
 export interface CoursesState {
-    courses: CourseProgress[];
+    courses: CourseData[];
     loading: boolean;
     error: string | null;
 }
 
-export interface CourseProgressData {
-    id: string;
-    title: string;
-    progress: number;
-  }
-  
 export interface CourseData {
     id: string,
     backgroundColour: string;
@@ -33,12 +16,14 @@ export interface CourseData {
     title: string;
     modules: ModuleData[];
     type: string;
+    status: 'unenrolled' | 'in progress' | 'completed'; 
 }
 
 export interface ModuleData {
     moduleId: string;
     title: string;
     content: ContentData[];
+    status: 'locked' | 'in progress' | 'completed'
 }
 
 export interface ContentData {
@@ -146,8 +131,7 @@ export interface DoaAfterPrayer {
 
 export interface DashboardState {
     user: any;
-    courses: any[]
-    progress: any[];
+    courses: any[];
     teachers: any[];
     loading: boolean;
     error: string | null;

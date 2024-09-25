@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import firestore from '@react-native-firebase/firestore';
 import { RootState } from '../store/store';
-import { CoursesState, ModuleData, ModuleProgress } from '../../utils/types';
+import { CoursesState, ModuleData } from '../../utils/types';
 
 const initialState: CoursesState = {
   courses: [],
@@ -26,9 +26,10 @@ export const startCourse = createAsyncThunk('courses/startCourse', async ({ cour
       throw new Error('Course not found');
     }
 
-    const initialModulesProgress: ModuleProgress[] = course.modules.map((module: ModuleData, index: number) => ({
-      moduleId: module.moduleId,
-      status: (index === 0 ? 'in progress' : 'locked') as 'in progress' | 'locked', // First module is in progress, others are locked
+    // Initialize module progress directly in the course's modules
+    const updatedModules: ModuleData[] = course.modules.map((module: ModuleData, index: number) => ({
+      ...module,
+      status: index === 0 ? 'in progress' : 'locked',  // First module in progress, rest are locked
     }));
 
     const userRef = firestore().collection('users').doc(userId)
@@ -42,7 +43,11 @@ export const startCourse = createAsyncThunk('courses/startCourse', async ({ cour
 
     const updatedEnrolledCourses = [
       ...(userData?.enrolledCourses || []),
-      { courseId, status: 'in progress', modules: initialModulesProgress }
+      { 
+        ...course,
+        status: 'in progress',
+        modules: updatedModules
+      }
     ]
 
     await userRef.update({
@@ -52,7 +57,7 @@ export const startCourse = createAsyncThunk('courses/startCourse', async ({ cour
     // update the dashboard after enrollment
     dispatch(updateDashboardEnrolledCourses({ courseId, userId, enrolledCourses: updatedEnrolledCourses }));    
 
-    return { courseId, status: 'in progress' as 'in progress', modules: initialModulesProgress };
+    return { courseId, status: 'in progress' as 'in progress', modules: updatedModules };
   } catch (error) {
     console.error('Failed to start course:', error);
     return rejectWithValue('Failed to start course');
@@ -77,7 +82,7 @@ export const completeModule = createAsyncThunk(
       const userData = userDoc.data();
       const enrolledCourses = userData?.enrolledCourses || [];
 
-      const courseProgress = enrolledCourses.find((course: any) => course.courseId === courseId);
+      const courseProgress = enrolledCourses.find((course: any) => course.id === courseId);
 
       if (!courseProgress) {
         throw new Error('Course progress not found');
@@ -99,7 +104,7 @@ export const completeModule = createAsyncThunk(
 
       // Update the user's enrolled courses with the updated module progress
       const updatedEnrolledCourses = enrolledCourses.map((course: any) =>
-        course.courseId === courseId
+        course.id === courseId
           ? { ...course, status: courseStatus, modules: updatedModules }
           : course
       );
@@ -128,7 +133,21 @@ const coursesSlice = createSlice({
       })
       .addCase(startCourse.fulfilled, (state, action) => {
         state.loading = false;
-        state.courses.push(action.payload);
+        const { courseId, status, modules } = action.payload;
+
+        // Find the index of course that was enrolled
+        const courseIndex = state.courses.findIndex((course) => course.id === courseId);
+
+        if (courseIndex !== -1) {
+          // update existing course's status anmd modules in redux state
+          state.courses[courseIndex].status = status
+          state.courses[courseIndex].modules = modules
+        } else {
+          // Alert the user or log that the course was not found
+          console.error(`Course with ID ${courseId} not found in the state.`);
+          // Optionally, we could dispatch an action or show an alert in the UI
+          alert(`Course with ID ${courseId} not found in the state.`);
+        }
       })
       .addCase(startCourse.rejected, (state, action) => {
         state.loading = false;
@@ -136,7 +155,7 @@ const coursesSlice = createSlice({
       })
       .addCase(completeModule.fulfilled, (state, action) => {
         state.loading = false;
-        const course = state.courses.find(c => c.courseId === action.payload.courseId);
+        const course = state.courses.find(c => c.id === action.payload.courseId);
         if (course) {
           course.status = action.payload.status;
           course.modules = action.payload.modules;

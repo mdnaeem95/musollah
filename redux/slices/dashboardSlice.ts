@@ -1,12 +1,10 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchCoursesData, fetchTeachersData, fetchUserData } from '../../api/firebase';
-import { CourseData, DashboardState } from '../../utils/types';
-import { updateDashboardEnrolledCourses } from './courseSlice';
+import { CourseData, DashboardState, ModuleData } from '../../utils/types';
 
 const initialState: DashboardState = {
   user: { name: "Akhi", avatarUrl: 'https://via.placeholder.com/100', id: '', email: '', enrolledCourses: [] },
   courses: [],
-  progress: [],
   teachers: [],
   loading: false,
   error: null,
@@ -24,16 +22,25 @@ try {
     const coursesData = await fetchCoursesData();
     const teachersData = await fetchTeachersData();
     
-    const progress = userData.enrolledCourses.map((course: any) => {
-        const courseData = coursesData.find((c: CourseData) => c.id === course.courseId)
-        return {
-          id: course.courseId ?? '',  // Ensure safe access
-          title: courseData?.title ?? 'Untitled',
-          progress: course?.progress ?? 0,
-        }
-    }) || [];
+    // Map through enrolled courses and calculate progress based on module status
+    const updatedCoursesData = coursesData.map((course: CourseData) => {
+      const enrolledCourse = userData.enrolledCourses.find((enrolled: any) => enrolled.courseId === course.id);
 
-    return { userData, coursesData, teachersData, progress };
+      if (enrolledCourse) {
+        const completedModules = course.modules.filter((module: ModuleData) => module.status === 'completed').length;
+        const totalModules = course.modules.length;
+
+        return {
+          ...course,
+          status: completedModules === totalModules ? 'completed' : 'in progress', // Update course status
+          modules: course.modules, // Use the enrolled course modules with progress info
+        }
+      }
+
+      return course;
+    })
+
+    return { userData, coursesData: updatedCoursesData, teachersData };
 } catch (error) {
     console.error('Failed to fetch dashboard data', error);
     return rejectWithValue('Failed to fetch locations');
@@ -46,15 +53,6 @@ const dashboardSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-    .addCase(updateDashboardEnrolledCourses.fulfilled, (state, action) => {
-      const { courseId, enrolledCourses } = action.payload;
-      const user = state.user;
-
-      const updatedEnrolledCourses = enrolledCourses.map((course) =>
-        course.courseId === courseId ? {...course, status: 'in progress'} : course
-      );
-      state.user.enrolled = updatedEnrolledCourses;
-    })
       .addCase(fetchDashboardData.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -63,7 +61,6 @@ const dashboardSlice = createSlice({
         state.loading = false;
         state.user = action.payload.userData;
         state.courses = action.payload.coursesData;
-        state.progress = action.payload.progress;
         state.teachers = action.payload.teachersData;
         state.lastFetched = Date.now();
       })
