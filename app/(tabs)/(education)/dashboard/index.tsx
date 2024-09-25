@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native'
-import React, { useCallback, useEffect } from 'react'
+import React, { memo, useCallback, useEffect } from 'react'
 
 import { FontAwesome6 } from '@expo/vector-icons'
 import * as Progress from 'react-native-progress'
@@ -13,19 +13,43 @@ import CourseCardShort from '../../../../components/CourseCardShort';
 const Dashboard = () => {
     const auth = getAuth();
     const dispatch = useDispatch<AppDispatch>();
-    const { user, courses, progress, teachers, loading, error } = useSelector((state: RootState) => state.dashboard);
+    const { user, courses, progress, teachers, loading, error, lastFetched } = useSelector((state: RootState) => state.dashboard);
     const router = useRouter();
     const inProgressCourses = user?.enrolledCourses?.filter((course: any) => course.status !== 'completed') || [];
+
+    // Memoized CourseCardShort component
+    const MemoizedCourseCardShort = memo(CourseCardShort);
+
+    // Memoized TeacherCard component
+    const MemoizedTeacherCard = memo(({ teacher }: { teacher: any }) => (
+    <TouchableOpacity style={styles.teacherCard} onPress={() => router.push(`/teachers/${teacher.id}`)}>
+        <View style={styles.teacherContentContainer}>
+            <Image source={{ uri: teacher.imagePath }} style={styles.teacherImage} />
+            <View style={styles.textContentContainer}>
+            <Text style={styles.courseHeaderText}>{teacher.name}</Text>
+            <Text style={styles.courseCategoryText}>{teacher.expertise}</Text>
+            </View>
+        </View>
+    </TouchableOpacity>
+    ));
+
+    const isDataStale = () => {
+        if (!lastFetched) return true;
+        const now = Date.now();
+        return now - lastFetched > 1800000;
+    }
 
     useFocusEffect(
         useCallback(() => {
             const unsubscribe = onAuthStateChanged(auth, (user: any) => {
                 if (user) {
-                    dispatch(fetchDashboardData(user.uid));      
+                    if (!courses.length || isDataStale()) {
+                        dispatch(fetchDashboardData(user.uid));      
+                    }
                 }
             })
             return () => unsubscribe();
-        }, [dispatch])
+        }, [dispatch, courses, lastFetched])
     )
 
     if (loading || !user) {
@@ -132,7 +156,7 @@ const Dashboard = () => {
                     </View>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                         {courses.map((course) => (
-                            <CourseCardShort
+                            <MemoizedCourseCardShort
                                 key={course.id}
                                 id={course.id}
                                 title={course.title}
@@ -152,15 +176,7 @@ const Dashboard = () => {
                     </View>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                         {teachers.map((teacher) => (
-                            <TouchableOpacity style={styles.teacherCard} key={teacher.id} onPress={() => router.push(`teachers/${teacher.id}`)}>
-                                <View style={styles.teacherContentContainer}>
-                                    <Image source={{ uri: teacher.imagePath }} style={styles.teacherImage} alt={`Azatizah ${teacher.name}`} />        
-                                    <View style={styles.textContentContainer}>
-                                        <Text style={styles.courseHeaderText}>{teacher.name}</Text>
-                                        <Text style={styles.courseCategoryText}>{teacher.expertise}</Text>
-                                    </View>
-                                </View>
-                            </TouchableOpacity>
+                            <MemoizedTeacherCard key={teacher.id} teacher={teacher} />
                         ))}
                     </ScrollView>
                 </ScrollView>

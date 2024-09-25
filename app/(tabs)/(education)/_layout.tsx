@@ -2,9 +2,11 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Drawer } from 'expo-router/drawer';
 import React from 'react';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { DrawerToggleButton } from '@react-navigation/drawer';
+import { TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 
 const EducationLayout = () => {
+  const router = useRouter();
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Drawer 
@@ -34,6 +36,11 @@ const EducationLayout = () => {
             drawerLabel: 'Courses',
             title: 'Courses',
             drawerIcon: () => <FontAwesome6 name="book" />,
+            headerRight: () => (
+              <TouchableOpacity style={{ marginRight: 16 }} onPress={() => router.replace('/courses')}>
+                <FontAwesome6 name="house" size={22} color="white" />
+              </TouchableOpacity>
+            )
           }}
         />
         <Drawer.Screen 

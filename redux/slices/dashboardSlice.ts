@@ -1,15 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchCoursesData, fetchTeachersData, fetchUserData } from '../../api/firebase';
-import { CourseData } from '../../utils/types';
-
-interface DashboardState {
-  user: any;
-  courses: any[]
-  progress: any[];
-  teachers: any[];
-  loading: boolean;
-  error: string | null;
-}
+import { CourseData, DashboardState } from '../../utils/types';
+import { updateDashboardEnrolledCourses } from './courseSlice';
 
 const initialState: DashboardState = {
   user: { name: "Akhi", avatarUrl: 'https://via.placeholder.com/100', id: '', email: '', enrolledCourses: [] },
@@ -18,6 +10,7 @@ const initialState: DashboardState = {
   teachers: [],
   loading: false,
   error: null,
+  lastFetched: null,
 };
 
 export const fetchDashboardData = createAsyncThunk('dashboard/fetchDashboardData', async (userId: string, { rejectWithValue }) => {
@@ -53,6 +46,15 @@ const dashboardSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+    .addCase(updateDashboardEnrolledCourses.fulfilled, (state, action) => {
+      const { courseId, enrolledCourses } = action.payload;
+      const user = state.user;
+
+      const updatedEnrolledCourses = enrolledCourses.map((course) =>
+        course.courseId === courseId ? {...course, status: 'in progress'} : course
+      );
+      state.user.enrolled = updatedEnrolledCourses;
+    })
       .addCase(fetchDashboardData.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -63,6 +65,7 @@ const dashboardSlice = createSlice({
         state.courses = action.payload.coursesData;
         state.progress = action.payload.progress;
         state.teachers = action.payload.teachersData;
+        state.lastFetched = Date.now();
       })
       .addCase(fetchDashboardData.rejected, (state, action) => {
         state.loading = false;

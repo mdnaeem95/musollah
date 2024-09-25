@@ -1,8 +1,8 @@
 import { registerRootComponent } from 'expo';
+import AppLayout from './app/_layout'
 
-import App from './App';
+export default function App() {
+    return <AppLayout />
+}
 
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
 registerRootComponent(App);

@@ -49,7 +49,7 @@ const PrayerTab = () => {
       return getFormattedDate(date);
     }, [selectedDate]);
   
-  const getBackgroundImage = () => {
+  const getBackgroundImage = useMemo(() => {
     switch (currentPrayer) {
       case 'Fajr':
         return SubuhBackground;
@@ -64,7 +64,7 @@ const PrayerTab = () => {
       default:
         return SubuhBackground;
     }
-  }
+  }, [currentPrayer]);
 
   const handleDayPress = (day: CalendarObject) => {
     try {
@@ -80,26 +80,6 @@ const PrayerTab = () => {
     date1.getMonth() === date2.getMonth() &&
     date1.getFullYear() === date2.getFullYear();
   }
-
-  // Fetch prayer times for the current day if selectedDate is not set
-  useEffect(() => {
-    const today = getFormattedDate(new Date());
-
-    // If no date is selected, default's to today's date
-    if (!selectedDate || selectedDate === today) {
-      try {
-        dispatch(fetchPrayerTimesByDate(today));
-      } catch (error) {
-        console.error(`Error fetching prayer times for today date ${today}:`, error);
-      }
-    } else {
-      try {
-        dispatch(fetchPrayerTimesByDate(selectedDate));
-      } catch (error) {
-        console.error(`Error fetching date for selected date ${selectedDate}:`, error)
-      }
-    }
-  }, [selectedDate, dispatch]);
 
   // Update current and next prayer info once prayer times are fetched 
   useEffect(() => {
@@ -129,7 +109,7 @@ const PrayerTab = () => {
   }, [prayerTimes]);
 
   return (
-    <ImageBackground source={getBackgroundImage()} style={styles.backgroundImage} >
+    <ImageBackground source={getBackgroundImage} style={styles.backgroundImage} >
         <View style={styles.mainContainer}>
           <View style={styles.centeredView}>
             <Text style={[styles.dateText, { marginBottom: -30 }]}>{selectedDate ? getFormattedDate(new Date(selectedDate)) : formattedDate}</Text>
