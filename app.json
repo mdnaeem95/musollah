@@ -5,7 +5,7 @@
     "scheme": "rihlah",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/rihlahAppIcon.jpg",
+    "icon": "./assets/rihlahAppIcon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splashscreen.png",

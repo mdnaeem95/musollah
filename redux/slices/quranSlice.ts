@@ -1,11 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchSurahs } from '../../api/firebase/index';
-
-interface QuranState {
-  surahs: any[];
-  isLoading: boolean;
-  error: string | null;
-}
+import { QuranState } from '../../utils/types';
 
 const initialState: QuranState = {
   surahs: [],

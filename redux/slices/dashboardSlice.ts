@@ -1,53 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchCoursesData, fetchTeachersData, fetchUserData } from '../../api/firebase';
-
-export interface CourseProgressData {
-  id: string;
-  title: string;
-  progress: number;
-}
-
-export interface CourseData {
-    id: string,
-    backgroundColour: string;
-    category: string;
-    description: string;
-    icon: string;
-    teacherId: string;
-    title: string;
-    modules: ModuleData[];
-    type: string;
-}
-
-export interface ModuleData {
-  moduleId: string;
-  title: string;
-  content: ContentData[];
-}
-
-export interface ContentData {
-  contentId: string;
-  title: string;
-  type: string;
-  data: string;
-}
-
-export interface TeacherData {
-  id: string;
-  expertise: string;
-  name: string;
-  imagePath: string;
-  background: string;
-  courses: string[];
-}
-
-export interface UserData {
-    id: string;
-    avatarUrl: string;
-    email: string;
-    enrolledCourses: string[],
-    name: string
-}
+import { CourseData } from '../../utils/types';
 
 interface DashboardState {
   user: any;

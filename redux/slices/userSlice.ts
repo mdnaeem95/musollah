@@ -1,12 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@react-native-firebase/auth'
 import firestore from '@react-native-firebase/firestore';
-
-interface UserState {
-    user: any,
-    loading: boolean;
-    error: string | null;
-}
+import { UserState } from '../../utils/types';
 
 const initialState: UserState = {
     user: null,

@@ -1,12 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import * as Location from 'expo-location';
 import { LocationObject } from 'expo-location';
-
-interface LocationState {
-  userLocation: LocationObject | null;
-  errorMsg: string | null;
-  isLoading: boolean;
-}
+import { LocationState } from '../../utils/types';
 
 // Define a default location in central Singapore (e.g., Marina Bay Sands)
 const DEFAULT_LOCATION: LocationObject = {

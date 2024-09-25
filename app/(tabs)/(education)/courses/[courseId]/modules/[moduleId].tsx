@@ -4,8 +4,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../../../redux/store/store';
 import { completeModule } from '../../../../../../redux/slices/courseSlice';
-import { CourseData, ModuleData } from '../../../../../../redux/slices/dashboardSlice';
 import { getAuth } from '@react-native-firebase/auth';
+import { CourseData, ModuleData } from '../../../../../../utils/types';
 
 type Params = {
   courseId: string;
@@ -28,7 +28,7 @@ const ModuleDetails = () => {
   useEffect(() => {
     if (course) {
       // Fetch the full module data, not just progress
-      const module = course.modules.find((m) => m.moduleId === moduleId);
+      const module = course.modules.find((m: any) => m.moduleId === moduleId);
       if (module) {
         setModuleData(module)
       }
@@ -42,7 +42,7 @@ const ModuleDetails = () => {
         await dispatch(completeModule({ courseId, moduleId, userId })).unwrap(); // Replace with actual user ID
         
         // Find the index of the current module
-        const currentModuleIndex = course?.modules.findIndex((m) => m.moduleId === moduleId);
+        const currentModuleIndex = course?.modules.findIndex((m: any) => m.moduleId === moduleId);
         
         // Determine the next module
         if (currentModuleIndex !== undefined && currentModuleIndex < course!.modules.length - 1) {

@@ -4,18 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { AVPlaybackStatus, Audio } from 'expo-av';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../../redux/store/store';
-
-interface Surah {
-    id: string;
-    arabicName: string;
-    englishName: string;
-    englishNameTranslation: string;
-    number: number;
-    numberOfAyahs: number;
-    arabicText: string;
-    audioLinks: string;
-    englishTranslation: string;
-}
+import { Surah } from '../../../../utils/types';
 
 const SurahTextScreen = () => {
     const { surahs, isLoading } = useSelector((state: RootState) => state.quran);

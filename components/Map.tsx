@@ -1,6 +1,6 @@
-import { View, Text, TouchableOpacity, Platform } from 'react-native'
+import { View, TouchableOpacity } from 'react-native'
 import React from 'react'
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 
 export interface Region {

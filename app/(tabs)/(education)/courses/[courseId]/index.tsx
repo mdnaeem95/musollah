@@ -6,7 +6,6 @@ import { RootState } from '../../../../../redux/store/store';
 import { useSelector } from 'react-redux';
 import OnlineCourseDetails from '../../../../../components/OnlineCourseDetails';
 import PhysicalCourseDetails from '../../../../../components/PhysicalCourseDetails';
-import { CourseData, TeacherData } from '../../../../../redux/slices/dashboardSlice';
 
 type Params = {
   courseId: string;

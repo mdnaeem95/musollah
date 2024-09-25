@@ -4,13 +4,6 @@ import * as Location from 'expo-location'
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store/store';
 
-interface LocationData {
-    coords: {
-        latitude: number;
-        longitude: number;
-    }
-}
-
 const screenWidth = Dimensions.get('window').width;
 const compassSize = screenWidth * 0.8;
 

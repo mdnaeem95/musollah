@@ -1,4 +1,4 @@
-import { View, Text, Animated, ImageBackground, StyleSheet, ActivityIndicator, Image } from 'react-native'
+import { View, Animated, StyleSheet, ActivityIndicator, Image } from 'react-native'
 import React, { useEffect, useState } from 'react'
 
 interface LoadingScreenProps {
@@ -29,7 +29,7 @@ const LoadingScreen = ({ message = 'Setting up the app...' }: LoadingScreenProps
     <View style={styles.container}>
         {/* App Logo */}
         <Image
-        source={require('../assets/rihlahLogo.svg')} // Replace with your app's logo path
+        source={require('../assets/rihlahLogo.png')} // Replace with your app's logo path
         style={styles.logo}
         resizeMode="contain"
         />

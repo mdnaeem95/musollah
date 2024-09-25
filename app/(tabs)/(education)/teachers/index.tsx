@@ -2,10 +2,10 @@ import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity } from 'react
 import React, { useState } from 'react'
 import { useSelector } from 'react-redux'
 import { RootState } from '../../../../redux/store/store'
-import { TeacherData } from '../../../../redux/slices/dashboardSlice'
 import { Searchbar } from 'react-native-paper';
 import { useRouter } from 'expo-router'
 import BackArrow from '../../../../components/BackArrow'
+import { TeacherData } from '../../../../utils/types';
 
 const Teachers = () => {
     const [searchQuery, setSearchQuery] = useState<string>('');

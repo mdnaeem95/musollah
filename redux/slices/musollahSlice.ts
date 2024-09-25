@@ -1,14 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { LocationObject } from 'expo-location';
 import { getBidetLocations, getMosqueLocations, getMusollahsLocations } from '../../api/firebase/index';
-
-interface MusollahState {
-  bidetLocations: any[];
-  mosqueLocations: any[];
-  musollahLocations: any[];
-  isLoading: boolean;
-  error: string | null;
-}
+import { MusollahState } from '../../utils/types';
 
 const initialState: MusollahState = {
   bidetLocations: [],
