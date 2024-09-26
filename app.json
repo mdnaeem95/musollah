@@ -57,7 +57,7 @@
         "expo-build-properties",
         {
           "ios": {
-            "useFramework": "static"
+            "useFrameworks": "static"
           }
         }
       ],

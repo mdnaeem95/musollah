@@ -12,7 +12,8 @@ import { FLUSH, PAUSE, PERSIST, persistReducer, persistStore, PURGE, REGISTER, R
 // Configuration for redux-persist
 const persistConfig = {
   key: 'root',
-  storage: AsyncStorage
+  storage: AsyncStorage,
+  blacklist: ['location', 'musollah']
 }
 
 // Combining all reducers

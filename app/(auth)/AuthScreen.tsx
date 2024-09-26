@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native'
-import React from 'react'
+import React, { useState } from 'react'
 import { useForm, Controller, SubmitHandler } from 'react-hook-form'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useDispatch, useSelector } from 'react-redux'
@@ -8,6 +8,7 @@ import { signIn, signUp } from '../../redux/slices/userSlice'
 import { useRouter } from 'expo-router'
 import { UserInfo } from '../../utils/types'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
+import { Alert } from 'react-native'
 
 const emailRules = {
   required: 'Email is required',
@@ -31,15 +32,20 @@ const AuthScreen = () => {
   const { loading, error } = useSelector((state: RootState) => state.user)
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const [isSignUp, setIsSignUp] = useState(true);
 
   console.log('AuthScreen rendered');
 
-  // const onSignIn: SubmitHandler<UserInfo> = async ({ email, password }) => {
-  //   const resultAction = await dispatch(signIn({ email, password }));
-  //   if (signIn.fulfilled.match(resultAction)) {
-  //     router.push('(prayer)/index');
-  //   }
-  // };
+  const onSignIn: SubmitHandler<UserInfo> = async ({ email, password }) => {
+    try {
+      const resultAction = await dispatch(signIn({ email, password })).unwrap();
+      console.log('Sign in successful:', resultAction);
+      router.push('(tabs)');
+    } catch (error) {
+      console.error('Sign in failed: ', error);
+      Alert.alert('Sign in failed. Please check your credentials.')
+    }
+  };
 
   const onSignUp: SubmitHandler<UserInfo> = async ({ email, password }) => {
     console.log('Sign Up button clicked');
@@ -54,19 +60,18 @@ const AuthScreen = () => {
     }
   };
 
+  const toggleAuthMode = () => {
+    setIsSignUp(!isSignUp);
+  }
+
   return (
     <SafeAreaView style={styles.mainContainer}>
       <KeyboardAwareScrollView
-        style={{ flex: 1, width: '100%', marginTop: 120 }}
+        style={{ flex: 1, width: '100%', marginTop: 150 }}
         enableOnAndroid={true}
       >
       <View style={{ marginBottom: 30, alignSelf: 'center' }}>
         <Text style={styles.headerText}>RIHLAH</Text>
-      </View>
-
-      <View style={styles.formDescContainer}>
-        <Text style={styles.signUpText}>Create An Account</Text>
-        <Text style={styles.signUpSubText}>Enter your email to sign up for this app.</Text>
       </View>
 
       <View style={{ width: '100%', paddingHorizontal: 16, gap: 20 }}>
@@ -103,13 +108,17 @@ const AuthScreen = () => {
           />
         {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
 
-        <TouchableOpacity onPress={handleSubmit(onSignUp)} style={styles.btn}>
-          <Text style={styles.btnText}>Sign Up</Text>
+        {/* Submit Button */}
+        <TouchableOpacity onPress={handleSubmit(isSignUp ? onSignUp : onSignIn)} style={styles.btn}>
+          <Text style={styles.btnText}>{isSignUp ? 'Sign Up' : 'Sign In'}</Text>
         </TouchableOpacity>
 
-        {/* <TouchableOpacity onPress={handleSubmit(onSignIn)} style={styles.btn}>
-            <Text style={{ color: '#000000' }}>Sign In</Text>
-            </TouchableOpacity> */}
+        {/* Toggle between Sign Up and Sign In */}
+        <TouchableOpacity onPress={toggleAuthMode} style={{ alignItems: 'center' }}>
+            <Text style={[styles.signUpSubText, { textDecorationLine: 'underline' }]}>
+              {isSignUp ? 'Already have an account? Sign In' : 'Don’t have an account? Sign Up'}
+            </Text>
+        </TouchableOpacity>
       </View>
       </KeyboardAwareScrollView>
     </SafeAreaView>

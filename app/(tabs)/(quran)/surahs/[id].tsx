@@ -5,6 +5,7 @@ import { AVPlaybackStatus, Audio } from 'expo-av';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../../redux/store/store';
 import { Surah } from '../../../../utils/types';
+import BackArrow from '../../../../components/BackArrow';
 
 const SurahTextScreen = () => {
     const { surahs, isLoading } = useSelector((state: RootState) => state.quran);
@@ -126,6 +127,10 @@ const SurahTextScreen = () => {
                                 contentContainerStyle={styles.listContainer}
                                 showsVerticalScrollIndicator={false}
                             />
+                        </View>
+
+                        <View style={{ position: 'absolute', left: 16 }}>
+                            <BackArrow />
                         </View>
                     </View>
                 )}

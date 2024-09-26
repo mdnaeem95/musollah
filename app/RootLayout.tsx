@@ -9,7 +9,7 @@ import { Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBol
 import { Amiri_400Regular } from "@expo-google-fonts/amiri";
 import { useFonts } from 'expo-font';
 
-import { AppDispatch, RootState } from '../redux/store/store';
+import { AppDispatch, RootState, persistor } from '../redux/store/store';
 import { fetchUserLocation } from '../redux/slices/userLocationSlice';
 import { fetchPrayerTimesData } from '../redux/slices/prayerSlice';
 import { fetchMusollahData } from '../redux/slices/musollahSlice';
@@ -24,7 +24,9 @@ SplashScreen.preventAutoHideAsync();
 const RootLayout = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { userLocation } = useSelector((state: RootState) => state.location);
-
+  const { prayerTimes } = useSelector((state: RootState) => state.prayer);
+  const { surahs } = useSelector((state: RootState) => state.quran);
+  
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isDataFetched, setIsDataFetched] = useState<boolean>(false);
   const [isFontsLoaded] = useFonts({
@@ -35,6 +37,8 @@ const RootLayout = () => {
     Outfit_700Bold,
     Amiri_400Regular,
   });
+
+  const isRehydrated = persistor.getState().bootstrapped; // Check if Redux state is rehydrated
 
   // Monitor Authentication State
   useEffect(() => {
@@ -49,29 +53,35 @@ const RootLayout = () => {
     };
   }, []);
 
-  // Fetch Data (User Location, Prayer Times, Surahs)
+  // Fetch Data (User Location, Prayer Times, Surahs) in parallel but only after state is rehydrated
   useEffect(() => {
+    if (!isRehydrated) return; // Ensure Redux state is rehydrated before fetching data
+
     const fetchData = async () => {
       try {
         console.log('Fetching initial data...');
-        await dispatch(fetchUserLocation()).unwrap();  // Fetch user location first
-        await dispatch(fetchPrayerTimesData()).unwrap();  // Fetch prayer times
-        await dispatch(fetchSurahsData()).unwrap();  // Fetch Quran surahs
-        setIsDataFetched(true);
+
+        // Fetch essential data in parallel
+        await Promise.all([
+          !userLocation && dispatch(fetchUserLocation()).unwrap(),  // Fetch user location if not available
+          !prayerTimes && dispatch(fetchPrayerTimesData()).unwrap(), // Fetch prayer times if not available
+          (!surahs || surahs.length === 0) && dispatch(fetchSurahsData()).unwrap(),  // Fetch Quran surahs if not available
+        ]);
+
+        setIsDataFetched(true);  // Data is fetched and stored in Redux
       } catch (error) {
         console.error('Error fetching initial data:', error);
       }
     };
 
-    // Only fetch data if it hasn't been fetched yet
     if (!isDataFetched) {
       fetchData();
     }
-  }, [dispatch, isDataFetched]);
+  }, [dispatch, isDataFetched, isRehydrated, userLocation, prayerTimes, surahs]);
 
-  // Fetch Musollah Data once user location is available
+  // Fetch Musollah Data once user location is available but defer it until after the initial app load
   useEffect(() => {
-    if (userLocation) {
+    if (userLocation && isAuthenticated && isDataFetched) {
       const fetchMusollah = async () => {
         try {
           await dispatch(fetchMusollahData(userLocation)).unwrap();
@@ -80,14 +90,12 @@ const RootLayout = () => {
         }
       };
 
-      fetchMusollah();
+      fetchMusollah(); // Deferred after essential data
     }
-  }, [dispatch, userLocation]);
+  }, [dispatch, userLocation, isAuthenticated, isDataFetched]);
 
-  // Configure Purchases SDK
+  // Lazy load Purchases SDK after authentication
   useEffect(() => {
-    Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
-
     const configurePurchases = async () => {
       try {
         if (Platform.OS === 'ios') {
@@ -101,8 +109,10 @@ const RootLayout = () => {
       }
     };
 
-    configurePurchases();
-  }, []);
+    if (isAuthenticated) {
+      configurePurchases();  // Only load Purchases SDK after user authentication
+    }
+  }, [isAuthenticated]);
 
   // Hide SplashScreen when fonts and data are loaded
   useEffect(() => {
@@ -121,7 +131,7 @@ const RootLayout = () => {
   }, [isFontsLoaded, isDataFetched]);
 
   // Display the loading screen while the app is setting up
-  if (!isFontsLoaded || !isDataFetched) {
+  if (!isFontsLoaded || !isDataFetched || !isRehydrated) {
     return <LoadingScreen message="Setting up the app..." />;
   }
 
