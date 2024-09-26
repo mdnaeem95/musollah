@@ -13,7 +13,7 @@ import { FLUSH, PAUSE, PERSIST, persistReducer, persistStore, PURGE, REGISTER, R
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  blacklist: ['location', 'musollah']
+  blacklist: ['location', 'musollah', 'prayer']
 }
 
 // Combining all reducers

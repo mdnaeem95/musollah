@@ -5,6 +5,7 @@ import { store, persistor } from '../redux/store/store';
 import { NotificationProvider } from "../context/NotificationContext"
 import RootLayout from './RootLayout'; // Adjust the path as necessary
 import { PersistGate } from 'redux-persist/integration/react';
+import LoadingScreen from '../components/LoadingScreen';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -17,7 +18,7 @@ Notifications.setNotificationHandler({
 const AppLayout = () => (
   <NotificationProvider>
     <Provider store={store}>
-      <PersistGate persistor={persistor}>
+      <PersistGate persistor={persistor} loading={<LoadingScreen message='Setting up the app...' />}>
         <RootLayout />
       </PersistGate>
     </Provider>
