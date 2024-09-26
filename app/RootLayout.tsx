@@ -11,7 +11,6 @@ import { useFonts } from 'expo-font';
 
 import { AppDispatch, RootState, persistor } from '../redux/store/store';
 import { fetchUserLocation } from '../redux/slices/userLocationSlice';
-import { fetchPrayerTimesData } from '../redux/slices/prayerSlice';
 import { fetchMusollahData } from '../redux/slices/musollahSlice';
 import { fetchSurahsData } from '../redux/slices/quranSlice';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
@@ -24,9 +23,8 @@ SplashScreen.preventAutoHideAsync();
 const RootLayout = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { userLocation } = useSelector((state: RootState) => state.location);
-  const { prayerTimes } = useSelector((state: RootState) => state.prayer);
   const { surahs } = useSelector((state: RootState) => state.quran);
-  
+
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isDataFetched, setIsDataFetched] = useState<boolean>(false);
   const [isFontsLoaded] = useFonts({
@@ -53,7 +51,7 @@ const RootLayout = () => {
     };
   }, []);
 
-  // Fetch Data (User Location, Prayer Times, Surahs) in parallel but only after state is rehydrated
+  // Fetch Data (User Location, Surahs) in parallel but only after state is rehydrated
   useEffect(() => {
     if (!isRehydrated) return; // Ensure Redux state is rehydrated before fetching data
 
@@ -64,7 +62,6 @@ const RootLayout = () => {
         // Fetch essential data in parallel
         await Promise.all([
           !userLocation && dispatch(fetchUserLocation()).unwrap(),  // Fetch user location if not available
-          !prayerTimes && dispatch(fetchPrayerTimesData()).unwrap(), // Fetch prayer times if not available
           (!surahs || surahs.length === 0) && dispatch(fetchSurahsData()).unwrap(),  // Fetch Quran surahs if not available
         ]);
 
@@ -77,7 +74,7 @@ const RootLayout = () => {
     if (!isDataFetched) {
       fetchData();
     }
-  }, [dispatch, isDataFetched, isRehydrated, userLocation, prayerTimes, surahs]);
+  }, [dispatch, isDataFetched, isRehydrated, userLocation, surahs]);
 
   // Fetch Musollah Data once user location is available but defer it until after the initial app load
   useEffect(() => {
