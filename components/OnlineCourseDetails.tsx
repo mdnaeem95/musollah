@@ -34,8 +34,6 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
 
         try {
             await dispatch(startCourse({ courseId: course.id, userId })).unwrap();
-            // Once enrolled, redirect to the first module
-            await dispatch(fetchDashboardData(userId));
 
             if (course.modules.length > 0) {
                 const firstModuleId = course.modules[0].moduleId;

@@ -47,6 +47,13 @@ try {
 }
 });
 
+export const updateDashboardEnrolledCourses = createAsyncThunk(
+  'dashboard/updateEnrolledCourses',
+  async ({ courseId, userId, enrolledCourses }: { courseId: string, userId: string, enrolledCourses: any[] }) => {
+    return { courseId, userId, enrolledCourses };
+  }
+)
+
 const dashboardSlice = createSlice({
   name: 'dashboard',
   initialState,
@@ -56,6 +63,22 @@ const dashboardSlice = createSlice({
       .addCase(fetchDashboardData.pending, (state) => {
         state.loading = true;
         state.error = null;
+      })
+      .addCase(updateDashboardEnrolledCourses.fulfilled, (state, action) => {
+        // Find the updated enrolled course
+        const updatedCourse = action.payload.enrolledCourses.find(
+          (course) => course.id === action.payload.courseId
+        );
+
+        if (updatedCourse) {
+          // Update the dashboard state with the latest enrolled course progress
+          const courseIndex = state.courses.findIndex((course) => course.id === action.payload.courseId);
+          if (courseIndex !== -1) {
+            state.courses[courseIndex] = updatedCourse;
+          } else {
+            state.courses.push(updatedCourse); // Add if not already present
+          }
+        }
       })
       .addCase(fetchDashboardData.fulfilled, (state, action) => {
         state.loading = false;
