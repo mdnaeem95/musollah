@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import * as Location from 'expo-location';
 import { LocationObject } from 'expo-location';
 import { LocationState } from '../../utils/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define a default location in central Singapore (e.g., Marina Bay Sands)
 const DEFAULT_LOCATION: LocationObject = {
@@ -23,12 +24,37 @@ const initialState: LocationState = {
   isLoading: true,
 };
 
+// Caching location using AsyncStorage
+const cacheLocation = async (location: LocationObject) => {
+  try {
+    await AsyncStorage.setItem('userLocation', JSON.stringify(location));
+  } catch (error) {
+    console.error('Error caching location: ', error);
+  }
+}
+
+// Get cached location from AsyncStorage
+const getCachedLocation = async () => {
+  try {
+    const cachedLocation = await AsyncStorage.getItem('userLocation');
+    return cachedLocation ? JSON.parse(cachedLocation) : null;
+  } catch (error) {
+    console.error('Error fetching cached location: ', error);
+    return null;
+  }
+}
+
 export const fetchUserLocation = createAsyncThunk<LocationObject, void, { rejectValue: string }>(
   'location/fetchUserLocation',
   async (_, { rejectWithValue }) => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      const cachedLocation = await getCachedLocation();
+      if (cachedLocation) {
+        console.log('Using cached location');
+        return cachedLocation
+      }
 
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         const errorMsg = 'Permission to access location was denied';
         console.warn(errorMsg);
@@ -36,7 +62,7 @@ export const fetchUserLocation = createAsyncThunk<LocationObject, void, { reject
       }
 
       const userLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
+        accuracy: Location.Accuracy.Balanced,
       });
 
       if (!userLocation) {
@@ -45,6 +71,7 @@ export const fetchUserLocation = createAsyncThunk<LocationObject, void, { reject
         return rejectWithValue(errorMsg);
       }
 
+      await cacheLocation(userLocation); // cache the location after fetching
       return userLocation;
     } catch (error) {
       const errorMsg = 'Failed to fetch user location';
