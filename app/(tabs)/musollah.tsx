@@ -3,18 +3,18 @@ import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import Map, { Region, BidetLocation, MosqueLocation, MusollahLocation } from '../../components/Map'
 import { SearchBar } from '@rneui/themed'
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
-
 import BidetModal from '../../components/BidetModal'
 import MosqueModal from '../../components/MosqueModal'
 import MusollahModal from '../../components/MusollahModal'
-
-import { useSelector } from 'react-redux'
-import { RootState } from '../../redux/store/store'
+import { useDispatch, useSelector } from 'react-redux'
+import { AppDispatch, RootState } from '../../redux/store/store'
+import { fetchMusollahData } from '../../redux/slices/musollahSlice'  // Adjust the path as needed
+import { fetchUserLocation } from '../../redux/slices/userLocationSlice'
 
 const locationTypes = ['Bidets', 'Musollahs', 'Mosques']
 
-const LOCATION_UPDATE_THRESHOLD = 0.005; // Threshold for significant location change - to determine if a location change is significant enough to trigger a refresh
-const DEBOUNCE_DELAY = 1000; // Delay in milliseconds - to delay location updates
+const LOCATION_UPDATE_THRESHOLD = 0.005;
+const DEBOUNCE_DELAY = 1000;
 
 interface ItemProps {
   item: BidetLocation | MosqueLocation | MusollahLocation;
@@ -22,15 +22,19 @@ interface ItemProps {
 }
 
 const MusollahTab = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const { bidetLocations, mosqueLocations, musollahLocations, isLoading } = useSelector((state: RootState) => state.musollah);
-  const { userLocation, errorMsg } = useSelector((state: RootState) => state.location);
+  const { userLocation } = useSelector((state: RootState) => state.location);
+
+  const [hasFetchedData, setHasFetchedData] = useState(false);
   const [region, setRegion] = useState<Region | undefined>(undefined);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
-  const [selectedLocation, setSelectedLocation] = useState<BidetLocation | MosqueLocation | MusollahLocation |null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<BidetLocation | MosqueLocation | MusollahLocation | null>(null);
   const [shouldFollowUserLocation, setShouldFollowUserLocation] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filteredLocations, setFilteredLocations] = useState<(BidetLocation | MosqueLocation | MusollahLocation)[]>([]);
+
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const lastLocation = useRef<{ latitude: number; longitude: number } | null>(null);
 
@@ -50,8 +54,8 @@ const MusollahTab = () => {
   }, []);
 
   const handleRegionChangeComplete = useCallback(() => {
-    setShouldFollowUserLocation(false)
-  }, [])
+    setShouldFollowUserLocation(false);
+  }, []);
 
   const handleRefocusPress = useCallback(() => {
     if (userLocation) {
@@ -68,11 +72,16 @@ const MusollahTab = () => {
 
   const handleSearch = useCallback(() => {
     const currentLocations = selectedIndex === 0 ? bidetLocations : selectedIndex === 1 ? musollahLocations : mosqueLocations;
-    const results = currentLocations.filter((location: BidetLocation | MosqueLocation | MusollahLocation) =>
+    const results = currentLocations.filter((location) =>
       location.building.toLowerCase().includes(searchQuery.toLowerCase())
     );
     setFilteredLocations(results);
   }, [searchQuery, selectedIndex, bidetLocations, musollahLocations, mosqueLocations]);
+
+  const debouncedSearch = useCallback(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(handleSearch, 300);
+  }, [handleSearch]);
 
   const renderItem = useCallback(({ item }: { item: BidetLocation | MosqueLocation | MusollahLocation }) => (
     <Item item={item} onPress={handleListItemPress} />
@@ -83,7 +92,7 @@ const MusollahTab = () => {
       <Text style={styles.locationText}>{item.building} </Text>
       <Text style={styles.distanceText}>Distance: {item.distance?.toFixed(2)}km</Text>
     </TouchableOpacity>  
-  ))
+  ));
 
   const keyExtractor = useCallback((item: BidetLocation | MosqueLocation | MusollahLocation) => item.id, []);
 
@@ -92,53 +101,48 @@ const MusollahTab = () => {
       lastLocation.current = newLocation;
       return true;
     }
-
     const distance = Math.sqrt(
       Math.pow(newLocation.latitude - lastLocation.current.latitude, 2) +
       Math.pow(newLocation.longitude - lastLocation.current.longitude, 2)
     );
-
     if (distance > LOCATION_UPDATE_THRESHOLD) {
       lastLocation.current = newLocation;
       return true;
     }
-
     return false;
   };
 
+  // Fetch user location on component mount
+  useEffect(() => {
+    dispatch(fetchUserLocation()); // Fetch the user's location when component mounts
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (userLocation && !hasFetchedData) {
+      // initial fetching of data
+      console.log("User location available:", userLocation);  // Debugging userLocation
+      dispatch(fetchMusollahData(userLocation));
+      setHasFetchedData(true);
+    } else if (userLocation && isSignificantLocationChange(userLocation.coords)) {
+      dispatch(fetchMusollahData(userLocation));
+    }
+  }, [userLocation, dispatch, hasFetchedData]);
+
+  useEffect(() => {
+    debouncedSearch();
+  }, [searchQuery, debouncedSearch]);
+
+  // Set map region based on user location when available
   useEffect(() => {
     if (userLocation) {
-      const initialRegion: Region = {
-        latitude: userLocation!.coords.latitude,
-        longitude: userLocation!.coords.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005
-      };
-      setRegion(initialRegion);
-    }
-  }, [userLocation])
-
-  useEffect(() => {
-    if (userLocation && isSignificantLocationChange(userLocation.coords)) {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-
-      debounceTimer.current = setTimeout(() => {
-        const initialRegion: Region = {
-          latitude: userLocation.coords.latitude,
-          longitude: userLocation.coords.longitude,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        };
-        setRegion(initialRegion);
-      }, DEBOUNCE_DELAY);
+      setRegion({
+        latitude: userLocation.coords.latitude,
+        longitude: userLocation.coords.longitude,
+        latitudeDelta: 0.005,  // Smaller values for a zoomed-in view
+        longitudeDelta: 0.005,
+      });
     }
   }, [userLocation]);
-
-  useEffect(() => {
-    handleSearch();
-  }, [searchQuery, handleSearch]);
 
   const currentLocations = useMemo(() => {
     switch (selectedIndex) {
@@ -170,7 +174,7 @@ const MusollahTab = () => {
         </View>
         <Map 
           region={region} 
-          markerLocations={currentLocations ? filteredLocations : currentLocations} 
+          markerLocations={filteredLocations.length ? filteredLocations : currentLocations} 
           onMarkerPress={handleMarkerPress} 
           onRegionChangeComplete={handleRegionChangeComplete}
           shouldFollowUserLocation={shouldFollowUserLocation}
@@ -185,23 +189,20 @@ const MusollahTab = () => {
           backgroundColor='#A3C0BB'
           values={locationTypes}
           selectedIndex={selectedIndex}
-          onChange={(event) => {
-            setSelectedIndex(event.nativeEvent.selectedSegmentIndex);
-          }} 
+          onChange={(event) => setSelectedIndex(event.nativeEvent.selectedSegmentIndex)}
         />
         {isLoading ? (
           <ActivityIndicator size="large" color="#0000FF" />
         ) :(
           <FlatList
             style={{ margin: -10, marginTop: 10 }} 
-            data={searchQuery ? filteredLocations : currentLocations}
+            data={filteredLocations.length ? filteredLocations : currentLocations}
             renderItem={renderItem}
+            keyExtractor={keyExtractor}
             initialNumToRender={5}
             windowSize={5}
-            keyExtractor={keyExtractor}
-            getItemLayout={(data, index) => (
-              { length: 70, offset: 70 * index, index }
-            )}
+            removeClippedSubviews={true}
+            getItemLayout={(data, index) => ({ length: 70, offset: 70 * index, index })}
           />
         )}
       </KeyboardAvoidingView>
@@ -216,8 +217,8 @@ const MusollahTab = () => {
         )
       )}
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   locationText: {
@@ -232,6 +233,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
   }
-})
+});
 
-export default MusollahTab
+export default MusollahTab;

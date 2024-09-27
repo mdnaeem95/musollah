@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
-import Purchases, { LOG_LEVEL } from 'react-native-purchases';
+import Purchases from 'react-native-purchases';
 import * as SplashScreen from 'expo-splash-screen';
 import { Platform } from 'react-native';
 
@@ -10,23 +10,19 @@ import { Amiri_400Regular } from "@expo-google-fonts/amiri";
 import { useFonts } from 'expo-font';
 
 import { AppDispatch, RootState, persistor } from '../redux/store/store';
-import { fetchUserLocation } from '../redux/slices/userLocationSlice';
-import { fetchMusollahData } from '../redux/slices/musollahSlice';
+import { fetchPrayerTimesData } from '../redux/slices/prayerSlice';
 import { fetchSurahsData } from '../redux/slices/quranSlice';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import AuthScreen from './(auth)/AuthScreen';
 import LoadingScreen from '../components/LoadingScreen';
 
-// Prevent SplashScreen from hiding automatically
 SplashScreen.preventAutoHideAsync();
 
 const RootLayout = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { userLocation } = useSelector((state: RootState) => state.location);
-  const { surahs } = useSelector((state: RootState) => state.quran);
-
+  const dispatch = useDispatch<AppDispatch>();  
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isDataFetched, setIsDataFetched] = useState<boolean>(false);
+  const [isEssentialDataFetched, setIsEssentialDataFetched] = useState<boolean>(false);
+  const [isNonEssentialDataFetched, setIsNonEssentialDataFetched] = useState<boolean>(false);
   const [isFontsLoaded] = useFonts({
     Outfit_300Light,
     Outfit_500Medium,
@@ -36,62 +32,56 @@ const RootLayout = () => {
     Amiri_400Regular,
   });
 
-  const isRehydrated = persistor.getState().bootstrapped; // Check if Redux state is rehydrated
+  const isRehydrated = persistor.getState().bootstrapped;
 
   // Monitor Authentication State
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (user: any) => {
       setIsAuthenticated(!!user);
-      console.log('Authentication state changed, user:', user ? user.email : 'None');
     });
 
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
-  // Fetch Data (User Location, Surahs) in parallel but only after state is rehydrated
+  // Fetch only essential data (Prayer Times) first
   useEffect(() => {
-    if (!isRehydrated) return; // Ensure Redux state is rehydrated before fetching data
+    if (!isRehydrated) return;
 
-    const fetchData = async () => {
+    const fetchEssentialData = async () => {
       try {
-        console.log('Fetching initial data...');
-
-        // Fetch essential data in parallel
-        await Promise.all([
-          !userLocation && dispatch(fetchUserLocation()).unwrap(),  // Fetch user location if not available
-          (!surahs || surahs.length === 0) && dispatch(fetchSurahsData()).unwrap(),  // Fetch Quran surahs if not available
-        ]);
-
-        setIsDataFetched(true);  // Data is fetched and stored in Redux
+        console.log('Fetching essential data: Prayer Times...');
+        await dispatch(fetchPrayerTimesData()).unwrap();
+        setIsEssentialDataFetched(true);
       } catch (error) {
-        console.error('Error fetching initial data:', error);
+        console.error('Error fetching essential data:', error);
       }
     };
 
-    if (!isDataFetched) {
-      fetchData();
+    if (!isEssentialDataFetched) {
+      fetchEssentialData();
     }
-  }, [dispatch, isDataFetched, isRehydrated, userLocation, surahs]);
+  }, [dispatch, isEssentialDataFetched, isRehydrated]);
 
-  // Fetch Musollah Data once user location is available but defer it until after the initial app load
+  // Fetch some non-essential data (surahs) after the app has loaded but defer fetching user location and musollah data until necessary
   useEffect(() => {
-    if (userLocation && isAuthenticated && isDataFetched) {
-      const fetchMusollah = async () => {
+    if (isAuthenticated && !isNonEssentialDataFetched) {
+      const fetchNonEssentialData = async () => {
         try {
-          await dispatch(fetchMusollahData(userLocation)).unwrap();
+          console.log('Fetching non-essential data (surahs)...');
+          await dispatch(fetchSurahsData()).unwrap();
+
+          setIsNonEssentialDataFetched(true);
         } catch (error) {
-          console.error('Error fetching Musollah data:', error);
+          console.error('Error fetching non-essential data:', error);
         }
       };
 
-      fetchMusollah(); // Deferred after essential data
+      fetchNonEssentialData();
     }
-  }, [dispatch, userLocation, isAuthenticated, isDataFetched]);
+  }, [dispatch, isAuthenticated, isEssentialDataFetched, isNonEssentialDataFetched]);
 
-  // Lazy load Purchases SDK after authentication
+  // Lazy-load Purchases SDK after authentication
   useEffect(() => {
     const configurePurchases = async () => {
       try {
@@ -107,11 +97,11 @@ const RootLayout = () => {
     };
 
     if (isAuthenticated) {
-      configurePurchases();  // Only load Purchases SDK after user authentication
+      configurePurchases(); // Load SDK only after authentication
     }
   }, [isAuthenticated]);
 
-  // Hide SplashScreen when fonts and data are loaded
+  // Hide the splash screen once fonts and essential data are ready
   useEffect(() => {
     const hideSplashScreen = async () => {
       try {
@@ -122,22 +112,22 @@ const RootLayout = () => {
       }
     };
 
-    if (isFontsLoaded && isDataFetched) {
+    if (isFontsLoaded && isEssentialDataFetched) {
       hideSplashScreen();
     }
-  }, [isFontsLoaded, isDataFetched]);
+  }, [isFontsLoaded, isEssentialDataFetched]);
 
-  // Display the loading screen while the app is setting up
-  if (!isFontsLoaded || !isDataFetched || !isRehydrated) {
+  // Show loading screen while setting up the app
+  if (!isFontsLoaded || !isEssentialDataFetched || !isRehydrated) {
     return <LoadingScreen message="Setting up the app..." />;
   }
 
-  // If the user is not authenticated, show the authentication screen
+  // Show authentication screen if not authenticated
   if (!isAuthenticated) {
     return <AuthScreen />;
   }
 
-  // Return the main app layout once the user is authenticated and data is loaded
+  // Main app layout after authentication and data fetch
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />

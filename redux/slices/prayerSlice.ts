@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getShortFormattedDate, formatIslamicDate, getPrayerTimesInfo } from '../../utils/index';
 import { fetchPrayerTimes, fetchIslamicDate, fetchTimesByDate } from '../../api/prayers';
 import { PrayerState } from '../../utils/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const initialState: PrayerState = {
   prayerTimes: null,
@@ -13,12 +14,39 @@ const initialState: PrayerState = {
   selectedDate: null,
 };
 
+// Utility to cache the prayer data
+const cachePrayerData = async (key: string, data: any) => {
+  try {
+    await AsyncStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    console.error('Error caching prayer data: ', error);
+  }
+};
+
+// Utility to retrieve cached prayer data
+const getCachedPrayerData = async (key: string) => {
+  try {
+    const cachedData = await AsyncStorage.getItem(key);
+    return cachedData ? JSON.parse(cachedData) : null;
+  } catch (error) {
+    console.error('Error fetching cache prayer data: ', error);
+    return null;
+  }
+}
+
 export const fetchPrayerTimesData = createAsyncThunk(
     'prayers/fetchPrayerTimesData',
     async (_, { rejectWithValue }) => {
       try {
         const currentDate = new Date();
         const shortFormattedDate = getShortFormattedDate(currentDate);
+
+        // Check if prayer times for the current date are cached
+        const cachedData = await getCachedPrayerData(`prayers_${shortFormattedDate}`)
+        if (cachedData) {
+          console.log('Using cached prayer data...');
+          return cachedData;
+        }
   
         const prayerData = await fetchPrayerTimes();
         const { Fajr, Dhuhr, Asr, Maghrib, Isha } = prayerData.data.timings;
@@ -29,7 +57,7 @@ export const fetchPrayerTimesData = createAsyncThunk(
   
         const prayerInfo = getPrayerTimesInfo(newPrayerTimes, currentDate);
   
-        return {
+        const result = {
           prayerTimes: newPrayerTimes,
           islamicDate: formattedIslamicDate,
           currentPrayer: prayerInfo.currentPrayer,
@@ -38,6 +66,11 @@ export const fetchPrayerTimesData = createAsyncThunk(
             timeUntilNextPrayer: prayerInfo.timeUntilNextPrayer,
           },
         };
+
+        // Cache the data to prevent future fetches
+        await cachePrayerData(`prayers_${shortFormattedDate}`, result);
+
+        return result;
       } catch (error) {
         return rejectWithValue('Failed to fetch prayer times');
       }

@@ -30,11 +30,6 @@ const PrayerTab = () => {
   const [nextPrayerInfo, setNextPrayerInfo] = useState<{ nextPrayer: string, timeUntilNextPrayer: string } | null>(null);
   const [notificationsScheduled, setNotificationsScheduled] = useState<boolean>(false); // Track if notifications are scheduled
 
-  // Always fetch fresh data when the component is loaded
-  useEffect(() => {
-    dispatch(fetchPrayerTimesData());  // Fetch prayer times for today when the PrayerTab is mounted
-  }, [dispatch]);
-
   // Function to schedule notifications for the day
   const schedulePrayerNotifications = async (prayerTimes: PrayerTimes) => {
     try {
