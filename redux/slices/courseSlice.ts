@@ -2,19 +2,13 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import firestore from '@react-native-firebase/firestore';
 import { RootState } from '../store/store';
 import { CoursesState, ModuleData } from '../../utils/types';
+import { fetchDashboardData, updateDashboardEnrolledCourses } from './dashboardSlice';
 
 const initialState: CoursesState = {
   courses: [],
   loading: false,
   error: null,
 };
-
-export const updateDashboardEnrolledCourses = createAsyncThunk(
-  'dashboard/updateEnrolledCourses',
-  async ({ courseId, userId, enrolledCourses }: { courseId: string, userId: string, enrolledCourses: any[] }) => {
-    return { courseId, userId, enrolledCourses };
-  }
-)
 
 // Async thunk to start a course for a user
 export const startCourse = createAsyncThunk('courses/startCourse', async ({ courseId, userId }: { courseId: string, userId: string }, { rejectWithValue, getState, dispatch }) => {
@@ -68,7 +62,7 @@ export const completeModule = createAsyncThunk(
   'courses/completeModule',
   async (
     { courseId, userId, moduleId }: { courseId: string; userId: string; moduleId: string },
-    { rejectWithValue }
+    { rejectWithValue, dispatch }
   ) => {
     try {
       // Firestore reference to the user document
@@ -111,6 +105,9 @@ export const completeModule = createAsyncThunk(
 
       // Update the user's enrolledCourses field in Firestore
       await userRef.update({ enrolledCourses: updatedEnrolledCourses });
+
+      // Dispatch to update dashboard after completing the module
+      dispatch(updateDashboardEnrolledCourses({ courseId, userId, enrolledCourses: updatedEnrolledCourses }));
 
       return { courseId, status: courseStatus, modules: updatedModules };
     } catch (error) {

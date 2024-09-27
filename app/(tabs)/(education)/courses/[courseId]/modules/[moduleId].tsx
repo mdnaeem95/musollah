@@ -20,17 +20,18 @@ const ModuleDetails = () => {
 
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
-  
+
+  // Get the course data from Redux (dashboard slice)
   const course: CourseData = useSelector((state: RootState) =>
     state.dashboard.courses.find((c) => c.id === courseId)
   );
-  
+
   useEffect(() => {
     if (course) {
-      // Fetch the full module data, not just progress
+      // Fetch the module data for the current module
       const module = course.modules.find((m: any) => m.moduleId === moduleId);
       if (module) {
-        setModuleData(module)
+        setModuleData(module);
       }
     }
   }, [course, moduleId]);
@@ -39,12 +40,20 @@ const ModuleDetails = () => {
     if (courseId && moduleId && userId) {
       try {
         console.log('Current course state:', course);
-        await dispatch(completeModule({ courseId, moduleId, userId })).unwrap(); // Replace with actual user ID
-        
+
+        // Ensure course progress exists
+        const userCourseProgress = course?.modules.find((m: any) => m.moduleId === moduleId);
+        if (!userCourseProgress) {
+          throw new Error('Course progress not found for this module.');
+        }
+
+        // Complete the module
+        await dispatch(completeModule({ courseId, moduleId, userId })).unwrap();
+
         // Find the index of the current module
         const currentModuleIndex = course?.modules.findIndex((m: any) => m.moduleId === moduleId);
-        
-        // Determine the next module
+
+        // Navigate to the next module or completion page
         if (currentModuleIndex !== undefined && currentModuleIndex < course!.modules.length - 1) {
           const nextModule = course!.modules[currentModuleIndex + 1];
           router.push(`/courses/${courseId}/modules/${nextModule.moduleId}`);

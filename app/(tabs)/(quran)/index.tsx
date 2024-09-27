@@ -1,5 +1,5 @@
 import { SafeAreaView, FlatList, ActivityIndicator } from 'react-native'
-import React, { useCallback } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import SurahItem from '../../../components/SurahItem';
 import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
@@ -18,13 +18,15 @@ const QuranTab = () => {
     <SurahItem key={item.id} surah={item} onPress={handleSurahPress} />
   ), [handleSurahPress]);
 
+  const surahData = useMemo(() => surahs, [surahs]);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#4D6561' }}>
       {isLoading ? (
         <ActivityIndicator />
       ) : (
         <FlatList 
-          data={surahs} 
+          data={surahData} 
           renderItem={renderSurahItem} 
           keyExtractor={(item) => item.number.toString()} 
           showsVerticalScrollIndicator={false}

@@ -10,10 +10,12 @@ import { fetchDashboardData } from '../../../../redux/slices/dashboardSlice';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import CourseCardShort from '../../../../components/CourseCardShort';
 
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+
 const Dashboard = () => {
     const auth = getAuth();
     const dispatch = useDispatch<AppDispatch>();
-    const { user, courses, teachers, loading } = useSelector((state: RootState) => state.dashboard);
+    const { user, courses, teachers, loading, lastFetched } = useSelector((state: RootState) => state.dashboard);
     const router = useRouter();
     const inProgressCourses = user?.enrolledCourses?.filter((course: any) => course.status !== 'completed') || [];
 
@@ -33,15 +35,22 @@ const Dashboard = () => {
     </TouchableOpacity>
     ));
 
+  // Function to determine if we should refetch the data
+  const shouldFetchData = useCallback(() => {
+    if (!lastFetched) return true;  // No data fetched yet
+    const currentTime = Date.now();
+    return currentTime - lastFetched > CACHE_DURATION;  // If cache duration expired, refetch
+  }, [lastFetched]);    
+
     useFocusEffect(
         useCallback(() => {
             const unsubscribe = onAuthStateChanged(auth, (user: any) => {
-                if (user) {
+                if (user && shouldFetchData()) {
                     dispatch(fetchDashboardData(user.uid));      
                 }
             })
             return () => unsubscribe();
-        }, [dispatch])
+        }, [dispatch, shouldFetchData])
     )
 
     if (loading || !user) {
@@ -55,8 +64,8 @@ const Dashboard = () => {
     const handleCourseProgressClick = (courseId: string) => {
         const course = courses.find((c) => c.id === courseId);
         
-        if (!course) {
-            console.error(`Course with ID ${courseId} not found.`);
+        if (!course || !course.modules) {
+            console.error('Course or modules not found.');
             return;
         }
 
