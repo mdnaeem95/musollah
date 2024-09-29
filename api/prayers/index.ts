@@ -3,7 +3,7 @@ import { formatDateForAPI } from '../../utils';
 export const fetchPrayerTimes = async () => {
     try {
         console.log('Fetching prayer times...')
-        const response = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=Singapore&country=Singapore&method=11`)
+        const response = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=Singapore&country=Singapore&method=12`)
 
         if (!response.ok) {
             throw new Error('Failed to fetch prayer times');
@@ -34,6 +34,27 @@ export const fetchTimesByDate = async (date: string) => {
         console.error (`Error fetching prayer times for ${date}: `, error)
     }
 }
+
+export const fetchPrayerTimesByLocation = async (latitude: number, longitude: number, date: string = 'today') => {
+    try {
+        const endpoint = `https://api.aladhan.com/v1/timings/${date}`;
+        const params = `?latitude=${latitude}&longitude=${longitude}`; 
+
+        console.log('Fetching prayer times by location...');
+        const response = await fetch(`${endpoint}${params}`);
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch prayer times');
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching prayer times by location: ', error);
+        throw error;
+    }
+};
+
 
 export const fetchIslamicDate = async (date: string) => {
     try {

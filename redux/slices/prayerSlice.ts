@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getShortFormattedDate, formatIslamicDate, getPrayerTimesInfo } from '../../utils/index';
-import { fetchPrayerTimes, fetchIslamicDate, fetchTimesByDate } from '../../api/prayers';
+import { fetchPrayerTimes, fetchIslamicDate, fetchTimesByDate, fetchPrayerTimesByLocation } from '../../api/prayers';
 import { PrayerState } from '../../utils/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -77,80 +77,140 @@ export const fetchPrayerTimesData = createAsyncThunk(
     }
   );
 
-  export const fetchPrayerTimesByDate = createAsyncThunk(
-    'prayers/fetchPrayerTimesByDate',
-    async (date: string, { rejectWithValue }) => {
-      try {
-        const prayerData = await fetchTimesByDate(date);
-        const { Fajr, Dhuhr, Asr, Maghrib, Isha } = prayerData.data.timings;
-        const newPrayerTimes = { Fajr, Dhuhr, Asr, Maghrib, Isha };
+export const fetchPrayerTimesByDate = createAsyncThunk(
+  'prayers/fetchPrayerTimesByDate',
+  async (date: string, { rejectWithValue }) => {
+    try {
+      const prayerData = await fetchTimesByDate(date);
+      const { Fajr, Dhuhr, Asr, Maghrib, Isha } = prayerData.data.timings;
+      const newPrayerTimes = { Fajr, Dhuhr, Asr, Maghrib, Isha };
 
-        const shortFormattedDate = getShortFormattedDate(new Date(date));
-  
-        const islamicDateData = await fetchIslamicDate(shortFormattedDate);
-        const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date);
-  
-        const prayerInfo = getPrayerTimesInfo(newPrayerTimes, new Date(date));
-  
-        return {
-          prayerTimes: newPrayerTimes,
-          islamicDate: formattedIslamicDate,
-          currentPrayer: prayerInfo.currentPrayer,
-          nextPrayerInfo: {
-            nextPrayer: prayerInfo.nextPrayer,
-            timeUntilNextPrayer: prayerInfo.timeUntilNextPrayer,
-          },
-          selectedDate: date,
-        };
-      } catch (error) {
-        return rejectWithValue('Failed to fetch prayer times by date');
-      }
+      const shortFormattedDate = getShortFormattedDate(new Date(date));
+
+      const islamicDateData = await fetchIslamicDate(shortFormattedDate);
+      const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date);
+
+      const prayerInfo = getPrayerTimesInfo(newPrayerTimes, new Date(date));
+
+      return {
+        prayerTimes: newPrayerTimes,
+        islamicDate: formattedIslamicDate,
+        currentPrayer: prayerInfo.currentPrayer,
+        nextPrayerInfo: {
+          nextPrayer: prayerInfo.nextPrayer,
+          timeUntilNextPrayer: prayerInfo.timeUntilNextPrayer,
+        },
+        selectedDate: date,
+      };
+    } catch (error) {
+      return rejectWithValue('Failed to fetch prayer times by date');
     }
-  );
+  }
+);
 
-  const prayerSlice = createSlice({
-    name: 'prayers',
-    initialState,
-    reducers: {
-      setSelectedDate(state, action) {
-        state.selectedDate = action.payload;
-      },
+// New Thunk to fetch prayer times based on user's location
+export const fetchPrayerTimesByLocationData = createAsyncThunk(
+  'prayers/fetchPrayerTimesByLocation',
+  async ({ latitude, longitude, date = 'today' }: { latitude: number, longitude: number, date?: string }, { rejectWithValue }) => {
+    try {
+      const shortFormattedDate = getShortFormattedDate(new Date(date));
+      console.log(shortFormattedDate)
+
+      // Check if prayer times for the current location and date are cached
+      const cacheKey = `prayers_${latitude}_${longitude}_${shortFormattedDate}`;
+      const cachedData = await getCachedPrayerData(cacheKey);
+      if (cachedData) {
+        console.log('Using cached prayer data for location...');
+        return cachedData;
+      }
+
+      const prayerData = await fetchPrayerTimesByLocation(latitude, longitude, date);
+      const { Fajr, Dhuhr, Asr, Maghrib, Isha } = prayerData.data.timings;
+      const newPrayerTimes = { Fajr, Dhuhr, Asr, Maghrib, Isha };
+
+      const islamicDateData = await fetchIslamicDate(shortFormattedDate);
+      const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date);
+
+      const prayerInfo = getPrayerTimesInfo(newPrayerTimes, new Date(date));
+
+      const result = {
+        prayerTimes: newPrayerTimes,
+        islamicDate: formattedIslamicDate,
+        currentPrayer: prayerInfo.currentPrayer,
+        nextPrayerInfo: {
+          nextPrayer: prayerInfo.nextPrayer,
+          timeUntilNextPrayer: prayerInfo.timeUntilNextPrayer,
+        },
+      };
+
+      // Cache the data to prevent future fetches
+      await cachePrayerData(cacheKey, result);
+
+      return result;
+    } catch (error) {
+      return rejectWithValue('Failed to fetch prayer times by location');
+    }
+  }
+);
+
+const prayerSlice = createSlice({
+  name: 'prayers',
+  initialState,
+  reducers: {
+    setSelectedDate(state, action) {
+      state.selectedDate = action.payload;
     },
-    extraReducers: (builder) => {
-      builder
-        .addCase(fetchPrayerTimesData.pending, (state) => {
-          state.isLoading = true;
-          state.error = null;
-        })
-        .addCase(fetchPrayerTimesData.fulfilled, (state, action) => {
-          state.prayerTimes = action.payload.prayerTimes;
-          state.islamicDate = action.payload.islamicDate;
-          state.currentPrayer = action.payload.currentPrayer;
-          state.nextPrayerInfo = action.payload.nextPrayerInfo;
-          state.isLoading = false;
-        })
-        .addCase(fetchPrayerTimesData.rejected, (state, action) => {
-          state.isLoading = false;
-          state.error = action.payload as string;
-        })
-        .addCase(fetchPrayerTimesByDate.pending, (state) => {
-          state.isLoading = true;
-          state.error = null;
-        })
-        .addCase(fetchPrayerTimesByDate.fulfilled, (state, action) => {
-          state.prayerTimes = action.payload.prayerTimes;
-          state.islamicDate = action.payload.islamicDate;
-          state.currentPrayer = action.payload.currentPrayer;
-          state.nextPrayerInfo = action.payload.nextPrayerInfo;
-          state.selectedDate = action.payload.selectedDate;
-          state.isLoading = false;
-        })
-        .addCase(fetchPrayerTimesByDate.rejected, (state, action) => {
-          state.isLoading = false;
-          state.error = action.payload as string;
-        });
-    },
-  });
-  
-  export const { setSelectedDate } = prayerSlice.actions;
-  export default prayerSlice.reducer;
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchPrayerTimesData.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchPrayerTimesData.fulfilled, (state, action) => {
+        state.prayerTimes = action.payload.prayerTimes;
+        state.islamicDate = action.payload.islamicDate;
+        state.currentPrayer = action.payload.currentPrayer;
+        state.nextPrayerInfo = action.payload.nextPrayerInfo;
+        state.isLoading = false;
+      })
+      .addCase(fetchPrayerTimesData.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(fetchPrayerTimesByDate.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchPrayerTimesByDate.fulfilled, (state, action) => {
+        state.prayerTimes = action.payload.prayerTimes;
+        state.islamicDate = action.payload.islamicDate;
+        state.currentPrayer = action.payload.currentPrayer;
+        state.nextPrayerInfo = action.payload.nextPrayerInfo;
+        state.selectedDate = action.payload.selectedDate;
+        state.isLoading = false;
+      })
+      .addCase(fetchPrayerTimesByDate.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(fetchPrayerTimesByLocationData.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchPrayerTimesByLocationData.fulfilled, (state, action) => {
+        state.prayerTimes = action.payload.prayerTimes;
+        state.islamicDate = action.payload.islamicDate;
+        state.currentPrayer = action.payload.currentPrayer;
+        state.nextPrayerInfo = action.payload.nextPrayerInfo;
+        state.isLoading = false;
+      })
+      .addCase(fetchPrayerTimesByLocationData.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+  },
+});
+
+export const { setSelectedDate } = prayerSlice.actions;
+export default prayerSlice.reducer;
