@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ImageBackground, Dimensions, Modal, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, ImageBackground, Dimensions, Modal, TouchableOpacity, TextInput } from 'react-native'
 import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Calendar } from 'react-native-calendars';
 import Clock from 'react-live-clock';
@@ -18,6 +18,7 @@ import { AppDispatch, RootState } from '../../../redux/store/store';
 import { fetchPrayerTimesByDate, fetchPrayerTimesData } from '../../../redux/slices/prayerSlice';
 import { CalendarObject, PrayerTimes } from '../../../utils/types';
 import * as Notifications from 'expo-notifications';
+import PrayerLocationModal from '../../../components/PrayerLocationModal';
 
 const PrayerTab = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -25,6 +26,8 @@ const PrayerTab = () => {
   const { prayerTimes, islamicDate, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
   const desiredPrayers: (keyof PrayerTimes)[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
+  const [city, setCity] = useState<string>('Singapore');
+  const [isPrayerLocationModalVisible, setIsPrayerLocationModalVisible] = useState<boolean>(false);
   const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
   const [currentPrayer, setCurrentPrayer] = useState<string>('');
   const [nextPrayerInfo, setNextPrayerInfo] = useState<{ nextPrayer: string, timeUntilNextPrayer: string } | null>(null);
@@ -92,6 +95,10 @@ const PrayerTab = () => {
       console.error('Error fetching prayer times by date: ', error);
     }
   };
+
+  const handleCityPress = () => {
+    setIsPrayerLocationModalVisible(true);
+  }
 
   // Update current and next prayer info and schedule notifications once prayer times are fetched
   useEffect(() => {
@@ -177,10 +184,14 @@ const PrayerTab = () => {
         </View>
       </Modal>
 
+      {/* Include the City Selection Modal */}
+      <PrayerLocationModal isVisible={isPrayerLocationModalVisible} onClose={() => setIsPrayerLocationModalVisible(false)} />
+
       <ExpandableButton
         onQiblatPress={() => router.push('/qiblat')}
         onDoaPress={() => router.push('/doa')}
         onCalendarPress={() => setIsCalendarVisible(!isCalendarVisible)}
+        onCityPress={handleCityPress}
       />
     </ImageBackground>
   );
