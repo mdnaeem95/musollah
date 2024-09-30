@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@react-native-firebase/auth'
 import firestore from '@react-native-firebase/firestore';
 import { UserState } from '../../utils/types';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const initialState: UserState = {
@@ -125,6 +125,43 @@ export const fetchPrayerLog = createAsyncThunk(
   }
 );
 
+// Thunk to fetch monthly prayer logs
+export const fetchMonthlyPrayerLogs = createAsyncThunk(
+    'user/fetchMonthlyPrayerLogs',
+    async (_, { rejectWithValue }) => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+  
+        if (!user) {
+          throw new Error('User not logged in');
+        }
+  
+        const userDoc = await firestore().collection('users').doc(user.uid).get();
+        const userData = userDoc.data();
+  
+        if (!userData || !userData.prayerLogs) {
+          throw new Error('No prayer logs found for the user');
+        }
+  
+        // Prepare an array of the past 30 days' dates
+        const today = new Date();
+        const last30Days = Array.from({ length: 30 }, (_, i) => format(subDays(today, i), 'yyyy-MM-dd')).reverse();
+  
+        // Filter the prayer logs for the past 30 days
+        const monthlyLogs = last30Days.map((date) => {
+          const log = userData.prayerLogs[date];
+          const prayersCompleted = log ? Object.values(log).filter(Boolean).length : 0; // Count prayers completed (true values)
+          return { date, prayersCompleted };
+        });
+  
+        return monthlyLogs;
+      } catch (error) {
+        console.error('Failed to fetch monthly prayer logs:', error);
+        return rejectWithValue('Failed to fetch monthly prayer logs');
+      }
+    }
+  );
    
 const userSlice = createSlice({
 name: 'user',
@@ -189,6 +226,21 @@ extraReducers: (builder) => {
         state.loading = false;
     })
     .addCase(fetchPrayerLog.rejected, (state, action) => {
+        state.error = action.payload as string;
+        state.loading = false;
+    })
+    .addCase(fetchMonthlyPrayerLogs.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+    })
+    .addCase(fetchMonthlyPrayerLogs.fulfilled, (state, action) => {
+        state.user = {
+            ...state.user,
+            monthlyLogs: action.payload, // Add monthly logs to the user state
+        };
+        state.loading = false;
+    })
+    .addCase(fetchMonthlyPrayerLogs.rejected, (state, action) => {
         state.error = action.payload as string;
         state.loading = false;
     });
