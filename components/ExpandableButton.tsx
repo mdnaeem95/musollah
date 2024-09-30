@@ -7,9 +7,10 @@ interface ExpendableButtonProps {
     onDoaPress: () => void;
     onCalendarPress: () => void;
     onCityPress: () => void;
+    onDashboardPress: () => void;
 }
 
-const ExpandableButton = ({ onQiblatPress, onDoaPress, onCalendarPress, onCityPress }: ExpendableButtonProps) => {
+const ExpandableButton = ({ onQiblatPress, onDoaPress, onCalendarPress, onCityPress, onDashboardPress }: ExpendableButtonProps) => {
     const [expanded, setExpanded] = useState<boolean>(false);
 
     const handleQiblatPress = () => {
@@ -27,6 +28,10 @@ const ExpandableButton = ({ onQiblatPress, onDoaPress, onCalendarPress, onCityPr
         onCityPress();
     }
 
+    const handleDashboardPress = () => {
+        setExpanded(false);
+        onDashboardPress();
+    }
 
     return (
         <View style={styles.container}>
@@ -67,6 +72,12 @@ const ExpandableButton = ({ onQiblatPress, onDoaPress, onCalendarPress, onCityPr
                         onPress={handleCityPress}
                         size={22}
                     />
+
+                    <RoundButton 
+                        iconName="chart-bar"
+                        onPress={handleDashboardPress}
+                        size={22}
+                    />
                 </View>
             )}
         </View>
@@ -76,7 +87,7 @@ const ExpandableButton = ({ onQiblatPress, onDoaPress, onCalendarPress, onCityPr
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        left: 45,
+        left: 20,
         bottom: 50
     },
     expandedButtonsContainer: {

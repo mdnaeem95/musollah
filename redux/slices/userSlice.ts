@@ -2,12 +2,34 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@react-native-firebase/auth'
 import firestore from '@react-native-firebase/firestore';
 import { UserState } from '../../utils/types';
+import { format } from 'date-fns';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const initialState: UserState = {
     user: null,
     loading: false,
     error: null
 }
+
+// Utility to cache prayer logs
+const cachePrayerLog = async (key: string, data: any) => {
+    try {
+      await AsyncStorage.setItem(key, JSON.stringify(data));
+    } catch (error) {
+      console.error('Error caching prayer log:', error);
+    }
+};
+
+// Utility to retrieve cached prayer logs
+const getCachedPrayerLog = async (key: string) => {
+    try {
+      const cachedData = await AsyncStorage.getItem(key);
+      return cachedData ? JSON.parse(cachedData) : null;
+    } catch (error) {
+      console.error('Error retrieving cached prayer log:', error);
+      return null;
+    }
+};
 
 export const signIn = createAsyncThunk(
     'user/signIn',
@@ -36,6 +58,73 @@ export const signUp = createAsyncThunk(
 
     return user
 })
+
+// SavePrayerLog Thunk - Logs user prayers
+export const savePrayerLog = createAsyncThunk(
+    'user/savePrayerLog',
+    async ({ userId, date, prayerLog }: { userId: string; date: string; prayerLog: any }, { rejectWithValue }) => {
+      try {
+        const userDoc = firestore().collection('users').doc(userId);
+        await userDoc.update({
+          [`prayerLogs.${date}`]: prayerLog // Save prayer logs under the specific date
+        });
+
+        // Cache the log after saving it to Firestore
+        await AsyncStorage.setItem(`prayerLogs_${date}`, JSON.stringify(prayerLog));
+
+        return { date, prayerLog }; // Return the log data for updating the state
+      } catch (error) {
+        console.error('Failed to save prayer log: ', error);
+        return rejectWithValue('Failed to save prayer log');
+      }
+    }
+  );
+
+// Fetch prayer log for today's date
+export const fetchPrayerLog = createAsyncThunk(
+  'user/fetchPrayerLog',
+  async (_, { rejectWithValue }) => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error('User not logged in');
+      }
+
+      const todayDate = format(new Date(), 'yyyy-MM-dd');
+      const cacheKey = `prayerLogs_${todayDate}`;
+
+      // Check for cached prayer logs
+      const cachedLog = await AsyncStorage.getItem(cacheKey);
+      if (cachedLog) {
+        return { date: todayDate, prayerLog: JSON.parse(cachedLog) };
+      }
+
+      // If no cache, fetch from Firestore
+      const userDoc = await firestore().collection('users').doc(user.uid).get();
+      const userData = userDoc.data();
+
+      if (!userData) {
+        throw new Error('User data not found');
+      }
+
+      // Retrieve the prayer logs for today's date
+      const prayerLog = userData.prayerLogs?.[todayDate] || null;
+
+      // Cache the logs after fetching from Firestore
+      if (prayerLog) {
+        await AsyncStorage.setItem(cacheKey, JSON.stringify(prayerLog));
+      }
+
+      return { date: todayDate, prayerLog };
+    } catch (error) {
+      console.error('Failed to fetch prayer log:', error);
+      return rejectWithValue('Failed to fetch prayer log');
+    }
+  }
+);
+
    
 const userSlice = createSlice({
 name: 'user',
@@ -71,6 +160,38 @@ extraReducers: (builder) => {
         state.error = action.error.message || 'Failed to sign up';
         state.loading = false;
     })
+    .addCase(savePrayerLog.fulfilled, (state, action) => {
+        const { date, prayerLog } = action.payload;
+        if (state.user) {
+          if (!state.user.prayerLogs) {
+            state.user.prayerLogs = {};
+          }
+          state.user.prayerLogs[date] = prayerLog; // Update prayer log in the local state
+        }
+        state.loading = false;
+      })
+    .addCase(savePrayerLog.rejected, (state, action) => {
+        state.error = action.payload as string;
+        state.loading = false;
+    })
+    .addCase(fetchPrayerLog.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+    })
+    .addCase(fetchPrayerLog.fulfilled, (state, action) => {
+        const { date, prayerLog } = action.payload;
+        if (state.user) {
+            if (!state.user.prayerLogs) {
+            state.user.prayerLogs = {};
+            }
+            state.user.prayerLogs[date] = prayerLog;
+        }
+        state.loading = false;
+    })
+    .addCase(fetchPrayerLog.rejected, (state, action) => {
+        state.error = action.payload as string;
+        state.loading = false;
+    });
 },
 });
 
