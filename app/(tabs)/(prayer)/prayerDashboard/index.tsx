@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { fetchMonthlyPrayerLogs, fetchPrayerLog } from '../../../../redux/slices/userSlice';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { ContributionGraph } from 'react-native-chart-kit';
+import HeatMap from '@uiw/react-heat-map';
 
 const PrayersDashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -97,28 +98,20 @@ const PrayersDashboard = () => {
 
           <Text style={styles.sectionHeader}>Your Prayer Stats for the Month</Text>
 
-          {/* Contribution Graph */}
-          <ContributionGraph
-            values={monthlyLogs.map(log => ({
-              date: log.date,
-              count: log.prayersCompleted,
-            }))}
-            endDate={new Date()}
-            numDays={30}
-            width={Dimensions.get('window').width - 32}  // Ensure the graph fits the screen width
-            height={220}
-            chartConfig={{
-              backgroundColor: '#e26a00',
-              backgroundGradientFrom: '#fb8c00',
-              backgroundGradientTo: '#ffa726',
-              color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-            }}
-            tooltipDataAttrs={(value) => ({
-              onPress: () => {
-                alert(`Prayers done on ${value.date}: ${value}`);
-              },
-            })}
-          />
+          <View style={styles.heatmapContainer}>
+            <HeatMap
+              width={330}
+              height={200}
+              value={monthlyLogs.map(log => ({
+                date: log.date,
+                count: log.prayersCompleted,
+              }))}
+              startDate={new Date('2023-09-01')}
+              endDate={new Date()}
+              rectSize={15}
+              legendCellSize={10}
+            />
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -190,6 +183,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#FFF',
     fontFamily: 'Outfit_600SemiBold',
+  },
+  heatmapContainer: {
+    marginTop: 10,
+    alignItems: 'center',
   },
 });
 
