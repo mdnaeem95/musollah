@@ -192,6 +192,7 @@ const PrayerTab = () => {
         onDoaPress={() => router.push('/doa')}
         onCalendarPress={() => setIsCalendarVisible(!isCalendarVisible)}
         onCityPress={handleCityPress}
+        onDashboardPress={() => router.push('/prayerDashboard')}
       />
     </ImageBackground>
   );
