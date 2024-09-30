@@ -1,18 +1,20 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Dimensions } from 'react-native';
 import BackArrow from '../../../../components/BackArrow';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { format } from 'date-fns';
-import { fetchPrayerLog } from '../../../../redux/slices/userSlice';
+import { fetchMonthlyPrayerLogs, fetchPrayerLog } from '../../../../redux/slices/userSlice';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { ContributionGraph } from 'react-native-chart-kit';
 
 const PrayersDashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { user, loading, error } = useSelector((state: RootState) => state.user);
-  const [todayLogs, setTodayLogs] = useState<any>(null); // Replace `any` with appropriate type
+  const [todayLogs, setTodayLogs] = useState<any>(null);
+  const [monthlyLogs, setMonthlyLogs] = useState<any[]>([]);
 
   // Placeholder for prayer session names
   const prayerSessions = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -27,6 +29,15 @@ const PrayersDashboard = () => {
       fetchData();
     }, [dispatch])
   );
+
+  // Fetch monthly prayer logs for the contribution graph
+  useEffect(() => {
+    const fetchMonthlyData = async () => {
+      const result = await dispatch(fetchMonthlyPrayerLogs()).unwrap();
+      setMonthlyLogs(result);
+    };
+    fetchMonthlyData();
+  }, [dispatch]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -83,6 +94,31 @@ const PrayersDashboard = () => {
           >
             <Text style={styles.logButtonText}>Log Your Prayers</Text>
           </TouchableOpacity>
+
+          <Text style={styles.sectionHeader}>Your Prayer Stats for the Month</Text>
+
+          {/* Contribution Graph */}
+          <ContributionGraph
+            values={monthlyLogs.map(log => ({
+              date: log.date,
+              count: log.prayersCompleted,
+            }))}
+            endDate={new Date()}
+            numDays={30}
+            width={Dimensions.get('window').width - 32}  // Ensure the graph fits the screen width
+            height={220}
+            chartConfig={{
+              backgroundColor: '#e26a00',
+              backgroundGradientFrom: '#fb8c00',
+              backgroundGradientTo: '#ffa726',
+              color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+            }}
+            tooltipDataAttrs={(value) => ({
+              onPress: () => {
+                alert(`Prayers done on ${value.date}: ${value}`);
+              },
+            })}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -144,6 +180,7 @@ const styles = StyleSheet.create({
   },
   logButton: {
     marginTop: 20,
+    marginBottom: 20,
     backgroundColor: '#314340',
     padding: 15,
     borderRadius: 8,
