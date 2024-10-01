@@ -1,13 +1,15 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import React, { useContext, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FontAwesome6 } from '@expo/vector-icons'
 import { Switch } from '@rneui/themed'
 import { useRouter } from 'expo-router'
+import { ThemeContext } from '../../../context/ThemeContext'
 
 const SettingsTab = () => {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
+  const { isDarkMode, toggleDarkMode } = useContext(ThemeContext)
   const router = useRouter();
 
   return (
@@ -46,6 +48,17 @@ const SettingsTab = () => {
             <Switch
               value={soundEnabled}
               onValueChange={(value) => setSoundEnabled(value)} 
+            />
+          </View>
+
+          <View style={styles.settingsField}>
+            <View style={styles.settingsLeftField}>
+              <FontAwesome6 name='moon' color='white' size={20} />
+              <Text style={styles.settingsName}>Quran Dark Mode</Text>
+            </View>
+            <Switch
+              value={isDarkMode}
+              onValueChange={toggleDarkMode} 
             />
           </View>
         </View>

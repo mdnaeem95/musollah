@@ -4,11 +4,12 @@ import BackArrow from '../../../../components/BackArrow';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { format } from 'date-fns';
 import { fetchMonthlyPrayerLogs, fetchPrayerLog } from '../../../../redux/slices/userSlice';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { ContributionGraph } from 'react-native-chart-kit';
-import HeatMap from '@uiw/react-heat-map';
+
+// Screen Dimensions
+const screenWidth = Dimensions.get('window').width;
 
 const PrayersDashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -16,6 +17,8 @@ const PrayersDashboard = () => {
   const { user, loading, error } = useSelector((state: RootState) => state.user);
   const [todayLogs, setTodayLogs] = useState<any>(null);
   const [monthlyLogs, setMonthlyLogs] = useState<any[]>([]);
+  const [date, setDate] = useState<string>('');
+  const [prayersCompleted, setPrayersCompleted] = useState<number>(0);
 
   // Placeholder for prayer session names
   const prayerSessions = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -98,19 +101,42 @@ const PrayersDashboard = () => {
 
           <Text style={styles.sectionHeader}>Your Prayer Stats for the Month</Text>
 
-          <View style={styles.heatmapContainer}>
-            <HeatMap
-              width={330}
-              height={200}
-              value={monthlyLogs.map(log => ({
+          {/* Contribution Graph */}
+          <View style={styles.graphContainer}>
+            <ContributionGraph
+              values={monthlyLogs.map(log => ({
                 date: log.date,
                 count: log.prayersCompleted,
               }))}
-              startDate={new Date('2023-09-01')}
+              squareSize={30}
+              style={{ left: 30 }}
+              horizontal={false}
               endDate={new Date()}
-              rectSize={15}
-              legendCellSize={10}
+              numDays={30}
+              width={screenWidth - 32} // Almost full width
+              height={220} // Adjust height as needed
+              chartConfig={{
+                backgroundColor: '#A3C0BB', // Background matching screen color
+                backgroundGradientFrom: '#A3C0BB',
+                backgroundGradientTo: '#A3C0BB',
+                color: (opacity = 1) => `rgba(34, 139, 34, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              }}
+              tooltipDataAttrs={(value) => ({
+                onPress: () => {
+                  // @ts-ignore
+                  setDate(value.date);
+                  // @ts-ignore
+                  setPrayersCompleted(value.count)
+                }
+              })}
             />
+
+            <View style={styles.textContainer}>
+              <Text style={styles.statsText}>{`Date: ${date}`}</Text>
+              <Text style={styles.statsText}>{`Prayers Completed: ${prayersCompleted}`}</Text>
+            </View>
+
           </View>
         </View>
       </ScrollView>
@@ -184,10 +210,19 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontFamily: 'Outfit_600SemiBold',
   },
-  heatmapContainer: {
+  graphContainer: {
+    justifyContent: 'center',
+    alignItems: 'center', // Center the graph horizontally
     marginTop: 10,
-    alignItems: 'center',
   },
+  textContainer: {
+    marginTop: -40,
+    gap: 10,
+  },
+  statsText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 16
+  }
 });
 
 export default PrayersDashboard;
