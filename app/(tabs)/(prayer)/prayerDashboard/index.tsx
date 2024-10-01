@@ -7,6 +7,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { fetchMonthlyPrayerLogs, fetchPrayerLog } from '../../../../redux/slices/userSlice';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { ContributionGraph } from 'react-native-chart-kit';
+import { differenceInDays, endOfMonth, startOfMonth } from 'date-fns';
 
 // Screen Dimensions
 const screenWidth = Dimensions.get('window').width;
@@ -19,6 +20,10 @@ const PrayersDashboard = () => {
   const [monthlyLogs, setMonthlyLogs] = useState<any[]>([]);
   const [date, setDate] = useState<string>('');
   const [prayersCompleted, setPrayersCompleted] = useState<number>(0);
+
+  const currentMonthStart = startOfMonth(new Date());
+  const currentMonthEnd = endOfMonth(new Date());
+  const numDaysInMonth = differenceInDays(currentMonthEnd, currentMonthStart) + 1; // Add 1 to include the last day
 
   // Placeholder for prayer session names
   const prayerSessions = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -111,8 +116,9 @@ const PrayersDashboard = () => {
               squareSize={30}
               style={{ left: 30 }}
               horizontal={false}
-              endDate={new Date()}
-              numDays={30}
+              showMonthLabels={false}
+              endDate={currentMonthEnd}
+              numDays={numDaysInMonth}
               width={screenWidth - 32} // Almost full width
               height={220} // Adjust height as needed
               chartConfig={{
@@ -120,7 +126,6 @@ const PrayersDashboard = () => {
                 backgroundGradientFrom: '#A3C0BB',
                 backgroundGradientTo: '#A3C0BB',
                 color: (opacity = 1) => `rgba(34, 139, 34, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
               }}
               tooltipDataAttrs={(value) => ({
                 onPress: () => {

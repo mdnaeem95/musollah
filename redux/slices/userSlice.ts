@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@react-native-firebase/auth'
 import firestore from '@react-native-firebase/firestore';
 import { UserState } from '../../utils/types';
-import { format, subDays } from 'date-fns';
+import { eachDayOfInterval, endOfMonth, format, startOfMonth, subDays } from 'date-fns';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const initialState: UserState = {
@@ -144,12 +144,19 @@ export const fetchMonthlyPrayerLogs = createAsyncThunk(
           throw new Error('No prayer logs found for the user');
         }
   
-        // Prepare an array of the past 30 days' dates
+        // Calculate the start and end of the current month
         const today = new Date();
-        const last30Days = Array.from({ length: 30 }, (_, i) => format(subDays(today, i), 'yyyy-MM-dd')).reverse();
+        const firstDayOfMonth = startOfMonth(today);
+        const lastDayOfMonth = endOfMonth(today);
+
+        // Create an array of dates for the current month
+        const datesInMonth = eachDayOfInterval({
+          start: firstDayOfMonth,
+          end: lastDayOfMonth
+        }).map(date => format(date, 'yyyy-MM-dd'));
   
         // Filter the prayer logs for the past 30 days
-        const monthlyLogs = last30Days.map((date) => {
+        const monthlyLogs = datesInMonth.map((date) => {
           const log = userData.prayerLogs[date];
           const prayersCompleted = log ? Object.values(log).filter(Boolean).length : 0; // Count prayers completed (true values)
           return { date, prayersCompleted };
