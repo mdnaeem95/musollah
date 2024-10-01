@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Text, View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Surah } from "../app/(tabs)/(quran)/index"
+import { Surah } from '../utils/types';
+import { ThemeContext } from '../context/ThemeContext';
 
 interface SurahProps {
     surah: Surah,
@@ -8,20 +9,22 @@ interface SurahProps {
 }
 
 const SurahItem = ({ surah, onPress }: SurahProps) => {
+  const { isDarkMode } = useContext(ThemeContext);
+
   return (
     <TouchableOpacity onPress={() => onPress(surah)}>
       <View style={styles.container}>
         <View style={styles.contentContainer}>
-          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={styles.surahNumber}>{surah.number}</Text>
+          <View style={styles.textContainer}>
+            <Text style={[styles.surahNumber, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF'}]}>{surah.number}</Text>
             <View>
-                <Text style={styles.surahInfo}>{surah.englishName}</Text>
-                <Text style={styles.surahInfo}>({surah.englishNameTranslation})</Text>
+                <Text style={[styles.surahInfo, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF'}]}>{surah.englishName}</Text>
+                <Text style={[styles.surahInfo, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF'}]}>({surah.englishNameTranslation})</Text>
             </View>
           </View>
             
             <View style={{ top: 5 }}>
-                <Text style={styles.surahName}>{surah.arabicName}</Text>
+                <Text style={[styles.surahName, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF'}]}>{surah.arabicName}</Text>
             </View>
         </View>
       </View>
@@ -41,23 +44,26 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     flexDirection: 'row', 
   },
+  textContainer: {
+    flexDirection: 'row', 
+    gap: 10, 
+    alignItems: 'center', 
+    justifyContent: 'center'
+  },
   surahNumber: {
     fontFamily: 'Outfit_600SemiBold',
     fontSize: 30,
     lineHeight: 45,
-    color: '#FFFFFF'
   },
   surahInfo: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 14,
     lineHeight: 18,
-    color: '#EAFFFC'
   },
   surahName: {
     fontFamily: 'Amiri_400Regular',
     fontSize: 24,
     textAlign: 'right',
-    color: '#FFFFFF'
   }
 });
 

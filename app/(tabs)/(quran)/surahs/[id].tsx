@@ -1,16 +1,19 @@
 import { View, Text, SafeAreaView, ActivityIndicator, StyleSheet, Image, TouchableOpacity, FlatList } from 'react-native';
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useContext } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { AVPlaybackStatus, Audio } from 'expo-av';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../../redux/store/store';
 import { Surah } from '../../../../utils/types';
 import BackArrow from '../../../../components/BackArrow';
+import { ThemeContext } from '../../../../context/ThemeContext';
 
 const SurahTextScreen = () => {
+    const { isDarkMode } = useContext(ThemeContext);
     const { surahs, isLoading } = useSelector((state: RootState) => state.quran);
     const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
+    const [surahFinished, setSurahFinished] = useState<boolean>(false);
     const soundRef = useRef<Audio.Sound | null>(null);
     const { id } = useLocalSearchParams<{ id: string }>();
     const surahNum = id ? parseInt(id as string, 10) : 1;
@@ -18,14 +21,25 @@ const SurahTextScreen = () => {
 
     const audioLinks = surah?.audioLinks ? surah.audioLinks.split(',') : [];
 
+    const resetAudio = async () => {
+        if (soundRef.current) {
+            await soundRef.current.unloadAsync();
+            soundRef.current = null;
+        }
+        setCurrentAyahIndex(0);
+        setSurahFinished(false);
+    }
+
     const playNextAyah = useCallback(
         async (index: number) => {
             if (!surah || index >= audioLinks.length) {
                 setIsPlaying(false);
+                setSurahFinished(true);
+                resetAudio();
                 return;
             }
 
-            const ayahAudioLink = audioLinks[index];
+            const ayahAudioLink = audioLinks[index].trim();
 
             try {
                 if (soundRef.current) {
@@ -33,7 +47,7 @@ const SurahTextScreen = () => {
                 }
 
                 const { sound } = await Audio.Sound.createAsync(
-                    { uri: ayahAudioLink.trim() },
+                    { uri: ayahAudioLink },
                     { shouldPlay: true }
                 );
                 soundRef.current = sound;
@@ -53,7 +67,11 @@ const SurahTextScreen = () => {
     );
 
     const togglePlayPause = useCallback(async () => {
-        if (soundRef.current) {
+        if (surahFinished) {
+            await resetAudio();
+            playNextAyah(0);
+            setIsPlaying(true);
+        } else if (soundRef.current) {
             const status = await soundRef.current.getStatusAsync();
             if (status.isLoaded) {
                 try {
@@ -80,17 +98,17 @@ const SurahTextScreen = () => {
             playNextAyah(currentAyahIndex || 0);  // Start playing from the first Ayah
             setIsPlaying(true);
         }
-    }, [playNextAyah, currentAyahIndex]);
+    }, [playNextAyah, currentAyahIndex, surahFinished]);
 
     const renderAyah = ({ item, index }: { item: string, index: number }) => (
-        <View key={index} style={styles.ayahContainer}>
-            <Text style={styles.quranText}>{item}</Text>
+        <View key={index} style={[styles.ayahContainer, index === currentAyahIndex && styles.activeAyahContainer]}>
+            <Text style={[styles.quranText, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF' }]}>{item}</Text>
             {surah?.englishTranslation && (
                 <View style={styles.translationContainer}>
-                    <Text style={styles.translationText}>{surah.englishTranslation.split('|')[index]}</Text>
+                    <Text style={[styles.translationText, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF' }]}>{surah.englishTranslation.split('|')[index]}</Text>
                 </View>
             )}
-            <View style={styles.separator} />
+            <View style={[styles.separator, { backgroundColor: isDarkMode ? '#ECDFCC' :'#FFFFFF' }]} />
         </View>
     );
 
@@ -103,19 +121,22 @@ const SurahTextScreen = () => {
     }
 
     return (
-        <SafeAreaView style={{ backgroundColor: '#4D6561', flex: 1, paddingTop: 30 }}>
-            <View style={{ backgroundColor: '#4D6561', flex: 1 }}>
+        <SafeAreaView style={[styles.mainContainer, { backgroundColor: isDarkMode ? "#1E1E1E" : "#4D6561" }]}>
+            <View style={[styles.contentContainer, { backgroundColor: isDarkMode ? "#1E1E1E" : "#4D6561" }]}>
                 {isLoading ? (
                     <ActivityIndicator />
                 ) : (
                     <View style={{ flex: 1 }}>
-                        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                            <View style={{ justifyContent: 'center', alignItems: 'center', paddingVertical: 20, borderRadius: 40, backgroundColor: '#D9D9D9', width: '50%', marginBottom: 20 }}>
+                        <View style={styles.bodyContainer}>
+                            <View style={[styles.headerContainer, { backgroundColor: isDarkMode ? "#ECDFCC" : "#D9D9D9" }]}>
                                 <Text style={styles.surahName}>{surah.arabicName}</Text>
-                                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', display: 'flex', gap: 10 }}>
+                                <View style={styles.ayahContentContainer}>
                                     <Text style={styles.surahEnglishName}>{surah.englishName}</Text>
                                     <TouchableOpacity onPressIn={togglePlayPause}>
-                                        <Image source={isPlaying ? require('../../../../assets/pause.png') : require('../../../../assets/play.png')} style={{ objectFit: 'contain', width: 28, height: 28 }} />
+                                        <Image 
+                                            source={isPlaying ? require('../../../../assets/pause.png') : require('../../../../assets/play.png')} 
+                                            style={styles.playIcon} 
+                                        />
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -140,11 +161,47 @@ const SurahTextScreen = () => {
 };
 
 const styles = StyleSheet.create({
+    activeAyahContainer: {
+        backgroundColor: '#697565'
+    },
+    mainContainer: {
+        flex: 1, 
+        paddingTop: 30
+    },
+    contentContainer: {
+        flex: 1
+    },
+    bodyContainer: {
+        justifyContent: 'center', 
+        alignItems: 'center'
+    },
+    headerContainer: {
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        paddingVertical: 20,
+        borderRadius: 40, 
+        backgroundColor: '#D9D9D9', 
+        width: '50%', 
+        marginBottom: 20
+    },
+    ayahContentContainer: {
+        flexDirection: 'row', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        display: 'flex', 
+        gap: 10
+    },
+    playIcon: {
+        objectFit: 'contain', 
+        width: 28, 
+        height: 28
+    },
     surahName: {
         fontFamily: 'Amiri_400Regular',
         fontWeight: '400',
         fontSize: 30,
         lineHeight: 48,
+        color: '#314340',
     },
     surahEnglishName: {
         fontFamily: 'Outfit_500Medium',
@@ -156,7 +213,6 @@ const styles = StyleSheet.create({
     quranText: {
         fontFamily: 'Amiri_400Regular',
         fontWeight: '400',
-        color: '#FFFFFF',
         fontSize: 26,
         lineHeight: 48,
         textAlign: 'right',
@@ -167,7 +223,6 @@ const styles = StyleSheet.create({
         fontWeight: '400',
         fontSize: 12,
         lineHeight: 15,
-        color: '#FFFFFF',
         paddingHorizontal: 20,
     },
     ayahContainer: {
@@ -184,7 +239,6 @@ const styles = StyleSheet.create({
     separator: {
         width: '100%',
         height: 1,
-        backgroundColor: '#FFFFFF',
     },
 });
 
