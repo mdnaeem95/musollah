@@ -1,15 +1,13 @@
-import { View, Text, FlatList, ScrollView, TouchableOpacity } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import { Searchbar } from 'react-native-paper';
-import { FontAwesome6 } from '@expo/vector-icons'
 import { StyleSheet } from 'react-native'
-import { Link } from 'expo-router'
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import { useSelector } from 'react-redux'
 import { RootState } from '../../../../redux/store/store'
-import { CourseData } from '../../../../redux/slices/dashboardSlice'
 import BackArrow from '../../../../components/BackArrow';
 import CourseCard from '../../../../components/CourseCard';
+import { CourseData } from '../../../../utils/types';
 
 export interface CategoryData {
   icon: string,

@@ -129,6 +129,21 @@ export interface DoaAfterPrayer {
     englishTranslation: string
 }
 
+export interface DoasState {
+    doas: Doa[],
+    loading: boolean;
+    error: string | null;
+}
+
+export interface Doa {
+    number: string;
+    arabicText: string;
+    englishTranslation: string;
+    romanizedText: string;
+    source: string;
+    title: string
+}
+
 export interface DashboardState {
     user: any;
     courses: any[];

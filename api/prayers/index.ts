@@ -3,7 +3,7 @@ import { formatDateForAPI } from '../../utils';
 export const fetchPrayerTimes = async () => {
     try {
         console.log('Fetching prayer times...')
-        const response = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=Singapore&country=Singapore&method=12`)
+        const response = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=Singapore&country=Singapore`)
 
         if (!response.ok) {
             throw new Error('Failed to fetch prayer times');

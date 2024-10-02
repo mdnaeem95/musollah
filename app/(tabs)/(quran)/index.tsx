@@ -1,22 +1,29 @@
 import { SafeAreaView, FlatList, ActivityIndicator, View, TextInput, TouchableOpacity, StyleSheet, StatusBar } from 'react-native'
-import React, { useCallback, useContext, useMemo, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import SurahItem from '../../../components/SurahItem';
 import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../redux/store/store';
-import { Surah } from '../../../utils/types';
+import { Surah, Doa } from '../../../utils/types';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { darkTheme, lightTheme } from '../../../utils/theme';
+import SegmentedControl from '@react-native-segmented-control/segmented-control'
+import DoaItem from '../../../components/DoaItem';
+
+const contentTypes = ['Surahs', 'Doas']
 
 const QuranTab = () => {
   const { isDarkMode } = useContext(ThemeContext);
   const styles = isDarkMode ? darkTheme: lightTheme;
   const { surahs, isLoading } = useSelector((state: RootState) => state.quran);
+  const { doas } = useSelector((state: RootState) => state.doas)
   const router = useRouter();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery)
   const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
+  const [activeTabIndex, setActiveTabIndex] = useState<number>(0)
 
   const toggleSearch = () => {
     setIsSearchExpanded(!isSearchExpanded);
@@ -33,13 +40,32 @@ const QuranTab = () => {
     <SurahItem key={item.id} surah={item} onPress={handleSurahPress} />
   ), [handleSurahPress]);
 
+  const renderDoaItem = useCallback(({ item }: { item: Doa }) => (
+    <DoaItem key={item.number} doa={item} onPress={() => {}} />
+  ), [])
+
   const filteredSurahs = useMemo(() => {
     return surahs.filter(surah => 
-      (surah.arabicName && surah.arabicName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (surah.englishName && surah.englishName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (surah.number && surah.number.toString().includes(searchQuery))
+      (surah.arabicName && surah.arabicName.toLowerCase().includes(debounceQuery.toLowerCase())) ||
+      (surah.englishName && surah.englishName.toLowerCase().includes(debounceQuery.toLowerCase())) ||
+      (surah.number && surah.number.toString().includes(debounceQuery))
     );
-  }, [surahs, searchQuery]);
+  }, [surahs, debounceQuery]);
+
+  const filteredDoas = useMemo(() => {
+    return doas.filter(
+      (doa) =>
+        doa.title.toLowerCase().includes(debounceQuery.toLowerCase()) ||
+        (doa.number && doa.number.toString().includes(debounceQuery))
+    );
+  }, [doas, debounceQuery]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebounceQuery(searchQuery)
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery])
 
   return (
     <SafeAreaView style={styles.mainContainer}>
@@ -67,13 +93,28 @@ const QuranTab = () => {
             color={ isDarkMode ? '#ECDFCC' : '#FFFFFF' } />
         </TouchableOpacity>
       </View>
+
+      <View style={{ marginVertical: 10, paddingHorizontal: 20 }}>
+        <SegmentedControl 
+          values={contentTypes}
+          selectedIndex={activeTabIndex}
+          onChange={(event) => setActiveTabIndex(event.nativeEvent.selectedSegmentIndex)}
+          tintColor={isDarkMode ? '#ECDFCC' : '#697565'}
+          backgroundColor={isDarkMode ? '#1E1E1E' : '#4D6561'}
+          fontStyle={{ color: isDarkMode ? '#FFFFFF' : '#ECDFCC' }}
+          activeFontStyle={{ fontWeight: 'bold', color: isDarkMode ? '#1E1E1E' : '#FFFFFF' }}
+        />
+      </View>
       {isLoading ? (
         <ActivityIndicator />
       ) : (
         <FlatList 
-          data={filteredSurahs} 
-          renderItem={renderSurahItem} 
-          keyExtractor={(item) => item.number.toString()} 
+          data={activeTabIndex === 0 ? filteredSurahs : filteredDoas}
+          // @ts-ignore 
+          renderItem={activeTabIndex === 0 ? renderSurahItem : renderDoaItem}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10} 
+          keyExtractor={(item) => (activeTabIndex === 0 ? item.number.toString() : item.id)}
           showsVerticalScrollIndicator={false}
           style={{ padding: 30 }} 
         />
