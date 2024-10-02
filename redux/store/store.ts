@@ -6,6 +6,7 @@ import quranReducer from '../slices/quranSlice'
 import userReducer from '../slices/userSlice'
 import dashboardReducer from '../slices/dashboardSlice';
 import courseReducer from '../slices/courseSlice';
+import doasReducer from '../slices/doasSlice'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FLUSH, PAUSE, PERSIST, persistReducer, persistStore, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
 
@@ -25,6 +26,7 @@ const rootReducer = combineReducers({
   user: userReducer,
   dashboard: dashboardReducer,
   course: courseReducer,
+  doas: doasReducer,
 })
 
 // Wrap root reducer with persistreducer

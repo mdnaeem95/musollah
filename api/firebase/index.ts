@@ -1,7 +1,7 @@
 import firestore from "@react-native-firebase/firestore";
 import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
-import { ContentData, CourseData, DoaAfterPrayer, ModuleData, Surah, TeacherData, UserData } from "../../utils/types";
+import { ContentData, CourseData, Doa, DoaAfterPrayer, ModuleData, Surah, TeacherData, UserData } from "../../utils/types";
 
 
 export const fetchUserData = async (userId: string ): Promise<UserData> => {
@@ -248,3 +248,25 @@ export const fetchSurahs = async (): Promise<Surah[]> => {
     }
 }
 
+export const fetchDoas = async (): Promise<Doa[]> => {
+    try {
+        const doaSnapshot = await firestore().collection('doas').get();
+        const doaList = doaSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                number: data.number,
+                arabicText: data.arabicText,
+                englishTranslation: data.englishTranslation,
+                romanizedText: data.romanizedText,
+                source: data.source,
+                title: data.title
+            } as Doa
+        });
+
+        return doaList
+    } catch (error) {
+        console.error("Error fetching doas: ", error);
+        throw error
+    }
+}

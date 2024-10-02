@@ -1,5 +1,5 @@
 import { View, Text, SafeAreaView, ActivityIndicator, StyleSheet, Image, TouchableOpacity, FlatList } from 'react-native';
-import React, { useRef, useState, useCallback, useContext } from 'react';
+import React, { useRef, useState, useCallback, useContext, useEffect } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { AVPlaybackStatus, Audio } from 'expo-av';
 import { useSelector } from 'react-redux';
@@ -9,13 +9,14 @@ import BackArrow from '../../../../components/BackArrow';
 import { ThemeContext } from '../../../../context/ThemeContext';
 
 const SurahTextScreen = () => {
-    const { isDarkMode } = useContext(ThemeContext);
-    const { surahs, isLoading } = useSelector((state: RootState) => state.quran);
     const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [surahFinished, setSurahFinished] = useState<boolean>(false);
     const soundRef = useRef<Audio.Sound | null>(null);
+    const listRef = useRef<FlatList>(null);
     const { id } = useLocalSearchParams<{ id: string }>();
+    const { surahs, isLoading } = useSelector((state: RootState) => state.quran);
+    const { isDarkMode } = useContext(ThemeContext);
     const surahNum = id ? parseInt(id as string, 10) : 1;
     const surah: Surah | undefined = surahs.find((surah: Surah) => surah.number === surahNum);
 
@@ -100,17 +101,34 @@ const SurahTextScreen = () => {
         }
     }, [playNextAyah, currentAyahIndex, surahFinished]);
 
-    const renderAyah = ({ item, index }: { item: string, index: number }) => (
-        <View key={index} style={[styles.ayahContainer, index === currentAyahIndex && styles.activeAyahContainer]}>
-            <Text style={[styles.quranText, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF' }]}>{item}</Text>
-            {surah?.englishTranslation && (
-                <View style={styles.translationContainer}>
-                    <Text style={[styles.translationText, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF' }]}>{surah.englishTranslation.split('|')[index]}</Text>
-                </View>
-            )}
-            <View style={[styles.separator, { backgroundColor: isDarkMode ? '#ECDFCC' :'#FFFFFF' }]} />
-        </View>
-    );
+    const renderAyah = ({ item, index }: { item: string, index: number }) => {
+        // Determine the text color based on the theme and whether the Ayah is active
+        const ayahTextColor = index === currentAyahIndex
+        ? (isDarkMode ? '#F0DBA0' : '#F4E2C1')  // Highlighted text color
+        : (isDarkMode ? '#ECDFCC' : '#FFFFFF');  // Regular text color
+
+        return (
+            <View key={index} style={styles.ayahContainer}>
+                <Text style={[styles.quranText, { color: ayahTextColor }]}>{item}</Text>
+                {surah?.englishTranslation && (
+                    <View style={styles.translationContainer}>
+                        <Text style={[styles.translationText, { color: ayahTextColor }]}>{surah.englishTranslation.split('|')[index]}</Text>
+                    </View>
+                )}
+                <View style={[styles.separator, { backgroundColor: isDarkMode ? '#ECDFCC' :'#FFFFFF' }]} />
+            </View>
+        )
+    };
+
+    useEffect(() => {
+        if (listRef.current) {
+            listRef.current.scrollToIndex({
+                index: currentAyahIndex,
+                animated: true,
+                viewPosition: 0.5
+            });
+        }
+    }, [currentAyahIndex]);
 
     if (!surah) {
         return (
@@ -142,8 +160,11 @@ const SurahTextScreen = () => {
                             </View>
 
                             <FlatList
+                                ref={listRef}
                                 data={surah.arabicText ? surah.arabicText.split('|') : []}
                                 renderItem={renderAyah}
+                                initialScrollIndex={currentAyahIndex}
+                                windowSize={5}
                                 keyExtractor={(item, index) => index.toString()}
                                 contentContainerStyle={styles.listContainer}
                                 showsVerticalScrollIndicator={false}
@@ -161,9 +182,6 @@ const SurahTextScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    activeAyahContainer: {
-        backgroundColor: '#697565'
-    },
     mainContainer: {
         flex: 1, 
         paddingTop: 30

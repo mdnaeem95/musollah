@@ -15,6 +15,7 @@ import { fetchSurahsData } from '../redux/slices/quranSlice';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import AuthScreen from './(auth)/AuthScreen';
 import LoadingScreen from '../components/LoadingScreen';
+import { fetchDailyDoasData } from '../redux/slices/doasSlice';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -70,6 +71,7 @@ const RootLayout = () => {
         try {
           console.log('Fetching non-essential data (surahs)...');
           await dispatch(fetchSurahsData()).unwrap();
+          await dispatch(fetchDailyDoasData()).unwrap();
 
           setIsNonEssentialDataFetched(true);
         } catch (error) {
