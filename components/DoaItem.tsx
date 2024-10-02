@@ -16,7 +16,7 @@ const DoaItem = ({ doa, onPress }: DoaProps) => {
       <View style={styles.container}>
         <View style={styles.contentContainer}>
           <View style={styles.textContainer}>
-            <Text style={[styles.doaNumber, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF'}]}>{doa.id}</Text>
+            <Text style={[styles.doaNumber, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF'}]}>{doa.number}</Text>
             <View>
                 <Text style={[styles.doaTitle, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF'}]}>{doa.title}</Text>
             </View>
