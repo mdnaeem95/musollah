@@ -36,12 +36,16 @@ const QuranTab = () => {
     router.push(`/surahs/${surah.number}`)
   }, [router]);
 
+  const handleDoaPress = useCallback((doa: Doa) => {
+    router.push(`/doas/${doa.number}`)
+  }, [router])
+
   const renderSurahItem = useCallback(({ item }: { item: Surah }) => (
     <SurahItem key={item.id} surah={item} onPress={handleSurahPress} />
   ), [handleSurahPress]);
 
   const renderDoaItem = useCallback(({ item }: { item: Doa }) => (
-    <DoaItem key={item.number} doa={item} onPress={() => {}} />
+    <DoaItem key={item.number} doa={item} onPress={handleDoaPress} />
   ), [])
 
   const filteredSurahs = useMemo(() => {
@@ -99,7 +103,7 @@ const QuranTab = () => {
           values={contentTypes}
           selectedIndex={activeTabIndex}
           onChange={(event) => setActiveTabIndex(event.nativeEvent.selectedSegmentIndex)}
-          tintColor={isDarkMode ? '#ECDFCC' : '#697565'}
+          tintColor={isDarkMode ? '#ECDFCC' : '#405754'}
           backgroundColor={isDarkMode ? '#1E1E1E' : '#4D6561'}
           fontStyle={{ color: isDarkMode ? '#FFFFFF' : '#ECDFCC' }}
           activeFontStyle={{ fontWeight: 'bold', color: isDarkMode ? '#1E1E1E' : '#FFFFFF' }}
@@ -114,9 +118,9 @@ const QuranTab = () => {
           renderItem={activeTabIndex === 0 ? renderSurahItem : renderDoaItem}
           initialNumToRender={10}
           maxToRenderPerBatch={10} 
-          keyExtractor={(item) => (activeTabIndex === 0 ? item.number.toString() : item.id)}
+          keyExtractor={(item) => (item.number.toString())}
           showsVerticalScrollIndicator={false}
-          style={{ padding: 30 }} 
+          style={{ paddingHorizontal: 30 }} 
         />
       )}
     </SafeAreaView>
