@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { deleteUser, getAuth, signOut, updateEmail, updateProfile } from '@react-native-firebase/auth';
 import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from '@react-native-firebase/firestore';
 import { FontAwesome6 } from '@expo/vector-icons'; // For consistent icons
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { persistor } from '../../../../redux/store/store'
 import Modal from 'react-native-modal'
 import BackArrow from '../../../../components/BackArrow';
@@ -109,8 +109,10 @@ const AccountSettings = () => {
         // clear the persisted redux state
         await persistor.purge();
 
-        // navigate back to the authentication screen
-        router.push('/(auth)/AuthScreen');
+        // Ensure safe navigation
+        setTimeout(() => {
+          return <Redirect href="/(auth)/AuthScreen" />
+        }, 500); // A small delay to ensure navigation occurs after layout updates
 
         Alert.alert('You have been successfully signed out.');
       } catch (error) {
