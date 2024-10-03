@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch, RootState } from '../../redux/store/store'
 import { signIn, signUp } from '../../redux/slices/userSlice'
-import { useRouter } from 'expo-router'
+import { Redirect, useRouter } from 'expo-router'
 import { UserInfo } from '../../utils/types'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import { Alert } from 'react-native'
@@ -29,9 +29,10 @@ const passwordRules = {
 
 const AuthScreen = () => {
   const { control, handleSubmit, formState: { errors } } = useForm<UserInfo>()
-  const { loading, error } = useSelector((state: RootState) => state.user)
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const [signInSuccessful, setSignInSuccessful] = useState<boolean>(false);
+  const [signUpSuccessful, setSignUpSuccessful] = useState<boolean>(false);
   const [isSignUp, setIsSignUp] = useState(true);
 
   console.log('AuthScreen rendered');
@@ -40,12 +41,16 @@ const AuthScreen = () => {
     try {
       const resultAction = await dispatch(signIn({ email, password })).unwrap();
       console.log('Sign in successful:', resultAction);
-      router.push('(tabs)');
+      setSignInSuccessful(true);
     } catch (error) {
       console.error('Sign in failed: ', error);
       Alert.alert('Sign in failed. Please check your credentials.')
     }
   };
+
+  if (signInSuccessful) {
+    return <Redirect href="/(tabs)" />
+  }
 
   const onSignUp: SubmitHandler<UserInfo> = async ({ email, password }) => {
     console.log('Sign Up button clicked');
@@ -54,11 +59,15 @@ const AuthScreen = () => {
     try {
       const resultAction = await dispatch(signUp({ email, password })).unwrap();
       console.log('Sign Up successful:', resultAction);
-      router.push('(tabs)');
+      setSignUpSuccessful(true);
     } catch (error) {
       console.error('Sign Up failed: ', error);
     }
   };
+
+  if (signUpSuccessful) {
+    return <Redirect href="/(tabs)" />
+  }
 
   const toggleAuthMode = () => {
     setIsSignUp(!isSignUp);

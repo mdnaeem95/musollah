@@ -47,6 +47,7 @@ export interface UserData {
     avatarUrl: string;
     email: string;
     enrolledCourses: string[],
+    prayerLogs: any[],
     name: string
 }
 

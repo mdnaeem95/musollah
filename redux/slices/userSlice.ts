@@ -11,32 +11,19 @@ const initialState: UserState = {
     error: null
 }
 
-// Utility to cache prayer logs
-const cachePrayerLog = async (key: string, data: any) => {
-    try {
-      await AsyncStorage.setItem(key, JSON.stringify(data));
-    } catch (error) {
-      console.error('Error caching prayer log:', error);
-    }
-};
-
-// Utility to retrieve cached prayer logs
-const getCachedPrayerLog = async (key: string) => {
-    try {
-      const cachedData = await AsyncStorage.getItem(key);
-      return cachedData ? JSON.parse(cachedData) : null;
-    } catch (error) {
-      console.error('Error retrieving cached prayer log:', error);
-      return null;
-    }
-};
-
 export const signIn = createAsyncThunk(
     'user/signIn',
     async ({ email, password }: { email: string; password: string }) => {
       const auth = getAuth();
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      return userCredential.user;
+      const user = userCredential.user;
+
+      return {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+      }
     }
   );
   
@@ -53,10 +40,17 @@ export const signUp = createAsyncThunk(
             name: user.displayName || 'New User',
             email: user.email,
             avatarUrl: 'https://via.placeholder.com/100',
-            enrolledCourses: []
-    })
+            enrolledCourses: [],
+            prayerLogs: []
+        })
 
-    return user
+        // Return only serializable parts of the user object to Redux
+        return {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+      };
 })
 
 // SavePrayerLog Thunk - Logs user prayers
