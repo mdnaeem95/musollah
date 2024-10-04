@@ -10,53 +10,75 @@ const initialState: CoursesState = {
   error: null,
 };
 
-// Async thunk to start a course for a user
-export const startCourse = createAsyncThunk('courses/startCourse', async ({ courseId, userId }: { courseId: string, userId: string }, { rejectWithValue, getState, dispatch }) => {
-  try {
-    const state = getState() as RootState;
-    const course = state.dashboard.courses.find((course) => course.id === courseId);
+export const startCourse = createAsyncThunk(
+  'courses/startCourse',
+  async ({ courseId, userId }: { courseId: string; userId: string }, { rejectWithValue, getState, dispatch }) => {
+    try {
+      console.log('StartCourse Thunk triggered');
+      console.log(`Course ID: ${courseId}, User ID: ${userId}`);
+      
+      const state = getState() as RootState;
+      let course = state.dashboard.courses.find((course) => course.id === courseId);
 
-    if (!course) {
-      throw new Error('Course not found');
-    }
+      console.log('Courses in state:', state.dashboard.courses.map((c) => c.id));
+      console.log('Found course:', course);
 
-    // Initialize module progress directly in the course's modules
-    const updatedModules: ModuleData[] = course.modules.map((module: ModuleData, index: number) => ({
-      ...module,
-      status: index === 0 ? 'in progress' : 'locked',  // First module in progress, rest are locked
-    }));
-
-    const userRef = firestore().collection('users').doc(userId)
-    const userSnapshot = await userRef.get();
-
-    if (!userSnapshot.exists) {
-      throw new Error('User not found.')
-    }
-
-    const userData = userSnapshot.data();
-
-    const updatedEnrolledCourses = [
-      ...(userData?.enrolledCourses || []),
-      { 
-        ...course,
-        status: 'in progress',
-        modules: updatedModules
+      if (!course) {
+        console.warn('Course not found in the state. Fetching course from Firestore...');
+        const courseDoc = await firestore().collection('courses').doc(courseId).get();
+        if (!courseDoc.exists) {
+          throw new Error('Course not found in Firestore.');
+        }
+        course = { id: courseDoc.id, ...courseDoc.data() };
       }
-    ]
 
-    await userRef.update({
-      enrolledCourses: updatedEnrolledCourses
-    })
+      // Process enrollment logic
+      const updatedModules: ModuleData[] = course.modules.map((module: ModuleData, index: number) => ({
+        ...module,
+        status: index === 0 ? 'in progress' : 'locked',
+      }));
 
-    // update the dashboard after enrollment
-    dispatch(updateDashboardEnrolledCourses({ courseId, userId, enrolledCourses: updatedEnrolledCourses }));    
+      const userRef = firestore().collection('users').doc(userId);
+      const userSnapshot = await userRef.get();
 
-    return { courseId, status: 'in progress' as 'in progress', modules: updatedModules };
-  } catch (error) {
-    console.error('Failed to start course:', error);
-    return rejectWithValue('Failed to start course');
+      if (!userSnapshot.exists) {
+        throw new Error('User not found.');
+      }
+
+      const userData = userSnapshot.data();
+      const isAlreadyEnrolled = userData?.enrolledCourses?.some((c: any) => c.id === courseId);
+      if (isAlreadyEnrolled) {
+        return rejectWithValue('User is already enrolled in this course.');
+      }
+
+      const updatedEnrolledCourses = [
+        ...(userData?.enrolledCourses || []),
+        { 
+          ...course,
+          status: 'in progress',
+          modules: updatedModules,
+        },
+      ];
+
+      console.log('Updated Enrolled Courses:', updatedEnrolledCourses);
+
+      await userRef.update({
+        enrolledCourses: updatedEnrolledCourses,
+      });
+
+      console.log('Updated enrolled courses in Firestore.');
+
+      // Dispatch to update dashboard enrolled courses
+      await dispatch(updateDashboardEnrolledCourses({ courseId, userId, enrolledCourses: updatedEnrolledCourses }));
+
+      return { courseId, status: 'in progress', modules: updatedModules };
+    } catch (error) {
+      console.error('Failed to start course:', error);
+      return rejectWithValue('Failed to start course');
+    }
   }
-});
+);
+
 
 export const completeModule = createAsyncThunk(
   'courses/completeModule',
@@ -131,21 +153,17 @@ const coursesSlice = createSlice({
       .addCase(startCourse.fulfilled, (state, action) => {
         state.loading = false;
         const { courseId, status, modules } = action.payload;
-
-        // Find the index of course that was enrolled
+      
+        // Find the course in state.courses and update its status and modules
         const courseIndex = state.courses.findIndex((course) => course.id === courseId);
-
+      
         if (courseIndex !== -1) {
-          // update existing course's status anmd modules in redux state
-          state.courses[courseIndex].status = status
-          state.courses[courseIndex].modules = modules
+          state.courses[courseIndex].status = status;
+          state.courses[courseIndex].modules = modules;
         } else {
-          // Alert the user or log that the course was not found
           console.error(`Course with ID ${courseId} not found in the state.`);
-          // Optionally, we could dispatch an action or show an alert in the UI
-          alert(`Course with ID ${courseId} not found in the state.`);
         }
-      })
+      })        
       .addCase(startCourse.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to start course';

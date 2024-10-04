@@ -54,7 +54,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isVisible, onClose }) => {
   };
 
   return (
-    <Modal transparent={true} visible={isVisible} onRequestClose={handleModalClose} animationType="fade">
+    <Modal transparent={true} visible={isVisible} onRequestClose={handleModalClose} animationType="slide">
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
           {/* Form Header */}

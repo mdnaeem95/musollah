@@ -1,13 +1,13 @@
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { startCourse } from '../redux/slices/courseSlice';
-import { AppDispatch, RootState } from '../redux/store/store';
+import { AppDispatch, RootState, store } from '../redux/store/store';
 import { getAuth } from '@react-native-firebase/auth';
 import { CourseData } from '../utils/types';
-import { fetchDashboardData } from '../redux/slices/dashboardSlice';
+import SignInModal from './SignInModal';
 
 const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: CourseData, teacherName: string, teacherImage: string }) => {
   const auth = getAuth();
@@ -16,17 +16,32 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
   const userProgress = useSelector((state: RootState) => state.course.courses.find(c => c.id === course.id));
   const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
   const [isEnrolling, setIsEnrolling] = useState<boolean>(false);
+  const [isAuthModalVisible, setIsAuthModalVisible] = useState<boolean>(false);
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
-    if (user) {
-      const enrolled = user.enrolledCourses.some((c: any) => c.courseId === course.id);
+    const currentUser = auth.currentUser
+
+    if (user && currentUser) {
+      const enrolled = user.enrolledCourses.some((c: any) => c.id === course.id);
       setIsEnrolled(enrolled);
     }
   }, [user, course.id]);
 
   const handleStartLearning = async () => {
     const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+      Alert.alert(
+        'Authentication Required',
+        'You need to sign in or create an account to start this course.',
+        [
+          { text: "Cancel", style: 'cancel'},
+          { text: "Sign In", onPress: () => setIsAuthModalVisible(true)},
+        ]
+      );
+      return
+    }
 
     if (currentUser && !isEnrolling) {
         setIsEnrolling(true);
@@ -35,10 +50,21 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
         try {
             await dispatch(startCourse({ courseId: course.id, userId })).unwrap();
 
-            if (course.modules.length > 0) {
-                const firstModuleId = course.modules[0].moduleId;
-                router.push(`/courses/${course.id}/modules/${firstModuleId}`);
-            }
+      // Add a small delay
+      setTimeout(() => {
+        // Log the updated Redux state
+        const updatedCourses = store.getState().dashboard.courses;
+        console.log('Updated courses in Redux:', updatedCourses);
+
+        // Navigate if course is present in Redux state
+        const enrolledCourse = updatedCourses.find((c: any) => c.id === course.id);
+        if (enrolledCourse && enrolledCourse.modules.length > 0) {
+          const firstModuleId = enrolledCourse.modules[0].moduleId;
+          router.push(`/courses/${enrolledCourse.id}/modules/${firstModuleId}`);
+        } else {
+          console.error('Course not found in the state after enrollment');
+        }
+      }, 500); // Adjust the delay if needed
         } catch (error) {
             console.error('Failed to start course:', error);
         } finally {
@@ -48,6 +74,8 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
         console.error("No user is logged in.");
     }
   };
+
+
 
   return (
     <View style={styles.container}>
@@ -100,15 +128,23 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
         </View>
 
         {/* Start Learning Button */}
-        <View style={{ marginTop: 16 }}>
+        {!isEnrolled && (
+          <View style={{ marginTop: 16 }}>
           <TouchableOpacity
             style={styles.learningBtn}
             onPress={handleStartLearning}
             disabled={isEnrolled || isEnrolling}
-          >
+            >
             <Text style={styles.btnText}>{isEnrolling ? 'Enrolling...' : isEnrolled ? 'Enrolled' : 'Start Learning'}</Text>
           </TouchableOpacity>
         </View>
+        )}
+
+        {/* Sign In Modal */}
+        <SignInModal
+          isVisible={isAuthModalVisible}
+          onClose={() => setIsAuthModalVisible(false)}
+        />
       </ScrollView>
     </View>
   );
