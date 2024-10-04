@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Dimensions } from 'react-native';
-import BackArrow from '../../../../components/BackArrow';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -8,18 +8,25 @@ import { fetchMonthlyPrayerLogs, fetchPrayerLog } from '../../../../redux/slices
 import { FontAwesome6 } from '@expo/vector-icons';
 import { ContributionGraph } from 'react-native-chart-kit';
 import { differenceInDays, endOfMonth, startOfMonth } from 'date-fns';
+import PrayerHeader from '../../../../components/PrayerHeader';
+import SignInModal from '../../../../components/SignInModal';
+import { getAuth } from '@react-native-firebase/auth';
 
 // Screen Dimensions
 const screenWidth = Dimensions.get('window').width;
+const auth = getAuth();
+const currentUser = auth.currentUser;
 
 const PrayersDashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { user, loading, error } = useSelector((state: RootState) => state.user);
+  const { error, loading } = useSelector((state: RootState) => state.user);
+
   const [todayLogs, setTodayLogs] = useState<any>(null);
   const [monthlyLogs, setMonthlyLogs] = useState<any[]>([]);
   const [date, setDate] = useState<string>('');
   const [prayersCompleted, setPrayersCompleted] = useState<number>(0);
+  const [isAuthModalVisible, setIsAuthModalVisible] = useState<boolean>(false);
 
   const currentMonthStart = startOfMonth(new Date());
   const currentMonthEnd = endOfMonth(new Date());
@@ -28,34 +35,79 @@ const PrayersDashboard = () => {
   // Placeholder for prayer session names
   const prayerSessions = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
-  // Fetch today's prayer logs when the screen is focused
+  // Auth Check and fetch today's prayer logs when the screen is focused
   useFocusEffect(
     useCallback(() => {
-      const fetchData = async () => {
-        const result = await dispatch(fetchPrayerLog()).unwrap();
-        setTodayLogs(result.prayerLog);
-      };
-      fetchData();
-    }, [dispatch])
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const fetchData = async () => {
+          try {
+            const result = await dispatch(fetchPrayerLog()).unwrap();
+            if (result.prayerLog) {
+              setTodayLogs(result.prayerLog);
+            } else {
+              setTodayLogs({
+                Fajr: false,
+                Dhuhr: false,
+                Asr: false,
+                Maghrib: false,
+                Isha: false
+              })
+            }
+          } catch (error) {
+            console.error('Error fetching today\'s prayer logs', error);
+          }
+        }
+        fetchData();
+      } else {
+        console.log('User not authenticated. Skipping prayer log fetch. ');
+      }
+    }, [dispatch, currentUser])
   );
 
-  // Fetch monthly prayer logs for the contribution graph
+  // Auth Check and fetch monthly prayer logs for the contribution graph
   useEffect(() => {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
     const fetchMonthlyData = async () => {
-      const result = await dispatch(fetchMonthlyPrayerLogs()).unwrap();
-      setMonthlyLogs(result);
+      if (currentUser) {
+        try {
+          const result = await dispatch(fetchMonthlyPrayerLogs()).unwrap();
+          setMonthlyLogs(result);
+        } catch (error) {
+          console.error('Error fetching monthly prayer logs', error);
+        }
+      } else {
+        console.log('User not authenticated. Skipping monthly prayer logs fetch.');
+      }
     };
     fetchMonthlyData();
-  }, [dispatch]);
+  }, [dispatch, currentUser]);
+
+  // Handle log prayers button click
+  const handleLogPrayers = () => {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+
+    if (currentUser) {
+      router.push('/prayerDashboard/logger');
+    } else {
+      Alert.alert(
+        'Authentication Required', 
+        'Please create an account to log your prayers.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign Up', onPress: () => setIsAuthModalVisible(true) }
+        ]
+      );
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
-      <View style={styles.header}>
-        <BackArrow />
-        <Text style={styles.title}>Prayer Dashboard</Text>
-        <View />
-      </View>
+      <PrayerHeader title="Prayer Dashboard" backgroundColor='#4D6561' />
 
       {/* Scrollable content */}
       <ScrollView contentContainerStyle={styles.container}>
@@ -76,22 +128,24 @@ const PrayersDashboard = () => {
             {/* Second row: Prayer statuses */}
             <View style={styles.tableRow}>
             {prayerSessions.map((prayer) => {
-              const status = todayLogs?.status?.[prayer]; // Safely access the prayer status
+              const status = todayLogs?.[prayer]; // Directly access the prayer status
               return (
                 <View key={prayer} style={styles.tableCell}>
-                  <Text style={styles.tableCellText}>
-                    {loading
-                      ? '...'
-                      : error
-                      ? 'Error'
-                      : status !== undefined
-                      ? status === true
-                        ? <FontAwesome6 name="check" color="green" size={22} />
-                        : <FontAwesome6 name="xmark" color="red" size={22} />
-                      : 'Not Logged'}
-                  </Text>
+                  {loading ? (
+                    <Text style={styles.tableCellText}>...</Text>
+                  ) : error ? (
+                    <Text style={styles.tableCellText}>Not Logged In</Text>
+                  ) : status !== undefined ? (
+                    status === true ? (
+                      <FontAwesome6 name="check" color="#A3C0BB" size={22} />
+                    ) : (
+                      <FontAwesome6 name="xmark" color="red" size={22} />
+                    )
+                  ) : (
+                    <Text style={styles.tableCellText}>Not Logged</Text>
+                  )}
                 </View>
-              );
+                );
             })}
             </View>
           </View>
@@ -99,7 +153,7 @@ const PrayersDashboard = () => {
           {/* Button to navigate to the detailed logger */}
           <TouchableOpacity 
             style={styles.logButton}
-            onPress={() => router.push('/prayerDashboard/logger')} // Navigate to the logger page
+            onPress={handleLogPrayers} // Navigate to the logger page
           >
             <Text style={styles.logButtonText}>Log Your Prayers</Text>
           </TouchableOpacity>
@@ -122,10 +176,10 @@ const PrayersDashboard = () => {
               width={screenWidth - 32} // Almost full width
               height={220} // Adjust height as needed
               chartConfig={{
-                backgroundColor: '#A3C0BB', // Background matching screen color
-                backgroundGradientFrom: '#A3C0BB',
-                backgroundGradientTo: '#A3C0BB',
-                color: (opacity = 1) => `rgba(34, 139, 34, ${opacity})`,
+                backgroundColor: '#4D6561', // Background matching screen color
+                backgroundGradientFrom: '#4D6561',
+                backgroundGradientTo: '#4D6561',
+                color: (opacity = 1) => `rgba(163, 192, 187, ${opacity})`,
               }}
               tooltipDataAttrs={(value) => ({
                 onPress: () => {
@@ -145,6 +199,12 @@ const PrayersDashboard = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Sign In Modal */}
+      <SignInModal
+        isVisible={isAuthModalVisible}
+        onClose={() => setIsAuthModalVisible(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -152,16 +212,8 @@ const PrayersDashboard = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#A3C0BB',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#A3C0BB',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    backgroundColor: '#4D6561',
+    padding: 16
   },
   title: {
     fontSize: 24,
@@ -178,6 +230,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Outfit_600SemiBold',
     marginBottom: 10,
+    color: '#FFF'
   },
   table: {
     overflow: 'hidden',
@@ -193,27 +246,29 @@ const styles = StyleSheet.create({
   },
   tableHeaderText: {
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Outfit_400Regular',
-    color: '#333',
+    color: '#FFF',
   },
   tableCellText: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Outfit_400Regular',
-    color: '#555',
+    color: '#FFF',
   },
   logButton: {
-    marginTop: 20,
-    marginBottom: 20,
-    backgroundColor: '#314340',
-    padding: 15,
-    borderRadius: 8,
     alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 20,
+    width: '100%',
+    backgroundColor: '#A3C0BB',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
   },
   logButtonText: {
-    fontSize: 18,
-    color: '#FFF',
-    fontFamily: 'Outfit_600SemiBold',
+    color: '#fff',
+    fontSize: 16,
+    fontFamily: 'Outfit_400Regular'
   },
   graphContainer: {
     justifyContent: 'center',
@@ -226,8 +281,32 @@ const styles = StyleSheet.create({
   },
   statsText: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 16
-  }
+    fontSize: 16,
+    color: '#FFF'
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 5,
+    left: 10,
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  authModalContainer: {
+    backgroundColor: '#4D6561',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: '95%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
 });
 
 export default PrayersDashboard;

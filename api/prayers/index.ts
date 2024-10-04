@@ -22,7 +22,7 @@ export const fetchTimesByDate = async (date: string) => {
         const formattedDate = formatDateForAPI(date);
         console.log('Formatted Date: ', formattedDate)
         console.log('Fetfching prayer times by date for...', formattedDate)
-        const response = await fetch(`https://api.aladhan.com/v1/timings/${formattedDate}?latitude=1.290270&longitude=103.851959&method=11`)
+        const response = await fetch(`https://api.aladhan.com/v1/timings/${formattedDate}?latitude=1.290270&longitude=103.851959`)
 
         if (!response.ok) {
             throw new Error(`Failed to fetch prayer times for date ${date}`)
@@ -35,9 +35,10 @@ export const fetchTimesByDate = async (date: string) => {
     }
 }
 
-export const fetchPrayerTimesByLocation = async (latitude: number, longitude: number, date: string = 'today') => {
+export const fetchPrayerTimesByLocation = async (latitude: number, longitude: number) => {
     try {
-        const endpoint = `https://api.aladhan.com/v1/timings/${date}`;
+        console.log(latitude, longitude)
+        const endpoint = `https://api.aladhan.com/v1/timings`;
         const params = `?latitude=${latitude}&longitude=${longitude}`; 
 
         console.log('Fetching prayer times by location...');

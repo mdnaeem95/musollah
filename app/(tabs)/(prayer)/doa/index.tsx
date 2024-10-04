@@ -1,21 +1,26 @@
-import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import React, { useEffect, useState } from 'react'
 import { getDoaAfterPrayer } from '../../../../api/firebase'
 import { FontAwesome6 } from '@expo/vector-icons'
-import BackArrow from '../../../../components/BackArrow'
 import { DoaAfterPrayer } from '../../../../utils/types'
+import PrayerHeader from '../../../../components/PrayerHeader'
 
 const Doa = () => {
   const [doas, setDoas] = useState<DoaAfterPrayer[]>([]);
   const [tooltipVisible, setTooltipVisible] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchdoasData = async () => {
-      await getDoaAfterPrayer().then((data) => {
-        setDoas(data)
-      });
-         
+      try {
+        const data = await getDoaAfterPrayer();
+        setDoas(data);
+      } catch (error) {
+        console.error("Error fetching doas: ", error);
+      } finally {
+        setLoading(false)
+      }  
     };
 
     fetchdoasData();
@@ -24,16 +29,13 @@ const Doa = () => {
   return (
     <SafeAreaView style={styles.mainContainer}>
       <View style={{ paddingHorizontal: 16 }}>
-        <BackArrow />
-      </View>
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerText}>Doa After Prayer</Text>
-        <TouchableOpacity style={styles.tooltipIcon} onPress={() => setTooltipVisible(true)}>
-          <FontAwesome6 name="circle-info" size={15} color="#CCC" />
-        </TouchableOpacity>
+        <PrayerHeader title="Doa After Prayer" backgroundColor='#4D6561' />
       </View>
 
-      <FlatList 
+      {loading ? (
+        <ActivityIndicator size="large" color="#FFFFFF" style={{marginTop: 20}} />
+      ) : (
+        <FlatList 
         data={doas}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -46,7 +48,17 @@ const Doa = () => {
             <Text style={styles.englishText}>{item.englishTranslation}</Text>
           </View>
         )}
-      />
+        initialNumToRender={10}
+        removeClippedSubviews={true}
+        />
+      )}
+
+      <TouchableOpacity 
+        style={styles.tooltipIcon} 
+        onPress={() => setTooltipVisible(true)}
+      >
+          <FontAwesome6 name="circle-info" size={15} color="#CCC" />
+      </TouchableOpacity>
 
       {tooltipVisible && (
         <Modal 
@@ -73,25 +85,15 @@ const Doa = () => {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1, 
-    backgroundColor: '#637E7A'
-  },
-  headerContainer: {
-    marginTop: 20, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    gap: 10, 
-    flexDirection: 'row'
-  },
-  headerText: {
-    color: '#FFFFFF',
-    fontFamily: 'Outfit_600SemiBold',
-    fontSize: 30,
-    lineHeight: 45
+    backgroundColor: '#4D6561',
+    paddingVertical: 16
   },
   tooltipIcon: {
+    position: 'absolute',
+    right: 55,
+    top: 78,
     alignItems: 'center', 
     justifyContent: 'center', 
-    marginTop: 7 
   },
   doaContainer: {
     padding: 20,

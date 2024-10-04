@@ -1,12 +1,14 @@
-import { View, Text, StyleSheet, ImageBackground, Dimensions, Modal, TouchableOpacity, TextInput } from 'react-native'
-import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { View, Text, StyleSheet, ImageBackground, Dimensions, Modal, TouchableOpacity } from 'react-native'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Calendar } from 'react-native-calendars';
 import Clock from 'react-live-clock';
 import { useDispatch, useSelector } from 'react-redux';
-import { getFormattedDate, getPrayerTimesInfo } from '../../../utils';
+import { useRouter } from 'expo-router';
+import * as Notifications from 'expo-notifications';
+
 import PrayerTimeItem from '../../../components/PrayerTimeItem';
 import ExpandableButton from '../../../components/ExpandableButton';
-import { useRouter } from 'expo-router';
+import PrayerLocationModal from '../../../components/PrayerLocationModal';
 
 import SubuhBackground from '../../../assets/prayerBackgroundImages/subuhBackground.png';
 import ZuhurBackground from '../../../assets/prayerBackgroundImages/zuhurBackground.png';
@@ -15,10 +17,21 @@ import MaghribBackground from '../../../assets/prayerBackgroundImages/maghribBac
 import IshaBackground from '../../../assets/prayerBackgroundImages/isyaBackground.png';
 
 import { AppDispatch, RootState } from '../../../redux/store/store';
-import { fetchPrayerTimesByDate, fetchPrayerTimesData } from '../../../redux/slices/prayerSlice';
+import { fetchPrayerTimesByDate } from '../../../redux/slices/prayerSlice';
 import { CalendarObject, PrayerTimes } from '../../../utils/types';
-import * as Notifications from 'expo-notifications';
-import PrayerLocationModal from '../../../components/PrayerLocationModal';
+import { getFormattedDate, getPrayerTimesInfo } from '../../../utils';
+
+// Constants for background images
+const prayerBackgrounds = {
+  Fajr: SubuhBackground,
+  Dhuhr: ZuhurBackground,
+  Asr: AsrBackground,
+  Maghrib: MaghribBackground,
+  Isha: IshaBackground,
+}
+
+// Constants for screen width
+const screenWidth = Dimensions.get('window').width;
 
 const PrayerTab = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -26,12 +39,21 @@ const PrayerTab = () => {
   const { prayerTimes, islamicDate, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
   const desiredPrayers: (keyof PrayerTimes)[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
-  const [city, setCity] = useState<string>('Singapore');
   const [isPrayerLocationModalVisible, setIsPrayerLocationModalVisible] = useState<boolean>(false);
   const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
   const [currentPrayer, setCurrentPrayer] = useState<string>('');
   const [nextPrayerInfo, setNextPrayerInfo] = useState<{ nextPrayer: string, timeUntilNextPrayer: string } | null>(null);
   const [notificationsScheduled, setNotificationsScheduled] = useState<boolean>(false); // Track if notifications are scheduled
+
+  // Format the selected date
+  const formattedDate = useMemo(() => {
+    const date = selectedDate ? new Date(selectedDate) : new Date();
+    return getFormattedDate(date);
+  }, [selectedDate]);
+
+  // Get background image based on current prayer session
+  //@ts-ignore
+  const backgroundImage = useMemo(() => prayerBackgrounds[currentPrayer] || SubuhBackground, [currentPrayer])
 
   // Function to schedule notifications for the day
   const schedulePrayerNotifications = async (prayerTimes: PrayerTimes) => {
@@ -65,28 +87,7 @@ const PrayerTab = () => {
     }
   };
 
-  const formattedDate = useMemo(() => {
-    const date = selectedDate ? new Date(selectedDate) : new Date();
-    return getFormattedDate(date);
-  }, [selectedDate]);
-
-  const getBackgroundImage = useMemo(() => {
-    switch (currentPrayer) {
-      case 'Fajr':
-        return SubuhBackground;
-      case 'Dhuhr':
-        return ZuhurBackground;
-      case 'Asr':
-        return AsrBackground;
-      case 'Maghrib':
-        return MaghribBackground;
-      case 'Isha':
-        return IshaBackground;
-      default:
-        return SubuhBackground;
-    }
-  }, [currentPrayer]);
-
+  // Handle day press in calendar
   const handleDayPress = (day: CalendarObject) => {
     try {
       dispatch(fetchPrayerTimesByDate(day.dateString));
@@ -96,6 +97,7 @@ const PrayerTab = () => {
     }
   };
 
+  // Handle city press to open location modal
   const handleCityPress = () => {
     setIsPrayerLocationModalVisible(true);
   }
@@ -137,7 +139,7 @@ const PrayerTab = () => {
   }, [prayerTimes]);
 
   return (
-    <ImageBackground source={getBackgroundImage} style={styles.backgroundImage}>
+    <ImageBackground source={backgroundImage} style={styles.backgroundImage}>
       <View style={styles.mainContainer}>
         <View style={styles.centeredView}>
           <Text style={[styles.dateText, { marginBottom: -30 }]}>
@@ -197,10 +199,6 @@ const PrayerTab = () => {
     </ImageBackground>
   );
 };
-
-// Get screen width for scaling
-const screenWidth = Dimensions.get('window').width;
-const screenHeight = Dimensions.get('window').height;
 
 function scaleSize(size: number) {
   const scaleFactor = screenWidth / 375; // Base screen width (iPhone standard)

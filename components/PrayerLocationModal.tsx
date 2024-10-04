@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, Alert } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { fetchUserLocation } from '../redux/slices/userLocationSlice';
 import { fetchPrayerTimesByLocationData, fetchPrayerTimesData } from '../redux/slices/prayerSlice';
@@ -13,20 +13,23 @@ interface PrayerLocationModalProps {
 
 const PrayerLocationModal: React.FC<PrayerLocationModalProps> = ({ isVisible, onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleFetchByLocation = async () => {
     try {
       // Fetch the user's current location and use it to get prayer times
+      setLoading(true);
       const userLocation = await dispatch(fetchUserLocation()).unwrap();
       const { latitude, longitude } = userLocation.coords;
-      
-      const currentDate = format(new Date(), 'dd-MM-yyyy');
 
       // Fetch prayer times based on the user's location
-      await dispatch(fetchPrayerTimesByLocationData({ latitude, longitude, date: currentDate })).unwrap();
+      await dispatch(fetchPrayerTimesByLocationData({ latitude, longitude })).unwrap();
       onClose();
     } catch (error) {
       console.error('Error fetching prayer times by location:', error);
+      Alert.alert("Error", "Failed to fetch prayer times based on your location. Please try again.")
+    } finally {
+      setLoading(false);
     }
   };
 
