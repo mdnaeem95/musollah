@@ -57,8 +57,6 @@ const EducationTab = () => {
 
   return (
     <View style={styles.mainContainer}>
-      <BackArrow />
-
       <Searchbar
         value={searchQuery}
         onChangeText={handleSearchChange}

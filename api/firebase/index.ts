@@ -9,8 +9,6 @@ export const fetchUserData = async (userId: string ): Promise<UserData> => {
         const userSnapshot = await firestore().collection('users').doc(userId).get();
         const data = userSnapshot.data();
 
-        console.log('Fetched user data', data);
-
         return {
             id: userSnapshot.id,
             avatarUrl: data?.avatarUrl || 'https://via.placeholder.com/100', // Default avatar

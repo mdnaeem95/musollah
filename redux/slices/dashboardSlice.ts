@@ -50,6 +50,7 @@ try {
 export const updateDashboardEnrolledCourses = createAsyncThunk(
   'dashboard/updateEnrolledCourses',
   async ({ courseId, userId, enrolledCourses }: { courseId: string, userId: string, enrolledCourses: any[] }) => {
+    console.log('Dispatching updated enrolledCourses:', enrolledCourses)
     return { courseId, userId, enrolledCourses };
   }
 )
@@ -65,19 +66,29 @@ const dashboardSlice = createSlice({
         state.error = null;
       })
       .addCase(updateDashboardEnrolledCourses.fulfilled, (state, action) => {
-        // Find the updated enrolled course
         const updatedCourse = action.payload.enrolledCourses.find(
           (course) => course.id === action.payload.courseId
         );
-
+      
         if (updatedCourse) {
-          // Update the dashboard state with the latest enrolled course progress
-          const courseIndex = state.courses.findIndex((course) => course.id === action.payload.courseId);
-          if (courseIndex !== -1) {
-            state.courses[courseIndex] = updatedCourse;
-          } else {
-            state.courses.push(updatedCourse); // Add if not already present
+          const user = state.user;
+          if (user) {
+            const updatedEnrolledCourses = [...user.enrolledCourses]; // Clone the enrolledCourses array
+            const courseIndex = updatedEnrolledCourses.findIndex(course => course.id === updatedCourse.id);
+          
+            if (courseIndex !== -1) {
+              updatedEnrolledCourses[courseIndex] = updatedCourse;
+            } else {
+              updatedEnrolledCourses.push(updatedCourse);  // Add the new course
+            }
+      
+            state.user = {
+              ...user, 
+              enrolledCourses: updatedEnrolledCourses,  // Assign the new array
+            };
           }
+        } else {
+          console.error('No updated course found in the payload.');
         }
       })
       .addCase(fetchDashboardData.fulfilled, (state, action) => {

@@ -15,15 +15,12 @@ const CourseDetails = () => {
   const { courseId } = useLocalSearchParams<Params>();
   const navigation = useNavigation();
   const router = useRouter();
-  console.log("Course ID:", courseId);
 
   const { course, teacher } = useSelector((state: RootState) => {
     const course = state.dashboard.courses.find(c => c.id === courseId);
     const teacher = course ? state.dashboard.teachers.find(t => t.id === course.teacherId) : null;
     return { course, teacher };
   });
-  console.log("Course:", course);
-  console.log("Teacher:", teacher);
 
   if (!course || !teacher) {
     return (
