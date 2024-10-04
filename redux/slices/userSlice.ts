@@ -99,17 +99,24 @@ export const fetchPrayerLog = createAsyncThunk(
       const userDoc = await firestore().collection('users').doc(user.uid).get();
       const userData = userDoc.data();
 
-      if (!userData) {
-        throw new Error('User data not found');
+      if (!userData || !userData.prayerLogs || !userData.prayerLogs[todayDate]) {
+        return {
+          date: todayDate,
+          prayerLog: {
+            Fajr: false,
+            Dhuhr: false,
+            Asr: false,
+            Maghrib: false,
+            Isha: false
+          }
+        }
       }
 
       // Retrieve the prayer logs for today's date
-      const prayerLog = userData.prayerLogs?.[todayDate] || null;
+      const prayerLog = userData.prayerLogs[todayDate];
 
       // Cache the logs after fetching from Firestore
-      if (prayerLog) {
-        await AsyncStorage.setItem(cacheKey, JSON.stringify(prayerLog));
-      }
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(prayerLog));
 
       return { date: todayDate, prayerLog };
     } catch (error) {
@@ -152,7 +159,7 @@ export const fetchMonthlyPrayerLogs = createAsyncThunk(
         // Filter the prayer logs for the past 30 days
         const monthlyLogs = datesInMonth.map((date) => {
           const log = userData.prayerLogs[date];
-          const prayersCompleted = log ? Object.values(log).filter(Boolean).length : 0; // Count prayers completed (true values)
+          const prayersCompleted = log ? Object.values(log.status).filter(val  => val === true).length : 0;
           return { date, prayersCompleted };
         });
   

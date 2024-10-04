@@ -8,64 +8,20 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:188630836015:android:68cf3a00ed858f8fe0b7da",
+        "mobilesdk_app_id": "1:188630836015:android:f0729d862167313fe0b7da",
         "android_client_info": {
           "package_name": "com.naeemsani.rihlah"
         }
       },
       "oauth_client": [
         {
-          "client_id": "188630836015-r8qavfqgb6lnnpcdl7hprr4tgea1lpfe.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.naeemsani.rihlah",
-            "certificate_hash": "571c0a05623a96671e6b5dd1660b48bfa2a9cc65"
-          }
-        },
-        {
           "client_id": "188630836015-0fgujap5t02lqgc064dug9t6n04kn0n3.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBtU5FxH1aZbwEFe_kQbQ9Cz5ZP6whCov4"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "188630836015-0fgujap5t02lqgc064dug9t6n04kn0n3.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "188630836015-a9kesclpv86s647rlio0q4h04e2r62dq.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.naeemsani95.rihlah"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:188630836015:android:fc76adda2ddc13a2e0b7da",
-        "android_client_info": {
-          "package_name": "com.naeemsani95.rihlah"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "188630836015-0fgujap5t02lqgc064dug9t6n04kn0n3.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBtU5FxH1aZbwEFe_kQbQ9Cz5ZP6whCov4"
+          "current_key": "AIzaSyDTIIDN0wON_VgheCfUN5LGECUL8UaGrS0"
         }
       ],
       "services": {

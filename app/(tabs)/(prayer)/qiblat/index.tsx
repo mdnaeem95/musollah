@@ -2,12 +2,12 @@ import { StyleSheet, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react'
 import Compass from '../../../../components/Compass';
-import BackArrow from '../../../../components/BackArrow';
+import PrayerHeader from '../../../../components/PrayerHeader';
 
 const QiblatTab = () => {
   return (
     <SafeAreaView style={styles.mainContainer}>
-        <BackArrow />
+        <PrayerHeader title="Qiblat" backgroundColor='#4D6561' />
         <View style={styles.compassContainer}>
           <Compass />
         </View>
@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
     alignItems: 'center', 
     flex: 1, 
-    marginBottom: 80
+    marginBottom: 120
   },
   mainContainer: {
     padding: 16,

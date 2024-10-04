@@ -111,9 +111,9 @@ export const fetchPrayerTimesByDate = createAsyncThunk(
 // New Thunk to fetch prayer times based on user's location
 export const fetchPrayerTimesByLocationData = createAsyncThunk(
   'prayers/fetchPrayerTimesByLocation',
-  async ({ latitude, longitude, date = 'today' }: { latitude: number, longitude: number, date?: string }, { rejectWithValue }) => {
+  async ({ latitude, longitude }: { latitude: number, longitude: number }, { rejectWithValue }) => {
     try {
-      const shortFormattedDate = getShortFormattedDate(new Date(date));
+      const shortFormattedDate = getShortFormattedDate(new Date());
       console.log(shortFormattedDate)
 
       // Check if prayer times for the current location and date are cached
@@ -124,14 +124,14 @@ export const fetchPrayerTimesByLocationData = createAsyncThunk(
         return cachedData;
       }
 
-      const prayerData = await fetchPrayerTimesByLocation(latitude, longitude, date);
+      const prayerData = await fetchPrayerTimesByLocation(latitude, longitude);
       const { Fajr, Dhuhr, Asr, Maghrib, Isha } = prayerData.data.timings;
       const newPrayerTimes = { Fajr, Dhuhr, Asr, Maghrib, Isha };
 
       const islamicDateData = await fetchIslamicDate(shortFormattedDate);
       const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date);
 
-      const prayerInfo = getPrayerTimesInfo(newPrayerTimes, new Date(date));
+      const prayerInfo = getPrayerTimesInfo(newPrayerTimes, new Date());
 
       const result = {
         prayerTimes: newPrayerTimes,

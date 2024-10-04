@@ -74,7 +74,7 @@ const AuthScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.mainContainer}>
+    <View style={styles.mainContainer}>
       <KeyboardAwareScrollView
         style={{ flex: 1, width: '100%', marginTop: 150 }}
         enableOnAndroid={true}
@@ -130,14 +130,14 @@ const AuthScreen = () => {
         </TouchableOpacity>
       </View>
       </KeyboardAwareScrollView>
-    </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1, 
-    backgroundColor: '#B9D0CC', 
+    backgroundColor: '#4D6561', 
     alignItems: 'center', 
     justifyContent: 'center'
   },
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     color: '#000000'
   },
   btn: {
-    backgroundColor: '#4D6561', 
+    backgroundColor: '#A3C0BB', 
     width: '100%', 
     paddingHorizontal: 8, 
     paddingVertical: 16, 

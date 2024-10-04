@@ -6,34 +6,59 @@ import { RootState } from '../redux/store/store';
 
 const screenWidth = Dimensions.get('window').width;
 const compassSize = screenWidth * 0.8;
-
 const QIBLA_HEADING = 293;
 
 const Compass = () => {
-    const { isLoading, errorMsg, userLocation } = useSelector((state: RootState) => state.location);
     const [userHeading, setUserHeading] = useState(0);
-    const [bgColor, setBgColor] = useState(new Animated.Value(0));
+    const [locationError, setLocationError] = useState<string | null>(null);
+    const [bgColor] = useState(new Animated.Value(0));
 
+    // Watch user heading and update it in real-time
     useEffect(() => {
-        if (userLocation) {
-            Location.watchHeadingAsync((heading) => {
-                setUserHeading(heading.trueHeading);
-            })
+        const startHeadingUpdates = async () => {
+        try {
+            // Request location permissions from the user
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+            setLocationError('Location permission denied.');
+            return;
+            }
+
+            // Start watching the device's heading (compass)
+            const headingSubscription = await Location.watchHeadingAsync((heading) => {
+            setUserHeading(heading.trueHeading || 0);
+            });
+
+            // Cleanup the heading subscription when the component unmounts
+            return () => {
+            if (headingSubscription) {
+                headingSubscription.remove();
+            }
+            };
+        } catch (error) {
+            setLocationError('Error accessing compass.');
         }
-    }, [userLocation]);
+        };
 
+        startHeadingUpdates();
+    }, []);
+
+    // Trigger vibration and background color animation when facing Qibla
     useEffect(() => {
-        if (Math.abs(userHeading - QIBLA_HEADING) < 0.5) {
+        const proximityToQibla = Math.abs(userHeading - QIBLA_HEADING);
+
+        if (proximityToQibla < 0.5) {
             Vibration.vibrate();
         }
 
-        const proximity = Math.min(Math.abs(userHeading - QIBLA_HEADING) / 5, 1);
+        // Animate the background color based on proximity
+        const proximityFactor = Math.min(proximityToQibla / 5, 1);
         Animated.timing(bgColor, {
-            toValue: 1 - proximity,
+            toValue: 1 - proximityFactor,
             duration: 200,
             useNativeDriver: false
         }).start();
-    }, [userHeading])
+    }, [userHeading, bgColor])
 
     const interpolateColor = bgColor.interpolate({
         inputRange: [0, 1],
@@ -62,6 +87,7 @@ const styles = StyleSheet.create({
     mainContainer: {
         alignItems: 'center',
         justifyContent: 'center',
+        flex: 1
     },
     textContainer: {
         alignItems: 'center',
@@ -73,7 +99,8 @@ const styles = StyleSheet.create({
         fontWeight: '300',
         fontSize: 18,
         lineHeight: 21,
-        color: '#EAFFFC'
+        color: '#EAFFFC',
+        textAlign: 'center'
     },
     compassContainer: {
         top: 150,

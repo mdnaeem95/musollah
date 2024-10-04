@@ -41,7 +41,7 @@
         }
       },
       "googleServicesFile": "./google-services.json",
-      "package": "com.naeemsani95.rihlah",
+      "package": "com.naeemsani.rihlah",
       "runtimeVersion": {
         "policy": "appVersion"
       }

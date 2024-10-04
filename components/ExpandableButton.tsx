@@ -74,7 +74,7 @@ const ExpandableButton = ({ onQiblatPress, onDoaPress, onCalendarPress, onCityPr
                     />
 
                     <RoundButton 
-                        iconName="chart-bar"
+                        iconName="chart-simple"
                         onPress={handleDashboardPress}
                         size={22}
                     />
