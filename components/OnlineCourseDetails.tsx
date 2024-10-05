@@ -84,7 +84,7 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
         {/* Author Information */}
         <View style={styles.authorContainer}>
           <Image source={{ uri: teacherImage }} style={styles.authorAvatar} />
-          <View style={{ marginLeft: 10 }}>
+          <View style={{ marginLeft: 10, justifyContent: 'center' }}>
             <Text style={styles.subText}>Author</Text>
             <Text style={styles.mainText}>{teacherName}</Text>
           </View>
@@ -169,7 +169,8 @@ const styles = StyleSheet.create({
   },
   authorContainer: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 5,
+    marginTop: 16,
   },
   authorAvatar: {
     width: 48,
