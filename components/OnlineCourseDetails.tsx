@@ -6,14 +6,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { startCourse } from '../redux/slices/courseSlice';
 import { AppDispatch, RootState, store } from '../redux/store/store';
 import { getAuth } from '@react-native-firebase/auth';
-import { CourseData } from '../utils/types';
+import { CourseData, ModuleData } from '../utils/types';
 import SignInModal from './SignInModal';
+import PrayerHeader from './PrayerHeader';
 
 const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: CourseData, teacherName: string, teacherImage: string }) => {
   const auth = getAuth();
   const router = useRouter();
   const user = useSelector((state: RootState) => state.dashboard.user);
-  const userProgress = useSelector((state: RootState) => state.course.courses.find(c => c.id === course.id));
+  const userProgress = useSelector((state: RootState) => user?.enrolledCourses.find((enrolledCourse: CourseData) => enrolledCourse.id === course.id));
   const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
   const [isEnrolling, setIsEnrolling] = useState<boolean>(false);
   const [isAuthModalVisible, setIsAuthModalVisible] = useState<boolean>(false);
@@ -75,13 +76,9 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
     }
   };
 
-
-
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>{course.title}</Text>
-      </View>
+      <PrayerHeader title={course.title} backgroundColor='#4D6561'/>
 
       <ScrollView style={{ marginHorizontal: 16, gap: 16 }} showsVerticalScrollIndicator={false}>
         {/* Author Information */}
@@ -103,7 +100,7 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
         <View style={styles.section}>
           <Text style={styles.subText}>Modules</Text>
           {course.modules.map((module, index) => {
-            const moduleProgress = userProgress?.modules.find((m) => m.moduleId === module.moduleId);
+            const moduleProgress = userProgress?.modules.find((m: ModuleData) => m.moduleId === module.moduleId);
             const isLocked = !isEnrolled || moduleProgress?.status === 'locked';
 
             return (

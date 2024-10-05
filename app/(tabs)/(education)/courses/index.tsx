@@ -1,90 +1,101 @@
-import { View, Text, FlatList, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useLayoutEffect, useState } from 'react';
 import { Searchbar } from 'react-native-paper';
-import { StyleSheet } from 'react-native'
-import SegmentedControl from '@react-native-segmented-control/segmented-control'
-import { useSelector } from 'react-redux'
-import { RootState } from '../../../../redux/store/store'
+import SegmentedControl from '@react-native-segmented-control/segmented-control';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../../redux/store/store';
 import BackArrow from '../../../../components/BackArrow';
 import CourseCard from '../../../../components/CourseCard';
 import { CourseData } from '../../../../utils/types';
+import { useNavigation } from 'expo-router';
 
-export interface CategoryData {
-  icon: string,
-  title: string
-}
-
-const data = [
-  {icon: '', title: 'All Courses'},
-  {icon: '', title: 'Prayers'},
-  {icon: '', title: 'Quran'},
-  {icon: '', title: 'Fardu Ain'},
-  {icon: '', title: 'Rihlah'},
-  {icon: '', title: 'Taufiq'},
-]
+const categories = [
+  { icon: '', title: 'All Courses' },
+  { icon: '', title: 'Prayers' },
+  { icon: '', title: 'Quran' },
+  { icon: '', title: 'Fardu Ain' },
+  { icon: '', title: 'Rihlah' },
+  { icon: '', title: 'Taufiq' },
+];
 
 const EducationTab = () => {
   const { courses } = useSelector((state: RootState) => state.dashboard);
-  const [activeCategory, setactiveCategory] = useState<string | null>('All Courses');
+  const [activeCategory, setActiveCategory] = useState<string>('All Courses');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedSegment, setSelectedSegment] = useState<string>('Online');
+  const navigation = useNavigation();
 
-  const handleCategoryPress = (title: string) => {
-    setactiveCategory(title);
-  }
+  const handleCategoryPress = (title: string) => setActiveCategory(title);
+  const handleSearchChange = (query: string) => setSearchQuery(query);
+  
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation])
 
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-  }
+  const filteredCourses = courses.filter((course) => {
+    const matchesCategory = activeCategory === 'All Courses' || course.category === activeCategory;
+    const matchesSearchQuery = course.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      course.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSegment = selectedSegment === 'Online' ? course.type === 'online' : course.type === 'physical';
 
-  const renderCategories = ({ item }: { item : CategoryData }) => (
-    <TouchableOpacity
-      style={[styles.category, item.title === activeCategory && styles.categoryActive]}
-      key={item.title}
-      onPress={() => handleCategoryPress(item.title)}
-    >
-      <Text style={styles.categoryText}>{item.title}</Text>
-    </TouchableOpacity>
-  )
-
-  const filteredCardData = courses.filter((card) => {
-    const matchesCategory = activeCategory === 'All Courses' || card.category === activeCategory;
-    const matchesSearchQuery = card.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    card.description.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesSegment = selectedSegment === 'Online' ? card.type === 'online' : card.type === 'physical'
     return matchesCategory && matchesSearchQuery && matchesSegment;
-  })
+  });
 
   return (
     <View style={styles.mainContainer}>
+      {/* Header */}
+      <View style={styles.header}>
+        <BackArrow />
+        <Text style={styles.headerText}>Courses</Text>
+      </View>
+
+      {/* Search Bar */}
       <Searchbar
+        style={styles.searchBar}
         value={searchQuery}
         onChangeText={handleSearchChange}
-        placeholder='Search'
+        placeholder="Search courses"
       />
 
+      {/* Segmented Control */}
       <SegmentedControl
-        backgroundColor='#A3C0BB'
-        style={{ height: 40 }}
+        style={styles.segmentedControl}
         values={['Online', 'Physical']}
         selectedIndex={selectedSegment === 'Online' ? 0 : 1}
-        onChange={(event) => {
-          setSelectedSegment(event.nativeEvent.value);
-        }}
+        onChange={(event) => setSelectedSegment(event.nativeEvent.value)}
       />
 
+      {/* Categories */}
       <View style={styles.categoryContainer}>
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
-          data={data}
-          renderItem={renderCategories}
+          data={categories}
           keyExtractor={(item) => item.title}
-          />
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[
+                styles.categoryButton,
+                item.title === activeCategory && styles.categoryButtonActive,
+              ]}
+              onPress={() => handleCategoryPress(item.title)}
+            >
+              <Text
+                style={[
+                  styles.categoryButtonText,
+                  item.title === activeCategory && styles.categoryButtonTextActive,
+                ]}
+              >
+                {item.title}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
       </View>
 
-      <FlatList 
-        data={filteredCardData}
+      {/* Courses */}
+      <FlatList
+        data={filteredCourses}
         renderItem={({ item }: { item: CourseData }) => (
           <CourseCard
             id={item.id}
@@ -95,95 +106,68 @@ const EducationTab = () => {
             backgroundColour={item.backgroundColour}
           />
         )}
-        keyExtractor={(item) => item.title}
+        keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.coursesContainer}
       />
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    paddingHorizontal: 16,
     backgroundColor: '#4D6561',
-    gap: 16
+    paddingHorizontal: 16,
   },
-  categoryContainer: {
-    height: 45,
-  },
-  category: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    height: 35,
-    width: 94,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 10,
-    borderRadius: 10,
-  },
-  categoryActive: {
-    backgroundColor: '#C3F0E9'
-  },
-  categoryText: {
-    fontSize: 14,
-    lineHeight: 19,
-    fontFamily: 'Outfit_500Medium',
-  },
-  cardContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    marginVertical: 8,
+  header: {
     flexDirection: 'row',
-    padding: 10,
-    shadowOffset: {width: -2, height: 4},
-    shadowOpacity: 0.2,
-    shadowRadius: 3,    
-  },
-  cardIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardContent: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingLeft: 10
-  },
-  cardHashTag: {
-    borderWidth: 0.5,
-    borderColor: '#CCCCCC',
-    borderRadius: 100,
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    alignSelf: 'flex-start',
-  },
-  hashtagText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 12,
-    lineHeight: 14,
-    color: '#333333',
-  },
-  cardDescription: {
-    marginTop: 5,
-    gap: 5
+    justifyContent: 'space-between',
+    marginTop: 20,
+    marginBottom: 20,
   },
   headerText: {
-    fontFamily: 'Outfit_500Medium',
+    fontSize: 24,
+    fontFamily: 'Outfit_700Bold',
+    color: '#FFFFFF',
+  },
+  searchBar: {
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+  },
+  segmentedControl: {
+    marginBottom: 20,
+    backgroundColor: '#A3C0BB',
+    borderRadius: 10,
+  },
+  categoryContainer: {
+    marginBottom: 16,
+  },
+  categoryButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  categoryButtonActive: {
+    backgroundColor: '#C3F0E9',
+  },
+  categoryButtonText: {
     fontSize: 14,
-    lineHeight: 16,
+    fontFamily: 'Outfit_500Medium',
     color: '#333333',
   },
-  descriptionText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 12,
-    lineHeight: 14,
-    color: '#333333',
-  }
-})
+  categoryButtonTextActive: {
+    color: '#000000',
+  },
+  coursesContainer: {
+    paddingBottom: 100,
+  },
+});
 
-export default EducationTab
+export default EducationTab;

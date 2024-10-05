@@ -35,12 +35,7 @@ const EducationLayout = () => {
           options={{
             drawerLabel: 'Courses',
             title: 'Courses',
-            drawerIcon: () => <FontAwesome6 name="book" />,
-            headerRight: () => (
-              <TouchableOpacity style={{ marginRight: 16 }} onPress={() => router.replace('/courses')}>
-                <FontAwesome6 name="house" size={22} color="white" />
-              </TouchableOpacity>
-            )
+            headerShown: false,
           }}
         />
         <Drawer.Screen 

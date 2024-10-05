@@ -40,12 +40,6 @@ const CourseDetails = () => {
 
   return (
     <View style={styles.mainContainer}>
-        <View style={styles.backButtonContainer}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <FontAwesome6 name="arrow-left" color='white' size={24} />
-          </TouchableOpacity>
-        </View>
-
         {course.type === 'online' ? (
           <OnlineCourseDetails course={course} teacherName={teacherName} teacherImage={teacherImage} />
         ): (
