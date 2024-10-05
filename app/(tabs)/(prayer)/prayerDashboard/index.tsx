@@ -67,23 +67,27 @@ const PrayersDashboard = () => {
   );
 
   // Auth Check and fetch monthly prayer logs for the contribution graph
-  useEffect(() => {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
-    const fetchMonthlyData = async () => {
+  useFocusEffect(
+    useCallback(() => {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
       if (currentUser) {
-        try {
-          const result = await dispatch(fetchMonthlyPrayerLogs()).unwrap();
-          setMonthlyLogs(result);
-        } catch (error) {
-          console.error('Error fetching monthly prayer logs', error);
+        const fetchMonthlyData = async () => {
+          if (currentUser) {
+            try {
+              const result = await dispatch(fetchMonthlyPrayerLogs()).unwrap();
+              setMonthlyLogs(result);
+            } catch (error) {
+              console.error('Error fetching monthly prayer logs', error);
+            }
+          }
         }
+        fetchMonthlyData();
       } else {
         console.log('User not authenticated. Skipping monthly prayer logs fetch.');
       }
-    };
-    fetchMonthlyData();
-  }, [dispatch, currentUser]);
+    }, [dispatch, currentUser])
+  );
 
   // Handle log prayers button click
   const handleLogPrayers = () => {

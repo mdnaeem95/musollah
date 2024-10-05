@@ -36,6 +36,7 @@ const EducationLayout = () => {
             drawerLabel: 'Courses',
             title: 'Courses',
             headerShown: false,
+            drawerIcon: () => <FontAwesome6 name="chalkboard" />,
           }}
         />
         <Drawer.Screen 

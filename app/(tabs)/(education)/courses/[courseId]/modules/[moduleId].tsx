@@ -6,6 +6,8 @@ import { AppDispatch, RootState } from '../../../../../../redux/store/store';
 import { completeModule } from '../../../../../../redux/slices/courseSlice';
 import { getAuth } from '@react-native-firebase/auth';
 import { CourseData, ModuleData } from '../../../../../../utils/types';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import PrayerHeader from '../../../../../../components/PrayerHeader';
 
 type Params = {
   courseId: string;
@@ -77,29 +79,34 @@ const ModuleDetails = () => {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>{moduleData.title}</Text>
-
-      {/* Render the module content */}
-      {moduleData.content.map((contentItem, index) => (
-        <View key={index} style={styles.contentContainer}>
-          <Text style={styles.contentTitle}>{contentItem.title}</Text>
-          <Text style={styles.textContent}>{contentItem.data}</Text>
-        </View>
-      ))}
-      
-      {/* Button to mark module as complete */}
-      <TouchableOpacity style={styles.completeButton} onPress={handleCompleteModule}>
-        <Text style={styles.completeButtonText}>Complete Module</Text>
-      </TouchableOpacity>
-    </ScrollView>
+    <SafeAreaView style={styles.mainContainer}>
+      <PrayerHeader title={moduleData.title} backgroundColor='#FFF' textColor='black' />
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* Render the module content */}
+        {moduleData.content.map((contentItem, index) => (
+          <View key={index} style={styles.contentContainer}>
+            <Text style={styles.contentTitle}>{contentItem.title}</Text>
+            <Text style={styles.textContent}>{contentItem.data}</Text>
+          </View>
+        ))}
+        
+        {/* Button to mark module as complete */}
+        <TouchableOpacity style={styles.completeButton} onPress={handleCompleteModule}>
+          <Text style={styles.completeButtonText}>Complete Module</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  mainContainer: {
+    flex: 1,
     padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FFF'
+  },
+  container: {
+    backgroundColor: '#FFF',
     flexGrow: 1,
   },
   loadingContainer: {

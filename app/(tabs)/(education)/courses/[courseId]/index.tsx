@@ -6,6 +6,7 @@ import { RootState } from '../../../../../redux/store/store';
 import { useSelector } from 'react-redux';
 import OnlineCourseDetails from '../../../../../components/OnlineCourseDetails';
 import PhysicalCourseDetails from '../../../../../components/PhysicalCourseDetails';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Params = {
   courseId: string;
@@ -39,13 +40,13 @@ const CourseDetails = () => {
   }, [navigation, course?.title]);
 
   return (
-    <View style={styles.mainContainer}>
+    <SafeAreaView style={styles.mainContainer}>
         {course.type === 'online' ? (
           <OnlineCourseDetails course={course} teacherName={teacherName} teacherImage={teacherImage} />
         ): (
           <></>
         )}
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -57,9 +58,8 @@ const styles = StyleSheet.create({
   },
   mainContainer: {
     flex: 1,
+    padding: 16,
     backgroundColor: '#4D6561',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
   },
   backButtonContainer: {
     width: '100%',
