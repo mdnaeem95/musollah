@@ -1,16 +1,31 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native'
 import React, { useContext, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FontAwesome6 } from '@expo/vector-icons'
 import { Switch } from '@rneui/themed'
 import { useRouter } from 'expo-router'
 import { ThemeContext } from '../../../context/ThemeContext'
+import { useDispatch, useSelector } from 'react-redux'
+import { AppDispatch, RootState } from '../../../redux/store/store'
+import { Picker } from '@react-native-picker/picker';
+import { toggleTimeFormat, setReminderInterval } from '../../../redux/slices/userPreferencesSlice'
 
 const SettingsTab = () => {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
+  const [isReminderPickerVisible, setIsReminderPickerVisible] = useState<boolean>(false);
   const { isDarkMode, toggleDarkMode } = useContext(ThemeContext)
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  const { timeFormat, reminderInterval } = useSelector((state: RootState) => state.userPreferences);
+
+  const handleTimeFormatToggle = () => {
+    dispatch(toggleTimeFormat())
+  }
+
+  const handleReminderIntervalChange = (value: number) => {
+    dispatch(setReminderInterval(value));
+  }
 
   return (
     <SafeAreaView style={styles.mainContainer}>
@@ -53,6 +68,25 @@ const SettingsTab = () => {
 
           <View style={styles.settingsField}>
             <View style={styles.settingsLeftField}>
+              <FontAwesome6 name='clock' color='white' size={20} />
+              <Text style={styles.settingsName}>Prayer Time 24hr Format</Text>
+            </View>
+            <Switch
+              value={timeFormat === '24-hour'}
+              onValueChange={handleTimeFormatToggle} 
+            />
+          </View>
+
+          <TouchableOpacity style={styles.settingsField} onPress={() => setIsReminderPickerVisible(true)}>
+            <View style={styles.settingsLeftField}>
+              <FontAwesome6 name='bell' color='white' size={20} />
+              <Text style={styles.settingsName}>Pre-Prayer Reminder </Text>
+            </View>
+            <FontAwesome6 name='chevron-right' color='white' size={20} />
+          </TouchableOpacity>
+
+          <View style={styles.settingsField}>
+            <View style={styles.settingsLeftField}>
               <FontAwesome6 name='moon' color='white' size={20} />
               <Text style={styles.settingsName}>Quran Dark Mode</Text>
             </View>
@@ -92,6 +126,32 @@ const SettingsTab = () => {
           </TouchableOpacity>
         </View>
       </View>
+
+      <Modal
+        visible={isReminderPickerVisible}
+        transparent={true}
+        animationType='slide'
+        onRequestClose={() => setIsReminderPickerVisible(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Select Reminder Interval</Text>
+            <Picker
+              selectedValue={reminderInterval}
+              style={styles.picker}
+              onValueChange={(itemValue) => handleReminderIntervalChange(itemValue as number)}
+            >
+              <Picker.Item label='None' value={null} />
+              {[5, 10, 15, 20, 25, 30].map((interval) => (
+                <Picker.Item key={interval} label={`${interval} minutes`} value={interval} />
+              ))}
+            </Picker>
+            <TouchableOpacity onPress={() => setIsReminderPickerVisible(false)} style={styles.closeButton}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -141,7 +201,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 18,
     color: '#FFFFFF'
-  }
+  },
+  modalBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    marginBottom: 15,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  picker: {
+    width: 200,
+    height: 150,
+  },
+  closeButton: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#314340',
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
 })
 
 export default SettingsTab
