@@ -1,5 +1,8 @@
 import { View, Text, StyleSheet, TextStyle, Dimensions } from 'react-native'
 import React from 'react'
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store/store';
+import { format, parse } from 'date-fns';
 
 const screenWidth = Dimensions.get('window').width;
 const containerWidth = screenWidth * 0.75;
@@ -11,10 +14,19 @@ interface PrayerTimeItemProps {
 }
 
 const PrayerTimeItem = ({ name, time, style }: PrayerTimeItemProps) => {
+  const timeFormat = useSelector((state: RootState) => state.userPreferences.timeFormat);
+
+  const formatTime = (time: string) => {
+    const parsedTime = parse(time, 'HH:mm', new Date());
+    return timeFormat === '12-hour'
+      ? format(parsedTime, 'hh:mm a')
+      : format(parsedTime, 'HH:mm');
+  }
+
   return (
     <View style={styles.container}>
       <Text style={[styles.text, style]}>{name}</Text>
-      <Text style={[styles.text, style]}>{time}</Text>
+      <Text style={[styles.text, style]}>{formatTime(time)}</Text>
     </View>
   )
 }
@@ -35,7 +47,7 @@ const styles = StyleSheet.create({
     text: {
         fontFamily: 'Outfit_500Medium',
         fontWeight: 400,
-        fontSize: 20,
+        fontSize: 18,
         lineHeight: 30,
         color: '#333333'
     }
