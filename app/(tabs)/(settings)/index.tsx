@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native'
 import React, { useContext, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FontAwesome6 } from '@expo/vector-icons'
@@ -33,101 +33,111 @@ const SettingsTab = () => {
         <Text style={styles.headerText}>S E T T I N G S</Text>
       </View>
 
-      <View style={{ gap: 16 }}>
-        <Text style={styles.generalHeader}>G E N E R A L</Text>
-        <View style={styles.generalSettingsContainer}>
-          <TouchableOpacity style={styles.settingsField} onPress={() => router.push(`/account`)}>
-            <View style={styles.settingsLeftField}>
-              <FontAwesome6 name='user' color='white' size={20} />
-              <Text style={styles.settingsName}>Account</Text>
-            </View>
-            <FontAwesome6 name='chevron-right' color='white' size={20} />
-          </TouchableOpacity>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* GENERAL */}
+        <View style={{ gap: 16 }}>
+          <Text style={styles.generalHeader}>G E N E R A L</Text>
+          <View style={styles.generalSettingsContainer}>
+            <TouchableOpacity style={styles.settingsField} onPress={() => router.push(`/account`)}>
+              <View style={styles.settingsLeftField}>
+                <FontAwesome6 name='user' color='white' size={20} />
+                <Text style={styles.settingsName}>Account</Text>
+              </View>
+              <FontAwesome6 name='chevron-right' color='white' size={20} />
+            </TouchableOpacity>
 
-          <View style={styles.settingsField}>
-            <View style={styles.settingsLeftField}>
-              <FontAwesome6 name='volume-low' color='white' size={20} />
-              <Text style={styles.settingsName}>Sounds</Text>
+            <View style={styles.settingsField}>
+              <View style={styles.settingsLeftField}>
+                <FontAwesome6 name='volume-low' color='white' size={20} />
+                <Text style={styles.settingsName}>Sounds</Text>
+              </View>
+              <Switch
+                value={notificationsEnabled}
+                onValueChange={(value) => setNotificationsEnabled(value)} 
+                />
             </View>
-            <Switch
-              value={notificationsEnabled}
-              onValueChange={(value) => setNotificationsEnabled(value)} 
-            />
-          </View>
 
-          <View style={styles.settingsField}>
-            <View style={styles.settingsLeftField}>
-              <FontAwesome6 name='bell' color='white' size={20} />
-              <Text style={styles.settingsName}>Notifications</Text>
+            <View style={styles.settingsField}>
+              <View style={styles.settingsLeftField}>
+                <FontAwesome6 name='bell' color='white' size={20} />
+                <Text style={styles.settingsName}>Notifications</Text>
+              </View>
+              <Switch
+                value={soundEnabled}
+                onValueChange={(value) => setSoundEnabled(value)} 
+                />
             </View>
-            <Switch
-              value={soundEnabled}
-              onValueChange={(value) => setSoundEnabled(value)} 
-            />
-          </View>
-
-          <View style={styles.settingsField}>
-            <View style={styles.settingsLeftField}>
-              <FontAwesome6 name='clock' color='white' size={20} />
-              <Text style={styles.settingsName}>Prayer Time 24hr Format</Text>
-            </View>
-            <Switch
-              value={timeFormat === '24-hour'}
-              onValueChange={handleTimeFormatToggle} 
-            />
-          </View>
-
-          <TouchableOpacity style={styles.settingsField} onPress={() => setIsReminderPickerVisible(true)}>
-            <View style={styles.settingsLeftField}>
-              <FontAwesome6 name='bell' color='white' size={20} />
-              <Text style={styles.settingsName}>Pre-Prayer Reminder </Text>
-            </View>
-            <Text style={styles.settingsName}>
-              {reminderInterval === 0 ? 'None' : `${reminderInterval} mins`}
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.settingsField}>
-            <View style={styles.settingsLeftField}>
-              <FontAwesome6 name='moon' color='white' size={20} />
-              <Text style={styles.settingsName}>Quran Dark Mode</Text>
-            </View>
-            <Switch
-              value={isDarkMode}
-              onValueChange={toggleDarkMode} 
-            />
           </View>
         </View>
-      </View>
 
-      <View style={{ gap: 16 }}>
-        <Text style={styles.generalHeader}>S U P P O R T</Text>
-        <View style={styles.generalSettingsContainer}>
-          <TouchableOpacity style={styles.settingsField} onPress={() => router.push('/support')}>
-            <View style={styles.settingsLeftField}>
-              <FontAwesome6 name='envelope' color='white' size={20} />
-              <Text style={styles.settingsName}>Support</Text>
-            </View>
-            <FontAwesome6 name='chevron-right' color='white' size={20} />
-          </TouchableOpacity>
+        
+        <View style={{ gap: 16 }}>
+        <Text style={styles.generalHeader}>P R A Y E R S  &  Q U R A N</Text>
+          <View style={styles.generalSettingsContainer}>
 
-          <TouchableOpacity style={styles.settingsField}>
-            <View style={styles.settingsLeftField}>
-              <FontAwesome6 name='dollar-sign' color='white' size={20} />
-              <Text style={styles.settingsName}>One Time Donation</Text>
+            <View style={styles.settingsField}>
+              <View style={styles.settingsLeftField}>
+                <FontAwesome6 name='moon' color='white' size={20} />
+                <Text style={styles.settingsName}>Quran Dark Mode</Text>
+              </View>
+              <Switch
+                value={isDarkMode}
+                onValueChange={toggleDarkMode} 
+                />
             </View>
-            <Text style={styles.settingsName}>$4.98</Text>
-          </TouchableOpacity>
+            
+            <View style={styles.settingsField}>
+              <View style={styles.settingsLeftField}>
+                <FontAwesome6 name='clock' color='white' size={20} />
+                <Text style={styles.settingsName}>Prayer Time 24hr Format</Text>
+              </View>
+              <Switch
+                value={timeFormat === '24-hour'}
+                onValueChange={handleTimeFormatToggle} 
+                />
+            </View>
 
-          <TouchableOpacity style={styles.settingsField}>
-            <View style={styles.settingsLeftField}>
-              <FontAwesome6 name='ban' color='white' size={20} />
-              <Text style={styles.settingsName}>Remove Ads</Text>
-            </View>
-            <Text style={styles.settingsName}>$2.98</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.settingsField} onPress={() => setIsReminderPickerVisible(true)}>
+              <View style={styles.settingsLeftField}>
+                <FontAwesome6 name='bell' color='white' size={20} />
+                <Text style={styles.settingsName}>Pre-Prayer Reminder </Text>
+              </View>
+              <Text style={styles.settingsName}>
+                {reminderInterval === 0 ? 'None' : `${reminderInterval} mins`}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+
+        <View style={{ gap: 16 }}>
+          <Text style={styles.generalHeader}>S U P P O R T</Text>
+          <View style={styles.generalSettingsContainer}>
+            <TouchableOpacity style={styles.settingsField} onPress={() => router.push('/support')}>
+              <View style={styles.settingsLeftField}>
+                <FontAwesome6 name='envelope' color='white' size={20} />
+                <Text style={styles.settingsName}>Support</Text>
+              </View>
+              <FontAwesome6 name='chevron-right' color='white' size={20} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.settingsField}>
+              <View style={styles.settingsLeftField}>
+                <FontAwesome6 name='dollar-sign' color='white' size={20} />
+                <Text style={styles.settingsName}>One Time Donation</Text>
+              </View>
+              <Text style={styles.settingsName}>$4.98</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.settingsField}>
+              <View style={styles.settingsLeftField}>
+                <FontAwesome6 name='ban' color='white' size={20} />
+                <Text style={styles.settingsName}>Remove Ads</Text>
+              </View>
+              <Text style={styles.settingsName}>$2.98</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
 
       <Modal
         visible={isReminderPickerVisible}
