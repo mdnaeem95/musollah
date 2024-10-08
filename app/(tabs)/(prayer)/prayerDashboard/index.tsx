@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
@@ -33,7 +33,7 @@ const PrayersDashboard = () => {
   const numDaysInMonth = differenceInDays(currentMonthEnd, currentMonthStart) + 1; // Add 1 to include the last day
 
   // Placeholder for prayer session names
-  const prayerSessions = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+  const prayerSessions = ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
 
   // Auth Check and fetch today's prayer logs when the screen is focused
   useFocusEffect(
@@ -48,11 +48,11 @@ const PrayersDashboard = () => {
               setTodayLogs(result.prayerLog);
             } else {
               setTodayLogs({
-                Fajr: false,
-                Dhuhr: false,
-                Asr: false,
+                Subuh: false,
+                Zohor: false,
+                Asar: false,
                 Maghrib: false,
-                Isha: false
+                Isyak: false
               })
             }
           } catch (error) {
@@ -60,6 +60,7 @@ const PrayersDashboard = () => {
           }
         }
         fetchData();
+        console.log(todayLogs)
       } else {
         console.log('User not authenticated. Skipping prayer log fetch. ');
       }
@@ -114,7 +115,7 @@ const PrayersDashboard = () => {
       <PrayerHeader title="Prayer Dashboard" backgroundColor='#4D6561' />
 
       {/* Scrollable content */}
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView>
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>Your Prayer Stats for Today</Text>
 
@@ -132,7 +133,7 @@ const PrayersDashboard = () => {
             {/* Second row: Prayer statuses */}
             <View style={styles.tableRow}>
             {prayerSessions.map((prayer) => {
-              const status = todayLogs?.[prayer]; // Directly access the prayer status
+              const status = todayLogs?.status[prayer]; // Directly access the prayer status
               return (
                 <View key={prayer} style={styles.tableCell}>
                   {loading ? (
@@ -224,15 +225,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_600SemiBold',
     color: '#FFF',
   },
-  container: {
-    padding: 16,
-  },
   section: {
     marginBottom: 20,
   },
   sectionHeader: {
     fontSize: 18,
     fontFamily: 'Outfit_600SemiBold',
+    marginTop: 10,
     marginBottom: 10,
     color: '#FFF'
   },
@@ -250,12 +249,12 @@ const styles = StyleSheet.create({
   },
   tableHeaderText: {
     textAlign: 'center',
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Outfit_400Regular',
     color: '#FFF',
   },
   tableCellText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Outfit_400Regular',
     color: '#FFF',
   },

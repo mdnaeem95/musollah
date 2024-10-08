@@ -52,17 +52,17 @@ const TeacherDetails = () => {
                         showsHorizontalScrollIndicator={false}
                         data={teacherCourses}
                         renderItem={({ item }) => (
-                            <View style={styles.courseCard}>
-                                    <View style={styles.courseContentContainer}>
-                                        <View style={{ width: 100, height: 98, backgroundColor: item.backgroundColour, alignItems: 'center', justifyContent: 'center' }}>
-                                            <FontAwesome6 name={item.icon} size={54} />
-                                        </View>
-                                        <View style={styles.textContentContainer}>
-                                            <Text style={styles.courseCategoryText}>{item.category}</Text>
-                                            <Text style={styles.courseHeaderText}>{item.title}</Text>
-                                        </View>
+                            <TouchableOpacity style={styles.courseCard} onPress={() => router.push(`/courses/${item.id}`)}>
+                                <View style={styles.courseContentContainer}>
+                                    <View style={{ width: 100, height: 98, backgroundColor: item.backgroundColour, alignItems: 'center', justifyContent: 'center' }}>
+                                        <FontAwesome6 name={item.icon} size={54} />
+                                    </View>
+                                    <View style={styles.textContentContainer}>
+                                        <Text style={styles.courseCategoryText}>{item.category}</Text>
+                                        <Text style={styles.courseHeaderText}>{item.title}</Text>
                                     </View>
                                 </View>
+                            </TouchableOpacity>
                             )}
                             keyExtractor={(item) => item.id}
                             numColumns={1} 
