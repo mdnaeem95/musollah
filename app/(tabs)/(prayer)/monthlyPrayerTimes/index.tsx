@@ -77,7 +77,9 @@ const MonthlyPrayerTimesPage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <PrayerHeader title={getCurrentMonthYear()} backgroundColor='#4D6561' />
+      <View style={{ paddingHorizontal: 16 }}>
+        <PrayerHeader title={getCurrentMonthYear()} backgroundColor='#4D6561' />
+      </View>
 
       <View style={styles.prayerTimesTable}>
         <MonthlyPrayerTimesTable monthlyPrayerTimes={monthlyPrayerTimes} />
@@ -91,25 +93,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#4D6561',
     alignContent: 'center',
-    justifyContent: 'center'
-  },
-  header: {
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  backButton: {
-    marginRight: 16,
-  },
-  backText: {
-    color: '#007BFF',
-    fontSize: 16,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontFamily: 'Outfit_600SemiBold',
-    color: ''
+    justifyContent: 'center',
   },
   prayerTimesTable: {
     flex: 1,

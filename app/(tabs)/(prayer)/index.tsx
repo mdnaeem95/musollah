@@ -36,6 +36,7 @@ const PrayerTab = () => {
   const { prayerTimes, islamicDate, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
   const { reminderInterval } = useSelector((state: RootState) => state.userPreferences);
   const desiredPrayers: (keyof PrayerTimes)[] = ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
+  const scheduledReminders = new Set<string>();
 
   const [isPrayerLocationModalVisible, setIsPrayerLocationModalVisible] = useState<boolean>(false);
   const [currentPrayer, setCurrentPrayer] = useState<string>('');
@@ -59,6 +60,7 @@ const PrayerTab = () => {
       await Notifications.cancelAllScheduledNotificationsAsync();
 
       const today = new Date();
+
       Object.entries(prayerTimes).forEach(async ([prayerName, prayerTime]) => {
         const [hour, minute] = prayerTime.split(':').map(Number);
         const prayerDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hour, minute);
@@ -78,18 +80,19 @@ const PrayerTab = () => {
         }
         
         // schdule an additional notification before the prayer based on reminderInterval
-        if (reminderInterval > 0) {
+        if (reminderInterval > 0 && !scheduledReminders.has(prayerName)) {
           const reminderDate = new Date(prayerDate.getTime() - reminderInterval * 60 * 1000);
           if (reminderDate > today) {
             await Notifications.scheduleNotificationAsync({
               content: {
                 title: `${reminderInterval} minutes until ${prayerName}`,
-                body: `Get ready for ${prayerName} prayer in ${reminderInterval} millisecondsToMinutes.`,
+                body: `Get ready for ${prayerName} prayer in ${reminderInterval} minutes.`,
                 sound: true,
               },
               trigger: reminderDate
             });
             console.log(`${prayerName} reminder notification scheduled for ${reminderDate}`)
+            scheduledReminders.add(prayerName);
           }
         }
       });
@@ -109,13 +112,9 @@ const PrayerTab = () => {
 
   // Update current and next prayer info and schedule notifications once prayer times are fetched
   useEffect(() => {
-    // console.log('Inside useEffect. PrayerTimes:', prayerTimes, 'Notifications Scheduled:', notificationsScheduled);
-
     // Always update the current and next prayer info
     if (prayerTimes) {
       const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes, new Date());
-
-      // console.log('Setting Current Prayer:', currentPrayer, 'Next Prayer:', nextPrayer, 'Time Until Next Prayer:', timeUntilNextPrayer);
       setCurrentPrayer(currentPrayer);
       setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
       schedulePrayerNotifications(prayerTimes);

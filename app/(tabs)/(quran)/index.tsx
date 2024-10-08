@@ -15,10 +15,10 @@ const contentTypes = ['Surahs', 'Doas']
 
 const QuranTab = () => {
   const { isDarkMode } = useContext(ThemeContext);
-  const styles = isDarkMode ? darkTheme: lightTheme;
   const { surahs, isLoading } = useSelector((state: RootState) => state.quran);
   const { doas } = useSelector((state: RootState) => state.doas)
   const router = useRouter();
+  const styles = isDarkMode ? darkTheme: lightTheme;
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery)
@@ -94,7 +94,17 @@ const QuranTab = () => {
           <FontAwesome6 
             name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} 
             size={24} 
-            color={ isDarkMode ? '#ECDFCC' : '#FFFFFF' } />
+            color={ isDarkMode ? '#ECDFCC' : '#FFFFFF' } 
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={{ paddingHorizontal: 10 }} onPress={() => router.push('/bookmarks')}>
+          <FontAwesome6
+            name="bookmark"
+            size={24}
+            solid
+            color={ isDarkMode ? '#ECDFCC' : '#FFFFFF' }
+          />
         </TouchableOpacity>
       </View>
 
