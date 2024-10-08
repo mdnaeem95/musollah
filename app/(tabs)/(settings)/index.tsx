@@ -82,7 +82,9 @@ const SettingsTab = () => {
               <FontAwesome6 name='bell' color='white' size={20} />
               <Text style={styles.settingsName}>Pre-Prayer Reminder </Text>
             </View>
-            <FontAwesome6 name='chevron-right' color='white' size={20} />
+            <Text style={styles.settingsName}>
+              {reminderInterval === 0 ? 'None' : `${reminderInterval} mins`}
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.settingsField}>
@@ -141,7 +143,7 @@ const SettingsTab = () => {
               style={styles.picker}
               onValueChange={(itemValue) => handleReminderIntervalChange(itemValue as number)}
             >
-              <Picker.Item label='None' value={null} />
+              <Picker.Item label='None' value={0} />
               {[5, 10, 15, 20, 25, 30].map((interval) => (
                 <Picker.Item key={interval} label={`${interval} minutes`} value={interval} />
               ))}
@@ -216,15 +218,15 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    marginBottom: 15,
     fontFamily: 'Outfit_600SemiBold',
   },
   picker: {
+    marginBottom: 30,
     width: 200,
     height: 150,
   },
   closeButton: {
-    marginTop: 10,
+    marginTop: 30,
     padding: 10,
     backgroundColor: '#314340',
     borderRadius: 5,

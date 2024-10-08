@@ -7,7 +7,7 @@ interface UserPreferencesState {
 
 const initialState: UserPreferencesState = {
   timeFormat: '12-hour', // Default to 12-hour format
-  reminderInterval: 5
+  reminderInterval: 0
 };
 
 const userPreferencesSlice = createSlice({

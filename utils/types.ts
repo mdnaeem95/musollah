@@ -70,11 +70,11 @@ export interface PrayerState {
 }
 
 export interface PrayerTimes {
-    Fajr: string;
-    Dhuhr: string;
-    Asr: string;
+    Subuh: string;
+    Zohor: string;
+    Asar: string;
     Maghrib: string;
-    Isha: string;
+    Isyak: string;
     [key: string]: string;
 }
   

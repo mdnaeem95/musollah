@@ -1,8 +1,7 @@
-import { View, Text, StyleSheet, ImageBackground, Dimensions, Modal, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, ImageBackground, Dimensions } from 'react-native'
 import React, { useEffect, useMemo, useState } from 'react'
-import { Calendar } from 'react-native-calendars';
 import Clock from 'react-live-clock';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 
@@ -16,9 +15,8 @@ import AsrBackground from '../../../assets/prayerBackgroundImages/asarBackground
 import MaghribBackground from '../../../assets/prayerBackgroundImages/maghribBackground.png';
 import IshaBackground from '../../../assets/prayerBackgroundImages/isyaBackground.png';
 
-import { AppDispatch, RootState } from '../../../redux/store/store';
-import { fetchPrayerTimesByDate } from '../../../redux/slices/prayerSlice';
-import { CalendarObject, PrayerTimes } from '../../../utils/types';
+import { RootState } from '../../../redux/store/store';
+import { PrayerTimes } from '../../../utils/types';
 import { getFormattedDate, getPrayerTimesInfo } from '../../../utils';
 
 // Constants for background images
@@ -34,13 +32,12 @@ const prayerBackgrounds = {
 const screenWidth = Dimensions.get('window').width;
 
 const PrayerTab = () => {
-  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { prayerTimes, islamicDate, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
-  const desiredPrayers: (keyof PrayerTimes)[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+  const { reminderInterval } = useSelector((state: RootState) => state.userPreferences);
+  const desiredPrayers: (keyof PrayerTimes)[] = ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
 
   const [isPrayerLocationModalVisible, setIsPrayerLocationModalVisible] = useState<boolean>(false);
-  const [isCalendarVisible, setIsCalendarVisible] = useState<boolean>(false);
   const [currentPrayer, setCurrentPrayer] = useState<string>('');
   const [nextPrayerInfo, setNextPrayerInfo] = useState<{ nextPrayer: string, timeUntilNextPrayer: string } | null>(null);
   const [notificationsScheduled, setNotificationsScheduled] = useState<boolean>(false); // Track if notifications are scheduled
@@ -65,7 +62,9 @@ const PrayerTab = () => {
       Object.entries(prayerTimes).forEach(async ([prayerName, prayerTime]) => {
         const [hour, minute] = prayerTime.split(':').map(Number);
         const prayerDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hour, minute);
+        console.log('Reminder Interval', reminderInterval)
 
+        // Schedule a notification at the exact prayer time
         if (prayerDate > today) {
           await Notifications.scheduleNotificationAsync({
             content: {
@@ -77,6 +76,22 @@ const PrayerTab = () => {
           });
           console.log(`${prayerName} notification scheduled for ${prayerDate}`);
         }
+        
+        // schdule an additional notification before the prayer based on reminderInterval
+        if (reminderInterval > 0) {
+          const reminderDate = new Date(prayerDate.getTime() - reminderInterval * 60 * 1000);
+          if (reminderDate > today) {
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                title: `${reminderInterval} minutes until ${prayerName}`,
+                body: `Get ready for ${prayerName} prayer in ${reminderInterval} millisecondsToMinutes.`,
+                sound: true,
+              },
+              trigger: reminderDate
+            });
+            console.log(`${prayerName} reminder notification scheduled for ${reminderDate}`)
+          }
+        }
       });
 
       // Mark notifications as scheduled for the day
@@ -87,16 +102,6 @@ const PrayerTab = () => {
     }
   };
 
-  // Handle day press in calendar
-  const handleDayPress = (day: CalendarObject) => {
-    try {
-      dispatch(fetchPrayerTimesByDate(day.dateString));
-      setIsCalendarVisible(false);
-    } catch (error) {
-      console.error('Error fetching prayer times by date: ', error);
-    }
-  };
-
   // Handle city press to open location modal
   const handleCityPress = () => {
     setIsPrayerLocationModalVisible(true);
@@ -104,26 +109,21 @@ const PrayerTab = () => {
 
   // Update current and next prayer info and schedule notifications once prayer times are fetched
   useEffect(() => {
-    console.log('Inside useEffect. PrayerTimes:', prayerTimes, 'Notifications Scheduled:', notificationsScheduled);
+    // console.log('Inside useEffect. PrayerTimes:', prayerTimes, 'Notifications Scheduled:', notificationsScheduled);
 
     // Always update the current and next prayer info
     if (prayerTimes) {
       const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes, new Date());
 
-      console.log('Setting Current Prayer:', currentPrayer, 'Next Prayer:', nextPrayer, 'Time Until Next Prayer:', timeUntilNextPrayer);
-
+      // console.log('Setting Current Prayer:', currentPrayer, 'Next Prayer:', nextPrayer, 'Time Until Next Prayer:', timeUntilNextPrayer);
       setCurrentPrayer(currentPrayer);
       setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
-
-      // Only schedule notifications if they haven't been scheduled yet
-      if (!notificationsScheduled) {
-        schedulePrayerNotifications(prayerTimes);
-      }
+      schedulePrayerNotifications(prayerTimes);
     } else {
       setCurrentPrayer('');
       setNextPrayerInfo(null);
     }
-  }, [prayerTimes, notificationsScheduled]);
+  }, [prayerTimes, notificationsScheduled, reminderInterval]);
 
   // Recalculate the next prayer info every minute to keep it updated
   useEffect(() => {
@@ -175,24 +175,13 @@ const PrayerTab = () => {
         </View>
       </View>
 
-      <Modal transparent={true} visible={isCalendarVisible} onRequestClose={() => setIsCalendarVisible(false)}>
-        <View style={styles.modalBackground}>
-          <View style={styles.calendarContainer}>
-            <Calendar onDayPress={handleDayPress} />
-            <TouchableOpacity onPress={() => setIsCalendarVisible(false)} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
       {/* Include the City Selection Modal */}
       <PrayerLocationModal isVisible={isPrayerLocationModalVisible} onClose={() => setIsPrayerLocationModalVisible(false)} />
 
       <ExpandableButton
         onQiblatPress={() => router.push('/qiblat')}
         onDoaPress={() => router.push('/doa')}
-        onCalendarPress={() => setIsCalendarVisible(!isCalendarVisible)}
+        onCalendarPress={() => router.push('/monthlyPrayerTimes')}
         onCityPress={handleCityPress}
         onDashboardPress={() => router.push('/prayerDashboard')}
       />
@@ -249,28 +238,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 20,
     gap: 15,
-  },
-  modalBackground: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  calendarContainer: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-  },
-  closeButton: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: '#314340',
-    borderRadius: 5,
-  },
-  closeButtonText: {
-    color: 'white',
-    fontSize: 16,
   },
 });
 

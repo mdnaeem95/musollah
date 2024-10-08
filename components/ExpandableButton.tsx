@@ -87,11 +87,11 @@ const ExpandableButton = ({ onQiblatPress, onDoaPress, onCalendarPress, onCityPr
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        left: 20,
+        right: 20,
         bottom: 50
     },
     expandedButtonsContainer: {
-        flexDirection: "row",
+        flexDirection: "row-reverse",
         alignItems: 'center',
         gap: 15,
       },
