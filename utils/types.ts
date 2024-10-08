@@ -88,6 +88,7 @@ export interface PrayerTimes {
 
 export interface QuranState {
     surahs: any[];
+    bookmarks: any[];
     isLoading: boolean;
     error: string | null;
 }
@@ -152,4 +153,10 @@ export interface DashboardState {
     loading: boolean;
     error: string | null;
     lastFetched: number | null;
+}
+
+export interface Bookmark {
+    surahNumber: number;
+    ayahNumber: number;
+    surahName: string;
 }

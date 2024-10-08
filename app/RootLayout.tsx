@@ -15,6 +15,7 @@ import { fetchSurahsData } from '../redux/slices/quranSlice';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import LoadingScreen from '../components/LoadingScreen';
 import { fetchDailyDoasData } from '../redux/slices/doasSlice';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 SplashScreen.preventAutoHideAsync();
 

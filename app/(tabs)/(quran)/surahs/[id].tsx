@@ -2,11 +2,13 @@ import { View, Text, SafeAreaView, ActivityIndicator, StyleSheet, Image, Touchab
 import React, { useRef, useState, useCallback, useContext, useEffect } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { AVPlaybackStatus, Audio } from 'expo-av';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../../../redux/store/store';
-import { Surah } from '../../../../utils/types';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../../../redux/store/store';
+import { Bookmark, Surah } from '../../../../utils/types';
 import BackArrow from '../../../../components/BackArrow';
 import { ThemeContext } from '../../../../context/ThemeContext';
+import { addBookmark, removeBookmark } from '../../../../redux/slices/quranSlice';
+import { FontAwesome6 } from '@expo/vector-icons';
 
 const SurahTextScreen = () => {
     const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
@@ -14,11 +16,13 @@ const SurahTextScreen = () => {
     const [surahFinished, setSurahFinished] = useState<boolean>(false);
     const soundRef = useRef<Audio.Sound | null>(null);
     const listRef = useRef<FlatList>(null);
-    const { id } = useLocalSearchParams<{ id: string }>();
-    const { surahs, isLoading } = useSelector((state: RootState) => state.quran);
+    const { id, ayahIndex } = useLocalSearchParams<{ id: string, ayahIndex?: string }>();
+    const { surahs, isLoading, bookmarks } = useSelector((state: RootState) => state.quran);
     const { isDarkMode } = useContext(ThemeContext);
     const surahNum = id ? parseInt(id as string, 10) : 1;
+    const targetAyahIndex = ayahIndex ? parseInt(ayahIndex, 10) : 0; // Default to Ayah 0 if not passed
     const surah: Surah | undefined = surahs.find((surah: Surah) => surah.number === surahNum);
+    const dispatch = useDispatch<AppDispatch>()
 
     const audioLinks = surah?.audioLinks ? surah.audioLinks.split(',') : [];
 
@@ -101,7 +105,29 @@ const SurahTextScreen = () => {
         }
     }, [playNextAyah, currentAyahIndex, surahFinished]);
 
+    // Toggle bookmark for the current Ayah
+    const toggleBookmark = (ayahNumber: number) => {
+        const isBookmarked = bookmarks.some(
+            (bookmark) => bookmark.surahNumber === surahNum && bookmark.ayahNumber === ayahNumber
+        );
+
+        const bookmark: Bookmark = {
+            surahNumber: surahNum,
+            ayahNumber,
+            surahName: surah?.englishName || 'Unknown Surah'
+        }
+
+        if (isBookmarked) {
+            dispatch(removeBookmark(bookmark));
+        } else {
+            dispatch(addBookmark(bookmark));
+        }
+    }
+
     const renderAyah = ({ item, index }: { item: string, index: number }) => {
+        const isBookmarked = bookmarks.some(
+            (bookmark) => bookmark.surahNumber === surahNum && bookmark.ayahNumber === index + 1
+        )
         // Determine the text color based on the theme and whether the Ayah is active
         const ayahTextColor = index === currentAyahIndex
         ? (isDarkMode ? '#F0DBA0' : '#F4E2C1')  // Highlighted text color
@@ -109,6 +135,15 @@ const SurahTextScreen = () => {
 
         return (
             <View key={index} style={styles.ayahContainer}>
+                {/* Bookmark Icon */}
+                <TouchableOpacity onPress={() => toggleBookmark(index + 1)} style={{ paddingLeft: 20 }}>
+                    <FontAwesome6 
+                        name="bookmark"
+                        size={24}
+                        solid={isBookmarked}
+                        color={isBookmarked ? 'gold' : 'gray'}
+                    />
+                </TouchableOpacity>
                 <Text style={[styles.quranText, { color: ayahTextColor }]}>{item}</Text>
                 {surah?.englishTranslation && (
                     <View style={styles.translationContainer}>
