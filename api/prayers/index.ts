@@ -73,3 +73,32 @@ export const fetchIslamicDate = async (date: string) => {
         throw error
     }
 }
+
+// Function to fetch prayer times for the entire month
+export const fetchMonthlyPrayerTimes = async (year: number, month: number) => {
+    const apiUrl = `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=1.287953&longitude=103.851784`
+    try {
+        console.log(`Fetching monthly prayer times for from ${apiUrl}.`)
+        const response = await fetch(apiUrl)
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch monthly prayer time:')
+        }
+
+        const data = await response.json();
+        const formattedData = data.data.map((item: any) => ({
+            date: item.date.readable.substring(0, 2),
+            Subuh: item.timings.Fajr.replace(' (+08)', ''),
+            Syuruk: item.timings.Sunrise.replace(' (+08)', ''),
+            Zohor: item.timings.Dhuhr.replace(' (+08)', ''),
+            Asar: item.timings.Asr.replace(' (+08)', ''),
+            Maghrib: item.timings.Maghrib.replace(' (+08)', ''),
+            Isyak: item.timings.Isha.replace(' (+08)', '')
+        }))
+
+        return formattedData;
+    } catch (error) {
+        console.error('Error fetching monthly times:', error);
+        throw error;
+    }
+}

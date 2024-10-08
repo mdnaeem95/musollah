@@ -49,8 +49,8 @@ export const fetchPrayerTimesData = createAsyncThunk(
         }
   
         const prayerData = await fetchPrayerTimes();
-        const { Fajr, Dhuhr, Asr, Maghrib, Isha } = prayerData.data.timings;
-        const newPrayerTimes = { Fajr, Dhuhr, Asr, Maghrib, Isha };
+        const { Fajr: Subuh, Dhuhr: Zohor, Asr: Asar, Maghrib, Isha: Isyak } = prayerData.data.timings;
+        const newPrayerTimes = { Subuh, Zohor, Asar, Maghrib, Isyak };
   
         const islamicDateData = await fetchIslamicDate(shortFormattedDate);
         const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date);
@@ -82,8 +82,8 @@ export const fetchPrayerTimesByDate = createAsyncThunk(
   async (date: string, { rejectWithValue }) => {
     try {
       const prayerData = await fetchTimesByDate(date);
-      const { Fajr, Dhuhr, Asr, Maghrib, Isha } = prayerData.data.timings;
-      const newPrayerTimes = { Fajr, Dhuhr, Asr, Maghrib, Isha };
+      const { Fajr: Subuh, Dhuhr: Zohor, Asr: Asar, Maghrib, Isha: Isyak } = prayerData.data.timings;
+      const newPrayerTimes = { Subuh, Zohor, Asar, Maghrib, Isyak };
 
       const shortFormattedDate = getShortFormattedDate(new Date(date));
 
@@ -125,8 +125,8 @@ export const fetchPrayerTimesByLocationData = createAsyncThunk(
       }
 
       const prayerData = await fetchPrayerTimesByLocation(latitude, longitude);
-      const { Fajr, Dhuhr, Asr, Maghrib, Isha } = prayerData.data.timings;
-      const newPrayerTimes = { Fajr, Dhuhr, Asr, Maghrib, Isha };
+      const { Fajr: Subuh, Dhuhr: Zohor, Asr: Asar, Maghrib, Isha: Isyak } = prayerData.data.timings;
+      const newPrayerTimes = { Subuh, Zohor, Asar, Maghrib, Isyak };
 
       const islamicDateData = await fetchIslamicDate(shortFormattedDate);
       const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date);
