@@ -103,11 +103,11 @@ export const fetchPrayerLog = createAsyncThunk(
         return {
           date: todayDate,
           prayerLog: {
-            Fajr: false,
-            Dhuhr: false,
-            Asr: false,
+            Subuh: false,
+            Zohor: false,
+            Asar: false,
             Maghrib: false,
-            Isha: false
+            Isyak: false
           }
         }
       }

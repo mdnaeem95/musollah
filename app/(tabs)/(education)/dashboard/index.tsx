@@ -1,12 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native'
-import React, { memo, useCallback, useEffect } from 'react'
-
-import { FontAwesome6 } from '@expo/vector-icons'
+import React, { memo, useCallback, useEffect, useState } from 'react'
 import * as Progress from 'react-native-progress'
-import { Link, useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
-import { fetchDashboardData } from '../../../../redux/slices/dashboardSlice';
+import { fetchCoursesAndTeachers, fetchDashboardData } from '../../../../redux/slices/dashboardSlice';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import CourseCardShort from '../../../../components/CourseCardShort';
 
@@ -14,9 +12,10 @@ const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
 const Dashboard = () => {
     const auth = getAuth();
+    const router = useRouter();
+    const [isUnauthenticatedDataFetched, setIsUnauthenticatedDataFetched] = useState<boolean>(false);
     const dispatch = useDispatch<AppDispatch>();
     const { user, courses, teachers, loading, lastFetched } = useSelector((state: RootState) => state.dashboard);
-    const router = useRouter();
     const inProgressCourses = user?.enrolledCourses?.filter((course: any) => course.status !== 'completed') || [];
 
     // Memoized CourseCardShort component
@@ -35,15 +34,24 @@ const Dashboard = () => {
     </TouchableOpacity>
     ));
 
-  // Function to determine if we should refetch the data
-  const shouldFetchData = useCallback(() => {
-    if (!lastFetched) return true;  // No data fetched yet
-    const currentTime = Date.now();
-    return currentTime - lastFetched > CACHE_DURATION;  // If cache duration expired, refetch
-  }, [lastFetched]);    
+    // Function to determine if we should refetch the data
+    const shouldFetchData = useCallback(() => {
+        if (!lastFetched) return true;  // No data fetched yet
+        const currentTime = Date.now();
+        return currentTime - lastFetched > CACHE_DURATION;  // If cache duration expired, refetch
+    }, [lastFetched]);
+    
+    useEffect(() => {
+        // fetch courses and teachers once
+        if (!isUnauthenticatedDataFetched && shouldFetchData()) {
+            dispatch(fetchCoursesAndTeachers()).unwrap();
+            setIsUnauthenticatedDataFetched(true)
+        }
+    }, [dispatch, shouldFetchData, isUnauthenticatedDataFetched])
 
     useFocusEffect(
         useCallback(() => {
+            // If user is authenticated, fetch user-specific progress
             const unsubscribe = onAuthStateChanged(auth, (user: any) => {
                 if (user && shouldFetchData()) {
                     dispatch(fetchDashboardData(user.uid));      

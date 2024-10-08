@@ -230,6 +230,7 @@ const styles = StyleSheet.create({
     fontSize: scaleSize(30),
     lineHeight: scaleSize(46),
     color: '#000000',
+    alignSelf: 'center'
   },
   spacing: {
     marginTop: 5,

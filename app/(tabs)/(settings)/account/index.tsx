@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { persistor } from '../../../../redux/store/store'
 import Modal from 'react-native-modal'
 import PrayerHeader from '../../../../components/PrayerHeader';
+import SignInModal from '../../../../components/SignInModal';
 
 const AccountSettings = () => {
     const auth = getAuth();
@@ -21,6 +22,7 @@ const AccountSettings = () => {
 
     // Modal state
     const [isModalVisible, setModalVisible] = useState<boolean>(false);
+    const [isSignUpModalVisible, setIsSignUpModalVisible] = useState<boolean>(false);
     const [newName, setNewName] = useState<string>(''); // Track new value for name
 
     // Fetch both Firebase Auth data and Firestore user data
@@ -69,6 +71,14 @@ const AccountSettings = () => {
         setNewName(name); // Set current value in modal
         setModalVisible(true);
     };
+
+    const openSignInModal = () => {
+      setIsSignUpModalVisible(true)
+    }
+
+    const closeSignInModal = () => {
+      setIsSignUpModalVisible(false)
+    }
 
     // Handle user sign-out
     const handleSignOut = async () => {
@@ -139,21 +149,34 @@ const AccountSettings = () => {
                     <Text style={styles.valueText}>{coursesCompleted}</Text>
                 </View>
 
-                <TouchableOpacity 
+                {currentUser && (
+                  <TouchableOpacity 
                   style={styles.googleMapsButton} 
                   onPress={handleSignOut} 
                   disabled={!currentUser}
-                >
+                  >
                     <Text style={styles.googleMapsButtonText}>Sign Out</Text>
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                )}
 
-                <TouchableOpacity 
+                {currentUser && (
+                  <TouchableOpacity 
                   style={[styles.googleMapsButton, { backgroundColor: '#FF6961' }]}
                   disabled={!currentUser} 
                   onPress={handleDeleteAccount}
-                >
+                  >
                     <Text style={styles.googleMapsButtonText}>Delete Account</Text>
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                )}
+
+                {!currentUser && (
+                  <TouchableOpacity 
+                  style={styles.googleMapsButton} 
+                  onPress={openSignInModal} 
+                  >
+                    <Text style={styles.googleMapsButtonText}>Sign Up</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 
@@ -175,6 +198,11 @@ const AccountSettings = () => {
                     </TouchableOpacity>
                 </View>
             </Modal>
+
+            <SignInModal
+              isVisible={isSignUpModalVisible}
+              onClose={closeSignInModal}
+            />
         </SafeAreaView>
     );
 };

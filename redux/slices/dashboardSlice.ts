@@ -11,40 +11,59 @@ const initialState: DashboardState = {
   lastFetched: null,
 };
 
-export const fetchDashboardData = createAsyncThunk('dashboard/fetchDashboardData', async (userId: string, { rejectWithValue }) => {
-try {
-    const userData = await fetchUserData(userId);
+// Fetching for unauthenticated users
+export const fetchCoursesAndTeachers = createAsyncThunk(
+  'dashboard/fetchCoursesAndTeachers',
+  async (_, { rejectWithValue }) => {
+    try {
+      const coursesData = await fetchCoursesData();
+      const teachersData = await fetchTeachersData();
 
-    if (!userData || !Array.isArray(userData.enrolledCourses)) {
-      throw new Error("User data or enrolled courses not found");
+      return { coursesData, teachersData };
+    } catch (error) {
+      console.error('Failed to fetch courses and teachers', error);
+      return rejectWithValue('Failed to fetch courses and teachers.')
     }
+  }
+)
 
-    const coursesData = await fetchCoursesData();
-    const teachersData = await fetchTeachersData();
-    
-    // Map through enrolled courses and calculate progress based on module status
-    const updatedCoursesData = coursesData.map((course: CourseData) => {
-      const enrolledCourse = userData.enrolledCourses.find((enrolled: any) => enrolled.courseId === course.id);
+// Fetching for authenticated users
+export const fetchDashboardData = createAsyncThunk(
+  'dashboard/fetchDashboardData', 
+  async (userId: string, { rejectWithValue }) => {
+  try {
+      const userData = await fetchUserData(userId);
 
-      if (enrolledCourse) {
-        const completedModules = course.modules.filter((module: ModuleData) => module.status === 'completed').length;
-        const totalModules = course.modules.length;
-
-        return {
-          ...course,
-          status: completedModules === totalModules ? 'completed' : 'in progress', // Update course status
-          modules: course.modules, // Use the enrolled course modules with progress info
-        }
+      if (!userData || !Array.isArray(userData.enrolledCourses)) {
+        throw new Error("User data or enrolled courses not found");
       }
 
-      return course;
-    })
+      const coursesData = await fetchCoursesData();
+      const teachersData = await fetchTeachersData();
+      
+      // Map through enrolled courses and calculate progress based on module status
+      const updatedCoursesData = coursesData.map((course: CourseData) => {
+        const enrolledCourse = userData.enrolledCourses.find((enrolled: any) => enrolled.courseId === course.id);
 
-    return { userData, coursesData: updatedCoursesData, teachersData };
-} catch (error) {
-    console.error('Failed to fetch dashboard data', error);
-    return rejectWithValue('Failed to fetch locations');
-}
+        if (enrolledCourse) {
+          const completedModules = course.modules.filter((module: ModuleData) => module.status === 'completed').length;
+          const totalModules = course.modules.length;
+
+          return {
+            ...course,
+            status: completedModules === totalModules ? 'completed' : 'in progress', // Update course status
+            modules: course.modules, // Use the enrolled course modules with progress info
+          }
+        }
+
+        return course;
+      })
+
+      return { userData, coursesData: updatedCoursesData, teachersData };
+  } catch (error) {
+      console.error('Failed to fetch dashboard data', error);
+      return rejectWithValue('Failed to fetch locations');
+  }
 });
 
 export const updateDashboardEnrolledCourses = createAsyncThunk(
@@ -64,6 +83,14 @@ const dashboardSlice = createSlice({
       .addCase(fetchDashboardData.pending, (state) => {
         state.loading = true;
         state.error = null;
+      })
+      .addCase(fetchCoursesAndTeachers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.courses = action.payload.coursesData;
+        state.teachers = action.payload.teachersData;
+      })
+      .addCase(fetchCoursesAndTeachers.pending, (state) => {
+        state.loading = true;
       })
       .addCase(updateDashboardEnrolledCourses.fulfilled, (state, action) => {
         const updatedCourse = action.payload.enrolledCourses.find(

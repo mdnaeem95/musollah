@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Switch, Alert } from 'react-native';
 import { format, subDays, isAfter } from 'date-fns';
-import BackArrow from '../../../../../components/BackArrow';
 import { getAuth } from '@react-native-firebase/auth';
 import { useDispatch } from 'react-redux';
 import { savePrayerLog } from '../../../../../redux/slices/userSlice';
 import { AppDispatch } from '../../../../../redux/store/store';
+import PrayerHeader from '../../../../../components/PrayerHeader';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PrayerLogger = () => {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(today);
   const [prayerStatus, setPrayerStatus] = useState({
-    Fajr: false,
-    Dhuhr: false,
-    Asr: false,
+    Subuh: false,
+    Zohor: false,
+    Asar: false,
     Maghrib: false,
-    Isha: false,
+    Isyak: false,
   });
 
   const dispatch = useDispatch<AppDispatch>();
@@ -79,11 +80,7 @@ const PrayerLogger = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
-      <View style={styles.header}>
-        <BackArrow />
-        <Text style={styles.title}>Log Your Prayers</Text>
-        <View />
-      </View>
+      <PrayerHeader title="Log Your Prayers" backgroundColor='#A3C0BB' />
 
       {/* Horizontal Scrolling Calendar */}
       <View style={styles.calendarContainer}>
@@ -126,20 +123,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#A3C0BB',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#A3C0BB',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  title: {
-    fontSize: 24,
-    fontFamily: 'Outfit_600SemiBold',
-    color: '#FFF',
+    padding: 16
   },
   calendarContainer: {
     paddingVertical: 16,
