@@ -1,4 +1,4 @@
-import { SafeAreaView, FlatList, ActivityIndicator, View, TextInput, TouchableOpacity, StyleSheet, StatusBar } from 'react-native'
+import { FlatList, ActivityIndicator, View, TextInput, TouchableOpacity, StyleSheet, StatusBar } from 'react-native'
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import SurahItem from '../../../components/SurahItem';
 import { useRouter } from 'expo-router';
@@ -10,6 +10,7 @@ import { ThemeContext } from '../../../context/ThemeContext';
 import { darkTheme, lightTheme } from '../../../utils/theme';
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import DoaItem from '../../../components/DoaItem';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const contentTypes = ['Surahs', 'Doas']
 

@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { startCourse } from '../redux/slices/courseSlice';
 import { AppDispatch, RootState, store } from '../redux/store/store';
 import { getAuth } from '@react-native-firebase/auth';
-import { CourseData, ModuleData } from '../utils/types';
+import { CourseAndModuleProgress, CourseData, ModuleData } from '../utils/types';
 import SignInModal from './SignInModal';
 import PrayerHeader from './PrayerHeader';
 
@@ -14,7 +14,11 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
   const auth = getAuth();
   const router = useRouter();
   const user = useSelector((state: RootState) => state.dashboard.user);
-  const userProgress = useSelector((state: RootState) => user?.enrolledCourses.find((enrolledCourse: CourseData) => enrolledCourse.id === course.id));
+
+    // Fetch user progress from enrolled courses
+  const userProgress: CourseAndModuleProgress | undefined = useSelector((state: RootState) =>
+    user?.enrolledCourses.find((enrolledCourse: CourseAndModuleProgress) => enrolledCourse.courseId === course.id)
+  );
   const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
   const [isEnrolling, setIsEnrolling] = useState<boolean>(false);
   const [isAuthModalVisible, setIsAuthModalVisible] = useState<boolean>(false);
@@ -24,10 +28,9 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
     const currentUser = auth.currentUser
 
     if (user && currentUser) {
-      const enrolled = user.enrolledCourses.some((c: any) => c.id === course.id);
-      setIsEnrolled(enrolled);
+      setIsEnrolled(!!userProgress);
     }
-  }, [user, course.id]);
+  }, [user, course.id, userProgress]);
 
   const handleStartLearning = async () => {
     const currentUser = auth.currentUser;
@@ -51,21 +54,21 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
         try {
             await dispatch(startCourse({ courseId: course.id, userId })).unwrap();
 
-      // Add a small delay
-      setTimeout(() => {
-        // Log the updated Redux state
-        const updatedCourses = store.getState().dashboard.courses;
-        console.log('Updated courses in Redux:', updatedCourses);
+            // Add a small delay
+            setTimeout(() => {
+              // Log the updated Redux state
+              const updatedCourses = store.getState().dashboard.courses;
+              console.log('Updated courses in Redux:', updatedCourses);
 
-        // Navigate if course is present in Redux state
-        const enrolledCourse = updatedCourses.find((c: any) => c.id === course.id);
-        if (enrolledCourse && enrolledCourse.modules.length > 0) {
-          const firstModuleId = enrolledCourse.modules[0].moduleId;
-          router.push(`/courses/${enrolledCourse.id}/modules/${firstModuleId}`);
-        } else {
-          console.error('Course not found in the state after enrollment');
-        }
-      }, 500); // Adjust the delay if needed
+              // Navigate if course is present in Redux state
+              const enrolledCourse = updatedCourses.find((c: CourseData) => c.id === course.id);
+              if (enrolledCourse && enrolledCourse.modules.length > 0) {
+                const firstModuleId = enrolledCourse.modules[0].moduleId;
+                router.push(`/courses/${enrolledCourse.id}/modules/${firstModuleId}`);
+              } else {
+                console.error('Course not found in the state after enrollment');
+              }
+            }, 500); // Adjust the delay if needed
         } catch (error) {
             console.error('Failed to start course:', error);
         } finally {
@@ -99,9 +102,9 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
         {/* Modules */}
         <View style={styles.section}>
           <Text style={styles.subText}>Modules</Text>
-          {course.modules.map((module, index) => {
-            const moduleProgress = userProgress?.modules.find((m: ModuleData) => m.moduleId === module.moduleId);
-            const isLocked = !isEnrolled || moduleProgress?.status === 'locked';
+          {course.modules.map((module: ModuleData, index: number) => {
+            const moduleProgress = userProgress?.status.modules[module.moduleId];
+            const isLocked = !isEnrolled || moduleProgress === 'locked';
 
             return (
               <TouchableOpacity

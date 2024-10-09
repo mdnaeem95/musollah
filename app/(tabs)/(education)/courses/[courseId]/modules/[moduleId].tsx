@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../../../redux/store/store';
 import { completeModule } from '../../../../../../redux/slices/courseSlice';
 import { getAuth } from '@react-native-firebase/auth';
-import { CourseData, ModuleData } from '../../../../../../utils/types';
+import { CourseAndModuleProgress, CourseData, ModuleData } from '../../../../../../utils/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PrayerHeader from '../../../../../../components/PrayerHeader';
 
@@ -24,8 +24,13 @@ const ModuleDetails = () => {
   const userId = auth.currentUser?.uid;
 
   // Get the course data from Redux (dashboard slice)
-  const course: CourseData = useSelector((state: RootState) =>
+  const course: CourseData | undefined = useSelector((state: RootState) =>
     state.dashboard.courses.find((c) => c.id === courseId)
+  );
+
+  // Get the user's progress for this course
+  const userProgress: CourseAndModuleProgress | undefined = useSelector((state: RootState) =>
+    state.dashboard.user?.enrolledCourses.find((p) => p.courseId === courseId)
   );
 
   useEffect(() => {
@@ -39,14 +44,14 @@ const ModuleDetails = () => {
   }, [course, moduleId]);
 
   const handleCompleteModule = async () => {
-    if (courseId && moduleId && userId) {
+    if (courseId && moduleId && userId && userProgress) {
       try {
-        console.log('Current course state:', course);
+        console.log('Current user progress:', userProgress);
 
         // Ensure course progress exists
-        const userCourseProgress = course?.modules.find((m: any) => m.moduleId === moduleId);
-        if (!userCourseProgress) {
-          throw new Error('Course progress not found for this module.');
+        const moduleProgress = userProgress.status.modules[moduleId];
+        if (!moduleProgress) {
+          throw new Error('Module progress not found.');
         }
 
         // Complete the module

@@ -7,6 +7,7 @@ import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { fetchCoursesAndTeachers, fetchDashboardData } from '../../../../redux/slices/dashboardSlice';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import CourseCardShort from '../../../../components/CourseCardShort';
+import { CourseAndModuleProgress, CourseData, ModuleStatus } from '../../../../utils/types';
 
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
@@ -16,7 +17,9 @@ const Dashboard = () => {
     const [isUnauthenticatedDataFetched, setIsUnauthenticatedDataFetched] = useState<boolean>(false);
     const dispatch = useDispatch<AppDispatch>();
     const { user, courses, teachers, loading, lastFetched } = useSelector((state: RootState) => state.dashboard);
-    const inProgressCourses = user?.enrolledCourses?.filter((course: any) => course.status !== 'completed') || [];
+
+    // Filter in-progress courses based on 'CourseAndModuleProgress' status
+    const inProgressCourses = user?.enrolledCourses?.filter((course: CourseAndModuleProgress) => course.status.courseStatus !== 'completed') || [];
 
     // Memoized CourseCardShort component
     const MemoizedCourseCardShort = memo(CourseCardShort);
@@ -70,7 +73,7 @@ const Dashboard = () => {
     }
 
     const handleCourseProgressClick = (courseId: string) => {
-        const course = courses.find((c) => c.id === courseId);
+        const course = courses.find((c: CourseData) => c.id === courseId);
         
         if (!course || !course.modules) {
             console.error('Course or modules not found.');
@@ -78,7 +81,7 @@ const Dashboard = () => {
         }
 
         // Get the user's progress for this course from the enrolledCourses in the user's collection
-        const userProgress = user?.enrolledCourses.find((p: any) => p.id === courseId);
+        const userProgress = user?.enrolledCourses.find((p: CourseAndModuleProgress) => p.courseId === courseId);
 
         if (!userProgress) {
             console.error(`Progress for course ID ${courseId} not found.`);
@@ -88,12 +91,12 @@ const Dashboard = () => {
         const totalModules = course.modules.length;
 
         // Find the first module that is either in progress or not started yet
-        const currentModule = userProgress.modules.find(
-            (module: any) => module.status === 'in progress' || module.status === 'locked'
-        ) || userProgress.modules[totalModules - 1]; // Fallback to the last module if everything is completed
+        const currentModule = Object.entries(userProgress.status.modules).find(
+            (([moduleId, status]: [string, ModuleStatus]) => status === 'in progress' || status === 'locked') || [course.modules[totalModules - 1].moduleId, 'locked']
+        )
         
         if (currentModule) {
-            router.push(`/courses/${courseId}/modules/${currentModule.moduleId}`);
+            router.push(`/courses/${courseId}/modules/${currentModule[0]}`);
         } else {
             console.error('No current module found.');
         }

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchCoursesData, fetchTeachersData, fetchUserData } from '../../api/firebase';
-import { CourseData, DashboardState, ModuleData } from '../../utils/types';
+import { CourseAndModuleProgress, CourseData, CourseStatus, DashboardState, ModuleData, UserData } from '../../utils/types';
 
 const initialState: DashboardState = {
   user: { name: "Akhi", avatarUrl: 'https://via.placeholder.com/100', id: '', email: '', enrolledCourses: [] },
@@ -9,6 +9,34 @@ const initialState: DashboardState = {
   loading: false,
   error: null,
   lastFetched: null,
+};
+
+// Helper function to calculate course progress
+const calculateCourseProgress = (course: CourseData, progress: CourseAndModuleProgress) => {
+  const updatedModules = { ...progress.status.modules };
+
+  // Calculate progress: Iterate through modules in `CourseData` and update statuses
+  const allModulesCompleted = course.modules.every((module) => updatedModules[module.moduleId] === 'completed');
+
+  return {
+    ...progress,
+    status: {
+      courseStatus: allModulesCompleted ? 'completed' as CourseStatus : 'in progress' as CourseStatus,
+      modules: updatedModules
+    }
+  };
+}
+
+// Helper function to update enrolled courses in state
+const updateEnrolledCourses = (state: DashboardState, updatedProgress: CourseAndModuleProgress) => {
+  const user = state.user;
+  if (user) {
+    const updatedEnrolledCourses = user.enrolledCourses.map((courseProgress) =>
+      courseProgress.courseId === updatedProgress.courseId ? updatedProgress : courseProgress
+    );
+
+    state.user = { ...user, enrolledCourses: updatedEnrolledCourses };
+  }
 };
 
 // Fetching for unauthenticated users
@@ -27,12 +55,12 @@ export const fetchCoursesAndTeachers = createAsyncThunk(
   }
 )
 
-// Fetching for authenticated users
+// Fetching for authenticated users (user progress and course data)
 export const fetchDashboardData = createAsyncThunk(
   'dashboard/fetchDashboardData', 
   async (userId: string, { rejectWithValue }) => {
   try {
-      const userData = await fetchUserData(userId);
+      const userData: UserData = await fetchUserData(userId);
 
       if (!userData || !Array.isArray(userData.enrolledCourses)) {
         throw new Error("User data or enrolled courses not found");
@@ -41,34 +69,24 @@ export const fetchDashboardData = createAsyncThunk(
       const coursesData = await fetchCoursesData();
       const teachersData = await fetchTeachersData();
       
-      // Map through enrolled courses and calculate progress based on module status
-      const updatedCoursesData = coursesData.map((course: CourseData) => {
-        const enrolledCourse = userData.enrolledCourses.find((enrolled: any) => enrolled.courseId === course.id);
+      // Map through the user's enrolled courses and calculate progress based on module status
+      const updatedEnrolledCourses = userData.enrolledCourses.map((progress: CourseAndModuleProgress) => {
+        const course = coursesData.find((course: CourseData) => course.id === progress.courseId);
+        return course ? calculateCourseProgress(course, progress) : progress;
+      });
 
-        if (enrolledCourse) {
-          const completedModules = course.modules.filter((module: ModuleData) => module.status === 'completed').length;
-          const totalModules = course.modules.length;
-
-          return {
-            ...course,
-            status: completedModules === totalModules ? 'completed' : 'in progress', // Update course status
-            modules: course.modules, // Use the enrolled course modules with progress info
-          }
-        }
-
-        return course;
-      })
-
-      return { userData, coursesData: updatedCoursesData, teachersData };
+      // Return both immutable course data and user's progress
+      return { userData: { ...userData, enrolledCourses: updatedEnrolledCourses }, coursesData, teachersData };
   } catch (error) {
       console.error('Failed to fetch dashboard data', error);
       return rejectWithValue('Failed to fetch locations');
   }
 });
 
+// Updating user’s enrolled courses progress in the dashboard
 export const updateDashboardEnrolledCourses = createAsyncThunk(
   'dashboard/updateEnrolledCourses',
-  async ({ courseId, userId, enrolledCourses }: { courseId: string, userId: string, enrolledCourses: any[] }) => {
+  async ({ courseId, userId, enrolledCourses }: { courseId: string, userId: string, enrolledCourses: CourseAndModuleProgress[] }) => {
     console.log('Dispatching updated enrolledCourses:', enrolledCourses)
     return { courseId, userId, enrolledCourses };
   }
@@ -93,27 +111,11 @@ const dashboardSlice = createSlice({
         state.loading = true;
       })
       .addCase(updateDashboardEnrolledCourses.fulfilled, (state, action) => {
-        const updatedCourse = action.payload.enrolledCourses.find(
-          (course) => course.id === action.payload.courseId
+        const updatedCourseProgress = action.payload.enrolledCourses.find(
+          (course) => course.courseId === action.payload.courseId
         );
-      
-        if (updatedCourse) {
-          const user = state.user;
-          if (user) {
-            const updatedEnrolledCourses = [...user.enrolledCourses]; // Clone the enrolledCourses array
-            const courseIndex = updatedEnrolledCourses.findIndex(course => course.id === updatedCourse.id);
-          
-            if (courseIndex !== -1) {
-              updatedEnrolledCourses[courseIndex] = updatedCourse;
-            } else {
-              updatedEnrolledCourses.push(updatedCourse);  // Add the new course
-            }
-      
-            state.user = {
-              ...user, 
-              enrolledCourses: updatedEnrolledCourses,  // Assign the new array
-            };
-          }
+        if (updatedCourseProgress) {
+          updateEnrolledCourses(state, updatedCourseProgress);
         } else {
           console.error('No updated course found in the payload.');
         }
@@ -127,7 +129,7 @@ const dashboardSlice = createSlice({
       })
       .addCase(fetchDashboardData.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to fetch dashboard data';
+        state.error = action.payload as string || 'Failed to fetch dashboard data';
       });
   },
 });
