@@ -2,13 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../../redux/store/store';
+import { CourseAndModuleProgress, CourseData } from '../../../../utils/types';
 
 const Profile = () => {
   const user = useSelector((state: RootState) => state.dashboard.user); // Fetch user data from Redux state
   const courses = useSelector((state: RootState) => state.dashboard.courses); // Fetch all courses
 
-  // Filter out completed courses
-  const completedCourses = user?.enrolledCourses.filter((course: any) => course.status === 'completed') || [];
+  // Filter out completed courses using `CourseAndModuleProgress`
+  const completedCourses = user?.enrolledCourses.filter((course: CourseAndModuleProgress) => course.status.courseStatus === 'completed') || [];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -23,8 +24,9 @@ const Profile = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Completed Courses</Text>
         {completedCourses.length > 0 ? (
-          completedCourses.map((course: any, index: number) => {
-            const courseData = courses.find((c: any) => c.id === course.courseId);
+          completedCourses.map((progress: CourseAndModuleProgress, index: number) => {
+            // Find the course data based on the `courseId` in the user's progress
+            const courseData = courses.find((c: CourseData) => c.id === progress.courseId);
 
             if (!courseData) return null;
 
@@ -36,8 +38,8 @@ const Profile = () => {
                 {/* Show details for physical courses */}
                 {courseData.type === 'physical' && (
                   <View>
-                    <Text style={styles.physicalCourseDetail}>Location: {courseData.location}</Text>
-                    <Text style={styles.physicalCourseDetail}>Schedule: {courseData.schedule}</Text>
+                    {/* <Text style={styles.physicalCourseDetail}>Location: {courseData.location}</Text>
+                    <Text style={styles.physicalCourseDetail}>Schedule: {courseData.schedule}</Text> */}
                   </View>
                 )}
               </View>

@@ -35,7 +35,7 @@ const SettingsTab = () => {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* GENERAL */}
-        <View style={{ gap: 16 }}>
+        <View style={{ gap: 16, marginBottom: 16 }}>
           <Text style={styles.generalHeader}>G E N E R A L</Text>
           <View style={styles.generalSettingsContainer}>
             <TouchableOpacity style={styles.settingsField} onPress={() => router.push(`/account`)}>
@@ -71,7 +71,7 @@ const SettingsTab = () => {
         </View>
 
         
-        <View style={{ gap: 16 }}>
+        <View style={{ gap: 16, marginBottom: 16 }}>
         <Text style={styles.generalHeader}>P R A Y E R S  &  Q U R A N</Text>
           <View style={styles.generalSettingsContainer}>
 
