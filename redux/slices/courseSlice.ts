@@ -96,7 +96,7 @@ export const startCourse = createAsyncThunk(
       const initialProgress: CourseAndModuleProgress = {
         courseId,
         status: {
-          courseStatus: 'in progress',
+          courseStatus: 'in progress' as CourseStatus,
           modules: course.modules.reduce((acc, module, index) => {
             acc[module.moduleId] = index === 0 ? 'in progress' : 'locked';
             return acc;

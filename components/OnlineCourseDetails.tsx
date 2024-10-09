@@ -14,23 +14,15 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
   const auth = getAuth();
   const router = useRouter();
   const user = useSelector((state: RootState) => state.dashboard.user);
+  console.log('User', user)
 
     // Fetch user progress from enrolled courses
-  const userProgress: CourseAndModuleProgress | undefined = useSelector((state: RootState) =>
+  const userProgress: CourseAndModuleProgress | undefined = 
     user?.enrolledCourses.find((enrolledCourse: CourseAndModuleProgress) => enrolledCourse.courseId === course.id)
-  );
-  const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
+
   const [isEnrolling, setIsEnrolling] = useState<boolean>(false);
   const [isAuthModalVisible, setIsAuthModalVisible] = useState<boolean>(false);
   const dispatch = useDispatch<AppDispatch>();
-
-  useEffect(() => {
-    const currentUser = auth.currentUser
-
-    if (user && currentUser) {
-      setIsEnrolled(!!userProgress);
-    }
-  }, [user, course.id, userProgress]);
 
   const handleStartLearning = async () => {
     const currentUser = auth.currentUser;
@@ -104,7 +96,9 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
           <Text style={styles.subText}>Modules</Text>
           {course.modules.map((module: ModuleData, index: number) => {
             const moduleProgress = userProgress?.status.modules[module.moduleId];
-            const isLocked = !isEnrolled || moduleProgress === 'locked';
+            const isLocked = !userProgress || moduleProgress === 'locked';
+            console.log(userProgress)
+            console.log('Module, ', module.moduleId, 'status, ', isLocked);
 
             return (
               <TouchableOpacity
@@ -128,17 +122,15 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
         </View>
 
         {/* Start Learning Button */}
-        {!isEnrolled && (
-          <View style={{ marginTop: 16 }}>
+        <View style={{ marginTop: 16 }}>
           <TouchableOpacity
             style={styles.learningBtn}
             onPress={handleStartLearning}
-            disabled={isEnrolled || isEnrolling}
+            disabled={!!userProgress || isEnrolling}
             >
-            <Text style={styles.btnText}>{isEnrolling ? 'Enrolling...' : isEnrolled ? 'Enrolled' : 'Start Learning'}</Text>
+            <Text style={styles.btnText}>{isEnrolling ? 'Enrolling...' : userProgress ? 'Enrolled' : 'Start Learning'}</Text>
           </TouchableOpacity>
         </View>
-        )}
 
         {/* Sign In Modal */}
         <SignInModal
