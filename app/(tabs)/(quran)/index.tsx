@@ -11,6 +11,7 @@ import { darkTheme, lightTheme } from '../../../utils/theme';
 import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import DoaItem from '../../../components/DoaItem';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import DailyAyah from '../../../components/DailyAyah';
 
 const contentTypes = ['Surahs', 'Doas']
 
@@ -107,6 +108,10 @@ const QuranTab = () => {
             color={ isDarkMode ? '#ECDFCC' : '#FFFFFF' }
           />
         </TouchableOpacity>
+      </View>
+
+      <View style={{ marginBottom: 10, paddingHorizontal: 20 }}>
+        <DailyAyah />
       </View>
 
       <View style={{ marginVertical: 10, paddingHorizontal: 20 }}>
