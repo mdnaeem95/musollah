@@ -125,12 +125,17 @@ const Dashboard = () => {
 
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                             {user.enrolledCourses
-                            .filter((course: any) => course.status !== 'completed')
-                            .map((course: any, index: number) => {
-                                const courseData = courses.find((c) => c.id === course.id); // Find the course details
-                                const progress = course.modules.filter((m: any) => m.status === 'completed').length / course.modules.length;
+                            .filter((course: CourseAndModuleProgress) => course.status.courseStatus !== 'completed')
+                            .map((course: CourseAndModuleProgress, index: number) => {
+                                const courseData = courses.find((c: CourseData) => c.id === course.courseId); // Find the course details
+
+                                if (!courseData) {
+                                    return null;
+                                }
+
+                                const progress = Object.values(course.status.modules).filter((status: ModuleStatus) => status === 'completed').length / Object.keys(course.status.modules).length;
                                 return (
-                                    <TouchableOpacity key={index} style={styles.progressCard} onPress={() => handleCourseProgressClick(course.id)}>
+                                    <TouchableOpacity key={index} style={styles.progressCard} onPress={() => handleCourseProgressClick(course.courseId)}>
                                         <View style={styles.progressCardContent}>
                                             <Text style={styles.progressCourseTitle}>{courseData?.title || 'Course Title'}</Text>
                                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
