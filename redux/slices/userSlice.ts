@@ -42,15 +42,16 @@ export const signIn = createAsyncThunk(
   
 export const signUp = createAsyncThunk(
   'user/signUp',
-  async ({ email, password }: { email: string; password: string }) => {
-    const auth = getAuth();
-    // First, create the user using Firebase Authentication
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-
-    // Next, add the user document to Firestore
-    const userDoc = firestore().collection('users').doc(user.uid);
-    await userDoc.set({
+  async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
+    try {
+      const auth = getAuth();
+      // First, create the user using Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Next, add the user document to Firestore
+      const userDoc = firestore().collection('users').doc(user.uid);
+      await userDoc.set({
       name: user.displayName || 'New User',
       email: user.email,
       avatarUrl: 'https://via.placeholder.com/100',  // Default avatar
@@ -65,6 +66,10 @@ export const signUp = createAsyncThunk(
       displayName: user.displayName,
       photoURL: user.photoURL,
     };
+  } catch (error: any) {
+    console.error('Sign-up failed:', error.code, error.message, error.status);
+    return rejectWithValue(error.message);
+  }
   }
 );
 
