@@ -29,50 +29,63 @@ export const signIn = createAsyncThunk(
   
 export const signUp = createAsyncThunk(
     'user/signUp',
-    async ({ email, password }: { email: string; password: string }) => {
+    async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
+      try {
         const auth = getAuth();
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-
+        
         // Add user to Firestore\
         const userDoc = firestore().collection('users').doc(user.uid);
         await userDoc.set({
-            name: user.displayName || 'New User',
-            email: user.email,
-            avatarUrl: 'https://via.placeholder.com/100',
-            enrolledCourses: [],
-            prayerLogs: []
+          name: user.displayName || 'New User',
+          email: user.email,
+          avatarUrl: 'https://via.placeholder.com/100',
+          enrolledCourses: [],
+          prayerLogs: []
         })
-
+        
         // Return only serializable parts of the user object to Redux
         return {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName,
           photoURL: user.photoURL,
-      };
-})
+        };
+      } catch (error: any) {
+        let errorMessage = 'Failed to sign up. Please try again.';
+        if (error.code === 'auth/email-already-in-use') {
+          errorMessage = 'This email is already in use.';
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage = 'The email address is invalid.';
+        } else if (error.code === 'auth/weak-password') {
+          errorMessage = 'The password is too weak.';
+        }
+        console.error('Firebase sign-up error:', error);
+        return rejectWithValue(errorMessage);
+      }
+      }) 
 
 // SavePrayerLog Thunk - Logs user prayers
 export const savePrayerLog = createAsyncThunk(
-    'user/savePrayerLog',
-    async ({ userId, date, prayerLog }: { userId: string; date: string; prayerLog: any }, { rejectWithValue }) => {
-      try {
-        const userDoc = firestore().collection('users').doc(userId);
-        await userDoc.update({
-          [`prayerLogs.${date}`]: prayerLog // Save prayer logs under the specific date
-        });
+  'user/savePrayerLog',
+  async ({ userId, date, prayerLog }: { userId: string; date: string; prayerLog: any }, { rejectWithValue }) => {
+    try {
+      const userDoc = firestore().collection('users').doc(userId);
+      await userDoc.update({
+        [`prayerLogs.${date}`]: prayerLog // Save prayer logs under the specific date
+      });
 
-        // Cache the log after saving it to Firestore
-        await AsyncStorage.setItem(`prayerLogs_${date}`, JSON.stringify(prayerLog));
+      // Cache the log after saving it to Firestore
+      await AsyncStorage.setItem(`prayerLogs_${date}`, JSON.stringify(prayerLog));
 
-        return { date, prayerLog }; // Return the log data for updating the state
-      } catch (error) {
-        console.error('Failed to save prayer log: ', error);
-        return rejectWithValue('Failed to save prayer log');
-      }
+      return { date, prayerLog }; // Return the log data for updating the state
+    } catch (error) {
+      console.error('Failed to save prayer log: ', error);
+      return rejectWithValue('Failed to save prayer log');
     }
-  );
+  }
+);
 
 // Fetch prayer log for today's date
 export const fetchPrayerLog = createAsyncThunk(
