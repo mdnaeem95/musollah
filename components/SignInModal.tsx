@@ -27,6 +27,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isVisible, onClose }) => {
       handleModalClose(); // Close modal after successful sign-up
       router.replace('/(tabs)/(prayer)')
     } catch (error) {
+      console.log('Error, ', error)
       alert('Error: Failed to sign up. Please try again.');
     }
   };
