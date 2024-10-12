@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "188630836015-m2psfp7f8m926efup8bhgtqls74ftgbo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.naeemsani.rihlah",
+            "certificate_hash": "ccd4291a21e46eb2a7b5f5e448edfc648426558b"
+          }
+        },
+        {
           "client_id": "188630836015-0fgujap5t02lqgc064dug9t6n04kn0n3.apps.googleusercontent.com",
           "client_type": 3
         }
