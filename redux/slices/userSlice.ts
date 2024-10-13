@@ -12,59 +12,66 @@ const initialState: UserState = {
 }
 
 export const signIn = createAsyncThunk(
-    'user/signIn',
-    async ({ email, password }: { email: string; password: string }) => {
-      const auth = getAuth();
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+  'user/signIn',
+  async ({ email, password }: { email: string; password: string }) => {
+    const auth = getAuth();
+    // First, sign the user in via Firebase Authentication
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-      return {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-      }
+    // Next, fetch the user data from Firestore (using the UID from Auth)
+    const userDoc = await firestore().collection('users').doc(user.uid).get();
+
+    if (!userDoc.exists) {
+      throw new Error('User data not found in Firestore.');
     }
-  );
+
+    // Get the additional user data (enrolledCourses, prayerLogs) from Firestore
+    const userData = userDoc.data();
+    
+    return {
+      uid: user.uid,                      // From Firebase Auth
+      email: user.email,                  // From Firebase Auth
+      displayName: user.displayName,      // From Firebase Auth
+      photoURL: user.photoURL,            // From Firebase Auth
+      enrolledCourses: userData?.enrolledCourses || [],  // From Firestore
+      prayerLogs: userData?.prayerLogs || [],            // From Firestore
+    };
+  }
+);
   
 export const signUp = createAsyncThunk(
-    'user/signUp',
-    async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
-      try {
-        const auth = getAuth();
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        
-        // Add user to Firestore\
-        const userDoc = firestore().collection('users').doc(user.uid);
-        await userDoc.set({
-          name: user.displayName || 'New User',
-          email: user.email,
-          avatarUrl: 'https://via.placeholder.com/100',
-          enrolledCourses: [],
-          prayerLogs: []
-        })
-        
-        // Return only serializable parts of the user object to Redux
-        return {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-        };
-      } catch (error: any) {
-        let errorMessage = 'Failed to sign up. Please try again.';
-        if (error.code === 'auth/email-already-in-use') {
-          errorMessage = 'This email is already in use.';
-        } else if (error.code === 'auth/invalid-email') {
-          errorMessage = 'The email address is invalid.';
-        } else if (error.code === 'auth/weak-password') {
-          errorMessage = 'The password is too weak.';
-        }
-        console.error('Firebase sign-up error:', error);
-        return rejectWithValue(errorMessage);
-      }
-      }) 
+  'user/signUp',
+  async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
+    try {
+      const auth = getAuth();
+      // First, create the user using Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Next, add the user document to Firestore
+      const userDoc = firestore().collection('users').doc(user.uid);
+      await userDoc.set({
+      name: user.displayName || 'New User',
+      email: user.email,
+      avatarUrl: 'https://via.placeholder.com/100',  // Default avatar
+      enrolledCourses: [],                           // Default: no enrolled courses
+      prayerLogs: []                                 // Default: empty prayer logs
+    });
+
+    // Return the Auth User data (no need to fetch Firestore again here)
+    return {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+    };
+  } catch (error: any) {
+    console.error('Sign-up failed:', error.code, error.message, error.status);
+    return rejectWithValue(error.message);
+  }
+  }
+);
 
 // SavePrayerLog Thunk - Logs user prayers
 export const savePrayerLog = createAsyncThunk(
@@ -199,8 +206,15 @@ extraReducers: (builder) => {
         state.error = null;
     })
     .addCase(signIn.fulfilled, (state, action) => {
-        state.user = action.payload;
-        state.loading = false;
+      state.user = {
+        id: action.payload.uid,                          // Firebase Auth UID
+        avatarUrl: action.payload.photoURL || 'https://via.placeholder.com/100',  // From Firebase Auth
+        email: action.payload.email || '',               // From Firebase Auth
+        name: action.payload.displayName || 'New User',  // From Firebase Auth
+        enrolledCourses: action.payload.enrolledCourses || [],  // From Firestore
+        prayerLogs: action.payload.prayerLogs || [],            // From Firestore
+        };
+      state.loading = false;
     })
     .addCase(signIn.rejected, (state, action) => {
         state.error = action.error.message || 'Failed to sign in';
@@ -211,7 +225,14 @@ extraReducers: (builder) => {
         state.error = null;
     })
     .addCase(signUp.fulfilled, (state, action) => {
-        state.user = action.payload;
+        state.user = {
+          id: action.payload.uid, // Firebase UID is the user's ID
+          avatarUrl: action.payload.photoURL || 'https://via.placeholder.com/100', // Default avatar
+          email: action.payload.email || '',
+          name: action.payload.displayName || 'New User', // Default to 'New User' if displayName is null
+          enrolledCourses: [], // Initialize with an empty enrolledCourses array
+          prayerLogs: [] // Initialize with an empty prayerLogs array
+        };
         state.loading = false;
     })
     .addCase(signUp.rejected, (state, action) => {
@@ -255,10 +276,9 @@ extraReducers: (builder) => {
         state.error = null;
     })
     .addCase(fetchMonthlyPrayerLogs.fulfilled, (state, action) => {
-        state.user = {
-            ...state.user,
-            monthlyLogs: action.payload, // Add monthly logs to the user state
-        };
+        if (state.user) {
+          state.user.monthlyLogs = action.payload
+        }
         state.loading = false;
     })
     .addCase(fetchMonthlyPrayerLogs.rejected, (state, action) => {
