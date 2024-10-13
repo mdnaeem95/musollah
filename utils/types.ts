@@ -60,8 +60,9 @@ export interface UserData {
     avatarUrl: string;
     email: string;
     enrolledCourses: CourseAndModuleProgress[],
-    prayerLogs?: any[],
-    name: string
+    prayerLogs?: { [date:string]: any },
+    name: string,
+    monthlyLogs?: { date: string; prayersCompleted: number }[];  // Add this field
 }
 
 export interface MusollahState {
