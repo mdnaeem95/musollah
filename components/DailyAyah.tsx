@@ -106,12 +106,13 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
   },
   arabicText: {
+    fontFamily: 'Amiri_400Regular',
     fontSize: 24,
     textAlign: 'center',
     color: '#000',
   },
   englishText: {
-    fontSize: 18,
+    fontSize: 14,
     fontStyle: 'italic',
     textAlign: 'center',
     color: '#333',

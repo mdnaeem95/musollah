@@ -7,6 +7,7 @@ import RootLayout from './RootLayout'; // Adjust the path as necessary
 import { PersistGate } from 'redux-persist/integration/react';
 import LoadingScreen from '../components/LoadingScreen';
 import { ThemeProvider } from '../context/ThemeContext';
+import { ActionSheetProvider } from '@expo/react-native-action-sheet'
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -17,15 +18,17 @@ Notifications.setNotificationHandler({
 })
 
 const AppLayout = () => (
-  <ThemeProvider>
-    <NotificationProvider>
-      <Provider store={store}>
-        <PersistGate persistor={persistor} loading={<LoadingScreen message='Setting up the app...' />}>
-          <RootLayout />
-        </PersistGate>
-      </Provider>
-    </NotificationProvider>
-  </ThemeProvider>
+  <ActionSheetProvider>
+    <ThemeProvider>
+      <NotificationProvider>
+        <Provider store={store}>
+          <PersistGate persistor={persistor} loading={<LoadingScreen message='Setting up the app...' />}>
+            <RootLayout />
+          </PersistGate>
+        </Provider>
+      </NotificationProvider>
+    </ThemeProvider>
+  </ActionSheetProvider>
 );
 
 export default AppLayout;
