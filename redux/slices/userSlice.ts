@@ -75,24 +75,24 @@ export const signUp = createAsyncThunk(
 
 // SavePrayerLog Thunk - Logs user prayers
 export const savePrayerLog = createAsyncThunk(
-    'user/savePrayerLog',
-    async ({ userId, date, prayerLog }: { userId: string; date: string; prayerLog: any }, { rejectWithValue }) => {
-      try {
-        const userDoc = firestore().collection('users').doc(userId);
-        await userDoc.update({
-          [`prayerLogs.${date}`]: prayerLog // Save prayer logs under the specific date
-        });
+  'user/savePrayerLog',
+  async ({ userId, date, prayerLog }: { userId: string; date: string; prayerLog: any }, { rejectWithValue }) => {
+    try {
+      const userDoc = firestore().collection('users').doc(userId);
+      await userDoc.update({
+        [`prayerLogs.${date}`]: prayerLog // Save prayer logs under the specific date
+      });
 
-        // Cache the log after saving it to Firestore
-        await AsyncStorage.setItem(`prayerLogs_${date}`, JSON.stringify(prayerLog));
+      // Cache the log after saving it to Firestore
+      await AsyncStorage.setItem(`prayerLogs_${date}`, JSON.stringify(prayerLog));
 
-        return { date, prayerLog }; // Return the log data for updating the state
-      } catch (error) {
-        console.error('Failed to save prayer log: ', error);
-        return rejectWithValue('Failed to save prayer log');
-      }
+      return { date, prayerLog }; // Return the log data for updating the state
+    } catch (error) {
+      console.error('Failed to save prayer log: ', error);
+      return rejectWithValue('Failed to save prayer log');
     }
-  );
+  }
+);
 
 // Fetch prayer log for today's date
 export const fetchPrayerLog = createAsyncThunk(
