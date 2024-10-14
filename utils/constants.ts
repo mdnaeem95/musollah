@@ -7,7 +7,6 @@ export const ayahList = [
     { surahNumber: 39, ayahNumber: 53 },
     { surahNumber: 8, ayahNumber: 30 },
     { surahNumber: 57, ayahNumber: 4 },
-    { surahNumber: 35, ayahNumber: 44 },
     { surahNumber: 2, ayahNumber: 286 },
     { surahNumber: 66, ayahNumber: 6 },
     { surahNumber: 84, ayahNumber: 25 },

@@ -75,7 +75,7 @@ const DailyAyah = () => {
     }
 
     const handleAyahClick = () => {
-        router.push(`/quran/surah/${ayah.surahNumber}`);
+        router.push(`/(quran)/surahs/${ayah.surahNumber}`);
     };
 
     return (
@@ -93,7 +93,7 @@ const DailyAyah = () => {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    paddingVertical: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
   arabicText: {
     fontFamily: 'Amiri_400Regular',
     fontSize: 24,
+    lineHeight: 48,
     textAlign: 'center',
     color: '#000',
   },
