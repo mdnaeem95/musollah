@@ -1,4 +1,4 @@
-import { View, Text, SafeAreaView, ActivityIndicator, StyleSheet, Image, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, Image, TouchableOpacity, FlatList, Alert } from 'react-native';
 import React, { useRef, useState, useCallback, useContext, useEffect } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { AVPlaybackStatus, Audio } from 'expo-av';
@@ -10,11 +10,14 @@ import { ThemeContext } from '../../../../context/ThemeContext';
 import { addBookmark, removeBookmark } from '../../../../redux/slices/quranSlice';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useActionSheet } from '@expo/react-native-action-sheet';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SurahTextScreen = () => {
     const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [surahFinished, setSurahFinished] = useState<boolean>(false);
+    const [lastReadAyah, setLastReadAyah] = useState<{ surahNumber: number, ayahNumber: number } | null>(null);
     const soundRef = useRef<Audio.Sound | null>(null);
     const listRef = useRef<FlatList>(null);
     const { id, ayahIndex } = useLocalSearchParams<{ id: string, ayahIndex?: string }>();
@@ -22,7 +25,6 @@ const SurahTextScreen = () => {
     const { isDarkMode } = useContext(ThemeContext);
     const { showActionSheetWithOptions } = useActionSheet();
     const surahNum = id ? parseInt(id as string, 10) : 1;
-    const targetAyahIndex = ayahIndex ? parseInt(ayahIndex, 10) : 0; // Default to Ayah 0 if not passed
     const surah: Surah | undefined = surahs.find((surah: Surah) => surah.number === surahNum);
     const dispatch = useDispatch<AppDispatch>()
 
@@ -127,7 +129,7 @@ const SurahTextScreen = () => {
     }
 
     // Function to open action menu for each ayah
-    const openAyahOptions = () => {
+    const openAyahOptions = (ayahIndex: number) => {
         const options = ['Cancel', 'Mark as Last Read']
         const cancelButtonIndex = 0;
 
@@ -138,17 +140,52 @@ const SurahTextScreen = () => {
             },
             (buttonIndex) => {
                 if (buttonIndex === 1) {
-                    // Trigger the "Mark as Last Read" functionality (to be implemented)
-                    // markAsLastRead(surahNum, index + 1);
+                    // Check if user is authenticated
+                    markAsLastRead(surahNum, ayahIndex + 1)
                 }
             }
         )
     }
 
+    const markAsLastRead = async (surahNumber: number, ayahNumber: number) => {
+        try {
+            const lastReadData = {
+                surahNumber,
+                ayahNumber,
+                data: new Date().toISOString()
+            };
+            await AsyncStorage.setItem('lastReadAyah', JSON.stringify(lastReadData));
+            setLastReadAyah({ surahNumber, ayahNumber });  // Update local state
+            Alert.alert('Success!', `Marked surah ${surahNumber}, ayah ${ayahNumber} as last read.`)
+        } catch (error) {
+            console.error('Failed to mark as last read: ', error);
+            Alert.alert('Error', 'Failed to mark as last read. Please try again.')
+        }
+    };
+
+    // Function to load the last read ayah from AsyncStorage
+    const loadLastReadAyah = async () => {
+        try {
+            const storedLastRead = await AsyncStorage.getItem('lastReadAyah');
+            if (storedLastRead) {
+                const parsedLastRead = JSON.parse(storedLastRead);
+                setLastReadAyah(parsedLastRead);
+            }
+        } catch (error) {
+            console.error('Failed to load last read ayah:', error);
+        }
+    };
+
+    // Load the last read ayah when the component mounts
+    useEffect(() => {
+        loadLastReadAyah();
+    }, []);
+
     const renderAyah = ({ item, index }: { item: string, index: number }) => {
         const isBookmarked = bookmarks.some(
             (bookmark) => bookmark.surahNumber === surahNum && bookmark.ayahNumber === index + 1
         )
+        const isLastRead = lastReadAyah?.surahNumber === surahNum && lastReadAyah?.ayahNumber === index + 1;
         // Determine the text color based on the theme and whether the Ayah is active
         const ayahTextColor = index === currentAyahIndex
         ? (isDarkMode ? '#F0DBA0' : '#F4E2C1')  // Highlighted text color
@@ -162,7 +199,7 @@ const SurahTextScreen = () => {
                         name="bookmark"
                         size={24}
                         solid={isBookmarked}
-                        color={isBookmarked ? 'gold' : 'gray'}
+                        color={isBookmarked ? 'white' : 'gray'}
                     />
                 </TouchableOpacity>
                 <Text style={[styles.quranText, { color: ayahTextColor }]}>{item}</Text>
@@ -173,9 +210,16 @@ const SurahTextScreen = () => {
                 )}
 
                 {/* Three Dots Icon for extra options */}
-                <TouchableOpacity onPress={openAyahOptions} style={{ paddingLeft: 20 }}>
+                {isLastRead ? (
+                    <View style={{ paddingLeft: 20, flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                        <FontAwesome6 name="check-double" size={20} color="#CCC" />
+                        <Text style={{ fontFamily: "Outfit_400Regular", color: '#CCC' }}>Last read</Text>
+                    </View>
+                ): (
+                    <TouchableOpacity onPress={() => openAyahOptions(index)} style={{ paddingLeft: 20 }}>
                     <FontAwesome6 name="ellipsis" size={20} color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
                 </TouchableOpacity>
+                )}
 
                 <View style={[styles.separator, { backgroundColor: isDarkMode ? '#ECDFCC' :'#FFFFFF' }]} />
             </View>
