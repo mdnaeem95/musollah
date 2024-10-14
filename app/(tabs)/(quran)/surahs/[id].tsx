@@ -9,6 +9,7 @@ import BackArrow from '../../../../components/BackArrow';
 import { ThemeContext } from '../../../../context/ThemeContext';
 import { addBookmark, removeBookmark } from '../../../../redux/slices/quranSlice';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { useActionSheet } from '@expo/react-native-action-sheet';
 
 const SurahTextScreen = () => {
     const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
@@ -19,6 +20,7 @@ const SurahTextScreen = () => {
     const { id, ayahIndex } = useLocalSearchParams<{ id: string, ayahIndex?: string }>();
     const { surahs, isLoading, bookmarks } = useSelector((state: RootState) => state.quran);
     const { isDarkMode } = useContext(ThemeContext);
+    const { showActionSheetWithOptions } = useActionSheet();
     const surahNum = id ? parseInt(id as string, 10) : 1;
     const targetAyahIndex = ayahIndex ? parseInt(ayahIndex, 10) : 0; // Default to Ayah 0 if not passed
     const surah: Surah | undefined = surahs.find((surah: Surah) => surah.number === surahNum);
@@ -124,6 +126,25 @@ const SurahTextScreen = () => {
         }
     }
 
+    // Function to open action menu for each ayah
+    const openAyahOptions = () => {
+        const options = ['Cancel', 'Mark as Last Read']
+        const cancelButtonIndex = 0;
+
+        showActionSheetWithOptions(
+            {
+                options,
+                cancelButtonIndex
+            },
+            (buttonIndex) => {
+                if (buttonIndex === 1) {
+                    // Trigger the "Mark as Last Read" functionality (to be implemented)
+                    // markAsLastRead(surahNum, index + 1);
+                }
+            }
+        )
+    }
+
     const renderAyah = ({ item, index }: { item: string, index: number }) => {
         const isBookmarked = bookmarks.some(
             (bookmark) => bookmark.surahNumber === surahNum && bookmark.ayahNumber === index + 1
@@ -150,6 +171,12 @@ const SurahTextScreen = () => {
                         <Text style={[styles.translationText, { color: ayahTextColor }]}>{surah.englishTranslation.split('|')[index]}</Text>
                     </View>
                 )}
+
+                {/* Three Dots Icon for extra options */}
+                <TouchableOpacity onPress={openAyahOptions} style={{ paddingLeft: 20 }}>
+                    <FontAwesome6 name="ellipsis" size={20} color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
+                </TouchableOpacity>
+
                 <View style={[styles.separator, { backgroundColor: isDarkMode ? '#ECDFCC' :'#FFFFFF' }]} />
             </View>
         )
