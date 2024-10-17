@@ -124,7 +124,7 @@ const AccountSettings = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={{ flex: 1, paddingVertical: 16 }}>
+            <View style={{ flex: 1 }}>
               <PrayerHeader title='Account Information' backgroundColor='#4D6561' />
 
               <View style={styles.form}>
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#4D6561',
-    paddingHorizontal: 16,
+    padding: 16,
   },
   form: {
     marginTop: 20,

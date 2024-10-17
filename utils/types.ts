@@ -211,3 +211,12 @@ export interface MusollahLocation {
     directions: string;
     distance?: number;
 }
+
+export interface FoodAdditive {
+    id: string;
+    eCode: string;
+    chemicalName: string;
+    category: string;
+    description: string;
+    status: string;
+}

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getFirestore, collection, addDoc } from '@react-native-firebase/firestore';
 import { Switch } from '@rneui/themed'; 
 import BackArrow from '../../../../components/BackArrow';
+import PrayerHeader from '../../../../components/PrayerHeader';
 
 const SupportPage = () => {
   const [feedback, setFeedback] = useState<string>('');
@@ -45,12 +46,7 @@ const SupportPage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-        {/* Back Button */}
-        <BackArrow />
-
-        <View style={styles.headerContainer}>
-            <Text style={styles.headerText}>Support & Feedback</Text>
-        </View>
+        <PrayerHeader title="Support and Feedback" backgroundColor='#4D6561' />
 
         <View style={styles.form}>
             <Text style={styles.instructions}>Let us know about any issues or feedback you have for the app:</Text>
@@ -100,7 +96,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#4D6561',
-    paddingHorizontal: 16,
+    padding: 16,
   },
   backButton: {
     position: 'absolute',
@@ -129,7 +125,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_400Regular',
     fontSize: 16,
     color: '#FFFFFF',
-    marginBottom: 15,
+    marginBottom: 10,
   },
   feedbackInput: {
     backgroundColor: '#FFFFFF',
@@ -143,7 +139,7 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 10,
     width: '100%',
     backgroundColor: '#A3C0BB',
     paddingHorizontal: 8,
@@ -159,7 +155,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   switchLabel: {
     fontFamily: 'Outfit_500Medium',

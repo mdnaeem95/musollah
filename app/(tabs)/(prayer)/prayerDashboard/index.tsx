@@ -220,11 +220,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#4D6561',
     padding: 16
   },
-  title: {
-    fontSize: 24,
-    fontFamily: 'Outfit_600SemiBold',
-    color: '#FFF',
-  },
   section: {
     marginBottom: 20,
   },
@@ -237,24 +232,25 @@ const styles = StyleSheet.create({
   },
   table: {
     overflow: 'hidden',
+    gap: 10
   },
   tableRow: {
     flexDirection: 'row',
   },
   tableCell: {
     flex: 1,
-    padding: 12,
+    padding: 5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tableHeaderText: {
     textAlign: 'center',
-    fontSize: 12,
+    fontSize: 16,
     fontFamily: 'Outfit_400Regular',
     color: '#FFF',
   },
   tableCellText: {
-    fontSize: 12,
+    fontSize: 16,
     fontFamily: 'Outfit_400Regular',
     color: '#FFF',
   },

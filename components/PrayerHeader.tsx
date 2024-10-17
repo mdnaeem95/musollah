@@ -25,20 +25,15 @@ const PrayerHeader: React.FC<HeaderProps> = ({ title, backgroundColor, textColor
 
 const styles = StyleSheet.create({
   headerContainer: {
-    marginTop: 10,
+    marginTop: 4,
     marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  backButton: {
-    position: 'absolute',
-    left: 16,
-    top: 20,
-  },
   title: {
     fontFamily: 'Outfit_500Medium',
-    fontSize: 18,
+    fontSize: 24,
     color: '#FFFFFF',
     textAlign: 'center',
   },

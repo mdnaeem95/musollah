@@ -64,10 +64,11 @@ export const getPrayerTimesInfo  = (prayerTimes: { [key: string]: string }, curr
 export const formatDateForAPI = (date: string) => {
     const [year, month, day] = date.split('-');
     return `${day}-${month}-${year}`;
-  };
+};
 
 // Utility function to get random Ayah
 export const getRandomAyah = () => {
     const randomIndex = Math.floor(Math.random() * ayahList.length);
     return ayahList[randomIndex];
-  }; 
+};
+

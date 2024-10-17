@@ -61,7 +61,7 @@ const BookmarkPage = () => {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    paddingHorizontal: 16
+    padding: 16
   },
   noBookmarksContainer: {
     flex: 1,

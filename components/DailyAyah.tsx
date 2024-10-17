@@ -13,7 +13,6 @@ const TIMESTAMP_KEY = 'dailyAyahTimestamp';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 const DailyAyah = () => {
-    const { isDarkMode } = useContext(ThemeContext);
     const [ayah, setAyah] = useState<any>(null);
     const router = useRouter();
 
@@ -80,7 +79,7 @@ const DailyAyah = () => {
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity onPress={handleAyahClick} style={[styles.ayahCard, {backgroundColor: isDarkMode ? "#ECDFCC" : "#FFFFFF"}]}>
+            <TouchableOpacity onPress={handleAyahClick} style={[styles.ayahCard]}>
                 <Text style={styles.arabicText}>{ayah.arabicText}</Text>
                 <Text style={styles.englishText}>"{ayah.englishText}"</Text>
                 <Text style={styles.ayahInfo}>
