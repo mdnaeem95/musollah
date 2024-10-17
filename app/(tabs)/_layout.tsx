@@ -31,7 +31,7 @@ const TabLayout = () => {
               iconName = 'book-quran';
               break;
             case '(settings)':
-              iconName = 'gear';
+              iconName = 'bars';
               break;
             default:
               iconName = 'circle';

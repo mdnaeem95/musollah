@@ -73,23 +73,23 @@ const QuranDashboard = () => {
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
-        paddingHorizontal: 16,
+        padding: 16,
         backgroundColor: '#4D6561',
     },
     headerContainer: {
-        marginTop: 10,
+        marginTop: 4,
         alignItems: 'center'
     },
     headerText: {
         fontSize: 24,
-        fontFamily: 'Outfit_600SemiBold',
+        fontFamily: 'Outfit_500Medium',
         color: '#FFFFFF'
     },
     gridContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        marginTop: 20
+        marginTop: 24
     },
     gridItem: {
         alignItems: 'center',

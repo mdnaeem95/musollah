@@ -77,7 +77,7 @@ const MonthlyPrayerTimesPage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={{ paddingHorizontal: 16 }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
         <PrayerHeader title={getCurrentMonthYear()} backgroundColor='#4D6561' />
       </View>
 

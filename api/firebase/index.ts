@@ -1,8 +1,7 @@
 import firestore from "@react-native-firebase/firestore";
 import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
-import { ContentData, CourseData, Doa, DoaAfterPrayer, ModuleData, Surah, TeacherData, UserData } from "../../utils/types";
-
+import { ContentData, CourseData, Doa, DoaAfterPrayer, FoodAdditive, ModuleData, Surah, TeacherData, UserData } from "../../utils/types";
 
 export const fetchUserData = async (userId: string ): Promise<UserData> => {
     try {
@@ -265,6 +264,28 @@ export const fetchDoas = async (): Promise<Doa[]> => {
         return doaList
     } catch (error) {
         console.error("Error fetching doas: ", error);
+        throw error
+    }
+}
+
+export const fetchFoodAdditives = async (): Promise<FoodAdditive[]> => {
+    try {
+        const additiveSnapshot = await firestore().collection('foodAdditives').get();
+        const additivesList = additiveSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                eCode: data.eCode,
+                chemicalName: data.chemicalName,
+                category: data.category,
+                description: data.description,
+                status: data.status
+            } as FoodAdditive
+        });
+
+        return additivesList
+    } catch (error) {
+        console.error('Error fetching additives list: ', error);
         throw error
     }
 }
