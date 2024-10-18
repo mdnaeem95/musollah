@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { useDispatch } from 'react-redux';
 import Purchases from 'react-native-purchases';
 import * as SplashScreen from 'expo-splash-screen';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from "@expo-google-fonts/outfit";
 import { Amiri_400Regular } from "@expo-google-fonts/amiri";
@@ -13,9 +13,9 @@ import { AppDispatch, persistor } from '../redux/store/store';
 import { fetchPrayerTimesData } from '../redux/slices/prayerSlice';
 import { fetchSurahsData } from '../redux/slices/quranSlice';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
-import LoadingScreen from '../components/LoadingScreen';
 import { fetchDailyDoasData } from '../redux/slices/doasSlice';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import LoadingScreen from '../components/LoadingScreen';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,6 +34,11 @@ const RootLayout = () => {
   });
 
   const isRehydrated = persistor.getState().bootstrapped;
+
+  const translateY = useSharedValue(0);
+  const hideSplashScreen = useCallback(() => {
+    translateY.value = withTiming(1000, { duration: 300, easing: Easing.inOut(Easing.ease) })
+  }, [])
 
   // Monitor Authentication State
   useEffect(() => {
@@ -105,19 +110,26 @@ const RootLayout = () => {
 
   // Hide the splash screen once fonts and essential data are ready
   useEffect(() => {
-    const hideSplashScreen = async () => {
+    const hideSplashScreenandAnimate = async () => {
       try {
+        hideSplashScreen();
         await SplashScreen.hideAsync();
-        console.log('SplashScreen hidden');
       } catch (error) {
         console.error('Error hiding SplashScreen:', error);
       }
     };
 
     if (isFontsLoaded && isEssentialDataFetched) {
-      hideSplashScreen();
+      hideSplashScreenandAnimate();
     }
-  }, [isFontsLoaded, isEssentialDataFetched]);
+  }, [isFontsLoaded, isEssentialDataFetched, hideSplashScreen]);
+
+  // reanimated style for splash screen sliding animation
+  const animatedSplashStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: translateY.value }],
+    }
+  })
 
   // Show loading screen while setting up the app
   if (!isFontsLoaded || !isEssentialDataFetched || !isRehydrated) {
@@ -126,10 +138,23 @@ const RootLayout = () => {
 
   // Main app layout after authentication and data fetch
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
-    </Stack>
+    <View style={{ flex: 1 }}>
+      {/* SplashScreen */}
+      <Animated.View style={[styles.splashScreen, animatedSplashStyle]} />
+
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
+      </Stack>
+    </View>
   );
 };
+
+const styles = {
+  splashScreen: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#4D6561',
+    zIndex: 1
+  }
+}
 
 export default RootLayout;

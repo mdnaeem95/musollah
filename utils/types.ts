@@ -139,6 +139,7 @@ export interface DoaAfterPrayer {
 
 export interface DoasState {
     doas: Doa[],
+    bookmarks: DoaBookmark[]
     loading: boolean;
     error: string | null;
 }
@@ -165,6 +166,11 @@ export interface Bookmark {
     surahNumber: number;
     ayahNumber: number;
     surahName: string;
+}
+
+export interface DoaBookmark {
+    doaId: string;
+    doaTitle: string;
 }
 
 export interface BidetLocation {

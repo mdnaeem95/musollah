@@ -6,7 +6,7 @@ import quranReducer from '../slices/quranSlice';
 import userReducer from '../slices/userSlice';
 import dashboardReducer from '../slices/dashboardSlice';
 import courseReducer from '../slices/courseSlice';
-import doasReducer from '../slices/doasSlice';
+import doasReducer from '../slices/doasSlice'
 import userPreferencesReducer from '../slices/userPreferencesSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persistReducer, persistStore, FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE } from 'redux-persist';

@@ -35,7 +35,7 @@ export const signIn = createAsyncThunk(
       displayName: user.displayName,      // From Firebase Auth
       photoURL: user.photoURL,            // From Firebase Auth
       enrolledCourses: userData?.enrolledCourses || [],  // From Firestore
-      prayerLogs: userData?.prayerLogs || [],            // From Firestore
+      prayerLogs: userData?.prayerLogs || {},            // From Firestore
     };
   }
 );
@@ -56,7 +56,7 @@ export const signUp = createAsyncThunk(
       email: user.email,
       avatarUrl: 'https://via.placeholder.com/100',  // Default avatar
       enrolledCourses: [],                           // Default: no enrolled courses
-      prayerLogs: []                                 // Default: empty prayer logs
+      prayerLogs: {}                                 // Default: empty prayer logs
     });
 
     // Return the Auth User data (no need to fetch Firestore again here)
@@ -117,9 +117,13 @@ export const fetchPrayerLog = createAsyncThunk(
 
       // If no cache, fetch from Firestore
       const userDoc = await firestore().collection('users').doc(user.uid).get();
-      const userData = userDoc.data();
+      const userData = userDoc.data() || {};
 
-      if (!userData || !userData.prayerLogs || !userData.prayerLogs[todayDate]) {
+      // Ensure prayerLogs object is available
+      const prayerLogs = userData.prayerLogs || {};
+
+      // If no log for today, initialise it
+      if (!prayerLogs[todayDate]) {
         return {
           date: todayDate,
           prayerLog: {
@@ -133,7 +137,7 @@ export const fetchPrayerLog = createAsyncThunk(
       }
 
       // Retrieve the prayer logs for today's date
-      const prayerLog = userData.prayerLogs[todayDate];
+      const prayerLog = prayerLogs[todayDate];
 
       // Cache the logs after fetching from Firestore
       await AsyncStorage.setItem(cacheKey, JSON.stringify(prayerLog));
