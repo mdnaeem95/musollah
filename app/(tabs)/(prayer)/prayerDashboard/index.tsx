@@ -44,9 +44,12 @@ const PrayersDashboard = () => {
         const fetchData = async () => {
           try {
             const result = await dispatch(fetchPrayerLog()).unwrap();
-            if (result.prayerLog) {
+
+            // check if prayerLog exists and is an object
+            if (result && result.prayerLog && typeof result.prayerLog === 'object') {
               setTodayLogs(result.prayerLog);
             } else {
+              // fallback to default prayer log structure
               setTodayLogs({
                 Subuh: false,
                 Zohor: false,
@@ -133,7 +136,7 @@ const PrayersDashboard = () => {
             {/* Second row: Prayer statuses */}
             <View style={styles.tableRow}>
             {prayerSessions.map((prayer) => {
-              const status = todayLogs?.status[prayer]; // Directly access the prayer status
+              const status = todayLogs ? todayLogs.status[prayer] : undefined; // Directly access the prayer status
               return (
                 <View key={prayer} style={styles.tableCell}>
                   {loading ? (

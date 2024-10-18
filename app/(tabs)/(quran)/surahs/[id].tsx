@@ -12,6 +12,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { useActionSheet } from '@expo/react-native-action-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 
 const SurahTextScreen = () => {
     const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
@@ -29,6 +30,24 @@ const SurahTextScreen = () => {
     const dispatch = useDispatch<AppDispatch>()
 
     const audioLinks = surah?.audioLinks ? surah.audioLinks.split(',') : [];
+
+    const showAddBookMarkToast = () => {
+        Toast.show({
+            type: 'success',
+            text1: 'Ayah has been added to your bookmarks!',
+            visibilityTime: 2000,
+            autoHide: true
+        })
+    }
+
+    const showRemoveBookMarkToast = () => {
+        Toast.show({
+            type: 'removed',
+            text1: 'Ayah has been removed from your bookmarks!',
+            visibilityTime: 2000,
+            autoHide: true
+        })
+    }
 
     const resetAudio = async () => {
         if (soundRef.current) {
@@ -123,8 +142,10 @@ const SurahTextScreen = () => {
 
         if (isBookmarked) {
             dispatch(removeBookmark(bookmark));
+            showRemoveBookMarkToast();
         } else {
             dispatch(addBookmark(bookmark));
+            showAddBookMarkToast();
         }
     }
 
@@ -257,10 +278,7 @@ const SurahTextScreen = () => {
                                 <View style={styles.ayahContentContainer}>
                                     <Text style={styles.surahEnglishName}>{surah.englishName}</Text>
                                     <TouchableOpacity onPressIn={togglePlayPause}>
-                                        <Image 
-                                            source={isPlaying ? require('../../../../assets/pause.png') : require('../../../../assets/play.png')} 
-                                            style={styles.playIcon} 
-                                        />
+                                        <FontAwesome6 name={isPlaying ? 'pause' : 'play'} size={24} color="#4D6561" />
                                     </TouchableOpacity>
                                 </View>
                             </View>

@@ -8,6 +8,8 @@ import { PersistGate } from 'redux-persist/integration/react';
 import LoadingScreen from '../components/LoadingScreen';
 import { ThemeProvider } from '../context/ThemeContext';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet'
+import Toast from 'react-native-toast-message'
+import { toastConfig } from '../utils/toastConfig';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -24,6 +26,7 @@ const AppLayout = () => (
         <Provider store={store}>
           <PersistGate persistor={persistor} loading={<LoadingScreen message='Setting up the app...' />}>
             <RootLayout />
+            <Toast config={toastConfig} />
           </PersistGate>
         </Provider>
       </NotificationProvider>

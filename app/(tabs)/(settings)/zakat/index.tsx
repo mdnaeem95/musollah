@@ -62,6 +62,18 @@ const ZakatHarta = () => {
     const [isSharesTooltipVisible, setIsSharesTooltipVisible] = useState(false);
     const [sharesModalAmount, setSharesModalAmount] = useState('0');
 
+    // state for guide modal
+    const [isGuideModalVisible, setIsGuideModalVisible] = useState(false);
+
+    // Function to open and close the Guide modal
+    const openGuideModal = () => {
+        setIsGuideModalVisible(true);
+    };
+    
+    const closeGuideModal = () => {
+        setIsGuideModalVisible(false);
+    };
+
     const parseDate = (timestamp: any) => {
         const date = new Date(timestamp);
         return isNaN(date.getTime()) ? 'Invalid Date' : format(date, 'dd MMM yyyy, hh:mm a');
@@ -144,6 +156,11 @@ const ZakatHarta = () => {
   return (
     <SafeAreaView style={styles.container}>
       <PrayerHeader title="Zakat Harta" backgroundColor='#4D6561' />
+
+        {/* Display Nisab Amount for the month */}
+        <View style={styles.nisabContainer}>
+            <Text style={styles.nisabText}>Nisab for this month: ${nisabAmount}</Text>
+        </View>
 
     <ScrollView>    
         <View style={styles.tableContainer}>
@@ -243,10 +260,10 @@ const ZakatHarta = () => {
                 </View>
             </View>
 
-            <View style={[styles.tableRow, styles.totalRow]}>
+            <View style={{ flexDirection: 'row', padding: 10, justifyContent: 'space-between' }}>
                 <Text style={styles.totalText}>Total Zakat Payable:</Text>
                 <Text style={styles.totalAmount}>
-                    ${totalZakat.toFixed(2)}
+                    ${totalZakat > 0 ? totalZakat.toFixed(2) : 0}
                 </Text>
             </View>
         </View>
@@ -256,6 +273,13 @@ const ZakatHarta = () => {
             style={styles.eligibilityButton}
             onPress={openEligibilityModal}>
             <Text style={styles.eligibilityButtonText}>Check Eligibility</Text>
+        </TouchableOpacity>
+
+        {/* Button to launch guide modal */}
+        <TouchableOpacity
+          style={styles.guideButton}  // Add a new style for this button
+          onPress={openGuideModal}>
+          <Text style={styles.eligibilityButtonText}>Guide</Text>
         </TouchableOpacity>
 
         {/* Eligibility Modal */}
@@ -268,78 +292,78 @@ const ZakatHarta = () => {
             <View style={styles.modalBackground}>
             <View style={styles.modalContainer}>
                 <Text style={styles.modalTitle}>Zakat Eligibility Assessment</Text>
+                <ScrollView keyboardShouldPersistTaps="handled">
+                    {/* Savings Section */}
+                    <Text style={styles.modalSubTitle}>Savings ($)</Text>
+                        <TextInput
+                            style={[styles.input, { width: 100 }]}
+                            placeholder="Savings Amount"
+                            value={eligibilitySavingsAmount}
+                            onChangeText={setEligibilitySavingsAmount}
+                            keyboardType="numeric"
+                        />
+                        <View style={styles.switchRow}>
+                        <Text>Haul Completed?</Text>
+                        <Switch
+                            value={savingsHaul}
+                            onValueChange={setSavingsHaul}
+                        />
+                    </View>
 
-                {/* Savings Section */}
-                <Text style={styles.modalSubTitle}>Savings ($)</Text>
+                    {/* Gold (Not Meant for Wearing) Section */}
+                    <Text style={styles.modalSubTitle}>Gold (g) (Not for Use)</Text>
                     <TextInput
                         style={[styles.input, { width: 100 }]}
-                        placeholder="Savings Amount"
-                        value={eligibilitySavingsAmount}
-                        onChangeText={setEligibilitySavingsAmount}
+                        placeholder="Gold Weight (g)"
+                        value={eligibilityGoldNotWearingAmount}
+                        onChangeText={setEligibilityGoldNotWearingAmount}
                         keyboardType="numeric"
                     />
                     <View style={styles.switchRow}>
-                    <Text>Haul Completed?</Text>
-                    <Switch
-                        value={savingsHaul}
-                        onValueChange={setSavingsHaul}
+                        <Text>Haul Completed?</Text>
+                        <Switch
+                        value={goldNotWearingHaul}
+                        onValueChange={setGoldNotWearingHaul}
+                        />
+                    </View>
+
+                    {/* Gold (Meant for Wearing) Section */}
+                    <Text style={styles.modalSubTitle}>Gold (g) (For Use)</Text>
+                    <TextInput
+                        style={[styles.input, { width: 100 }]}
+                        placeholder="Gold Weight (g)"
+                        value={eligibilityGoldWearingAmount}
+                        onChangeText={setEligibilityGoldWearingAmount}
+                        keyboardType="numeric"
                     />
-                </View>
+                    <View style={styles.switchRow}>
+                        <Text>Haul Completed?</Text>
+                        <Switch
+                        value={goldWearingHaul}
+                        onValueChange={setGoldWearingHaul}
+                        />
+                    </View>
 
-                {/* Gold (Not Meant for Wearing) Section */}
-                <Text style={styles.modalSubTitle}>Gold (g) (Not for Use)</Text>
-                <TextInput
-                    style={[styles.input, { width: 100 }]}
-                    placeholder="Gold Weight (g)"
-                    value={eligibilityGoldNotWearingAmount}
-                    onChangeText={setEligibilityGoldNotWearingAmount}
-                    keyboardType="numeric"
-                />
-                <View style={styles.switchRow}>
-                    <Text>Haul Completed?</Text>
-                    <Switch
-                    value={goldNotWearingHaul}
-                    onValueChange={setGoldNotWearingHaul}
+                    {/* Insurance Section */}
+                    <Text style={styles.modalSubTitle}>Insurance (Surrender/Premium for Contventional/Takaful)</Text>
+                    <TextInput
+                        style={[styles.input, { width: 100 }]}
+                        placeholder="Insurance Value"
+                        value={eligibilityInsuranceAmount}
+                        onChangeText={setEligibilityInsuranceAmount}
+                        keyboardType="numeric"
                     />
-                </View>
 
-                {/* Gold (Meant for Wearing) Section */}
-                <Text style={styles.modalSubTitle}>Gold (g) (For Use)</Text>
-                <TextInput
-                    style={[styles.input, { width: 100 }]}
-                    placeholder="Gold Weight (g)"
-                    value={eligibilityGoldWearingAmount}
-                    onChangeText={setEligibilityGoldWearingAmount}
-                    keyboardType="numeric"
-                />
-                <View style={styles.switchRow}>
-                    <Text>Haul Completed?</Text>
-                    <Switch
-                    value={goldWearingHaul}
-                    onValueChange={setGoldWearingHaul}
+                    {/* Shares Section */}
+                    <Text style={styles.modalSubTitle}>Shares (Market Value)</Text>
+                    <TextInput
+                        style={[styles.input, { width: 100 }]}
+                        placeholder="Shares Value"
+                        value={eligibilitySharesAmount}
+                        onChangeText={setEligibilitySharesAmount}
+                        keyboardType="numeric"
                     />
-                </View>
-
-                {/* Insurance Section */}
-                <Text style={styles.modalSubTitle}>Insurance (Surrender/Premium for Contventional/Takaful)</Text>
-                <TextInput
-                    style={[styles.input, { width: 100 }]}
-                    placeholder="Insurance Value"
-                    value={eligibilityInsuranceAmount}
-                    onChangeText={setEligibilityInsuranceAmount}
-                    keyboardType="numeric"
-                />
-
-                {/* Shares Section */}
-                <Text style={styles.modalSubTitle}>Shares (Market Value)</Text>
-                <TextInput
-                    style={[styles.input, { width: 100 }]}
-                    placeholder="Shares Value"
-                    value={eligibilitySharesAmount}
-                    onChangeText={setEligibilitySharesAmount}
-                    keyboardType="numeric"
-                />
-
+                </ScrollView>
                 {/* Button to assess eligibility */}
                 <TouchableOpacity style={styles.assessButton} onPress={assessEligibility}>
                 <Text style={styles.assessButtonText}>Check Eligibility</Text>
@@ -584,6 +608,36 @@ const ZakatHarta = () => {
             </View>
         </View>
         </Modal>
+
+        {/* Guide Modal */}
+        <Modal
+          visible={isGuideModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={closeGuideModal}
+        >
+          <View style={styles.modalBackground}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Guide</Text>
+
+              <Text style={styles.modalText}>
+                1) Click on Check Eligibility to see your eligibility for the 4 categories.
+              </Text>
+              <Text style={styles.modalText}>
+                2) If any category is eligible, click on the category and input the appropriate values.
+              </Text>
+              <Text style={styles.modalText}>
+                3) The total zakat required to pay will be at the very bottom of the table.
+              </Text>
+
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={closeGuideModal}>
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
     </ScrollView>
     </SafeAreaView>
   );
@@ -594,6 +648,16 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: '#4D6561',
+  },
+  nisabContainer: {
+    marginBottom: 20,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+  },
+  nisabText: {
+    fontSize: 16,
+    fontFamily: 'Outfit_500Medium',
+    color: '#FFF',
   },
   tableContainer: {
     borderColor: '#D9D9D9',
@@ -612,7 +676,6 @@ const styles = StyleSheet.create({
   disabledRow: {
     backgroundColor: '#CCC',  // Greyed out row background
     width: '100%',
-    borderRadius: 10
   },
   tableHeaderRow: {
     borderBottomWidth: 2,
@@ -756,6 +819,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 10,
     textAlign: 'center',
+  },
+  guideButton: {
+    alignItems: 'center',
+    width: '100%',
+    backgroundColor: '#A3C0BB',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  modalText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 16,
+    color: '#4D6561',
+    marginBottom: 10,
   },
 });
 
