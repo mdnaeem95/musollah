@@ -13,8 +13,6 @@ interface CourseCardProps {
   }
 
 const CourseCardShort: React.FC<CourseCardProps> = ({ id, title, description, category, icon, backgroundColour }) => {
-    console.log('Background color...', backgroundColour)
-
   return (
     <TouchableOpacity style={styles.cardContainer}>
         <Link href={{
@@ -42,6 +40,7 @@ const CourseCardShort: React.FC<CourseCardProps> = ({ id, title, description, ca
 
 const styles = StyleSheet.create({
   cardContainer: {
+    flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
     marginVertical: 10,
@@ -54,12 +53,15 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardContent: {
+    width: '100%',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
   iconContainer: {
+    alignSelf: 'stretch',
     width: '100%',
+    flexGrow: 1,
     height: 120, // Icon section height, adjust as needed
     justifyContent: 'center',
     alignItems: 'center',

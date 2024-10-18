@@ -1,4 +1,4 @@
-import { View, TouchableOpacity } from 'react-native'
+import { View, TouchableOpacity, Platform } from 'react-native'
 import React from 'react'
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
@@ -89,12 +89,14 @@ const Map = ({ region, markerLocations, onMarkerPress, onRegionChangeComplete, s
           />
         ))}
       </MapView>
-      <TouchableOpacity 
-        style={{ position: 'absolute', top: 50, left: 10, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 25, padding: 10 }}
+      {Platform.OS === 'ios' && 
+        <TouchableOpacity 
+        style={{ position: 'absolute', top: 12, left: 10, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 25, padding: 10 }}
         onPress={onRefocusPress}
-      >
-        <Ionicons name='locate' size={24} color="black" />
-      </TouchableOpacity>
+        >
+          <Ionicons name='locate' size={24} color="black" />
+        </TouchableOpacity>
+      }
     </View>
   )
 }
