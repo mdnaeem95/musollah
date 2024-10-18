@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch, RootState } from '../../redux/store/store'
 import { fetchMusollahData } from '../../redux/slices/musollahSlice'  // Adjust the path as needed
 import { fetchUserLocation } from '../../redux/slices/userLocationSlice'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 const locationTypes = ['Bidets', 'Musollahs', 'Mosques']
 
@@ -157,10 +158,26 @@ const MusollahTab = () => {
     }
   }, [selectedIndex, bidetLocations, musollahLocations, mosqueLocations]);
 
+  const searchBarIOSStyle={
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 12,
+    width: '80%'
+  }
+
+  const searchBarAndroidStyle={
+    position: 'absolute',
+    top: 8,
+    left: 10,
+    zIndex: 12,
+    width: '80%'
+  }
+
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
-        <View style={{ position: 'absolute', top: 47, right: 10, zIndex: 12, width: '80%' }}>
+        <View style={Platform.OS === 'ios' ? searchBarIOSStyle : searchBarAndroidStyle}>
           <SearchBar 
             placeholder='Search for a location...'
             value={searchQuery}
@@ -216,7 +233,7 @@ const MusollahTab = () => {
           <BidetModal isVisible={isModalVisible} location={selectedLocation as BidetLocation} onClose={closeModal}/>
         )
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 

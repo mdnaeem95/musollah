@@ -153,7 +153,7 @@ const Dashboard = () => {
                                 )
                             })}
                         </ScrollView>
-                        </View>
+                    </View>
                 )}
 
                 {/* Courses Section */}
