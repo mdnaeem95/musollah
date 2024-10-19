@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { fetchMonthlyPrayerTimes } from '../../../../api/prayers';
 import MonthlyPrayerTimesTable, { PrayerTime } from '../../../../components/MonthlyPrayerTimesTable';
@@ -77,13 +78,19 @@ const MonthlyPrayerTimesPage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-        <PrayerHeader title={getCurrentMonthYear()} backgroundColor='#4D6561' />
-      </View>
+      {loading ? (
+        <ActivityIndicator size="large" color="#CCC" style={{ justifyContent: 'center', alignItems: 'center' }} />
+      ): (
+        <>
+        <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+          <PrayerHeader title={getCurrentMonthYear()} backgroundColor='#4D6561' />
+        </View>
 
-      <View style={styles.prayerTimesTable}>
-        <MonthlyPrayerTimesTable monthlyPrayerTimes={monthlyPrayerTimes} />
-      </View>
+        <View style={styles.prayerTimesTable}>
+          <MonthlyPrayerTimesTable monthlyPrayerTimes={monthlyPrayerTimes} />
+        </View>
+        </>
+      )}
     </SafeAreaView>
   );
 };
