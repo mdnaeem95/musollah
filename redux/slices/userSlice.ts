@@ -94,106 +94,70 @@ export const savePrayerLog = createAsyncThunk(
   }
 );
 
-// Fetch prayer log for today's date
+// Thunk to fetch prayer log for today's date
 export const fetchPrayerLog = createAsyncThunk(
   'user/fetchPrayerLog',
   async (_, { rejectWithValue }) => {
     try {
-      const auth = getAuth();
-      const user = auth.currentUser;
+      const user = getAuth().currentUser;
+      if (!user) throw new Error('User not logged in');
 
-      if (!user) {
-        throw new Error('User not logged in');
+      const userDoc = await firestore().collection('users').doc(user.uid).get();
+      const userData = userDoc.data();
+
+      if (!userData || !userData.prayerLogs) {
+        throw new Error('No prayer logs found');
       }
 
       const todayDate = format(new Date(), 'yyyy-MM-dd');
-      const cacheKey = `prayerLogs_${todayDate}`;
+      const prayerLog = userData.prayerLogs[todayDate];
 
-      // Check for cached prayer logs
-      const cachedLog = await AsyncStorage.getItem(cacheKey);
-      if (cachedLog) {
-        return { date: todayDate, prayerLog: JSON.parse(cachedLog) };
+      if (!prayerLog) {
+        throw new Error('No prayer log for today');
       }
-
-      // If no cache, fetch from Firestore
-      const userDoc = await firestore().collection('users').doc(user.uid).get();
-      const userData = userDoc.data() || {};
-
-      // Ensure prayerLogs object is available
-      const prayerLogs = userData.prayerLogs || {};
-
-      // If no log for today, initialise it
-      if (!prayerLogs[todayDate]) {
-        return {
-          date: todayDate,
-          prayerLog: {
-            Subuh: false,
-            Zohor: false,
-            Asar: false,
-            Maghrib: false,
-            Isyak: false
-          }
-        }
-      }
-
-      // Retrieve the prayer logs for today's date
-      const prayerLog = prayerLogs[todayDate];
-
-      // Cache the logs after fetching from Firestore
-      await AsyncStorage.setItem(cacheKey, JSON.stringify(prayerLog));
 
       return { date: todayDate, prayerLog };
     } catch (error) {
-      console.error('Failed to fetch prayer log:', error);
+      console.error('Error in fetchPrayerLog:', error);
       return rejectWithValue('Failed to fetch prayer log');
     }
   }
 );
 
-// Thunk to fetch monthly prayer logs
+// Thunk to fetch prayer logs for the current month
 export const fetchMonthlyPrayerLogs = createAsyncThunk(
-    'user/fetchMonthlyPrayerLogs',
-    async (_, { rejectWithValue }) => {
-      try {
-        const auth = getAuth();
-        const user = auth.currentUser;
-  
-        if (!user) {
-          throw new Error('User not logged in');
-        }
-  
-        const userDoc = await firestore().collection('users').doc(user.uid).get();
-        const userData = userDoc.data();
-  
-        if (!userData || !userData.prayerLogs) {
-          throw new Error('No prayer logs found for the user');
-        }
-  
-        // Calculate the start and end of the current month
-        const today = new Date();
-        const firstDayOfMonth = startOfMonth(today);
-        const lastDayOfMonth = endOfMonth(today);
+  'user/fetchMonthlyPrayerLogs',
+  async (_, { rejectWithValue }) => {
+    try {
+      const user = getAuth().currentUser;
+      if (!user) throw new Error('User not logged in');
 
-        // Create an array of dates for the current month
-        const datesInMonth = eachDayOfInterval({
-          start: firstDayOfMonth,
-          end: lastDayOfMonth
-        }).map(date => format(date, 'yyyy-MM-dd'));
-  
-        // Filter the prayer logs for the past 30 days
-        const monthlyLogs = datesInMonth.map((date) => {
-          const log = userData.prayerLogs[date];
-          const prayersCompleted = log ? Object.values(log.status).filter(val  => val === true).length : 0;
-          return { date, prayersCompleted };
-        });
-  
-        return monthlyLogs;
-      } catch (error) {
-        console.error('Failed to fetch monthly prayer logs:', error);
-        return rejectWithValue('Failed to fetch monthly prayer logs');
+      const userDoc = await firestore().collection('users').doc(user.uid).get();
+      const userData = userDoc.data();
+
+      if (!userData || !userData.prayerLogs) {
+        throw new Error('No prayer logs found');
       }
+
+      const today = new Date();
+      const datesInMonth = eachDayOfInterval({
+        start: startOfMonth(today),
+        end: endOfMonth(today),
+      }).map(date => format(date, 'yyyy-MM-dd'));
+
+      const monthlyLogs = datesInMonth.map(date => {
+        const log = userData.prayerLogs[date];
+        const prayersCompleted = log ? Object.values(log.status).filter(val => val === true).length : 0;
+        return { date, prayersCompleted };
+      });
+
+      return monthlyLogs;
+    } catch (error) {
+      console.error('Error in fetchMonthlyPrayerLogs:', error);
+      return rejectWithValue('Failed to fetch monthly prayer logs');
     }
-  );
+  }
+);
    
 const userSlice = createSlice({
 name: 'user',
@@ -252,42 +216,53 @@ extraReducers: (builder) => {
           state.user.prayerLogs[date] = prayerLog; // Update prayer log in the local state
         }
         state.loading = false;
-      })
+    })
     .addCase(savePrayerLog.rejected, (state, action) => {
         state.error = action.payload as string;
         state.loading = false;
     })
     .addCase(fetchPrayerLog.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+      state.loading = true;
+      state.error = null;  // Reset any previous errors
     })
     .addCase(fetchPrayerLog.fulfilled, (state, action) => {
-        const { date, prayerLog } = action.payload;
+      console.log('Action payload for fetchPrayerLog fulfilled:', action.payload);  // Log the payload
+    
+      const { date, prayerLog } = action.payload || {};
+    
+      if (date && prayerLog) {
         if (state.user) {
-            if (!state.user.prayerLogs) {
+          if (!state.user.prayerLogs) {
             state.user.prayerLogs = {};
-            }
-            state.user.prayerLogs[date] = prayerLog;
+          }
+          state.user.prayerLogs[date] = prayerLog;
         }
-        state.loading = false;
+      } else {
+        console.error('Invalid payload in fetchPrayerLog fulfilled:', action.payload);
+      }
+    
+      state.loading = false;
     })
     .addCase(fetchPrayerLog.rejected, (state, action) => {
-        state.error = action.payload as string;
-        state.loading = false;
+      console.error('Error in fetchPrayerLog:', action.payload);
+      state.error = 'Failed to fetch prayer log';  // Set error message
+      state.loading = false;  // Stop loading
     })
     .addCase(fetchMonthlyPrayerLogs.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+      state.loading = true;
+      state.error = null;  // Reset any previous errors
     })
     .addCase(fetchMonthlyPrayerLogs.fulfilled, (state, action) => {
-        if (state.user) {
-          state.user.monthlyLogs = action.payload
-        }
-        state.loading = false;
+      // Only update monthly logs if state.user exists
+      if (state.user) {
+        state.user.monthlyLogs = action.payload || [];  // Use an empty array as a fallback
+      }
+      state.loading = false;  // Stop loading
     })
     .addCase(fetchMonthlyPrayerLogs.rejected, (state, action) => {
-        state.error = action.payload as string;
-        state.loading = false;
+      console.error('Error in fetchMonthlyPrayerLogs:', action.payload);
+      state.error ='Failed to fetch monthly prayer logs';  // Set error message
+      state.loading = false;  // Stop loading
     });
 },
 });

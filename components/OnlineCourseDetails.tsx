@@ -14,9 +14,8 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
   const auth = getAuth();
   const router = useRouter();
   const user = useSelector((state: RootState) => state.dashboard.user);
-  console.log('User', user)
 
-    // Fetch user progress from enrolled courses
+  // Fetch user progress from enrolled courses
   const userProgress: CourseAndModuleProgress | undefined = 
     user?.enrolledCourses.find((enrolledCourse: CourseAndModuleProgress) => enrolledCourse.courseId === course.id)
 
@@ -75,7 +74,7 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
     <View style={styles.container}>
       <PrayerHeader title={course.title} backgroundColor='#4D6561'/>
 
-      <ScrollView style={{ marginHorizontal: 16, gap: 16 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ gap: 16 }} showsVerticalScrollIndicator={false}>
         {/* Author Information */}
         <View style={styles.authorContainer}>
           <Image source={{ uri: teacherImage }} style={styles.authorAvatar} />
@@ -122,7 +121,7 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
         </View>
 
         {/* Start Learning Button */}
-        <View style={{ marginTop: 16 }}>
+        <View>
           <TouchableOpacity
             style={styles.learningBtn}
             onPress={handleStartLearning}
@@ -192,10 +191,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   btnText: {
-    fontFamily: 'Outfit_500Medium',
-    fontSize: 16,
-    lineHeight: 22,
-    color: '#000000',
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 18,
+    color: '#FFFFFF'
   },
   module: {
     width: '100%',
@@ -208,11 +206,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#CCCCCC', // Greyed-out background for locked modules
   },
   learningBtn: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 20,
     alignItems: 'center',
+    marginTop: 20,
+    width: '100%',
+    backgroundColor: '#A3C0BB',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    borderRadius: 10
   },
 });
 

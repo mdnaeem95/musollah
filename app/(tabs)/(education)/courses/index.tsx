@@ -98,7 +98,7 @@ const EducationTab = () => {
         {isSearchExpanded && (
           <View style={styles.searchBarContainer}>
             <TextInput 
-              placeholder='Search Surah'
+              placeholder='Search Course...'
               placeholderTextColor="#B0B0B0"
               style={styles.searchInput}
               value={searchQuery}
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     backgroundColor: '#4D6561',
-    paddingHorizontal: 16,
+    padding: 16,
   },
   headerContainer: {
     flexDirection: 'row',

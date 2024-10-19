@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator, RefreshControl } from 'react-native'
 import React, { memo, useCallback, useEffect, useState } from 'react'
 import * as Progress from 'react-native-progress'
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -8,12 +8,14 @@ import { fetchCoursesAndTeachers, fetchDashboardData } from '../../../../redux/s
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import CourseCardShort from '../../../../components/CourseCardShort';
 import { CourseAndModuleProgress, CourseData, ModuleStatus } from '../../../../utils/types';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
 const Dashboard = () => {
     const auth = getAuth();
     const router = useRouter();
+    const [refreshing, setRefreshing] = useState<boolean>(false);
     const [isUnauthenticatedDataFetched, setIsUnauthenticatedDataFetched] = useState<boolean>(false);
     const dispatch = useDispatch<AppDispatch>();
     const { user, courses, teachers, loading, lastFetched } = useSelector((state: RootState) => state.dashboard);
@@ -36,6 +38,23 @@ const Dashboard = () => {
         </View>
     </TouchableOpacity>
     ));
+
+    const handleRefresh = async () => {
+        if (loading) return;
+        setRefreshing(true);
+        try {
+            await dispatch(fetchCoursesAndTeachers()).unwrap();
+            if (user) {
+                await dispatch(fetchDashboardData(user.id)).unwrap();
+            }
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+        } finally {
+            setTimeout(() => {
+                setRefreshing(false);
+            }, 500);
+        }
+    }
 
     // Function to determine if we should refetch the data
     const shouldFetchData = useCallback(() => {
@@ -64,7 +83,7 @@ const Dashboard = () => {
         }, [dispatch, shouldFetchData])
     )
 
-    if (loading || !user) {
+    if (loading && !refreshing) {
         return (
             <View style={[styles.mainContainer, { justifyContent: 'center', alignItems: 'center' }]}>
                 <ActivityIndicator />
@@ -103,16 +122,17 @@ const Dashboard = () => {
     }
 
     return (
-        <View style={styles.mainContainer}>
+        <ScrollView 
+            showsVerticalScrollIndicator={false} 
+            style={styles.mainContainer}
+            contentContainerStyle={{ paddingBottom: 250 }}
+            refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            }
+        >
             {/* Header Section - Name */}
             <View style={styles.headerContainer}>
-                <Text style={styles.greetingText}>Salam, {user.name}</Text>
-                <View style={styles.headerRight}>
-                    {/* <TouchableOpacity>
-                        <FontAwesome6 name="bell" size={24} regular />
-                    </TouchableOpacity>
-                    <Image source={{ uri: user.avatarUrl }} style={styles.avatarContainer}/> */}
-                </View>
+                <Text style={styles.greetingText}>Salam, {user?.name}</Text>
             </View>
 
             {/* Progress Section - if any */}
@@ -124,7 +144,7 @@ const Dashboard = () => {
                         </View>
 
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            {user.enrolledCourses
+                            {user?.enrolledCourses
                             .filter((course: CourseAndModuleProgress) => course.status.courseStatus !== 'completed')
                             .map((course: CourseAndModuleProgress, index: number) => {
                                 const courseData = courses.find((c: CourseData) => c.id === course.courseId); // Find the course details
@@ -156,66 +176,60 @@ const Dashboard = () => {
                     </View>
                 )}
 
-                {/* Courses Section */}
-                <ScrollView contentContainerStyle={{ paddingBottom: 250 }} showsVerticalScrollIndicator={false}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Text style={styles.coursesHeader}>Courses</Text>
-                        <TouchableOpacity style={{ paddingRight: 16 }} onPress={() => router.push('/courses')}>
-                            <Text style={[styles.seeMoreText, { color: '#FFFFFF' }]}>See More</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {courses.map((course) => (
-                            <MemoizedCourseCardShort
-                                key={course.id}
-                                id={course.id}
-                                title={course.title}
-                                description={course.description}
-                                category={course.category}
-                                icon={course.icon}
-                                backgroundColour={course.backgroundColour} 
-                            />
-                        ))}
-                    </ScrollView>
-
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Text style={[styles.coursesHeader, { marginTop: 20 }]}>Teachers</Text>
-                        <TouchableOpacity style={{ paddingRight: 16 }} onPress={() => router.push('/teachers')}>
-                            <Text style={[styles.seeMoreText, { color: '#FFFFFF' }]}>See More</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {teachers.map((teacher) => (
-                            <MemoizedTeacherCard key={teacher.id} teacher={teacher} />
-                        ))}
-                    </ScrollView>
-                </ScrollView>
+            {/* Courses Section */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={styles.coursesHeader}>Courses</Text>
+                <TouchableOpacity style={{ paddingRight: 16 }} onPress={() => router.push('/courses')}>
+                    <Text style={[styles.seeMoreText, { color: '#FFFFFF' }]}>See More</Text>
+                </TouchableOpacity>
             </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {courses.map((course) => (
+                    <MemoizedCourseCardShort
+                        key={course.id}
+                        id={course.id}
+                        title={course.title}
+                        description={course.description}
+                        category={course.category}
+                        icon={course.icon}
+                        backgroundColour={course.backgroundColour} 
+                    />
+                ))}
+            </ScrollView>
+
+            {/* Teachers Section */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={[styles.coursesHeader]}>Teachers</Text>
+                <TouchableOpacity style={{ paddingRight: 16 }} onPress={() => router.push('/teachers')}>
+                    <Text style={[styles.seeMoreText, { color: '#FFFFFF' }]}>See More</Text>
+                </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {teachers.map((teacher) => (
+                    <MemoizedTeacherCard key={teacher.id} teacher={teacher} />
+                ))}
+            </ScrollView>
         </View>
+        </ScrollView>
     )
 }
 
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
+        padding: 16,
         backgroundColor: '#4D6561'
     },
     headerContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 16
     },
     greetingText: {
         fontFamily: 'Outfit_700Bold',
         color: '#FFFFFF',
         fontSize: 20,
         lineHeight: 28
-    },
-    headerRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 15
     },
     avatarContainer: {
         width: 35,
@@ -232,8 +246,7 @@ const styles = StyleSheet.create({
     },
     section: {
         marginVertical: 20,
-        gap: 22,
-        paddingLeft: 16
+        gap: 16,
     },
     seeMoreText: {
         fontFamily: 'Outfit_500Medium',
@@ -261,7 +274,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         lineHeight: 22,
         color: '#FFFFFF',
-        marginBottom: 16
     },
     courseCard: {
         backgroundColor: "#FFFFFF",

@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
@@ -20,7 +20,8 @@ const currentUser = auth.currentUser;
 const PrayersDashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { error, loading } = useSelector((state: RootState) => state.user);
+  const [loading, setLoading] = useState(false);  // Track loading state
+  const { error } = useSelector((state: RootState) => state.user);
 
   const [todayLogs, setTodayLogs] = useState<any>(null);
   const [monthlyLogs, setMonthlyLogs] = useState<any[]>([]);
@@ -40,52 +41,51 @@ const PrayersDashboard = () => {
     useCallback(() => {
       const auth = getAuth();
       const currentUser = auth.currentUser;
+  
       if (currentUser) {
         const fetchData = async () => {
-          try {
+          try {  
             const result = await dispatch(fetchPrayerLog()).unwrap();
-
-            // check if prayerLog exists and is an object
+  
             if (result && result.prayerLog && typeof result.prayerLog === 'object') {
-              setTodayLogs(result.prayerLog);
+              setTodayLogs(result.prayerLog);  // Set the fetched prayer log
             } else {
-              // fallback to default prayer log structure
               setTodayLogs({
                 Subuh: false,
                 Zohor: false,
                 Asar: false,
                 Maghrib: false,
                 Isyak: false
-              })
+              });
             }
           } catch (error) {
-            console.error('Error fetching today\'s prayer logs', error);
+            console.error('Error fetching today\'s prayer logs:', error);
           }
-        }
+        };
+  
         fetchData();
-        console.log(todayLogs)
       } else {
-        console.log('User not authenticated. Skipping prayer log fetch. ');
+        console.log('User not authenticated. Skipping prayer log fetch.');
       }
     }, [dispatch, currentUser])
   );
-
+    
   // Auth Check and fetch monthly prayer logs for the contribution graph
   useFocusEffect(
     useCallback(() => {
       const auth = getAuth();
       const currentUser = auth.currentUser;
+
       if (currentUser) {
         const fetchMonthlyData = async () => {
-          if (currentUser) {
-            try {
-              const result = await dispatch(fetchMonthlyPrayerLogs()).unwrap();
-              setMonthlyLogs(result);
-            } catch (error) {
-              console.error('Error fetching monthly prayer logs', error);
-            }
+          try {
+            const result = await dispatch(fetchMonthlyPrayerLogs()).unwrap();
+            setMonthlyLogs(result);  // Update state with the fetched monthly logs
+          } catch (error) {
+            console.error('Error fetching monthly prayer logs', error);
           }
-        }
+        };
+
         fetchMonthlyData();
       } else {
         console.log('User not authenticated. Skipping monthly prayer logs fetch.');
@@ -117,97 +117,102 @@ const PrayersDashboard = () => {
       {/* Header */}
       <PrayerHeader title="Prayer Dashboard" backgroundColor='#4D6561' />
 
-      {/* Scrollable content */}
-      <ScrollView>
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Your Prayer Stats for Today</Text>
+      {loading ? (
+        <ActivityIndicator size="large" color="#CCC" style={{ justifyContent: 'center', alignItems: 'center' }} />
+      ) : (
+        <>
+          {/* Scrollable content */}
+          <ScrollView>
+            <View style={styles.section}>
+              <Text style={styles.sectionHeader}>Your Prayer Stats for Today</Text>
 
-          {/* Table with two rows */}
-          <View style={styles.table}>
-            {/* First row: Prayer sessions */}
-            <View style={styles.tableRow}>
-              {prayerSessions.map((prayer) => (
-                <View key={prayer} style={styles.tableCell}>
-                  <Text style={styles.tableHeaderText}>{prayer}</Text>
+              {/* Table with two rows */}
+              <View style={styles.table}>
+                {/* First row: Prayer sessions */}
+                <View style={styles.tableRow}>
+                  {prayerSessions.map((prayer) => (
+                    <View key={prayer} style={styles.tableCell}>
+                      <Text style={styles.tableHeaderText}>{prayer}</Text>
+                    </View>
+                  ))}
                 </View>
-              ))}
-            </View>
 
-            {/* Second row: Prayer statuses */}
-            <View style={styles.tableRow}>
-            {prayerSessions.map((prayer) => {
-              const status = todayLogs ? todayLogs.status[prayer] : undefined; // Directly access the prayer status
-              return (
-                <View key={prayer} style={styles.tableCell}>
-                  {loading ? (
-                    <Text style={styles.tableCellText}>...</Text>
-                  ) : error ? (
-                    <Text style={styles.tableCellText}>Not Logged In</Text>
-                  ) : status !== undefined ? (
-                    status === true ? (
-                      <FontAwesome6 name="check" color="#A3C0BB" size={22} />
-                    ) : (
-                      <FontAwesome6 name="xmark" color="red" size={22} />
-                    )
-                  ) : (
-                    <Text style={styles.tableCellText}>Not Logged</Text>
-                  )}
+                {/* Second row: Prayer statuses */}
+                <View style={styles.tableRow}>
+                {prayerSessions.map((prayer) => {
+                  const status = todayLogs ? todayLogs.status[prayer] : undefined;
+                  return (
+                    <View key={prayer} style={styles.tableCell}>
+                      {loading ? (
+                        <Text style={styles.tableCellText}>...</Text>
+                      ) : error ? (
+                        <Text style={styles.tableCellText}>Not Logged In</Text>
+                      ) : status !== undefined ? (
+                        status === true ? (
+                          <FontAwesome6 name="check" color="#A3C0BB" size={22} />
+                        ) : (
+                          <FontAwesome6 name="xmark" color="red" size={22} />
+                        )
+                      ) : (
+                        <Text style={styles.tableCellText}>Not Logged</Text>
+                      )}
+                    </View>
+                    );
+                })}
                 </View>
-                );
-            })}
+              </View>
+
+              {/* Button to navigate to the detailed logger */}
+              <TouchableOpacity 
+                style={styles.logButton}
+                onPress={handleLogPrayers} // Navigate to the logger page
+              >
+                <Text style={styles.logButtonText}>Log Your Prayers</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.sectionHeader}>Your Prayer Stats for the Month</Text>
+
+              {/* Contribution Graph */}
+              <View style={styles.graphContainer}>
+                <ContributionGraph
+                  values={monthlyLogs.map(log => ({
+                    date: log.date,
+                    count: log.prayersCompleted,
+                  }))}
+                  squareSize={30}
+                  style={{ left: 30 }}
+                  horizontal={false}
+                  showMonthLabels={false}
+                  endDate={currentMonthEnd}
+                  numDays={numDaysInMonth}
+                  width={screenWidth - 32} // Almost full width
+                  height={220} // Adjust height as needed
+                  chartConfig={{
+                    backgroundColor: '#4D6561', // Background matching screen color
+                    backgroundGradientFrom: '#4D6561',
+                    backgroundGradientTo: '#4D6561',
+                    color: (opacity = 1) => `rgba(163, 192, 187, ${opacity})`,
+                  }}
+                  tooltipDataAttrs={(value) => ({
+                    onPress: () => {
+                      // @ts-ignore
+                      setDate(value.date);
+                      // @ts-ignore
+                      setPrayersCompleted(value.count)
+                    }
+                  })}
+                />
+
+                <View style={styles.textContainer}>
+                  <Text style={styles.statsText}>{`Date: ${date}`}</Text>
+                  <Text style={styles.statsText}>{`Prayers Completed: ${prayersCompleted}`}</Text>
+                </View>
+
+              </View>
             </View>
-          </View>
-
-          {/* Button to navigate to the detailed logger */}
-          <TouchableOpacity 
-            style={styles.logButton}
-            onPress={handleLogPrayers} // Navigate to the logger page
-          >
-            <Text style={styles.logButtonText}>Log Your Prayers</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.sectionHeader}>Your Prayer Stats for the Month</Text>
-
-          {/* Contribution Graph */}
-          <View style={styles.graphContainer}>
-            <ContributionGraph
-              values={monthlyLogs.map(log => ({
-                date: log.date,
-                count: log.prayersCompleted,
-              }))}
-              squareSize={30}
-              style={{ left: 30 }}
-              horizontal={false}
-              showMonthLabels={false}
-              endDate={currentMonthEnd}
-              numDays={numDaysInMonth}
-              width={screenWidth - 32} // Almost full width
-              height={220} // Adjust height as needed
-              chartConfig={{
-                backgroundColor: '#4D6561', // Background matching screen color
-                backgroundGradientFrom: '#4D6561',
-                backgroundGradientTo: '#4D6561',
-                color: (opacity = 1) => `rgba(163, 192, 187, ${opacity})`,
-              }}
-              tooltipDataAttrs={(value) => ({
-                onPress: () => {
-                  // @ts-ignore
-                  setDate(value.date);
-                  // @ts-ignore
-                  setPrayersCompleted(value.count)
-                }
-              })}
-            />
-
-            <View style={styles.textContainer}>
-              <Text style={styles.statsText}>{`Date: ${date}`}</Text>
-              <Text style={styles.statsText}>{`Prayers Completed: ${prayersCompleted}`}</Text>
-            </View>
-
-          </View>
-        </View>
-      </ScrollView>
-
+          </ScrollView>
+        </>
+      )}
       {/* Sign In Modal */}
       <SignInModal
         isVisible={isAuthModalVisible}

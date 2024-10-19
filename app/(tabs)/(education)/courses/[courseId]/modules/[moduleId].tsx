@@ -137,15 +137,17 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   completeButton: {
-    backgroundColor: '#4CAF50',
-    padding: 16,
-    borderRadius: 8,
     alignItems: 'center',
+    width: '100%',
+    backgroundColor: '#A3C0BB',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    borderRadius: 10
   },
   completeButtonText: {
+    fontFamily: 'Outfit_500Medium',
     fontSize: 18,
-    color: '#ffffff',
-    fontWeight: 'bold',
+    color: '#FFFFFF'
   },
 });
 
