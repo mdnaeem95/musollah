@@ -55,6 +55,8 @@ export interface TeacherData {
     courses: string[];
 }
 
+export type UserRole = 'user' | 'admin'
+
 export interface UserData {
     id: string;
     avatarUrl: string;
@@ -63,6 +65,7 @@ export interface UserData {
     prayerLogs?: { [date:string]: any },
     name: string,
     monthlyLogs?: { date: string; prayersCompleted: number }[];  // Add this field
+    role: UserRole
 }
 
 export interface MusollahState {
@@ -225,4 +228,57 @@ export interface FoodAdditive {
     category: string;
     description: string;
     status: string;
+}
+
+// New type for questions in the Q&A system
+export interface Question {
+    id: string;
+    title: string;
+    body: string;
+    userId: string;
+    tags: string[];
+    createdAt: Date | string;
+    updatedAt?: Date | string;
+    status: 'open' | 'closed';
+    votes: number;
+    answerCount: number;
+    views: number;
+}
+
+// New type for answers
+export interface Answer {
+    id: string;
+    questionId: string;
+    body: string;
+    userId: string;
+    createdAt: Date;
+    updatedAt?: Date;
+    votes: number;
+    isAccepted: boolean;
+}
+
+// New type for tags
+export interface Tag {
+    id: string;
+    name: string;
+    questionCount: number;
+}
+
+// New type for comments
+export interface Comment {
+    id: string;
+    questionId?: string;
+    answerId?: string;
+    body: string;
+    userId: string;
+    createdAt: Date;
+}
+
+// New type for voting
+export interface Vote {
+    id: string;
+    userId: string;
+    questionId?: string;
+    answerId?: string;
+    type: 'upvote' | 'downvote';
 }

@@ -27,6 +27,12 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "naeemsani95@gmail.com",
+        "ascAppId": "6670375404",
+        "appleTeamId": "RF3P52KUZA"
+    }
   }
+}
 }
