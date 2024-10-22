@@ -7,6 +7,7 @@ import userReducer from '../slices/userSlice';
 import dashboardReducer from '../slices/dashboardSlice';
 import courseReducer from '../slices/courseSlice';
 import doasReducer from '../slices/doasSlice'
+import qaReducer from '../slices/qaSlice'
 import userPreferencesReducer from '../slices/userPreferencesSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persistReducer, persistStore, FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
@@ -23,6 +24,7 @@ const rootReducer = combineReducers({
   dashboard: dashboardReducer,
   course: courseReducer,
   doas: doasReducer,
+  qa:qaReducer
 });
 
 // Define RootState type using ReturnType

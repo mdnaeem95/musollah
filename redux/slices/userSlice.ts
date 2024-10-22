@@ -56,7 +56,8 @@ export const signUp = createAsyncThunk(
       email: user.email,
       avatarUrl: 'https://via.placeholder.com/100',  // Default avatar
       enrolledCourses: [],                           // Default: no enrolled courses
-      prayerLogs: {}                                 // Default: empty prayer logs
+      prayerLogs: {},                           // Default: empty prayer logs
+      role: 'user'
     });
 
     // Return the Auth User data (no need to fetch Firestore again here)
@@ -180,7 +181,8 @@ extraReducers: (builder) => {
         email: action.payload.email || '',               // From Firebase Auth
         name: action.payload.displayName || 'New User',  // From Firebase Auth
         enrolledCourses: action.payload.enrolledCourses || [],  // From Firestore
-        prayerLogs: action.payload.prayerLogs || [],            // From Firestore
+        prayerLogs: action.payload.prayerLogs || [],
+        role: 'user'            // From Firestore
         };
       state.loading = false;
     })
@@ -199,7 +201,8 @@ extraReducers: (builder) => {
           email: action.payload.email || '',
           name: action.payload.displayName || 'New User', // Default to 'New User' if displayName is null
           enrolledCourses: [], // Initialize with an empty enrolledCourses array
-          prayerLogs: [] // Initialize with an empty prayerLogs array
+          prayerLogs: [], // Initialize with an empty prayerLogs array
+          role: 'user'
         };
         state.loading = false;
     })

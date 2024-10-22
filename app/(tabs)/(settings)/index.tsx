@@ -69,9 +69,9 @@ const SettingsTab = () => {
             <Text style={styles.iconLabel}>Zakat Calculator</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.gridItem}>
-            <FontAwesome6 name="ellipsis" size={30} color="#FFF" />
-            <Text style={styles.iconLabel}>Others coming...</Text>
+          <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/qa')}>
+            <FontAwesome6 name="message" size={30} color="#FFF" />
+            <Text style={styles.iconLabel}>Ask Anything</Text>
           </TouchableOpacity>
           {/* Add more items here */}
         </View>
