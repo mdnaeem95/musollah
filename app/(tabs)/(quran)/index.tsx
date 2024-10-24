@@ -1,31 +1,54 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
-import React, { useEffect, useState } from 'react'
+// QuranDashboard.tsx
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import DailyAyah from '../../../components/DailyAyah'
 import { FontAwesome6 } from '@expo/vector-icons'
-import { useRouter } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const QuranDashboard = () => {
     const router = useRouter();
-    const [lastRead, setLastRead] = useState<{ surahNumber: number; ayahNumber: number } | null>(null);
+    const scaleAnim = useRef(new Animated.Value(1)).current; // Animation for button scaling
+    const [lastReadAyah, setLastReadAyah] = useState<{}>({});
+    const [lastListenedAyah, setLastListenedAyah] = useState<{}>({});
 
-    // Load the last read ayah from AsyncStorage
-    const loadLastReadAyah = async () => {
-        try {
-            const storedLastRead = await AsyncStorage.getItem('lastReadAyah');
-            if (storedLastRead) {
-                const parsedLastRead = JSON.parse(storedLastRead);
-                setLastRead(parsedLastRead);
-            }
-        } catch (error) {
-            console.error('Failed to load last read ayah:', error);
-        }
+    const handlePressIn = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 0.95,
+            useNativeDriver: true,
+        }).start();
     };
 
-    useEffect(() => {
-        loadLastReadAyah(); // Fetch last read ayah when the component mounts
-    }, []);
+    const handlePressOut = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 1,
+            friction: 3,
+            tension: 40,
+            useNativeDriver: true,
+        }).start();
+    };
+
+    useFocusEffect(useCallback(() => {
+        const loadLastStates = async () => {
+            const lastListened = await AsyncStorage.getItem('lastListenedAyah');
+            const lastRead = await AsyncStorage.getItem('lastReadAyah');
+    
+            if (lastListened) {
+                const { surahNumber, ayahIndex } = JSON.parse(lastListened);
+                setLastListenedAyah({ surahNumber, ayahIndex });
+                console.log(lastListenedAyah)
+            }
+    
+            if (lastRead) {
+                const { surahNumber, ayahNumber } = JSON.parse(lastRead);
+                setLastReadAyah({ surahNumber, ayahNumber });
+                console.log(lastReadAyah)
+            }
+        };
+        loadLastStates();
+    }, [])
+    )
 
     return (
         <SafeAreaView style={styles.mainContainer}>
@@ -36,81 +59,109 @@ const QuranDashboard = () => {
 
             {/* Grid of Features */}
             <View style={styles.gridContainer}>
-                <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/surahs')}>
-                    <FontAwesome6 name="book-quran" size={28} color="#FFF" />
-                    <Text style={styles.iconLabel}>Quran</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/doas')}>
-                    <FontAwesome6 name="hands-praying" size={28} color="#FFF" />
-                    <Text style={styles.iconLabel}>Duas</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/bookmarks')}>
-                    <FontAwesome6 name="bookmark" size={28} color="#FFF" solid />
-                    <Text style={styles.iconLabel}>Bookmarks</Text>
-                </TouchableOpacity>
+                {['/surahs', '/doas', '/bookmarks'].map((route, index) => (
+                    <TouchableOpacity
+                        key={index}
+                        style={styles.gridItem}
+                        onPress={() => router.push(route)}
+                        activeOpacity={0.7}
+                        onPressIn={handlePressIn}
+                        onPressOut={handlePressOut}
+                    >
+                        <Animated.View style={{ transform: [{ scale: scaleAnim }], alignItems: 'center' }}>
+                            <FontAwesome6 
+                                name={index === 0 ? "book-quran" : index === 1 ? "hands-praying" : "bookmark"} 
+                                size={28} 
+                                color="#FFFFFF" 
+                                solid 
+                            />
+                            <Text style={styles.iconLabel}>
+                                {index === 0 ? 'Quran' : index === 1 ? 'Duas' : 'Bookmarks'}
+                            </Text>
+                        </Animated.View>
+                    </TouchableOpacity>
+                ))}
             </View>
 
             {/* Daily Ayah Section */}
-            <View>
+            <View style={styles.cardContainer}>
                 <DailyAyah />
             </View>
 
-            {/* Last Read Ayah Section */}
-            {lastRead && (
-                <TouchableOpacity style={styles.lastReadContainer} onPress={() => router.push(`/surahs/${lastRead.surahNumber}`)}>
-                    <FontAwesome6 name="book-open" size={24} color="#FFF"/>
-                    <Text style={styles.lastReadText}>
-                        Last Read: Surah {lastRead.surahNumber}, Ayah {lastRead.ayahNumber}
-                    </Text>
-                </TouchableOpacity>
+            {/* Last Read and Last Listened Sections */}
+            {lastListenedAyah !== undefined && (
+                <Text>last listened avail</Text>
+            )}
+
+            {lastReadAyah !== undefined && (
+                <Text>last read avail</Text>
             )}
         </SafeAreaView>
-    )
-}
+    );
+};
 
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
         padding: 16,
-        backgroundColor: '#4D6561',
+        backgroundColor: '#4D6561', // Main background color
     },
     headerContainer: {
         marginTop: 4,
-        alignItems: 'center'
+        alignItems: 'center',
     },
     headerText: {
-        fontSize: 24,
-        fontFamily: 'Outfit_500Medium',
-        color: '#FFFFFF'
+        fontSize: 26,
+        fontFamily: 'Outfit_700Bold',
+        color: '#FFFFFF',
     },
     gridContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        marginTop: 24
+        marginTop: 24,
     },
     gridItem: {
         alignItems: 'center',
         justifyContent: 'center',
         width: '30%',
+        marginBottom: 20,
+        padding: 16,
+        borderRadius: 15,
+        backgroundColor: '#3A504C', // Slightly darker shade for buttons
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
     },
     iconLabel: {
-        fontFamily:  'Outfit_400Regular',
+        fontFamily: 'Outfit_400Regular',
         fontSize: 14,
         marginTop: 8,
         textAlign: 'center',
-        color: '#FFF'
+        color: '#FFFFFF',
+    },
+    cardContainer: {
+        marginVertical: 20,
+        padding: 16,
+        borderRadius: 15,
+        backgroundColor: '#3A504C', // Darker shade for cards
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
     },
     lastReadContainer: {
-        backgroundColor: '#405754',
+        backgroundColor: '#3A504C', // Darker shade for last read container
         padding: 16,
-        borderRadius: 10,
+        borderRadius: 15,
         flexDirection: 'row',
         alignItems: 'center',
         marginTop: 20,
-        marginBottom: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
     },
     lastReadText: {
         fontFamily: 'Outfit_500Medium',
@@ -118,6 +169,6 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         marginLeft: 10,
     },
-})
+});
 
-export default QuranDashboard
+export default QuranDashboard;

@@ -1,21 +1,18 @@
-import { FlatList, ActivityIndicator, View, TextInput, TouchableOpacity, StatusBar } from 'react-native';
+import { FlatList, ActivityIndicator, View, TextInput, TouchableOpacity, StatusBar, StyleSheet } from 'react-native';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import SurahItem from '../../../../components/SurahItem';
 import { RootState } from '../../../../redux/store/store';
 import { Surah } from '../../../../utils/types';
 import { ThemeContext } from '../../../../context/ThemeContext';
-import { darkTheme, lightTheme } from '../../../../utils/theme';
 
 const Surahs = () => {
   const { isDarkMode } = useContext(ThemeContext);
   const { surahs, isLoading } = useSelector((state: RootState) => state.quran);
   const router = useRouter();
-  const styles = isDarkMode ? darkTheme : lightTheme;
-
+  
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
   const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
@@ -53,8 +50,10 @@ const Surahs = () => {
   }, [searchQuery]);
 
   return (
-    <SafeAreaView style={styles.mainContainer}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={isDarkMode ? '#1E1E1E' : '#4D6561'} />
+    <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? '#1E1E1E' : '#4D6561' }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor="#4D6561" />
+      
+      {/* Header with Search Bar */}
       <View style={styles.headerContainer}>
         {isSearchExpanded && (
           <View style={styles.searchBarContainer}>
@@ -67,17 +66,23 @@ const Surahs = () => {
             />
           </View>
         )}
+
         <TouchableOpacity onPress={toggleSearch} style={styles.searchIconContainer}>
-          <FontAwesome6 name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} size={24} color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
+          <FontAwesome6 
+            name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} 
+            size={24} 
+            color="#FFFFFF" 
+          />
         </TouchableOpacity>
 
-        <TouchableOpacity style={{ paddingHorizontal: 10 }} onPress={() => router.push('/bookmarks')}>
-          <FontAwesome6 name="bookmark" size={24} solid color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
+        <TouchableOpacity style={styles.bookmarkIconContainer} onPress={() => router.push('/bookmarks')}>
+          <FontAwesome6 name="bookmark" size={24} solid color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
+      {/* Surah List or Loading Indicator */}
       {isLoading ? (
-        <ActivityIndicator />
+        <ActivityIndicator style={styles.loadingIndicator} color="#FFFFFF" size="large" />
       ) : (
         <FlatList
           data={filteredSurahs}
@@ -86,11 +91,56 @@ const Surahs = () => {
           maxToRenderPerBatch={10}
           keyExtractor={(item) => item.number.toString()}
           showsVerticalScrollIndicator={false}
-          style={{ paddingHorizontal: 30 }}
+          contentContainerStyle={styles.listContainer}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#4D6561',
+    paddingHorizontal: 16,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  searchBarContainer: {
+    flex: 1,
+    backgroundColor: '#3A504C',
+    borderRadius: 15,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    marginRight: 10,
+  },
+  searchInput: {
+    color: '#FFFFFF',
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 16,
+  },
+  searchIconContainer: {
+    padding: 8,
+  },
+  bookmarkIconContainer: {
+    padding: 8,
+  },
+  loadingIndicator: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listContainer: {
+    paddingBottom: 20,
+  },
+});
 
 export default Surahs;

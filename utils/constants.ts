@@ -24,3 +24,14 @@ export const ayahList = [
     { surahNumber: 2, ayahNumber: 153 },   // Surat Al-Baqarah
     { surahNumber: 13, ayahNumber: 28 },   // Surat Ar-Ra'd
 ];
+
+export const reciterOptions = [
+    { label: 'Mishari Rashid Alafasy', value: 'ar.alafasy' },
+    { label: 'Ahmed ibn Ali Al-Ajmy', value: 'ar.ahmedajamy' },
+    { label: 'Ali Abdur-Rahman Al-Hudhaify', value: 'ar.hudhaify' },
+    { label: 'Mahmoud Khalil Al-Husary', value: 'ar.husary' },
+    { label: 'Maher Al-Muaiqly', value: 'ar.mahermuaiqly' },
+    { label: 'Muhammad Siddiq Al-Minshawi', value: 'ar.minshawi' },
+    { label: 'Muhammad Ayyoub', value: 'ar.muhammadayyoub' },
+    { label: 'Muhammad Jibreel', value: 'ar.muhammadjibreel' },
+]
