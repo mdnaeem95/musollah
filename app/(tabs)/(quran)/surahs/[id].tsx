@@ -1,35 +1,91 @@
-import { View, Text, ActivityIndicator, StyleSheet, Image, TouchableOpacity, FlatList, Alert } from 'react-native';
-import React, { useRef, useState, useCallback, useContext, useEffect } from 'react';
-import { useLocalSearchParams } from 'expo-router';
+import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, FlatList, Modal } from 'react-native';
+import React, { useRef, useState, useCallback, useContext, useEffect, useLayoutEffect, memo } from 'react';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { AVPlaybackStatus, Audio } from 'expo-av';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { Bookmark, Surah } from '../../../../utils/types';
-import BackArrow from '../../../../components/BackArrow';
 import { ThemeContext } from '../../../../context/ThemeContext';
 import { addBookmark, removeBookmark } from '../../../../redux/slices/quranSlice';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { useActionSheet } from '@expo/react-native-action-sheet';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+import { Picker } from '@react-native-picker/picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FlashList } from '@shopify/flash-list';
+
+// Utility functions for bookmarking and marking read Ayahs
+const toggleItemInArray = (arr: number[], item: number) => (
+    arr.includes(item) ? arr.filter(num => num !== item) : [...arr, item]
+);
 
 const SurahTextScreen = () => {
-    const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
-    const [isPlaying, setIsPlaying] = useState<boolean>(false);
-    const [surahFinished, setSurahFinished] = useState<boolean>(false);
-    const [lastReadAyah, setLastReadAyah] = useState<{ surahNumber: number, ayahNumber: number } | null>(null);
-    const soundRef = useRef<Audio.Sound | null>(null);
-    const listRef = useRef<FlatList>(null);
-    const { id, ayahIndex } = useLocalSearchParams<{ id: string, ayahIndex?: string }>();
-    const { surahs, isLoading, bookmarks } = useSelector((state: RootState) => state.quran);
-    const { isDarkMode } = useContext(ThemeContext);
-    const { showActionSheetWithOptions } = useActionSheet();
-    const surahNum = id ? parseInt(id as string, 10) : 1;
-    const surah: Surah | undefined = surahs.find((surah: Surah) => surah.number === surahNum);
+    const router = useRouter();
+    const navigation = useNavigation();
     const dispatch = useDispatch<AppDispatch>()
 
-    const audioLinks = surah?.audioLinks ? surah.audioLinks.split(',') : [];
+    const soundRef = useRef<Audio.Sound | null>(null);
+    const listRef = useRef<FlatList>(null);
+    const { id } = useLocalSearchParams<{ id: string, ayahIndex?: string }>();
+    const { surahs, isLoading, bookmarks } = useSelector((state: RootState) => state.quran);
+    const { isDarkMode, textSize, reciter } = useContext(ThemeContext);
+
+    const surahNum = id ? parseInt(id as string, 10) : 1;
+    const surah: Surah | undefined = surahs.find((surah: Surah) => surah.number === surahNum);
+
+    const arabicAyahs = surah?.arabicText ? surah.arabicText.split('|').reverse() : [];
+    const englishTranslations = surah?.englishTranslation ? surah.englishTranslation.split('|').reverse() : [];
+
+    const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(arabicAyahs.length - 1);
+    const [isPlaying, setIsPlaying] = useState<boolean>(false);
+    const [readAyahs, setReadAyahs] = useState<number[]>([]);
+    const [selectedSurah, setSelectedSurah] = useState<number>(surahNum);
+    const [isPickerVisible, setPickerVisible] = useState<boolean>(false);
+    const [audioLinks, setAudioLinks] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (surah?.audioLinks) {
+            const updatedLinks = surah.audioLinks
+                .split(',')
+                .map(link => link.replace('ar.alafasy', reciter))
+                .reverse();
+            setAudioLinks(updatedLinks);
+        }
+    }, [reciter, surah]);
+
+    useEffect(() => {
+        if (isPlaying) {
+            resetAudio().then(() => playAyah(currentAyahIndex));
+        }
+    }, [audioLinks])
+
+    // Set the dynamic title in the header
+    useLayoutEffect(() => {
+        if (surah) {
+        navigation.setOptions({
+            headerTitle: () => (
+                <View style={styles.headerContainer}>
+                    <Text style={[styles.headerText, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF' }]}>{surah.englishName}</Text>
+                    <TouchableOpacity onPress={togglePickerVisibility}>
+                        <FontAwesome6 name={isPickerVisible ? "chevron-up" : "chevron-down"} size={20} color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
+                    </TouchableOpacity>
+                </View>
+            )
+        });
+        }
+    }, [navigation, surah, isPickerVisible]);
+
+    const togglePickerVisibility = () => {
+        setPickerVisible(prev => !prev);
+    };
+
+    const handleSurahChange = (surahNumber: number) => {
+        if (surahNumber !== surahNum) {
+            setSelectedSurah(surahNumber);
+            setPickerVisible(false); // Close the picker after selecting a Surah
+            router.replace(`/surahs/${surahNumber}`);
+        }
+    };
 
     const showAddBookMarkToast = () => {
         Toast.show({
@@ -40,6 +96,16 @@ const SurahTextScreen = () => {
         })
     }
 
+    // Helper function to provide layout information for FlatList items
+    const getItemLayout = (_: any, index: number) => ({
+        length: ITEM_HEIGHT,
+        offset: ITEM_HEIGHT * index,
+        index,
+    });
+
+    // Constant item height (adjust this to the approximate height of each Ayah row)
+    const ITEM_HEIGHT = textSize * 6; // Adjust to the actual row height
+
     const showRemoveBookMarkToast = () => {
         Toast.show({
             type: 'removed',
@@ -48,73 +114,65 @@ const SurahTextScreen = () => {
             autoHide: true
         })
     }
+    
+    const playAyah = async (index: number) => {
+        const ayahAudioLink = audioLinks[index]?.trim();
 
-    const resetAudio = async () => {
-        if (soundRef.current) {
-            await soundRef.current.unloadAsync();
-            soundRef.current = null;
+        if (!ayahAudioLink) return;
+
+        try {
+            if (soundRef.current) {
+                await soundRef.current.unloadAsync();
+            }
+
+            const { sound } = await Audio.Sound.createAsync(
+                { uri: ayahAudioLink },
+                { shouldPlay: true }
+            );
+            soundRef.current = sound;
+
+            await AsyncStorage.setItem('lastListenedAyah', JSON.stringify({
+                surahNumber: surahNum,
+                ayahIndex: arabicAyahs.length - index
+            }))
+
+            sound.setOnPlaybackStatusUpdate(async (status: AVPlaybackStatus) => {
+                if (status.isLoaded && status.didJustFinish) {
+                    playNextAyah(index - 1);  // Save when stopped
+                }
+            });
+        
+            setCurrentAyahIndex(index);
+            setIsPlaying(true);
+        } catch (error) {
+            console.error('Failed to play Ayah:', error);
+            setIsPlaying(false);
         }
-        setCurrentAyahIndex(0);
-        setSurahFinished(false);
-    }
+    };
 
     const playNextAyah = useCallback(
         async (index: number) => {
-            if (!surah || index >= audioLinks.length) {
+            if (index >= audioLinks.length) {
                 setIsPlaying(false);
-                setSurahFinished(true);
-                resetAudio();
                 return;
             }
-
-            const ayahAudioLink = audioLinks[index].trim();
-
-            try {
-                if (soundRef.current) {
-                    await soundRef.current.unloadAsync();  // Unload previous sound
-                }
-
-                const { sound } = await Audio.Sound.createAsync(
-                    { uri: ayahAudioLink },
-                    { shouldPlay: true }
-                );
-                soundRef.current = sound;
-
-                sound.setOnPlaybackStatusUpdate(async (status: AVPlaybackStatus) => {
-                    if (status.isLoaded && status.didJustFinish) {
-                        playNextAyah(index + 1);  // Play the next Ayah
-                    }
-                });
-
-                setCurrentAyahIndex(index);  // Track the current Ayah
-            } catch (error) {
-                console.error('Failed to play Ayah: ', error);
-            }
+            playAyah(index);
         },
-        [surah, audioLinks]
+        [audioLinks]
     );
 
-    const togglePlayPause = useCallback(async () => {
-        if (surahFinished) {
-            await resetAudio();
-            playNextAyah(0);
-            setIsPlaying(true);
-        } else if (soundRef.current) {
-            const status = await soundRef.current.getStatusAsync();
-            if (status.isLoaded) {
-                try {
-                    if (status.isPlaying) {
-                        await soundRef.current.pauseAsync();
-                        setIsPlaying(false);
-                    } else {
-                        await soundRef.current.playAsync();
-                        setIsPlaying(true);
-                    }
-                } catch (error) {
-                    console.error('Error toggling play/pause: ', error);
+    // Toggle play/pause for the Ayah
+    const togglePlayPause = async (index: number) => {
+        if (isPlaying && currentAyahIndex === index) {
+            if (soundRef.current) {
+                const status = await soundRef.current.getStatusAsync();
+                if (status.isLoaded && status.isPlaying) {
+                    await soundRef.current.pauseAsync();
+                    setIsPlaying(false);
                 }
             }
         } else {
+            await resetAudio(); // Reset previous audio
             await Audio.setAudioModeAsync({
                 allowsRecordingIOS: false,
                 playsInSilentModeIOS: true,
@@ -123,13 +181,19 @@ const SurahTextScreen = () => {
                 staysActiveInBackground: true,
             });
 
-            playNextAyah(currentAyahIndex || 0);  // Start playing from the first Ayah
-            setIsPlaying(true);
+            playAyah(index); // Start playing from the selected Ayah index
         }
-    }, [playNextAyah, currentAyahIndex, surahFinished]);
+    };
 
-    // Toggle bookmark for the current Ayah
-    const toggleBookmark = (ayahNumber: number) => {
+    const resetAudio = async () => {
+        if (soundRef.current) {
+            await soundRef.current.unloadAsync();
+            soundRef.current = null;
+        }
+        setIsPlaying(false);
+    };
+
+    const toggleBookmark = useCallback((ayahNumber: number) => {
         const isBookmarked = bookmarks.some(
             (bookmark) => bookmark.surahNumber === surahNum && bookmark.ayahNumber === ayahNumber
         );
@@ -138,7 +202,7 @@ const SurahTextScreen = () => {
             surahNumber: surahNum,
             ayahNumber,
             surahName: surah?.englishName || 'Unknown Surah'
-        }
+        };
 
         if (isBookmarked) {
             dispatch(removeBookmark(bookmark));
@@ -147,115 +211,100 @@ const SurahTextScreen = () => {
             dispatch(addBookmark(bookmark));
             showAddBookMarkToast();
         }
-    }
+    }, [bookmarks, surahNum, dispatch, surah]);
 
-    // Function to open action menu for each ayah
-    const openAyahOptions = (ayahIndex: number) => {
-        const options = ['Cancel', 'Mark as Last Read']
-        const cancelButtonIndex = 0;
-
-        showActionSheetWithOptions(
-            {
-                options,
-                cancelButtonIndex
-            },
-            (buttonIndex) => {
-                if (buttonIndex === 1) {
-                    // Check if user is authenticated
-                    markAsLastRead(surahNum, ayahIndex + 1)
-                }
+    const toggleReadAyah = useCallback((ayahNumber: number) => {
+        setReadAyahs((prev) => {
+            const updatedReadAyahs = toggleItemInArray(prev, ayahNumber);
+            
+            // Save the last read ayah if marked
+            if (updatedReadAyahs.includes(ayahNumber)) {
+                const lastReadData = { surahNumber: surahNum, ayahNumber };
+                AsyncStorage.setItem('lastReadAyah', JSON.stringify(lastReadData));
             }
-        )
-    }
-
-    const markAsLastRead = async (surahNumber: number, ayahNumber: number) => {
-        try {
-            const lastReadData = {
-                surahNumber,
-                ayahNumber,
-                data: new Date().toISOString()
-            };
-            await AsyncStorage.setItem('lastReadAyah', JSON.stringify(lastReadData));
-            setLastReadAyah({ surahNumber, ayahNumber });  // Update local state
-            Alert.alert('Success!', `Marked surah ${surahNumber}, ayah ${ayahNumber} as last read.`)
-        } catch (error) {
-            console.error('Failed to mark as last read: ', error);
-            Alert.alert('Error', 'Failed to mark as last read. Please try again.')
-        }
-    };
-
-    // Function to load the last read ayah from AsyncStorage
-    const loadLastReadAyah = async () => {
-        try {
-            const storedLastRead = await AsyncStorage.getItem('lastReadAyah');
-            if (storedLastRead) {
-                const parsedLastRead = JSON.parse(storedLastRead);
-                setLastReadAyah(parsedLastRead);
-            }
-        } catch (error) {
-            console.error('Failed to load last read ayah:', error);
-        }
-    };
-
-    // Load the last read ayah when the component mounts
-    useEffect(() => {
-        loadLastReadAyah();
+    
+            return updatedReadAyahs;
+        });
     }, []);
 
-    const renderAyah = ({ item, index }: { item: string, index: number }) => {
+    const renderAyah = useCallback(({ item, index }: { item: string, index: number }) => {
+        const ayahNumber = arabicAyahs.length - index; // Adjust Ayah number for display
+        const isActiveAyah = index === currentAyahIndex;
+
         const isBookmarked = bookmarks.some(
-            (bookmark) => bookmark.surahNumber === surahNum && bookmark.ayahNumber === index + 1
+            (bookmark) => bookmark.surahNumber === surahNum && bookmark.ayahNumber === ayahNumber
         )
-        const isLastRead = lastReadAyah?.surahNumber === surahNum && lastReadAyah?.ayahNumber === index + 1;
+        const isRead = readAyahs.includes(ayahNumber);
+        
         // Determine the text color based on the theme and whether the Ayah is active
-        const ayahTextColor = index === currentAyahIndex
+        const ayahTextColor = isActiveAyah
         ? (isDarkMode ? '#F0DBA0' : '#F4E2C1')  // Highlighted text color
         : (isDarkMode ? '#ECDFCC' : '#FFFFFF');  // Regular text color
 
         return (
-            <View key={index} style={styles.ayahContainer}>
-                {/* Bookmark Icon */}
-                <TouchableOpacity onPress={() => toggleBookmark(index + 1)} style={{ paddingLeft: 20 }}>
-                    <FontAwesome6 
-                        name="bookmark"
-                        size={24}
-                        solid={isBookmarked}
-                        color={isBookmarked ? 'white' : 'gray'}
-                    />
-                </TouchableOpacity>
-                <Text style={[styles.quranText, { color: ayahTextColor }]}>{item}</Text>
-                {surah?.englishTranslation && (
-                    <View style={styles.translationContainer}>
-                        <Text style={[styles.translationText, { color: ayahTextColor }]}>{surah.englishTranslation.split('|')[index]}</Text>
+            <View key={index} style={[styles.ayahContainer, { height: '100%' }]}>
+                <View style={{ flexGrow: 1 }}>
+                {/* Top Row with Ayah Number, Share, Play, and Bookmark Icons */}
+                <View style={[styles.topRow, { backgroundColor: isDarkMode? "#263837" : "#3A504C"}]}>
+                    <View style={styles.ayahNumber}>
+                        <Text style={[styles.ayahNumberText, { color: ayahTextColor }]}>{ayahNumber}</Text>
                     </View>
-                )}
 
-                {/* Three Dots Icon for extra options */}
-                {isLastRead ? (
-                    <View style={{ paddingLeft: 20, flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                        <FontAwesome6 name="check-double" size={20} color="#CCC" />
-                        <Text style={{ fontFamily: "Outfit_400Regular", color: '#CCC' }}>Last read</Text>
+                    <View style={styles.iconGroup}>
+                        <TouchableOpacity style={styles.iconButton} onPress={() => togglePlayPause(index)}>
+                            <FontAwesome6 name={isPlaying ? "pause" : "play"} size={20} color={ayahTextColor} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => toggleBookmark(ayahNumber)}
+                            style={styles.iconButton}
+                            >
+                            <FontAwesome6
+                                name="bookmark"
+                                size={20}
+                                solid={isBookmarked}
+                                color={isBookmarked ? 'white' : 'gray'}
+                                />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => toggleReadAyah(ayahNumber)}
+                            style={styles.iconButton}
+                            >
+                            <FontAwesome6
+                                name="check"
+                                size={20}
+                                solid={isRead}
+                                color={isRead ? 'white' : 'gray'}
+                                />
+                        </TouchableOpacity>
                     </View>
-                ): (
-                    <TouchableOpacity onPress={() => openAyahOptions(index)} style={{ paddingLeft: 20 }}>
-                    <FontAwesome6 name="ellipsis" size={20} color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
-                </TouchableOpacity>
-                )}
+                </View>
+
+                <View >
+                    <Text style={[styles.quranText, { color: ayahTextColor, fontSize: textSize, lineHeight: textSize * 2 }]}>{item}</Text>
+                    {surah?.englishTranslation && (
+                        <View style={styles.translationContainer}>
+                            <Text style={[styles.translationText, { color: ayahTextColor }]}>
+                                {englishTranslations[index]}
+                            </Text>
+                        </View>
+                    )}
+                </View>
 
                 <View style={[styles.separator, { backgroundColor: isDarkMode ? '#ECDFCC' :'#FFFFFF' }]} />
+                </View>
             </View>
         )
-    };
+    }, [arabicAyahs.length, bookmarks, currentAyahIndex, isDarkMode, readAyahs, surah?.englishTranslation, textSize]);
 
     useEffect(() => {
-        if (listRef.current) {
+        if (listRef.current && currentAyahIndex >= 0 && currentAyahIndex < arabicAyahs.length) {
             listRef.current.scrollToIndex({
                 index: currentAyahIndex,
                 animated: true,
-                viewPosition: 0.5
+                viewPosition: 0
             });
         }
-    }, [currentAyahIndex]);
+    }, [currentAyahIndex, arabicAyahs.length]);
 
     if (!surah) {
         return (
@@ -265,98 +314,147 @@ const SurahTextScreen = () => {
         );
     }
 
-    return (
-        <SafeAreaView style={[styles.mainContainer, { backgroundColor: isDarkMode ? "#1E1E1E" : "#4D6561" }]}>
-            <View style={[styles.contentContainer, { backgroundColor: isDarkMode ? "#1E1E1E" : "#4D6561" }]}>
-                {isLoading ? (
-                    <ActivityIndicator />
-                ) : (
-                    <View style={{ flex: 1 }}>
-                        <View style={styles.bodyContainer}>
-                            <View style={[styles.headerContainer, { backgroundColor: isDarkMode ? "#ECDFCC" : "#D9D9D9" }]}>
-                                <Text style={styles.surahName}>{surah.arabicName}</Text>
-                                <View style={styles.ayahContentContainer}>
-                                    <Text style={styles.surahEnglishName}>{surah.englishName}</Text>
-                                    <TouchableOpacity onPressIn={togglePlayPause}>
-                                        <FontAwesome6 name={isPlaying ? 'pause' : 'play'} size={24} color="#4D6561" />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-
-                            <FlatList
-                                ref={listRef}
-                                data={surah.arabicText ? surah.arabicText.split('|') : []}
-                                renderItem={renderAyah}
-                                initialScrollIndex={currentAyahIndex}
-                                windowSize={5}
-                                keyExtractor={(item, index) => index.toString()}
-                                contentContainerStyle={styles.listContainer}
-                                showsVerticalScrollIndicator={false}
-                            />
-                        </View>
-
-                        <View style={{ position: 'absolute', left: 16 }}>
-                            <BackArrow />
-                        </View>
-                    </View>
-                )}
+    // Render the progress tracker
+    const renderProgressTracker = () => {
+        return (
+            <View style={[styles.progressContainer, { backgroundColor: isDarkMode? "#263837" : "#3A504C"}]}>
+                <Text style={styles.progressText}>
+                    {`${surahNum}. ${surah?.englishName}`}
+                </Text>
+                <Text style={styles.progressText}>
+                    Progress: {`${readAyahs.length}/${audioLinks.length}`}
+                </Text>
             </View>
-        </SafeAreaView>
+        );
+    };
+
+    return (
+        <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? "#1E1E1E" : "#4D6561" }]}>
+            {/* Progress Tracker */}
+            {renderProgressTracker()}
+
+            {isLoading ? (
+                <ActivityIndicator />
+            ) : (
+                <FlashList
+                    data={arabicAyahs}
+                    renderItem={renderAyah}
+                    initialScrollIndex={currentAyahIndex}
+                    inverted={true}
+                    keyExtractor={(item, index) => index.toString()}
+                    contentContainerStyle={styles.listContainer}
+                    showsVerticalScrollIndicator={false}
+                />
+            )}
+
+            {/* Surah Picker */}
+            {isPickerVisible && (
+                <View style={[styles.pickerContainer, { backgroundColor: isDarkMode ? "#1E1E1E" : "#4D6561" }]}>
+                    <Picker
+                        selectedValue={selectedSurah}
+                        onValueChange={handleSurahChange}
+                        style={styles.picker}
+                        >
+                        {surahs.map((surah) => (
+                            <Picker.Item 
+                                key={surah.number} 
+                                label={`${surah.number}. ${surah.englishName}`} value={surah.number}
+                                color={isDarkMode ? '#ECDFCC' : '#FFFFFF' } 
+                            />
+                        ))}
+                    </Picker>
+                </View>
+            )}
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     mainContainer: {
-        flex: 1, 
-        paddingTop: 30
-    },
-    contentContainer: {
-        flex: 1
-    },
-    bodyContainer: {
-        justifyContent: 'center', 
-        alignItems: 'center'
+        flex: 1,
     },
     headerContainer: {
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        paddingVertical: 20,
-        borderRadius: 40, 
-        backgroundColor: '#D9D9D9', 
-        width: '50%', 
-        marginBottom: 20
-    },
-    ayahContentContainer: {
-        flexDirection: 'row', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        display: 'flex', 
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
         gap: 10
     },
-    playIcon: {
-        objectFit: 'contain', 
-        width: 28, 
-        height: 28
+    chevronButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
-    surahName: {
-        fontFamily: 'Amiri_400Regular',
-        fontWeight: '400',
-        fontSize: 30,
-        lineHeight: 48,
-        color: '#314340',
-    },
-    surahEnglishName: {
-        fontFamily: 'Outfit_500Medium',
-        fontWeight: '500',
+    headerText: {
+        color: '#FFFFFF',
         fontSize: 20,
-        lineHeight: 30,
-        color: '#314340',
+        fontFamily: 'Outfit_700Bold',
+        marginLeft: 5,
+    },
+    pickerContainer: {
+        position: 'absolute',
+        top: 5, // Adjust based on your layout
+        left: 0,
+        right: 0,
+        zIndex: 10,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 5,
+        padding: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    picker: {
+        width: '100%',
+    },
+    progressContainer: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        backgroundColor: '#3A504C',
+        flexDirection: 'row',
+        justifyContent: 'space-between'
+    },
+    progressText: {
+        fontFamily: 'Outfit_500Regular',
+        fontSize: 16,
+        color: '#ECDFCC',
+    },
+    topRow: {
+        flex: 1,
+        marginHorizontal: 16,
+        padding: 10,
+        borderRadius: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 15,
+        backgroundColor: '#3A504C'
+    },
+    ayahNumber: {
+        backgroundColor: '#6A807B',
+        borderRadius: 12,
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+    },
+    ayahNumberText: {
+        fontFamily: 'Outfit_500Medium',
+        fontSize: 14,
+        color: '#FFFFFF',
+    },
+    iconGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10
+    },
+    iconButton: {
+        paddingHorizontal: 5,
+        paddingVertical: 5,
     },
     quranText: {
         fontFamily: 'Amiri_400Regular',
         fontWeight: '400',
-        fontSize: 26,
-        lineHeight: 48,
+        paddingTop: 10,
+        paddingBottom: 10,
         textAlign: 'right',
         paddingHorizontal: 20,
     },
@@ -366,17 +464,18 @@ const styles = StyleSheet.create({
         fontSize: 12,
         lineHeight: 15,
         paddingHorizontal: 20,
+        paddingBottom: 20
     },
     ayahContainer: {
-        marginBottom: 20,
-        gap: 10,
+        flex: 1,
         paddingVertical: 10,
+        marginBottom: 10 
     },
     translationContainer: {
         width: '100%',
     },
     listContainer: {
-        paddingBottom: 50,
+        paddingTop: 100
     },
     separator: {
         width: '100%',
