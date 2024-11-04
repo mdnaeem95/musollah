@@ -1,17 +1,19 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Question } from '../utils/types';
-import { format } from 'date-fns';
 import { formatDistanceToNow } from 'date-fns';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 interface QuestionCardProps {
   question: Question;
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
+  const router = useRouter();
   const createdAtDate = typeof question.createdAt === 'string' ?  new Date(question.createdAt) : question.createdAt;
   const relativeTime = formatDistanceToNow(createdAtDate, { addSuffix: true })
+
   return (
     <View style={styles.container}>
       <View style={{ marginHorizontal: 16, gap: 10 }}>
@@ -30,20 +32,23 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
             <Text style={styles.statText}>{question.votes}</Text>
           </View>
         </View>
-        <Text style={styles.title}>{question.title}</Text>
-        <Text style={styles.body} numberOfLines={2}>{question.body}</Text>
 
-        {!question.tags.includes("") && (
-          <View style={styles.tagsContainer}>
-            {question.tags.map((tag, index) => (
-              <View key={index} style={styles.tag}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+        <TouchableOpacity style={{ gap: 10 }} onPress={() => router.push(`/qa/questionThread/${question.id}`)}>
+          <Text style={styles.title}>{question.title}</Text>
+          <Text style={styles.body} numberOfLines={2}>{question.body}</Text>
 
-        <Text style={styles.date}>{relativeTime}</Text>
+          {!question.tags.includes("") && (
+            <View style={styles.tagsContainer}>
+              {question.tags.map((tag, index) => (
+                <View key={index} style={styles.tag}>
+                  <Text style={styles.tagText}>{tag}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <Text style={styles.date}>{relativeTime}</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

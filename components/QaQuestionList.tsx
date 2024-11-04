@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store/store';
 import { fetchQuestions } from '../redux/slices/qaSlice';
@@ -44,9 +44,7 @@ const QuestionList: React.FC<QuestionListProps> = ({ searchQuery }) => {
       estimatedItemSize={100}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
-        <TouchableOpacity onPress={() => {/* Navigate to question detail page */}}>
           <QuestionCard question={item} />
-        </TouchableOpacity>
       )}
       ListEmptyComponent={<Text style={styles.emptyText}>No questions found.</Text>}
     />
