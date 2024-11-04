@@ -68,7 +68,7 @@ export const addQuestion = createAsyncThunk<Question, Partial<Question>, { rejec
     }
 );
 
-// Async thunks using react-native-firebase
+// Async thunk to fetch answers
 export const fetchAnswers = createAsyncThunk<Answer[], string, { rejectValue: string }>(
   'qa/fetchAnswers',
   async (questionId, { rejectWithValue }) => {
@@ -77,11 +77,18 @@ export const fetchAnswers = createAsyncThunk<Answer[], string, { rejectValue: st
         .collection('questions')
         .doc(questionId)
         .collection('answers')
+        .orderBy('createdAt', 'asc')  // Order by creation date
         .get();
-      const answers: Answer[] = answersSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      } as Answer));
+
+      const answers: Answer[] = answersSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || null,
+        } as Answer;
+      });
       return answers;
     } catch (error) {
       return rejectWithValue('Failed to fetch answers');
@@ -89,17 +96,30 @@ export const fetchAnswers = createAsyncThunk<Answer[], string, { rejectValue: st
   }
 );
 
+// Async thunk to add an answer
 export const addAnswer = createAsyncThunk<Answer, { questionId: string; newAnswer: Partial<Answer> }, { rejectValue: string }>(
   'qa/addAnswer',
   async ({ questionId, newAnswer }, { rejectWithValue }) => {
     try {
+      const answerWithTimestamp = {
+        ...newAnswer,
+        createdAt: firestore.FieldValue.serverTimestamp(),
+      };
+
       const answerRef = await firestore()
         .collection('questions')
         .doc(questionId)
         .collection('answers')
-        .add(newAnswer);
+        .add(answerWithTimestamp);
+
       const answerSnapshot = await answerRef.get();
-      return { id: answerSnapshot.id, ...answerSnapshot.data() } as Answer;
+      const answerData = answerSnapshot.data();
+
+      return {
+        id: answerSnapshot.id,
+        ...answerData,
+        createdAt: answerData?.createdAt?.toDate(),
+      } as Answer;
     } catch (error) {
       return rejectWithValue('Failed to add answer');
     }

@@ -1,25 +1,36 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Button, Alert, TouchableOpacity } from 'react-native';
-import { useDispatch } from 'react-redux';
+import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import { addQuestion } from '../../../../../redux/slices/qaSlice';
-import { AppDispatch } from '../../../../../redux/store/store';
+import { AppDispatch, RootState } from '../../../../../redux/store/store';
 import { Question } from '../../../../../utils/types';
 import { useRouter } from 'expo-router';
 import { getAuth } from '@react-native-firebase/auth';
 import SignInModal from '../../../../../components/SignInModal';
+import {
+	RegExpMatcher,
+	englishDataset,
+	englishRecommendedTransformers,
+} from 'obscenity';
 
 const NewQuestionScreen: React.FC = () => {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [tags, setTags] = useState('');
+  const { questions } = useSelector((state: RootState) => state.qa);
   const [isAuthModalVisible, setIsAuthModalVisible] = useState(false); 
   const dispatch = useDispatch<AppDispatch>();
 
-  const handleSubmit = () => {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
+  const matcher = new RegExpMatcher({
+    ...englishDataset.build(),
+    ...englishRecommendedTransformers,
+  });
 
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+
+  const handleSubmit = () => {
     if (!currentUser) {
       Alert.alert(
         'Authentication Required',
@@ -37,11 +48,31 @@ const NewQuestionScreen: React.FC = () => {
       return;
     }
 
+    // Check for similar questions
+    const isSimilarQuestion = questions.some(
+      (q) => q.title.toLowerCase() === title.toLowerCase() || q.body.toLowerCase().includes(body.toLowerCase())
+    );
+
+    if (isSimilarQuestion) {
+      Alert.alert('Similar Question Detected', 'A similar question has already been asked. Please check the existing questions.');
+      return;
+    }
+
+    // Check for profanities in title, body, and tags using obscenity matcher
+    if (
+      matcher.hasMatch(title) ||
+      matcher.hasMatch(body) ||
+      tags.split(',').some(tag => matcher.hasMatch(tag.trim()))
+    ) {
+      Alert.alert('Profanity Detected', 'Please remove any inappropriate language from the title, body, or tags.');
+      return;
+    }
+
     const newQuestion: Partial<Question> = {
       title,
       body,
       tags: tags.split(',').map(tag => tag.trim()),
-      userId: 'current_user_id', // Replace with actual user ID
+      userId: currentUser.uid,
       createdAt: new Date(),
       votes: 0,
       answerCount: 0,
