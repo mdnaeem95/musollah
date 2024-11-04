@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { getFirestore, collection, addDoc } from '@react-native-firebase/firestore';
 import { Switch } from '@rneui/themed'; 
-import BackArrow from '../../../../components/BackArrow';
-import PrayerHeader from '../../../../components/PrayerHeader';
 
 const SupportPage = () => {
   const [feedback, setFeedback] = useState<string>('');
@@ -45,9 +42,7 @@ const SupportPage = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-        <PrayerHeader title="Support and Feedback" backgroundColor='#4D6561' />
-
+    <View style={styles.container}>
         <View style={styles.form}>
             <Text style={styles.instructions}>Let us know about any issues or feedback you have for the app:</Text>
 
@@ -88,50 +83,38 @@ const SupportPage = () => {
             <Text style={styles.submitButtonText}>Submit Feedback</Text>
         </TouchableOpacity>
         </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#4D6561',
+    backgroundColor: '#2E3D3A',
     padding: 16,
   },
-  backButton: {
-    position: 'absolute',
-    top: 20,
-    left: 16,
-    zIndex: 10,
-  },
-  headerContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  headerText: {
-    fontFamily: 'Outfit_600SemiBold',
-    fontSize: 30,
-    lineHeight: 45,
-    color: '#FFFFFF',
-  },
   form: {
-    backgroundColor: '#314441',
+    backgroundColor: '#3D4F4C',
     borderRadius: 15,
     padding: 20,
     gap: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   instructions: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 16,
-    color: '#FFFFFF',
+    color: '#ECDFCC',
     marginBottom: 10,
   },
   feedbackInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#2E3D3A',
     borderRadius: 10,
     padding: 15,
-    color: '#000000',
+    color: '#ECDFCC',
     fontFamily: 'Outfit_400Regular',
     fontSize: 16,
     height: 150, // Adjust height for multiline input
@@ -160,13 +143,13 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 16,
-    color: '#FFFFFF',
+    color: '#ECDFCC',
   },
   emailInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#2E3D3A',
     borderRadius: 10,
     padding: 15,
-    color: '#000000',
+    color: '#ECDFCC',
     fontFamily: 'Outfit_400Regular',
     fontSize: 16,
   },

@@ -79,7 +79,7 @@ const DailyAyah = () => {
 
     return (
       <View style={styles.ayahCard}>
-        <Text style={styles.headerText}>Ayah of the Day</Text>
+        <Text style={styles.headerText}>Ayat of the Day</Text>
         <TouchableOpacity onPress={handleAyahClick} style={styles.ayahContent}>
           <Text style={styles.arabicText}>{ayah.arabicText}</Text>
           <Text style={styles.englishText}>"{ayah.englishText}"</Text>
@@ -93,7 +93,7 @@ const DailyAyah = () => {
 
 const styles = StyleSheet.create({
   ayahCard: {
-    backgroundColor: '#3A504C',
+    backgroundColor: '#FFFFFF',
     padding: 20,
     borderRadius: 15,
     shadowColor: '#000',
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 20,
     fontFamily: 'Outfit_700Bold',
-    color: '#F4E2C1', // Light gold for contrast
+    color: '#333333', // Light gold for contrast
     textAlign: 'center',
     marginBottom: 10,
 },
@@ -118,20 +118,20 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 48,
     textAlign: 'center',
-    color: '#ECDFCC',
+    color: '#000000',
   },
   englishText: {
     fontSize: 16,
     fontStyle: 'italic',
     textAlign: 'center',
-    color: '#F4E2C1',
+    color: '#555555',
     marginTop: 12,
   },
   ayahInfo: {
     marginTop: 12,
     fontSize: 14,
     fontFamily: 'Outfit_500Medium',
-    color: '#FFFFFF',
+    color: '#666666',
     textAlign: 'center',
   },
 });

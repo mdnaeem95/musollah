@@ -145,30 +145,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: '#F4E2C1',
     },
-    cardContainer: {
-        marginVertical: 20,
-        padding: 20,
-        borderRadius: 15,
-        backgroundColor: '#3A504C', // Darker shade for cards
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4.5,
-        elevation: 4
-    },
-    lastReadContainer: {
-        backgroundColor: '#3A504C', // Darker shade for last read container
-        padding: 16,
-        borderRadius: 15,
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4.5,
-        elevation: 4
-    },
     lastReadText: {
         fontFamily: 'Outfit_500Medium',
         fontSize: 16,
@@ -179,7 +155,7 @@ const styles = StyleSheet.create({
         marginTop: 16,
         padding: 16,
         borderRadius: 15,
-        backgroundColor: '#2E3D3A',
+        backgroundColor: '#3D4F4C',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.25,

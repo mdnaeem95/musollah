@@ -1,10 +1,9 @@
 import { View, Text, TextInput, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { FoodAdditive } from '../../../../utils/types';
 import { fetchFoodAdditives } from '../../../../api/firebase';
-import PrayerHeader from '../../../../components/PrayerHeader';
+import { FlashList } from '@shopify/flash-list';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 const CACHE_KEY = 'foodAdditivesCache';
 const CACHE_TTL = 24 * 60 * 60 * 1000; // Cache TTL set to 24 hours (in milliseconds)
@@ -66,24 +65,27 @@ const FoodAdditivesPage = () => {
     setFilteredAdditives(filtered);
   }, [searchQuery, foodAdditives]);
 
+  const getStatusColor = (status: string) => {
+    return status.toLowerCase() === 'ok' ? '#78A678' : '#A83A3A'; // Green for 'Ok', red for others
+  };
+
   const renderFoodAdditive = ({ item }: { item: FoodAdditive }) => (
     <View style={styles.additiveContainer}>
       <Text style={styles.eCode}>{item.eCode}</Text>
       <Text style={styles.chemicalName}>{item.chemicalName}</Text>
-      <Text style={styles.status}>Status: {item.status}</Text>
+      <Text style={[styles.status, { color: getStatusColor(item.status) }]}>Status: {item.status}</Text>
       <Text style={styles.description}>{item.description}</Text>
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.mainContainer}>
-      <PrayerHeader title="Food Additives" backgroundColor='#4D6561'/>
-
+    <View style={styles.mainContainer}>
       <View style={styles.searchContainer}>
-        <FontAwesome6 name="magnifying-glass" size={20} color="#314441" />
+        <FontAwesome6 name="magnifying-glass" size={20} color="#ECDFCC" />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by chemical name"
+          placeholderTextColor="#ECDFCC"
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -92,18 +94,18 @@ const FoodAdditivesPage = () => {
       {isLoading ? (
         <ActivityIndicator size="large" color="#314441" />
       ) : filteredAdditives.length > 0 ? (
-        <FlatList
+        <FlashList
+          estimatedItemSize={150}
           data={filteredAdditives}
           keyExtractor={(item) => item.id}
           renderItem={renderFoodAdditive}
-          style={styles.listContainer}
         />
       ) : (
         <View style={styles.noResultsContainer}>
           <Text style={styles.noResultsText}>No results found for "{searchQuery}"</Text>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -111,12 +113,12 @@ const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#4D6561',
+    backgroundColor: '#2E3D3A',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: '#3A504C',
     borderRadius: 10,
     paddingHorizontal: 10,
     marginBottom: 20,
@@ -130,13 +132,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingVertical: 10,
     paddingHorizontal: 10,
-    color: '#314441',
+    color: '#ECDFCC',
   },
   listContainer: {
     flex: 1,
   },
   additiveContainer: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#3A504C',
     padding: 16,
     borderRadius: 10,
     marginBottom: 10,
@@ -148,12 +150,12 @@ const styles = StyleSheet.create({
   eCode: {
     fontSize: 18,
     fontFamily: 'Outfit_600SemiBold',
-    color: '#314441',
+    color: '#A3C0BB',
   },
   chemicalName: {
     fontSize: 16,
     fontFamily: 'Outfit_400Regular',
-    color: '#314441',
+    color: '#ECDFCC',
   },
   status: {
     fontSize: 14,
@@ -163,7 +165,7 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 12,
     fontFamily: 'Outfit_400Regular',
-    color: '#314441',
+    color: '#ECDFCC',
     marginTop: 4,
   },
   noResultsContainer: {
@@ -174,7 +176,7 @@ const styles = StyleSheet.create({
   noResultsText: {
     fontSize: 18,
     fontFamily: 'Outfit_500Medium',
-    color: '#314441',
+    color: '#ECDFCC',
   },
 });
 

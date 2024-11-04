@@ -8,12 +8,8 @@ const SettingsTab = () => {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.mainContainer}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerText}>Menu</Text>
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <View style={styles.mainContainer}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ padding: 16 }}>
         {/* SETTINGS */}
         <Text style={styles.sectionHeader}>Settings</Text>
 
@@ -32,15 +28,6 @@ const SettingsTab = () => {
             <View style={styles.settingsLeftField}>
               <FontAwesome6 name='person-praying' color='white' size={20} />
               <Text style={styles.settingsName}>Prayers</Text>
-            </View>
-            <FontAwesome6 name='chevron-right' color='white' size={20} />
-          </TouchableOpacity>
-
-          {/* QURAN SETTINGS */}
-          <TouchableOpacity style={styles.settingsField} onPress={() => router.push('/quran')}>
-            <View style={styles.settingsLeftField}>
-              <FontAwesome6 name='book-quran' color='white' size={20} />
-              <Text style={styles.settingsName}>Quran</Text>
             </View>
             <FontAwesome6 name='chevron-right' color='white' size={20} />
           </TouchableOpacity>
@@ -76,42 +63,37 @@ const SettingsTab = () => {
           {/* Add more items here */}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#4D6561',
-  },
-  headerContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  headerText: {
-    fontSize: 24,
-    fontFamily: 'Outfit_600SemiBold',
-    color: '#FFFFFF',
+    backgroundColor: '#2E3D3A',
   },
   sectionHeader: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 16,
-    color: '#FFFFFF',
+    color: '#ECDFCC',
     marginBottom: 16,
   },
   generalSettingsContainer: {
-    backgroundColor: '#314441',
+    backgroundColor: '#3D4F4C',
     borderRadius: 15,
     padding: 10,
     marginBottom: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2, // For Android shadow
   },
   settingsField: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
+    paddingVertical: 15,
   },
   settingsLeftField: {
     flexDirection: 'row',
@@ -120,7 +102,7 @@ const styles = StyleSheet.create({
   settingsName: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#ECDFCC',
   },
   /* Grid styling */
   gridContainer: {
@@ -130,7 +112,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   gridItem: {
-    backgroundColor: '#314441',
+    backgroundColor: '#3D4F4C',
     alignItems: 'center',
     justifyContent: 'center',
     width: '30%',
@@ -138,13 +120,18 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginBottom: 20,
     padding: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2, // For Android shadow
   },
   iconLabel: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
     marginTop: 8,
     textAlign: 'center',
-    color: '#FFF',
+    color: '#ECDFCC',
   },
 });
 

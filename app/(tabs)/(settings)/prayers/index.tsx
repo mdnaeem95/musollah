@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Modal } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { Picker } from '@react-native-picker/picker';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { setReminderInterval, toggleTimeFormat } from '../../../../redux/slices/userPreferencesSlice';
-import PrayerHeader from '../../../../components/PrayerHeader';
 
 const PrayersSettings = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -23,9 +21,7 @@ const PrayersSettings = () => {
   };
 
   return (
-    <SafeAreaView style={styles.mainContainer}>
-        <PrayerHeader title="Prayer Settings" backgroundColor='#4D6561' />
-
+    <View style={styles.mainContainer}>
       <View style={styles.settingsContainer}>
         {/* 24-hour format toggle */}
         <View style={styles.settingsField}>
@@ -75,21 +71,26 @@ const PrayersSettings = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#4D6561',
+    backgroundColor: '#2E3D3A',
     padding: 16,
   },
   settingsContainer: {
-    backgroundColor: '#314441',
+    backgroundColor: '#3D4F4C',
     borderRadius: 15,
     padding: 16,
     gap: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   settingsField: {
     flexDirection: 'row',
@@ -104,7 +105,7 @@ const styles = StyleSheet.create({
   settingsName: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#ECDFCC',
   },
   modalBackground: {
     flex: 1,
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#3A504C',
     borderRadius: 10,
     padding: 20,
     alignItems: 'center',
@@ -121,6 +122,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontFamily: 'Outfit_600SemiBold',
+    color: '#ECDFCC',
   },
   picker: {
     marginBottom: 30,
@@ -130,11 +132,11 @@ const styles = StyleSheet.create({
   closeButton: {
     marginTop: 30,
     padding: 10,
-    backgroundColor: '#314340',
+    backgroundColor: '#A3C0BB',
     borderRadius: 5,
   },
   closeButtonText: {
-    color: 'white',
+    color: '#2E3D3A',
     fontSize: 16,
   },
 });
