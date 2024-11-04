@@ -6,7 +6,7 @@ import { AppDispatch } from '../redux/store/store';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { UserInfo } from '../utils/types';
 import { signUp, signIn } from '../redux/slices/userSlice';
-import { useRouter } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 
 interface SignInModalProps {
   isVisible: boolean;
@@ -17,6 +17,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isVisible, onClose }) => {
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter()
+  const segments = useSegments();
 
   const { control, handleSubmit, formState: { errors }, reset } = useForm<UserInfo>();
 
@@ -25,7 +26,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isVisible, onClose }) => {
     try {
       await dispatch(signUp({ email, password })).unwrap();
       handleModalClose(); // Close modal after successful sign-up
-      router.replace('/(tabs)/(prayer)')
+      router.replace(segments.join('/'));
     } catch (error) {
       console.log('Error, ', error)
       alert('Error: Failed to sign up. Please try again.');
@@ -37,7 +38,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isVisible, onClose }) => {
     try {
       await dispatch(signIn({ email, password })).unwrap();
       handleModalClose(); // Close modal after successful sign-in
-      router.replace('/(tabs)/(prayer)')
+      router.replace(segments.join('/'));
     } catch (error) {
       alert('Error: Failed to sign in. Please try again.');
     }

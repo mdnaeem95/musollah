@@ -25,8 +25,6 @@ const QuranLayout = () => {
     loadTextSize();
   }, []);
 
-
-
   // Save the text size to AsyncStorage when it changes
   const handleTextSizeChange = async (value: number) => {
     setTextSize(value);

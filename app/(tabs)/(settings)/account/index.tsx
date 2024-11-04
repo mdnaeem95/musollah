@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { deleteUser, getAuth, signOut, updateProfile } from '@react-native-firebase/auth';
 import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from '@react-native-firebase/firestore';
 import { FontAwesome6 } from '@expo/vector-icons'; // For consistent icons
 import { useRouter } from 'expo-router';
 import { persistor } from '../../../../redux/store/store'
 import Modal from 'react-native-modal'
-import PrayerHeader from '../../../../components/PrayerHeader';
 import SignInModal from '../../../../components/SignInModal';
 
 const AccountSettings = () => {
@@ -123,10 +121,8 @@ const AccountSettings = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <View style={{ flex: 1 }}>
-              <PrayerHeader title='Account Information' backgroundColor='#4D6561' />
-
               <View style={styles.form}>
                 <View style={styles.settingsField}>
                     <View style={styles.settingsLeftField}>
@@ -203,22 +199,27 @@ const AccountSettings = () => {
               isVisible={isSignUpModalVisible}
               onClose={closeSignInModal}
             />
-        </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#4D6561',
+    backgroundColor: '#2E3D3A',
     padding: 16,
   },
   form: {
     marginTop: 20,
-    backgroundColor: '#314441',
+    backgroundColor: '#3D4F4C',
     borderRadius: 15,
     padding: 16,
     gap: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   settingsField: {
     flexDirection: 'row',
@@ -226,7 +227,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    borderBottomColor: '#5A706C',
   },
   settingsLeftField: {
     flexDirection: 'row',
@@ -241,15 +242,15 @@ const styles = StyleSheet.create({
   settingsLabel: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#ECDFCC',
   },
   valueText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#ECDFCC',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#3A504C',
     padding: 20,
     borderRadius: 10,
   },
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
     height: 38, 
     width: 38, 
     borderRadius: 19, 
-    backgroundColor: '#A3C0BB', 
+    backgroundColor: '#5A706C', 
     alignItems: 'center', 
     justifyContent: 'center',
     marginBottom: 10, 
@@ -265,15 +266,17 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     marginBottom: 15,
-    fontFamily: 'Outfit_600SemiBold'
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#ECDFCC',
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#2E3D3A',
     borderRadius: 5,
     padding: 8,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#ccc'
+    borderColor: '#5A706C',
+    color: '#ECDFCC',
   },
   saveButton: {
     alignItems: 'center',
