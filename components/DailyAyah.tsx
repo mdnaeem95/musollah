@@ -78,50 +78,60 @@ const DailyAyah = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <TouchableOpacity onPress={handleAyahClick} style={[styles.ayahCard]}>
-                <Text style={styles.arabicText}>{ayah.arabicText}</Text>
-                <Text style={styles.englishText}>"{ayah.englishText}"</Text>
-                <Text style={styles.ayahInfo}>
-                Surah {ayah.surahNumber}, Ayah {ayah.ayahNumber}
-                </Text>
-            </TouchableOpacity>
-        </View>
+      <View style={styles.ayahCard}>
+        <Text style={styles.headerText}>Ayah of the Day</Text>
+        <TouchableOpacity onPress={handleAyahClick} style={styles.ayahContent}>
+          <Text style={styles.arabicText}>{ayah.arabicText}</Text>
+          <Text style={styles.englishText}>"{ayah.englishText}"</Text>
+          <Text style={styles.ayahInfo}>
+            Surah {ayah.surahNumber}, Ayah {ayah.ayahNumber}
+          </Text>
+        </TouchableOpacity>
+      </View>
     );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    paddingVertical: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   ayahCard: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#3A504C',
     padding: 20,
-    borderRadius: 10,
+    borderRadius: 15,
     shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4, // For Android shadow
+    marginVertical: 20, // Ensure it has space when placed on the page
   },
+  ayahContent: {
+    alignItems: 'center',
+  },
+  headerText: {
+    fontSize: 20,
+    fontFamily: 'Outfit_700Bold',
+    color: '#F4E2C1', // Light gold for contrast
+    textAlign: 'center',
+    marginBottom: 10,
+},
   arabicText: {
     fontFamily: 'Amiri_400Regular',
     fontSize: 24,
     lineHeight: 48,
     textAlign: 'center',
-    color: '#000',
+    color: '#ECDFCC',
   },
   englishText: {
-    fontSize: 14,
+    fontSize: 16,
     fontStyle: 'italic',
     textAlign: 'center',
-    color: '#333',
-    marginTop: 10,
+    color: '#F4E2C1',
+    marginTop: 12,
   },
   ayahInfo: {
-    marginTop: 10,
+    marginTop: 12,
     fontSize: 14,
-    color: '#666',
+    fontFamily: 'Outfit_500Medium',
+    color: '#FFFFFF',
     textAlign: 'center',
   },
 });

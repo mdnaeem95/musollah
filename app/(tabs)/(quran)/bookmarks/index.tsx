@@ -58,17 +58,12 @@ const BookmarkPage = () => {
     );
 
     return (
-        <SafeAreaView style={[styles.mainContainer, { backgroundColor: DYNAMIC_COLOUR}]}>
-            <PrayerHeader 
-                title="My Bookmarks" 
-                backgroundColor={DYNAMIC_COLOUR} 
-            />
-
+        <View style={[styles.mainContainer, { backgroundColor: DYNAMIC_COLOUR}]}>
             {/* QURAN FOLDER */}
             <TouchableOpacity onPress={toggleQuranFolder} style={styles.folderHeader}>
-              <FontAwesome6 name={isQuranExpanded ? "folder-open" : "folder"} size={20} color="#fff" />
-              <Text style={styles.folderTitle}>Quran ({quranBookmarks.length})</Text>
-              <FontAwesome6 name={isQuranExpanded ? "chevron-up" : "chevron-down"} size={20} color="#fff" />
+              <FontAwesome6 name={isQuranExpanded ? "folder-open" : "folder"} size={20} color={DYNAMIC_TEXT_COLOR} />
+              <Text style={[styles.folderTitle, { color: DYNAMIC_TEXT_COLOR }]}>Quran ({quranBookmarks.length})</Text>
+              <FontAwesome6 name={isQuranExpanded ? "chevron-up" : "chevron-down"} size={20} color={DYNAMIC_TEXT_COLOR} />
             </TouchableOpacity>
 
             {isQuranExpanded && (
@@ -81,9 +76,9 @@ const BookmarkPage = () => {
 
             {/* Doas Folder */}
             <TouchableOpacity onPress={toggleDoasFolder} style={styles.folderHeader}>
-              <FontAwesome6 name={isDoasExpanded ? "folder-open" : "folder"} size={20} color="#fff" />
-              <Text style={styles.folderTitle}>Doas ({doaBookmarks.length})</Text>
-              <FontAwesome6 name={isDoasExpanded ? "chevron-up" : "chevron-down"} size={20} color="#fff" />
+              <FontAwesome6 name={isDoasExpanded ? "folder-open" : "folder"} size={20} color={DYNAMIC_TEXT_COLOR} />
+              <Text style={[styles.folderTitle, { color: DYNAMIC_TEXT_COLOR }]}>Doas ({doaBookmarks.length})</Text>
+              <FontAwesome6 name={isDoasExpanded ? "chevron-up" : "chevron-down"} size={20} color={DYNAMIC_TEXT_COLOR} />
             </TouchableOpacity>
 
             {isDoasExpanded && (
@@ -93,7 +88,7 @@ const BookmarkPage = () => {
                 keyExtractor={(item) => item.doaId}
               />
             )}
-        </SafeAreaView>
+        </View>
     );
 };
 
