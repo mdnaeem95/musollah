@@ -71,12 +71,17 @@ const Surahs = () => {
           <FontAwesome6 
             name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} 
             size={24} 
-            color="#FFFFFF" 
+            color={isDarkMode ? '#ECDFCC' : '#FFFFFF'}
           />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.bookmarkIconContainer} onPress={() => router.push('/bookmarks')}>
-          <FontAwesome6 name="bookmark" size={24} solid color="#FFFFFF" />
+          <FontAwesome6 
+            name="bookmark" 
+            size={24} 
+            solid 
+            color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} 
+          />
         </TouchableOpacity>
       </View>
 

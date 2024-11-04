@@ -8,11 +8,16 @@ const TabLayout = () => {
         tabBarActiveTintColor: '#BFE1DB',
         tabBarInactiveTintColor: '#688A84',
         tabBarStyle: {
-          backgroundColor: '#4D6561',
-          borderTopColor: '#FFFFFF',
+          backgroundColor: '#2E3D3A',
+          borderTopColor: '#3A504C',
           height: 60,
-          paddingBottom: 20,
+          paddingBottom: 25,
           paddingTop: 10,
+          borderTopWidth: 1, // Thin border line for slight separation
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.2,
+          shadowRadius: 3,
         },
         tabBarShowLabel: false,
         tabBarIcon: ({ color, focused }) => {

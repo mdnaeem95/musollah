@@ -1,20 +1,17 @@
-import { FlatList, ActivityIndicator, View, TextInput, TouchableOpacity, StatusBar } from 'react-native';
+import { FlatList, ActivityIndicator, View, TextInput, TouchableOpacity, StatusBar, StyleSheet } from 'react-native';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import DoaItem from '../../../../components/DoaItem';
 import { RootState } from '../../../../redux/store/store';
 import { Doa } from '../../../../utils/types';
 import { ThemeContext } from '../../../../context/ThemeContext';
-import { darkTheme, lightTheme } from '../../../../utils/theme';
 
 const Doas = () => {
   const { isDarkMode } = useContext(ThemeContext);
   const { doas, loading } = useSelector((state: RootState) => state.doas);
   const router = useRouter();
-  const styles = isDarkMode ? darkTheme : lightTheme;
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
@@ -51,8 +48,10 @@ const Doas = () => {
   }, [searchQuery]);
 
   return (
-    <SafeAreaView style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? '#1E1E1E' : '#4D6561' }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={isDarkMode ? '#1E1E1E' : '#4D6561'} />
+
+      {/* Header with searchbar and bookmark */}
       <View style={styles.headerContainer}>
         {isSearchExpanded && (
           <View style={styles.searchBarContainer}>
@@ -69,11 +68,12 @@ const Doas = () => {
           <FontAwesome6 name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} size={24} color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={{ paddingHorizontal: 10 }} onPress={() => router.push('/bookmarks')}>
+        <TouchableOpacity style={styles.bookmarkIconContainer} onPress={() => router.push('/bookmarks')}>
           <FontAwesome6 name="bookmark" size={24} solid color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
         </TouchableOpacity>
       </View>
 
+      {/* Duas List */}
       {loading ? (
         <ActivityIndicator />
       ) : (
@@ -84,11 +84,51 @@ const Doas = () => {
           maxToRenderPerBatch={10}
           keyExtractor={(item) => item.number.toString()}
           showsVerticalScrollIndicator={false}
-          style={{ paddingHorizontal: 30 }}
+          style={styles.listContainer}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#4D6561',
+    paddingHorizontal: 16,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  searchBarContainer: {
+    flex: 1,
+    backgroundColor: '#3A504C',
+    borderRadius: 15,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    marginRight: 10,
+  },
+  searchInput: {
+    color: '#FFFFFF',
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 16,
+  },
+  searchIconContainer: {
+    padding: 8,
+  },
+  bookmarkIconContainer: {
+    padding: 8,
+  },
+  listContainer: {
+    paddingBottom: 20,
+  }
+})
 
 export default Doas;

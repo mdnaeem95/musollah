@@ -2,7 +2,7 @@
 import { FontAwesome6 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Slider, Switch } from '@rneui/base';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, usePathname } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
 import { Modal, StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { ThemeContext } from '../../../context/ThemeContext';
@@ -11,6 +11,7 @@ import { reciterOptions } from '../../../utils/constants';
 const QuranLayout = () => {
   const router = useRouter();
   const [isModalVisible, setModalVisible] = useState(false);
+  const pathname = usePathname();
   const { isDarkMode, toggleDarkMode, textSize, setTextSize, reciter, setReciter } = useContext(ThemeContext);
 
   // Load the text size from AsyncStorage on component mount
@@ -24,6 +25,8 @@ const QuranLayout = () => {
     loadTextSize();
   }, []);
 
+
+
   // Save the text size to AsyncStorage when it changes
   const handleTextSizeChange = async (value: number) => {
     setTextSize(value);
@@ -31,6 +34,7 @@ const QuranLayout = () => {
   };
 
   const toggleModal = () => setModalVisible(!isModalVisible);
+
   return (
     <>
       <Stack
@@ -42,7 +46,17 @@ const QuranLayout = () => {
         <Stack.Screen 
           name="index"
           options={{
-            gestureEnabled: false
+            gestureEnabled: false,
+            headerShown: true,
+            headerTitle: 'Quran & Duas',
+            headerTitleStyle: {
+              fontFamily: 'Outfit_700Bold',
+              fontSize: 20,
+              color: '#ECDFCC'
+            },
+            headerStyle: {
+              backgroundColor: '#2E3D3A',
+            }
           }}
         />
         {/* Enable the header for surahs/[id] page */}
@@ -81,10 +95,94 @@ const QuranLayout = () => {
           }}
         />
         <Stack.Screen
+          name="doas/[id]"
+          options={{
+            headerShown: true,
+            headerTitle: 'Doas',
+            headerStyle: {
+              backgroundColor: isDarkMode ? '#1E1E1E' : '#4D6561',
+            },
+            headerTintColor: '#FFFFFF',
+            headerTitleStyle: {
+              fontFamily: 'Outfit_700Bold',
+              fontSize: 20,
+              color: isDarkMode ? '#ECDFCC' : '#FFFFFF'
+            },
+            headerLeft: () => (
+              <FontAwesome6
+                name="arrow-left"
+                size={24}
+                color={isDarkMode ? '#ECDFCC' : '#FFFFFF'}
+                style={{ padding: 10 }}
+                onPress={() => router.back()}
+              />
+            ),
+            headerRight: () => (
+              <FontAwesome6
+                name="gear"
+                size={24}
+                color={isDarkMode ? '#ECDFCC' : '#FFFFFF'}
+                style={{ padding: 10 }}
+                onPress={toggleModal}
+              />
+            )
+          }}
+        />        
+        <Stack.Screen
           name="surahs/index"
           options={{
             headerShown: true,
             headerTitle: 'Surahs',
+            headerStyle: {
+              backgroundColor: isDarkMode ? '#1E1E1E' : '#4D6561',
+            },
+            headerTintColor: '#FFFFFF',
+            headerTitleStyle: {
+              fontFamily: 'Outfit_700Bold',
+              fontSize: 20,
+              color: isDarkMode ? '#ECDFCC' : '#FFFFFF'
+            },
+            headerLeft: () => (
+              <FontAwesome6
+                name="arrow-left"
+                size={24}
+                color= {isDarkMode ? '#ECDFCC' : '#FFFFFF'}
+                style={{ padding: 10 }}
+                onPress={() => router.back()}
+              />
+            ),
+          }}
+        />
+        <Stack.Screen
+          name="doas/index"
+          options={{
+            headerShown: true,
+            headerTitle: 'Doas',
+            headerStyle: {
+              backgroundColor: isDarkMode ? '#1E1E1E' : '#4D6561',
+            },
+            headerTintColor: '#FFFFFF',
+            headerTitleStyle: {
+              fontFamily: 'Outfit_700Bold',
+              fontSize: 20,
+              color: isDarkMode ? '#ECDFCC' : '#FFFFFF'
+            },
+            headerLeft: () => (
+              <FontAwesome6
+                name="arrow-left"
+                size={24}
+                color= {isDarkMode ? '#ECDFCC' : '#FFFFFF'}
+                style={{ padding: 10 }}
+                onPress={() => router.back()}
+              />
+            ),
+          }}
+        />
+        <Stack.Screen
+          name="bookmarks/index"
+          options={{
+            headerShown: true,
+            headerTitle: 'My Bookmarks',
             headerStyle: {
               backgroundColor: isDarkMode ? '#1E1E1E' : '#4D6561',
             },
@@ -151,36 +249,38 @@ const QuranLayout = () => {
                 </View>
               </View>
 
-              {/* Reciter Section */}
-              <View style={[styles.modalRow, { flexDirection: 'column', gap: 20}]}>
-                <Text style={[styles.modalText, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF', alignSelf: 'flex-start' }]}>
-                  Reciter
-                </Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                > 
-                  {reciterOptions.map((reciterOption) => (
-                    <TouchableOpacity 
-                      key={reciterOption.value}
-                      style={[
-                        styles.reciterCard, 
-                        reciter === reciterOption.value ? styles.reciterCardActive : null, 
-                      ]}
-                      onPress={() => setReciter(reciterOption.value)}
-                    >
-                      <Text           
+              {/* Conditionally Render Reciter Section */}
+              {pathname.includes('/surahs') && (
+                <View style={[styles.modalRow, { flexDirection: 'column', gap: 20}]}>
+                  <Text style={[styles.modalText, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF', alignSelf: 'flex-start' }]}>
+                    Reciter
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                  > 
+                    {reciterOptions.map((reciterOption) => (
+                      <TouchableOpacity 
+                        key={reciterOption.value}
                         style={[
-                          styles.reciterCardText,
-                          reciter === reciterOption.value ? styles.reciterCardTextActive : null,
+                          styles.reciterCard, 
+                          reciter === reciterOption.value ? styles.reciterCardActive : null, 
                         ]}
+                        onPress={() => setReciter(reciterOption.value)}
                       >
-                        {reciterOption.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
+                        <Text           
+                          style={[
+                            styles.reciterCardText,
+                            reciter === reciterOption.value ? styles.reciterCardTextActive : null,
+                          ]}
+                        >
+                          {reciterOption.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
 
               {/* Close Button */}
               <TouchableOpacity style={styles.closeButton} onPress={toggleModal}>

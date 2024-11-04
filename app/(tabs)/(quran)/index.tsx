@@ -1,7 +1,6 @@
 // QuranDashboard.tsx
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native'
-import React, { useEffect, useState, useRef, useCallback } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView } from 'react-native'
+import React, { useState, useRef, useCallback } from 'react'
 import DailyAyah from '../../../components/DailyAyah'
 import { FontAwesome6 } from '@expo/vector-icons'
 import { useFocusEffect, useRouter } from 'expo-router'
@@ -10,12 +9,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 const QuranDashboard = () => {
     const router = useRouter();
     const scaleAnim = useRef(new Animated.Value(1)).current; // Animation for button scaling
-    const [lastReadAyah, setLastReadAyah] = useState<{}>({});
-    const [lastListenedAyah, setLastListenedAyah] = useState<{}>({});
+    const [lastReadAyah, setLastReadAyah] = useState<{ayahNumber: number, surahNumber: number}>({
+        ayahNumber: 0,
+        surahNumber: 0
+    });
+    const [lastListenedAyah, setLastListenedAyah] = useState<{ayahIndex: number, surahNumber: number}>({
+        ayahIndex: 0,
+        surahNumber: 0
+    });
 
     const handlePressIn = () => {
         Animated.spring(scaleAnim, {
-            toValue: 0.95,
+            toValue: 0.9,
             useNativeDriver: true,
         }).start();
     };
@@ -51,13 +56,9 @@ const QuranDashboard = () => {
     )
 
     return (
-        <SafeAreaView style={styles.mainContainer}>
-            {/* HEADER */}
-            <View style={styles.headerContainer}>
-                <Text style={styles.headerText}>Quran & Dua</Text>
-            </View>
-
+        <View style={styles.mainContainer}>
             {/* Grid of Features */}
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
             <View style={styles.gridContainer}>
                 {['/surahs', '/doas', '/bookmarks'].map((route, index) => (
                     <TouchableOpacity
@@ -84,42 +85,44 @@ const QuranDashboard = () => {
             </View>
 
             {/* Daily Ayah Section */}
-            <View style={styles.cardContainer}>
-                <DailyAyah />
-            </View>
+            <DailyAyah />
 
             {/* Last Read and Last Listened Sections */}
-            {lastListenedAyah !== undefined && (
-                <Text>last listened avail</Text>
+            {lastListenedAyah && (
+                <View style={styles.ayahContainer}>
+                    <Text style={styles.ayahHeaderText}>Last listened</Text>
+                    <Text style={styles.ayahDetailText}>
+                        Surah {lastListenedAyah.surahNumber}, Ayah {lastListenedAyah.ayahIndex}
+                    </Text>
+                </View>
             )}
 
-            {lastReadAyah !== undefined && (
-                <Text>last read avail</Text>
+            {lastReadAyah && (
+                <View style={styles.ayahContainer}>
+                    <Text style={styles.ayahHeaderText}>Last Read</Text>
+                    <Text style={styles.ayahDetailText}>
+                        Surah {lastListenedAyah.surahNumber}, Ayah {lastListenedAyah.ayahIndex}
+                    </Text>
+                </View>
             )}
-        </SafeAreaView>
+            </ScrollView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
-        padding: 16,
-        backgroundColor: '#4D6561', // Main background color
+        backgroundColor: '#2E3D3A', // Main background color
     },
-    headerContainer: {
-        marginTop: 4,
-        alignItems: 'center',
-    },
-    headerText: {
-        fontSize: 26,
-        fontFamily: 'Outfit_700Bold',
-        color: '#FFFFFF',
+    scrollContainer: {
+        padding: 16
     },
     gridContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        marginTop: 24,
+        marginTop: 20,
     },
     gridItem: {
         alignItems: 'center',
@@ -127,29 +130,31 @@ const styles = StyleSheet.create({
         width: '30%',
         marginBottom: 20,
         padding: 16,
-        borderRadius: 15,
-        backgroundColor: '#3A504C', // Slightly darker shade for buttons
+        borderRadius: 12,
+        backgroundColor: '#3D4F4C', // Slightly darker shade for buttons
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+        elevation: 5,
     },
     iconLabel: {
         fontFamily: 'Outfit_400Regular',
         fontSize: 14,
         marginTop: 8,
         textAlign: 'center',
-        color: '#FFFFFF',
+        color: '#F4E2C1',
     },
     cardContainer: {
         marginVertical: 20,
-        padding: 16,
+        padding: 20,
         borderRadius: 15,
         backgroundColor: '#3A504C', // Darker shade for cards
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4.5,
+        elevation: 4
     },
     lastReadContainer: {
         backgroundColor: '#3A504C', // Darker shade for last read container
@@ -159,15 +164,37 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 20,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4.5,
+        elevation: 4
     },
     lastReadText: {
         fontFamily: 'Outfit_500Medium',
         fontSize: 16,
         color: '#FFFFFF',
         marginLeft: 10,
+    },
+    ayahContainer: {
+        marginTop: 16,
+        padding: 16,
+        borderRadius: 15,
+        backgroundColor: '#2E3D3A',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+    },
+    ayahHeaderText: {
+        fontSize: 18,
+        fontFamily: 'Outfit_600SemiBold',
+        color: '#ECDFCC',
+        marginBottom: 4,
+    },
+    ayahDetailText: {
+        fontSize: 16,
+        fontFamily: 'Outfit_400Regular',
+        color: '#FFFFFF',
     },
 });
 

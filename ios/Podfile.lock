@@ -2998,6 +2998,8 @@ PODS:
     - nanopb (< 2.30910.0, >= 2.30908.0)
     - React-Core
     - RNFBApp
+  - RNFlashList (1.6.4):
+    - React-Core
   - RNGestureHandler (2.19.0):
     - DoubleConversion
     - glog
@@ -3236,6 +3238,7 @@ DEPENDENCIES:
   - "RNFBCrashlytics (from `../node_modules/@react-native-firebase/crashlytics`)"
   - "RNFBDatabase (from `../node_modules/@react-native-firebase/database`)"
   - "RNFBFirestore (from `../node_modules/@react-native-firebase/firestore`)"
+  - "RNFlashList (from `../node_modules/@shopify/flash-list`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - RNPurchases (from `../node_modules/react-native-purchases`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
@@ -3470,6 +3473,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-firebase/database"
   RNFBFirestore:
     :path: "../node_modules/@react-native-firebase/firestore"
+  RNFlashList:
+    :path: "../node_modules/@shopify/flash-list"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
   RNPurchases:
@@ -3610,6 +3615,7 @@ SPEC CHECKSUMS:
   RNFBCrashlytics: 9cc9eb22443f5a4c0f348efddd16318a80d2dd78
   RNFBDatabase: 6cb9aea137bca41d596be5f81e12dca580c6f36d
   RNFBFirestore: b12e7d4e6a94e08565638442def454984a06c065
+  RNFlashList: b521ebdd7f9352673817f1d98e8bdc0c8cf8545b
   RNGestureHandler: f81137aeaf7a060c491d0a43af0f5ef6a8867250
   RNPurchases: 2233090d55e80c8aab508ea426ba720f41b2e142
   RNReanimated: f12dfda120df1bc53833874b7f0280a39e1d050f
