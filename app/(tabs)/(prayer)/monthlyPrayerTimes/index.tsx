@@ -35,14 +35,6 @@ const loadFromStorage = async (key: string) => {
     }
 };
 
-// Function to get current month and year as a string, e.g., 'October 2024'
-    const getCurrentMonthYear = () => {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = date.toLocaleString('default', { month: 'long' }); // Convert month to full name, e.g., 'October'
-    return `${month} ${year}`;
-};
-
 const MonthlyPrayerTimesPage = () => {
   const [monthlyPrayerTimes, setMonthlyPrayerTimes] = useState<PrayerTime[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -77,28 +69,22 @@ const MonthlyPrayerTimesPage = () => {
   }, [currentYear, currentMonth])
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {loading ? (
         <ActivityIndicator size="large" color="#CCC" style={{ justifyContent: 'center', alignItems: 'center' }} />
       ): (
-        <>
-        <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-          <PrayerHeader title={getCurrentMonthYear()} backgroundColor='#4D6561' />
-        </View>
-
         <View style={styles.prayerTimesTable}>
           <MonthlyPrayerTimesTable monthlyPrayerTimes={monthlyPrayerTimes} />
         </View>
-        </>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#4D6561',
+    backgroundColor: '#2E3D3A',
     alignContent: 'center',
     justifyContent: 'center',
   },

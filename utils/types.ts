@@ -62,7 +62,7 @@ export interface UserData {
     avatarUrl: string;
     email: string;
     enrolledCourses: CourseAndModuleProgress[],
-    prayerLogs?: { [date:string]: any },
+    prayerLogs?: { [date: string]: any },
     name: string,
     monthlyLogs?: { date: string; prayersCompleted: number }[];  // Add this field
     role: UserRole
