@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@react-native-firebase/auth'
 import firestore from '@react-native-firebase/firestore';
-import { Question, UserState } from '../../utils/types';
+import { UserState } from '../../utils/types';
 import { eachDayOfInterval, endOfMonth, format, startOfMonth, subDays } from 'date-fns';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -35,7 +35,7 @@ export const signIn = createAsyncThunk(
       displayName: user.displayName,      // From Firebase Auth
       photoURL: user.photoURL,            // From Firebase Auth
       enrolledCourses: userData?.enrolledCourses || [],  // From Firestore
-      prayerLogs: userData?.prayerLogs || {},            // From Firestore
+      prayerLogs: userData?.prayerLogs || [],            // From Firestore
       likedQuestions: userData?.likedQuestions || []
     };
   }
@@ -57,7 +57,7 @@ export const signUp = createAsyncThunk(
         email: user.email,
         avatarUrl: 'https://via.placeholder.com/100',  // Default avatar
         enrolledCourses: [],                           // Default: no enrolled courses
-        prayerLogs: {},                           // Default: empty prayer logs
+        prayerLogs: [],                           // Default: empty prayer logs
         role: 'user',
         likedQuestions: []
     });
@@ -109,23 +109,40 @@ export const fetchPrayerLog = createAsyncThunk(
       const userData = userDoc.data();
 
       if (!userData || !userData.prayerLogs) {
-        throw new Error('No prayer logs found');
+        // Return default logs if none are found
+        return {
+          date: format(new Date(), 'yyyy-MM-dd'),
+          prayerLog: {
+            Subuh: false,
+            Zohor: false,
+            Asar: false,
+            Maghrib: false,
+            Isyak: false,
+          },
+        };
       }
 
       const todayDate = format(new Date(), 'yyyy-MM-dd');
-      const prayerLog = userData.prayerLogs[todayDate];
+      const prayerLog = userData.prayerLogs[todayDate]; // Ensure it's defined
 
-      if (!prayerLog) {
-        throw new Error('No prayer log for today');
-      }
-
-      return { date: todayDate, prayerLog };
+      // Return today's log or initialize it if it's not found
+      return {
+        date: todayDate,
+        prayerLog: prayerLog || {
+          Subuh: false,
+          Zohor: false,
+          Asar: false,
+          Maghrib: false,
+          Isyak: false,
+        },
+      };
     } catch (error) {
       console.error('Error in fetchPrayerLog:', error);
       return rejectWithValue('Failed to fetch prayer log');
     }
   }
 );
+
 
 // Thunk to fetch prayer logs for the current month
 export const fetchMonthlyPrayerLogs = createAsyncThunk(
@@ -186,7 +203,7 @@ export const listenForUserUpdates = createAsyncThunk(
             email: currentUser.email || '',
             name: currentUser.displayName || 'New User',
             enrolledCourses: userData.enrolledCourses || [],
-            prayerLogs: userData.prayerLogs || {},
+            prayerLogs: userData.prayerLogs || [],
             role: userData.role || 'user',
             likedQuestions: userData.likedQuestions || [],
           }));
@@ -277,7 +294,7 @@ extraReducers: (builder) => {
     .addCase(fetchPrayerLog.fulfilled, (state, action) => {
       console.log('Action payload for fetchPrayerLog fulfilled:', action.payload);  // Log the payload
     
-      const { date, prayerLog } = action.payload || {};
+      const { date, prayerLog } = action.payload;
     
       if (date && prayerLog) {
         if (state.user) {

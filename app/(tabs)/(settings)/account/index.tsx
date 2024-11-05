@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'reac
 import { deleteUser, getAuth, signOut, updateProfile } from '@react-native-firebase/auth';
 import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from '@react-native-firebase/firestore';
 import { FontAwesome6 } from '@expo/vector-icons'; // For consistent icons
-import { useRouter } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 import { persistor } from '../../../../redux/store/store'
 import Modal from 'react-native-modal'
 import SignInModal from '../../../../components/SignInModal';
@@ -12,6 +12,7 @@ const AccountSettings = () => {
     const auth = getAuth();
     const firestore = getFirestore();
     const router = useRouter();
+    const segments = useSegments();
 
     // State for Firebase Auth data
     const [currentUser, setCurrentUser] = useState(auth.currentUser);
@@ -84,7 +85,7 @@ const AccountSettings = () => {
             await signOut(auth);
             await persistor.purge();
             setCurrentUser(null);
-            router.push('/(tabs)/(prayer)');
+            router.replace(segments.join('/'));
             Alert.alert('You have been successfully signed out.');
         } catch (error) {
             console.error('Error signing out:', error);

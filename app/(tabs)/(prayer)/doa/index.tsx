@@ -1,10 +1,8 @@
 import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, ActivityIndicator } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import React, { useEffect, useState } from 'react'
 import { getDoaAfterPrayer } from '../../../../api/firebase'
 import { FontAwesome6 } from '@expo/vector-icons'
 import { DoaAfterPrayer } from '../../../../utils/types'
-import PrayerHeader from '../../../../components/PrayerHeader'
 
 const Doa = () => {
   const [doas, setDoas] = useState<DoaAfterPrayer[]>([]);
@@ -27,11 +25,7 @@ const Doa = () => {
   }, [])
 
   return (
-    <SafeAreaView style={styles.mainContainer}>
-      <View style={{ paddingHorizontal: 16 }}>
-        <PrayerHeader title="Doa After Prayer" backgroundColor='#4D6561' />
-      </View>
-
+    <View style={styles.mainContainer}>
       {loading ? (
         <ActivityIndicator size="large" color="#FFFFFF" style={{marginTop: 20}} />
       ) : (
@@ -78,20 +72,20 @@ const Doa = () => {
           </View>
         </Modal>
       )}
-    </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1, 
-    backgroundColor: '#4D6561',
+    backgroundColor: '#2E3D3A',
     paddingVertical: 16
   },
   tooltipIcon: {
     position: 'absolute',
-    right: 55,
-    top: 78,
+    left: 275,
+    top: 42,
     alignItems: 'center', 
     justifyContent: 'center', 
   },
@@ -101,7 +95,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#CC'
   },
   doaHeaderText: {
-    color: '#FFFFFF',
+    color: '#ECDFCC',
     fontFamily: 'Outfit_500Medium',
     fontSize: 20,
     lineHeight: 25,
@@ -109,7 +103,7 @@ const styles = StyleSheet.create({
   },
   doaText: {
     fontFamily: 'Amiri_400Regular',
-    color: '#FFFFFF',
+    color: '#ECDFCC',
     fontSize: 26,
     lineHeight: 44,
     textAlign: 'right',

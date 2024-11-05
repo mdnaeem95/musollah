@@ -21,11 +21,11 @@ import { getFormattedDate, getPrayerTimesInfo } from '../../../utils';
 
 // Constants for background images
 const prayerBackgrounds = {
-  Fajr: SubuhBackground,
-  Dhuhr: ZuhurBackground,
-  Asr: AsrBackground,
+  Subuh: SubuhBackground,
+  Zohor: ZuhurBackground,
+  Asar: AsrBackground,
   Maghrib: MaghribBackground,
-  Isha: IshaBackground,
+  Isyak: IshaBackground,
 }
 
 // Constants for screen width

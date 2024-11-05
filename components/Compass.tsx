@@ -62,7 +62,7 @@ const Compass = () => {
 
     const interpolateColor = bgColor.interpolate({
         inputRange: [0, 1],
-        outputRange: ['#4D6561', '#C3F0E9']
+        outputRange: ['#3A504C', '#A3C0BB']
     })
 
     return (
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
         fontWeight: '300',
         fontSize: 18,
         lineHeight: 21,
-        color: '#EAFFFC',
+        color: '#ECDFCC',
         textAlign: 'center'
     },
     compassContainer: {
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
         height: compassSize, 
         borderRadius: compassSize /2,
         borderWidth: 2,
-        borderColor: '#FFFFFF',
+        borderColor: '#ECDFCC',
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative'
