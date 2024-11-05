@@ -1,8 +1,9 @@
-// File: redux/slices/qaSlice.ts
-
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import firestore from '@react-native-firebase/firestore';
 import { Question, Answer, Vote, Comment } from '../../utils/types';
+import { RootState } from '../store/store';
+import { getAuth } from '@react-native-firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define initial state for Q&A
 interface QAState {
@@ -22,6 +23,90 @@ const initialState: QAState = {
   loading: false,
   error: null,
 };
+
+export const toggleLikeQuestion = createAsyncThunk<
+  { questionId: string; isLiked: boolean; newVotes: number }, // Return type
+  { questionId: string }, // Argument type
+  { state: RootState; rejectValue: string } // Thunk API configuration
+>(
+  'qa/toggleLikeQuestion',
+  async ({ questionId }, { getState, rejectWithValue }) => {
+    try {
+      const user = getAuth().currentUser;
+
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const userDocRef = firestore().collection('users').doc(user.uid);
+      const userData = (await userDocRef.get()).data();
+
+      if (!userData) {
+        throw new Error('No user data!');
+      }
+      const questionDocRef = firestore().collection('questions').doc(questionId);
+
+      // Check if the user already liked the question
+      const isLiked = userData.likedQuestions.includes(questionId);
+      let voteChange = isLiked ? -1 : 1;
+
+      // Update Firestore with new like state
+      await userDocRef.update({
+        likedQuestions: isLiked
+          ? firestore.FieldValue.arrayRemove(questionId)
+          : firestore.FieldValue.arrayUnion(questionId),
+      });
+
+      // Update the question's votes
+      await questionDocRef.update({
+        votes: firestore.FieldValue.increment(voteChange),
+      });
+
+      // Update local storage with the new liked questions
+      let updatedLikedQuestions;
+      if (isLiked) {
+        updatedLikedQuestions = userData.likedQuestions.filter((id: string) => id !== questionId);
+      } else {
+        updatedLikedQuestions = [...userData.likedQuestions, questionId];
+      }
+
+      try {
+        await AsyncStorage.setItem('likedQuestions', JSON.stringify(updatedLikedQuestions));
+      } catch (storageError) {
+        console.error('Failed to update local storage:', storageError);
+      }
+
+      return { questionId, isLiked: !isLiked, newVotes: voteChange };
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      return rejectWithValue('Failed to toggle like');
+    }
+  }
+);
+
+// Async thunk to increment views in Firestore
+export const incrementQuestionViews = createAsyncThunk<
+  { questionId: string },
+  { questionId: string },
+  { rejectValue: string }
+>(
+  'qa/incrementQuestionViews',
+  async ({ questionId }, { rejectWithValue }) => {
+    try {
+      const questionDocRef = firestore().collection('questions').doc(questionId);
+
+      // Increment the views count by 1
+      await questionDocRef.update({
+        views: firestore.FieldValue.increment(1),
+      });
+
+      return { questionId };
+    } catch (error) {
+      console.error('Error incrementing views:', error);
+      return rejectWithValue('Failed to increment views');
+    }
+  }
+);
 
 // Async thunks using react-native-firebase
 export const fetchQuestions = createAsyncThunk<Question[], void, { rejectValue: string }>(
@@ -85,8 +170,8 @@ export const fetchAnswers = createAsyncThunk<Answer[], string, { rejectValue: st
         return {
           id: doc.id,
           ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || null,
+          createdAt: data.createdAt?.toDate().toISOString() || new Date().toISOString(), // Convert to ISO string
+          updatedAt: data.updatedAt?.toDate()?.toISOString() || null,
         } as Answer;
       });
       return answers;
@@ -118,7 +203,7 @@ export const addAnswer = createAsyncThunk<Answer, { questionId: string; newAnswe
       return {
         id: answerSnapshot.id,
         ...answerData,
-        createdAt: answerData?.createdAt?.toDate(),
+        createdAt: answerData?.createdAt?.toDate().toISOString(),
       } as Answer;
     } catch (error) {
       return rejectWithValue('Failed to add answer');
@@ -138,6 +223,24 @@ const qaSlice = createSlice({
       state.votes = {};
       state.loading = false;
       state.error = null;
+    },
+    incrementQuestionViewsLocally(state, action: PayloadAction<{ questionId: string }>) {
+      const { questionId } = action.payload;
+
+      // Find the question and increment its views in the state
+      const question = state.questions.find((q) => q.id === questionId);
+      if (question) {
+        question.views += 1;
+      }
+    },
+    updateQuestionVotes(state, action: PayloadAction<{ questionId: string; isLiked: boolean; newVotes: number }>) {
+      const { questionId, isLiked, newVotes } = action.payload;
+
+      // Update the votes of the specific question
+      const question = state.questions.find((q) => q.id === questionId);
+      if (question) {
+        question.votes += isLiked ? 1 : -1;
+      }
     },
   },
   extraReducers: (builder) => {
@@ -196,9 +299,17 @@ const qaSlice = createSlice({
       state.loading = false;
       state.error = action.payload || 'Failed to add answer';
     });
+    builder.addCase(toggleLikeQuestion.fulfilled, (state, action) => {
+      // Call the new reducer to refresh state
+      qaSlice.caseReducers.updateQuestionVotes(state, action);
+    });
+    builder.addCase(incrementQuestionViews.fulfilled, (state, action) => {
+      // Call the reducer to update views locally
+      qaSlice.caseReducers.incrementQuestionViewsLocally(state, action);
+    });
   },
 });
 
 // Export actions and reducer
-export const { resetQAState } = qaSlice.actions;
+export const { resetQAState, incrementQuestionViewsLocally, updateQuestionVotes } = qaSlice.actions;
 export default qaSlice.reducer;

@@ -16,6 +16,7 @@ import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import { fetchDailyDoasData } from '../redux/slices/doasSlice';
 import LoadingScreen from '../components/LoadingScreen';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { listenForUserUpdates } from '../redux/slices/userSlice';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -49,6 +50,11 @@ const RootLayout = () => {
 
     return () => unsubscribe();
   }, []);
+  
+  // Listener to monitor changes in user documents
+  useEffect(() => {
+    dispatch(listenForUserUpdates());
+  }, [dispatch]);
 
   // Fetch only essential data (Prayer Times) first
   useEffect(() => {
