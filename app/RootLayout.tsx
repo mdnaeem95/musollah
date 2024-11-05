@@ -152,7 +152,7 @@ const RootLayout = () => {
 const styles = {
   splashScreen: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#4D6561',
+    backgroundColor: '#2E3D3A',
     zIndex: 1
   }
 }
