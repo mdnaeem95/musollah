@@ -1,96 +1,101 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import { getAuth } from '@react-native-firebase/auth';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { Question } from '../../../../../utils/types';
+import { RootState } from '../../../../../redux/store/store';
+import { FontAwesome6 } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
-import { Answer } from '../../../../../utils/types';
-import { addAnswer, fetchAnswers } from '../../../../../redux/slices/qaSlice';
-import { AppDispatch, RootState } from '../../../../../redux/store/store';
+import { formatDistanceToNow } from 'date-fns';
+import { useSelector } from 'react-redux';
+import AnswerModal from '../../../../../components/AnswerModal';
 
-const QuestionThreadScreen: React.FC = () => {
-  const { id: paramQuestionId } = useLocalSearchParams();
-  const questionId = Array.isArray(paramQuestionId) ? paramQuestionId[0] : paramQuestionId;
+const QuestionThreadScreen = () => {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { questions, loading } = useSelector((state: RootState) => state.qa);
+  const user = useSelector((state: RootState) => state.user.user);
+  const question: Question | undefined = questions.find((question: Question) => question.id === id);
+  const answers = useSelector((state: RootState) => state.qa.answers[question!.id] || []);
+  const [isModalVisible, setModalVisible] = useState(false);
 
-  const [answerText, setAnswerText] = useState<string>('');
-  const auth = getAuth();
-  const currentUser = auth.currentUser;
-
-  const dispatch = useDispatch<AppDispatch>();
-  const questionDetails = useSelector((state: RootState) => state.qa.questions.find(q => q.id === questionId));
-  const answers = useSelector((state: RootState) => state.qa.answers[questionId] || []);
-  const loading = useSelector((state: RootState) => state.qa.loading);
-
-  useEffect(() => {
-    dispatch(fetchAnswers(questionId));
-  }, [dispatch, questionId]);
-
-  const handleAddAnswer = () => {
-    if (!currentUser) {
-      Alert.alert('Authentication Required', 'Please sign in to answer this question.');
-      return;
-    }
-
-    if (!answerText.trim()) {
-      Alert.alert('Error', 'Answer cannot be empty.');
-      return;
-    }
-
-    const newAnswer: Partial<Answer> = {
-        body: answerText.trim(),
-        userId: currentUser.uid,  // Replace with actual user ID
-        votes: 0,
-        isAccepted: false,
-        createdAt: new Date(),
-      };
-
-    dispatch(addAnswer({ questionId, newAnswer }));
-    setAnswerText('');
+  const openModal = () => {
+      setModalVisible(true);
   };
 
   if (loading) {
     return <ActivityIndicator size="large" color="#4D6561" />;
   }
 
-  return (
-    <View style={styles.container}>
-      {questionDetails ? (
-        <>
-          <View style={styles.questionContainer}>
-            <Text style={styles.title}>{questionDetails.title}</Text>
-            <Text style={styles.body}>{questionDetails.body}</Text>
-            <Text style={styles.stats}>👀 {questionDetails.views} | 💬 {questionDetails.answerCount} | 👍 {questionDetails.votes}</Text>
-          </View>
+  if (!question) {
+    return (
+      <Text>Question is not found.</Text>
+    )
+  }
 
-          <FlatList
-            data={answers}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.answerContainer}>
-                <Text style={styles.answerBody}>{item.body}</Text>
-                <Text style={styles.answerMeta}>By User {item.userId} - {new Date(item.createdAt).toLocaleDateString()}</Text>
+  const createdAtDate = typeof question.createdAt === 'string' ?  new Date(question.createdAt) : question.createdAt;
+  const relativeTime = formatDistanceToNow(createdAtDate, { addSuffix: true })
+
+  return (
+      <Animated.View style={styles.container}>
+        <View style={{ gap: 10, marginBottom: 20 }}>
+          <Text style={styles.title}>{question.title}</Text>
+          <Text style={styles.body}>{question.body}</Text>
+
+          {!question.tags.includes("") && (
+              <View style={styles.tagsContainer}>
+                {question.tags.map((tag, index) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{tag}</Text>
+                  </View>
+                ))}
               </View>
             )}
-            ListEmptyComponent={<Text style={styles.noAnswersText}>No answers yet. Be the first to answer!</Text>}
-          />
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Type your answer here..."
-              value={answerText}
-              onChangeText={setAnswerText}
-              multiline
-            />
-            <TouchableOpacity onPress={handleAddAnswer} style={styles.submitButton}>
-              <Text style={styles.submitButtonText}>Submit Answer</Text>
-            </TouchableOpacity>
+          <Text style={styles.date}>{relativeTime}</Text>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            {/* STATS */}
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <FontAwesome6 name="comment" size={20} color="#BFE1DB" />
+                <Text style={styles.statText}>{question.answerCount}</Text>
+              </View>
+              <View style={styles.statItem}>
+                <FontAwesome6 name="thumbs-up" size={20} color="#BFE1DB" />
+                <Text style={styles.statText}>{question.votes}</Text>
+              </View>
+            </View>
+
+            {/* REPLY FOR ADMINS */}
+            {user?.role === 'admin' && (
+              <TouchableOpacity onPress={openModal}>
+                <FontAwesome6 name="reply" size={20} color="#BFE1DB" />
+              </TouchableOpacity>
+            )}
           </View>
-        </>
-      ) : (
-        <Text style={styles.noDataText}>Question not found</Text>
-      )}
-    </View>
+        </View>
+
+        {loading ? (
+        <ActivityIndicator size="large" color="#00ff00" />
+        ) : (
+          answers.map((answer) => (
+            <View key={answer.id} style={styles.answerContainer}>
+              <Text style={styles.answerText}>{answer.body}</Text>
+              <View style={styles.answerDetailsContainer}>
+                <Text style={styles.answerDate}>{`${formatDistanceToNow(new Date(answer.createdAt), { addSuffix: true })}`}</Text>
+              </View>
+            </View>
+          ))
+        )}
+
+        {/* Answer Modal */}
+        <AnswerModal
+          visible={isModalVisible}
+          onClose={() => setModalVisible(false)}
+          questionId={question.id}
+        />
+      </Animated.View>
   );
+  
 };
 
 const styles = StyleSheet.create({
@@ -99,11 +104,20 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#2E3D3A',
   },
-  questionContainer: {
-    marginBottom: 20,
-    padding: 16,
-    backgroundColor: '#314441',
-    borderRadius: 8,
+  statsRow: {
+    flexDirection: 'row',
+    gap: 15,
+    marginBottom: 5,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  statText: {
+    fontSize: 20,
+    fontFamily: 'Outfit_400Regular',
+    color: '#BFE1DB',
   },
   title: {
     fontSize: 20,
@@ -122,59 +136,62 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_400Regular',
     color: '#BFE1DB',
   },
-  answerContainer: {
-    marginBottom: 15,
-    padding: 10,
-    backgroundColor: '#3A504C',
-    borderRadius: 5,
-  },
-  answerBody: {
-    fontSize: 14,
-    fontFamily: 'Outfit_400Regular',
-    color: '#D1D5DB',
-  },
-  answerMeta: {
+  date: {
     fontSize: 12,
     fontFamily: 'Outfit_400Regular',
     color: '#A3C0BB',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     marginTop: 5,
   },
-  inputContainer: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#3A504C',
-    borderRadius: 8,
-  },
-  input: {
-    backgroundColor: '#FFFFFF',
-    padding: 10,
+  tag: {
+    backgroundColor: '#314441',
     borderRadius: 5,
-    fontSize: 16,
-    marginBottom: 10,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    marginRight: 5,
+    marginBottom: 5,
+  },
+  tagText: {
+    fontSize: 12,
     fontFamily: 'Outfit_400Regular',
+    color: '#A3C0BB',
   },
-  submitButton: {
-    backgroundColor: '#4D6561',
-    padding: 10,
-    borderRadius: 5,
+  answerContainer: {
+    marginBottom: 15,
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: '#3D4F4C',
+  },
+  answerText: {
+    fontSize: 15,
+    fontFamily: 'Outfit_400Regular',
+    color: '#D1D5DB',
+    marginBottom: 10,
+  },
+  answerDetailsContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  submitButtonText: {
-    color: '#FFFFFF',
+  answerDetails: {
+    fontSize: 12,
+    fontFamily: 'Outfit_400Regular',
+    color: '#A3C0BB',
+    marginLeft: 5,
+  },
+  answerDate: {
+    fontSize: 12,
+    fontFamily: 'Outfit_400Regular',
+    color: '#A3C0BB',
+  },
+  errorText: {
+    color: '#FF6B6B',
     fontSize: 16,
-    fontFamily: 'Outfit_600SemiBold',
-  },
-  noAnswersText: {
     textAlign: 'center',
-    fontSize: 14,
-    color: '#D1D5DB',
-    marginTop: 10,
-  },
-  noDataText: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#ECDFCC',
-  },
+    marginTop: 20
+  }
 });
 
 export default QuestionThreadScreen;

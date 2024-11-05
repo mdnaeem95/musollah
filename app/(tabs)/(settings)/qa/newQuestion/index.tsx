@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addQuestion } from '../../../../../redux/slices/qaSlice';
 import { AppDispatch, RootState } from '../../../../../redux/store/store';
 import { Question } from '../../../../../utils/types';
-import { useRouter } from 'expo-router';
 import { getAuth } from '@react-native-firebase/auth';
 import SignInModal from '../../../../../components/SignInModal';
 import {
@@ -12,15 +11,16 @@ import {
 	englishDataset,
 	englishRecommendedTransformers,
 } from 'obscenity';
+import { useRouter } from 'expo-router';
 
-const NewQuestionScreen: React.FC = () => {
-  const router = useRouter();
+const NewQuestionScreen = () => {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [tags, setTags] = useState('');
   const { questions } = useSelector((state: RootState) => state.qa);
   const [isAuthModalVisible, setIsAuthModalVisible] = useState(false); 
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
 
   const matcher = new RegExpMatcher({
     ...englishDataset.build(),

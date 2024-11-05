@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Button, TouchableOpacity, TextInput } from 'react-native';
 import QuestionList from '../../../../components/QaQuestionList';
-import { useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
-const LandingPage: React.FC = () => {
+const LandingPage = () => {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
-  const router = useRouter();
 
   const toggleSearch = () => {
     setIsSearchExpanded(!isSearchExpanded);
@@ -44,7 +44,7 @@ const LandingPage: React.FC = () => {
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.askButton}
-          onPress={() => router.push('/qa/newQuestion')}
+          onPress={() => router.push("/qa/newQuestion")}
         >
           <FontAwesome6 name="question-circle" size={18} color="#FFF" style={styles.icon} />
           <Text style={styles.askButtonText}>Ask a Question</Text>

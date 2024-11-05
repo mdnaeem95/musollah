@@ -1,16 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Question } from '../utils/types';
 import { formatDistanceToNow } from 'date-fns';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { SharedElement } from 'react-navigation-shared-element';
 
 interface QuestionCardProps {
   question: Question;
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
-  const router = useRouter();
   const createdAtDate = typeof question.createdAt === 'string' ?  new Date(question.createdAt) : question.createdAt;
   const relativeTime = formatDistanceToNow(createdAtDate, { addSuffix: true })
 
@@ -19,21 +18,31 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
       <View style={{ marginHorizontal: 16, gap: 10 }}>
         {/* Stats Row */}
         <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <FontAwesome6 name="eye" size={16} color="#BFE1DB" />
-            <Text style={styles.statText}>{question.views}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <FontAwesome6 name="comment" size={16} color="#BFE1DB" />
-            <Text style={styles.statText}>{question.answerCount}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <FontAwesome6 name="thumbs-up" size={16} color="#BFE1DB" />
-            <Text style={styles.statText}>{question.votes}</Text>
-          </View>
+
+          <SharedElement id={question.views.toString()}>
+            <View style={styles.statItem}>
+              <FontAwesome6 name="eye" size={16} color="#BFE1DB" />
+              <Text style={styles.statText}>{question.views}</Text>
+            </View>
+          </SharedElement>
+
+          <SharedElement id={question.answerCount.toString()}>
+            <View style={styles.statItem}>
+              <FontAwesome6 name="comment" size={16} color="#BFE1DB" />
+              <Text style={styles.statText}>{question.answerCount}</Text>
+            </View>
+          </SharedElement>
+
+          <SharedElement id={question.votes.toString()}>
+            <View style={styles.statItem}>
+              <FontAwesome6 name="thumbs-up" size={16} color="#BFE1DB" />
+              <Text style={styles.statText}>{question.votes}</Text>
+            </View>
+          </SharedElement>
+          
         </View>
 
-        <TouchableOpacity style={{ gap: 10 }} onPress={() => router.push(`/qa/questionThread/${question.id}`)}>
+        <View style={{ gap: 10 }}>
           <Text style={styles.title}>{question.title}</Text>
           <Text style={styles.body} numberOfLines={2}>{question.body}</Text>
 
@@ -48,7 +57,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
           )}
 
           <Text style={styles.date}>{relativeTime}</Text>
-        </TouchableOpacity>
+        </View>
       </View>
     </View>
   );

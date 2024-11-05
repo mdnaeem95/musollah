@@ -66,6 +66,7 @@ export interface UserData {
     name: string,
     monthlyLogs?: { date: string; prayersCompleted: number }[];  // Add this field
     role: UserRole
+    likedQuestions: string[];
 }
 
 export interface MusollahState {
