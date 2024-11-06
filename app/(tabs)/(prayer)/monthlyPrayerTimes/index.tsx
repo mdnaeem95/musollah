@@ -6,9 +6,7 @@ import {
 } from 'react-native';
 import { fetchMonthlyPrayerTimes } from '../../../../api/prayers';
 import MonthlyPrayerTimesTable, { PrayerTime } from '../../../../components/MonthlyPrayerTimesTable';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import PrayerHeader from '../../../../components/PrayerHeader';
 
 // Constants for year and month
 const currentYear = new Date().getFullYear();
