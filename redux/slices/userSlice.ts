@@ -100,7 +100,7 @@ export const savePrayerLog = createAsyncThunk(
 // Thunk to fetch prayer log for today's date
 export const fetchPrayerLog = createAsyncThunk(
   'user/fetchPrayerLog',
-  async (_, { rejectWithValue }) => {
+  async ({ date }: { date: string }, { rejectWithValue }) => {
     try {
       const user = getAuth().currentUser;
       if (!user) throw new Error('User not logged in');
@@ -108,34 +108,16 @@ export const fetchPrayerLog = createAsyncThunk(
       const userDoc = await firestore().collection('users').doc(user.uid).get();
       const userData = userDoc.data();
 
-      if (!userData || !userData.prayerLogs) {
-        // Return default logs if none are found
-        return {
-          date: format(new Date(), 'yyyy-MM-dd'),
-          prayerLog: {
-            Subuh: false,
-            Zohor: false,
-            Asar: false,
-            Maghrib: false,
-            Isyak: false,
-          },
-        };
-      }
-
-      const todayDate = format(new Date(), 'yyyy-MM-dd');
-      const prayerLog = userData.prayerLogs[todayDate]; // Ensure it's defined
-
-      // Return today's log or initialize it if it's not found
-      return {
-        date: todayDate,
-        prayerLog: prayerLog || {
-          Subuh: false,
-          Zohor: false,
-          Asar: false,
-          Maghrib: false,
-          Isyak: false,
-        },
+      // Retrieve logs for the specified date or initialize if not found
+      const prayerLog = (userData?.prayerLogs?.[date]) || {
+        Subuh: false,
+        Zohor: false,
+        Asar: false,
+        Maghrib: false,
+        Isyak: false,
       };
+
+      return { date, prayerLog };
     } catch (error) {
       console.error('Error in fetchPrayerLog:', error);
       return rejectWithValue('Failed to fetch prayer log');
