@@ -26,7 +26,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, categor
           {/* Course Details Section */}
           <View style={styles.textDetailsContainer}>
             <View style={styles.courseCategory}>
-              <Text>{category}</Text>
+              <Text style={styles.courseCategoryText}>{category}</Text>
             </View>
             <View style={styles.courseDescription}>
               <Text style={styles.courseHeader}>{title}</Text>
@@ -41,12 +41,13 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, categor
 
 const styles = StyleSheet.create({
   cardContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#3A504C',
     borderRadius: 10,
     marginVertical: 8,
     paddingVertical: 10,
     paddingHorizontal: 14,
     alignItems: 'center',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
@@ -63,6 +64,7 @@ const styles = StyleSheet.create({
     height: 70,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#A3C0BB',
     borderRadius: 8
   },
   textDetailsContainer: {
@@ -70,7 +72,7 @@ const styles = StyleSheet.create({
   },
   courseCategory: {
     borderWidth: 0.5,
-    borderColor: '#CCCCCC',
+    borderColor: '#ECDFCC',
     borderRadius: 50,
     paddingVertical: 2,
     paddingHorizontal: 10,
@@ -80,21 +82,21 @@ const styles = StyleSheet.create({
   courseCategoryText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 12,
-    color: '#333333',
+    color: '#ECDFCC',
   },
   courseDescription: {
     justifyContent: 'center',
   },
   courseHeader: {
     fontFamily: 'Outfit_500Medium',
-    fontSize: 14,
-    color: '#333333',
+    fontSize: 16,
+    color: '#ECDFCC',
     marginBottom: 4,
   },
   courseDescriptionText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 12,
-    color: '#666666'
+    color: '#D1D5DB'
   }
 });
 

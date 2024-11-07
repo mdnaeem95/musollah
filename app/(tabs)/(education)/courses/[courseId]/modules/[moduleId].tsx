@@ -1,24 +1,27 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import React, { useEffect, useState } from 'react';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, FlatList } from 'react-native';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../../../redux/store/store';
 import { completeModule } from '../../../../../../redux/slices/courseSlice';
 import { getAuth } from '@react-native-firebase/auth';
 import { CourseAndModuleProgress, CourseData, ModuleData } from '../../../../../../utils/types';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import PrayerHeader from '../../../../../../components/PrayerHeader';
+import PagerView from 'react-native-pager-view';
 
 type Params = {
   courseId: string;
   moduleId: string;
 }
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 const ModuleDetails = () => {
   const { courseId, moduleId } = useLocalSearchParams<Params>(); // Extract courseId and moduleId from the URL
   const router = useRouter();
+  const navigation = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
   const [moduleData, setModuleData] = useState<ModuleData | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
@@ -33,6 +36,10 @@ const ModuleDetails = () => {
     state.dashboard.user?.enrolledCourses.find((p) => p.courseId === courseId)
   );
 
+  const onPageSelected = (event: any) => {
+    setCurrentIndex(event.nativeEvent.position);
+  };
+
   useEffect(() => {
     if (course) {
       // Fetch the module data for the current module
@@ -42,6 +49,12 @@ const ModuleDetails = () => {
       }
     }
   }, [course, moduleId]);
+
+  useLayoutEffect(() => {
+    if (moduleData) {
+      navigation.setOptions({ headerTitle: moduleData?.title });
+    }
+  }, [navigation, moduleData?.title]);
 
   const handleCompleteModule = async () => {
     if (courseId && moduleId && userId && userProgress) {
@@ -84,23 +97,26 @@ const ModuleDetails = () => {
   }
 
   return (
-    <SafeAreaView style={styles.mainContainer}>
-      <PrayerHeader title={moduleData.title} backgroundColor='#FFF' textColor='black' />
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Render the module content */}
-        {moduleData.content.map((contentItem, index) => (
-          <View key={index} style={styles.contentContainer}>
-            <Text style={styles.contentTitle}>{contentItem.title}</Text>
-            <Text style={styles.textContent}>{contentItem.data}</Text>
-          </View>
-        ))}
-        
+    <View style={styles.mainContainer}>
+        {/* PagerView for Carousel */}
+        <PagerView
+          style={styles.pagerView}
+          initialPage={0}
+          onPageSelected={onPageSelected}
+        >
+          {moduleData.content.map((contentItem, index) => (
+            <View key={index} style={styles.page}>
+              <Text style={styles.contentTitle}>{contentItem.title}</Text>
+              <Text style={styles.textContent}>{contentItem.data}</Text>
+            </View>
+          ))}
+        </PagerView>
+
         {/* Button to mark module as complete */}
         <TouchableOpacity style={styles.completeButton} onPress={handleCompleteModule}>
           <Text style={styles.completeButtonText}>Complete Module</Text>
         </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -108,46 +124,71 @@ const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#FFF'
+    backgroundColor: '#2E3D3A'
   },
-  container: {
-    backgroundColor: '#FFF',
-    flexGrow: 1,
+  pagerView: {
+    flex: 1,
+  },
+  page: {
+    width: SCREEN_WIDTH,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 10,
+  },
+  dot: {
+    height: 8,
+    width: 8,
+    borderRadius: 4,
+    backgroundColor: '#757575',
+    marginHorizontal: 4,
+  },
+  activeDot: {
+    backgroundColor: '#A3C0BB',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  title: {
-    fontFamily: 'Outfit_600SemiBold', 
-    fontSize: 24,
-    marginBottom: 16,
-  },
   contentContainer: {
-    marginBottom: 16,
+    width: SCREEN_WIDTH - 32,
+    padding: 16,
+    backgroundColor: '#3A504C',
+    justifyContent: 'center',
   },
   contentTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 24,
+    color: '#ECDFCC',
+    fontFamily: 'Outfit_600SemiBold',
     marginBottom: 8,
   },
   textContent: {
-    fontSize: 16,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 18,
     lineHeight: 24,
+    color: '#D1D5DB', // Medium grey for body text
   },
   completeButton: {
     alignItems: 'center',
     width: '100%',
     backgroundColor: '#A3C0BB',
-    paddingHorizontal: 8,
     paddingVertical: 12,
-    borderRadius: 10
+    borderRadius: 10,
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 4,
   },
   completeButtonText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 18,
-    color: '#FFFFFF'
+    color: '#FFFFFF',
   },
 });
 

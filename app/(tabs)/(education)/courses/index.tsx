@@ -1,13 +1,13 @@
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, Modal } from 'react-native';
-import React, { useLayoutEffect, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import { Divider } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../../redux/store/store';
 import CourseCard from '../../../../components/CourseCard';
 import { CourseData } from '../../../../utils/types';
-import { useNavigation } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { CheckBox } from '@rneui/base';
+import { FlashList } from '@shopify/flash-list';
 
 const categories = [
   { title: 'All Courses' },
@@ -23,7 +23,7 @@ const Courses = () => {
   const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const navigation = useNavigation();
+  const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
   const [selectedTypes, setSelectedTypes] = useState({
     'Online': true,
     'Physical': false,
@@ -38,25 +38,25 @@ const Courses = () => {
     'Modern Challenges': false,
   });
 
-    // Handle course type selection
-    const handleTypeSelection = (type: string) => {
-      setSelectedTypes((prev: any) => ({
-        ...prev,
-        [type]: !prev[type],
-      }));
-    };
-  
-    // Handle category selection
-    const handleCategorySelection = (category: string) => {
-      setSelectedCategories((prev: any) => ({
-        ...prev,
-        [category]: !prev[category],
-      }));
-    };
+  // Handle course type selection
+  const handleTypeSelection = (type: string) => {
+    setSelectedTypes((prev: any) => ({
+      ...prev,
+      [type]: !prev[type],
+    }));
+  };
 
-  useLayoutEffect(() => {
-    navigation.setOptions({ headerShown: false });
-  }, [navigation]);
+  // Handle category selection
+  const handleCategorySelection = (category: string) => {
+    setSelectedCategories((prev: any) => ({
+      ...prev,
+      [category]: !prev[category],
+    }));
+  };
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+}
 
   const toggleSearch = () => {
     setIsSearchExpanded(!isSearchExpanded);
@@ -64,6 +64,13 @@ const Courses = () => {
       setSearchQuery('');
     }
   };
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebounceQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   const toggleFilterModal = () => setIsFilterModalVisible(!isFilterModalVisible);
 
@@ -85,28 +92,29 @@ const Courses = () => {
     return matchesCategory && matchesType && matchesSearchQuery;
   });
   
-
   return (
     <View style={styles.mainContainer}>
       {/* Search Bar */}
+      {/* Header with expandable search bar */}
       <View style={styles.headerContainer}>
-        {isSearchExpanded && (
-          <View style={styles.searchBarContainer}>
-            <TextInput 
-              placeholder='Search Course...'
-              placeholderTextColor="#B0B0B0"
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={setSearchQuery} 
-            />
-          </View>
-        )}
-        <TouchableOpacity onPress={toggleSearch} >
-          <FontAwesome6 
-            name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} 
-            size={24} 
-            color={'#FFFFFF'} />
-        </TouchableOpacity>
+          {isSearchExpanded && (
+              <View style={styles.searchBarContainer}>
+                  <TextInput
+                      placeholder="Search Course"
+                      placeholderTextColor="#ECDFCC"
+                      style={styles.searchInput}
+                      value={searchQuery}
+                      onChangeText={handleSearchChange}
+                  />
+              </View>
+          )}
+          <TouchableOpacity onPress={toggleSearch} style={styles.searchIconContainer}>
+              <FontAwesome6 
+                  name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} 
+                  size={24} 
+                  color="#ECDFCC" 
+              />
+          </TouchableOpacity>
       </View>
 
       {/* Filter Button */}
@@ -120,7 +128,7 @@ const Courses = () => {
           <View style={styles.modalContent}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly', width: '100%' }}>
               <TouchableOpacity onPress={() => setIsFilterModalVisible(false)} style={{ left: -30 }}>
-                <FontAwesome6 name="xmark" size={20} />
+                <FontAwesome6 name="xmark" size={20} color="#FFFFFF" />
               </TouchableOpacity>
               <Text style={styles.modalHeader}>Filter Courses</Text>
               <View style={{ width: 20, height: 20 }} />
@@ -132,10 +140,16 @@ const Courses = () => {
               <CheckBox
                 title="Online"
                 checked={selectedTypes.Online}
+                containerStyle={{ backgroundColor: '#3A504C' }}
+                fontFamily='Outfit_400Regular'
+                textStyle={{ color: '#ECDFCC' }}
                 onPress={() => handleTypeSelection('Online')}
               />
               <CheckBox
                 title="Physical"
+                containerStyle={{ backgroundColor: '#3A504C' }}
+                fontFamily='Outfit_400Regular'
+                textStyle={{ color: '#ECDFCC' }}
                 checked={selectedTypes.Physical}
                 onPress={() => handleTypeSelection('Physical')}
               />
@@ -150,6 +164,9 @@ const Courses = () => {
                   title={category.title}
                   // @ts-ignore
                   checked={selectedCategories[category.title]}
+                  containerStyle={{ backgroundColor: '#3A504C' }}
+                  fontFamily='Outfit_400Regular'
+                  textStyle={{ color: '#ECDFCC' }}
                   onPress={() => handleCategorySelection(category.title)}
                 />
               ))}
@@ -172,7 +189,8 @@ const Courses = () => {
       <Divider style={{ marginVertical: 10 }} />
 
       {/* Courses */}
-      <FlatList
+      <FlashList
+        estimatedItemSize={108}
         data={filteredCourses}
         renderItem={({ item }: { item: CourseData }) => (
           <CourseCard
@@ -195,64 +213,72 @@ const Courses = () => {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#4D6561',
-    padding: 16,
+    backgroundColor: '#2E3D3A',
+    paddingHorizontal: 16,
   },
   headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4D6561',
-    paddingBottom: 8,
-    marginBottom: 10,
-  },  
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 10
+  },
   searchBarContainer: {
-    flex: 1,
-    backgroundColor: '#FFF',
-    borderRadius: 30,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
+      flex: 1,
+      backgroundColor: '#3A504C',
+      borderRadius: 15,
+      paddingHorizontal: 10,
+      paddingVertical: 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      marginRight: 10,
   },
   searchInput: {
-    color: 'black',
-    fontSize: 18,
-    height: 40,
-    fontFamily: 'Outfit_400Regular',
+      color: '#ECDFCC',
+      fontFamily: 'Outfit_400Regular',
+      fontSize: 16,
+  },
+  searchIconContainer: {
+      padding: 8,
   },
   coursesContainer: {
     paddingBottom: 100,
   },
   filterButton: {
-    backgroundColor: '#FFFFFF',
-    padding: 10,
+    backgroundColor: '#A3C0BB', 
+    padding: 12,
     borderRadius: 10,
     alignItems: 'center',
     marginBottom: 16,
   },
   filterButtonText: {
     fontSize: 16,
-    color: '#333',
+    color: '#FFFFFF', // Light color for the text
     fontFamily: 'Outfit_500Medium',
   },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#3A504C',
     padding: 20,
     borderRadius: 10,
-    width: '80%',
+    width: '85%',
     alignItems: 'center',
   },
   modalHeader: {
     fontSize: 20,
-    fontFamily: 'Outfit_600SemiBold'
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#ECDFCC',
   },
   filterLabel: {
     fontSize: 16,
     fontFamily: 'Outfit_500Medium',
+    color: '#ECDFCC',
     marginVertical: 10,
   },
   optionContainer: {
