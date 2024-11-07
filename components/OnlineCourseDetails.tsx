@@ -8,7 +8,6 @@ import { AppDispatch, RootState, store } from '../redux/store/store';
 import { getAuth } from '@react-native-firebase/auth';
 import { CourseAndModuleProgress, CourseData, ModuleData } from '../utils/types';
 import SignInModal from './SignInModal';
-import PrayerHeader from './PrayerHeader';
 
 const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: CourseData, teacherName: string, teacherImage: string }) => {
   const auth = getAuth();
@@ -72,9 +71,7 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
 
   return (
     <View style={styles.container}>
-      <PrayerHeader title={course.title} backgroundColor='#4D6561'/>
-
-      <ScrollView contentContainerStyle={{ gap: 16 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ gap: 5 }} showsVerticalScrollIndicator={false}>
         {/* Author Information */}
         <View style={styles.authorContainer}>
           <Image source={{ uri: teacherImage }} style={styles.authorAvatar} />
@@ -123,7 +120,7 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
         {/* Start Learning Button */}
         <View>
           <TouchableOpacity
-            style={styles.learningBtn}
+            style={[styles.learningBtn, userProgress && styles.lockedModule]}
             onPress={handleStartLearning}
             disabled={!!userProgress || isEnrolling}
             >
@@ -143,76 +140,74 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#4D6561',
+    backgroundColor: '#2E3D3A',
+    padding: 16,
     flex: 1,
   },
   section: {
     marginTop: 16,
     gap: 10,
   },
-  header: {
-    marginLeft: 16,
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  headerText: {
-    fontFamily: 'Outfit_600SemiBold',
-    fontSize: 16,
-    lineHeight: 22,
-    color: '#FFFFFF',
-  },
   authorContainer: {
-    flexDirection: 'row',
-    gap: 5,
     marginTop: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3A504C', // Background for author section
+    padding: 10,
+    borderRadius: 10,
   },
   authorAvatar: {
-    width: 48,
-    height: 48,
+    width: 50,
+    height: 50,
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    borderRadius: 25,
+    marginRight: 10,
   },
   subText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 14,
-    lineHeight: 18,
-    color: '#FFFFFF',
+    color: '#ECDFCC',
   },
   mainText: {
-    fontFamily: 'Outfit_500Medium',
+    fontFamily: 'Outfit_600SemiBold',
     fontSize: 16,
-    lineHeight: 21,
-    color: '#FFFFFF',
+    color: '#ECDFCC',
   },
   contentText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
-    lineHeight: 18,
-    color: '#FFFFFF',
+    color: '#D1D5DB',
   },
   btnText: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 18,
+    fontSize: 16,
     color: '#FFFFFF'
   },
   module: {
-    width: '100%',
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    padding: 10,
-    gap: 4,
+    padding: 12,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 3,
   },
   lockedModule: {
-    backgroundColor: '#CCCCCC', // Greyed-out background for locked modules
+    backgroundColor: '#757575', // Greyed-out background for locked modules
   },
   learningBtn: {
     alignItems: 'center',
-    marginTop: 20,
-    width: '100%',
     backgroundColor: '#A3C0BB',
-    paddingHorizontal: 8,
     paddingVertical: 12,
-    borderRadius: 10
+    borderRadius: 10,
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 4,
   },
 });
 
