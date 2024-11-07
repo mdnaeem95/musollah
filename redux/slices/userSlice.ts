@@ -125,38 +125,34 @@ export const fetchPrayerLog = createAsyncThunk(
   }
 );
 
-
-// Thunk to fetch prayer logs for the current month
-export const fetchMonthlyPrayerLogs = createAsyncThunk(
-  'user/fetchMonthlyPrayerLogs',
-  async (_, { rejectWithValue }) => {
+// Redux slice update to fetch weekly logs
+export const fetchWeeklyPrayerLogs = createAsyncThunk(
+  'user/fetchWeeklyPrayerLogs',
+  async ({ startDate, endDate }: { startDate: string; endDate: string }, { rejectWithValue }) => {
     try {
       const user = getAuth().currentUser;
       if (!user) throw new Error('User not logged in');
 
-      const userDoc = await firestore().collection('users').doc(user.uid).get();
-      const userData = userDoc.data();
+      const logsRef = firestore().collection('users').doc(user.uid);
+      const userData = (await logsRef.get()).data();
 
-      if (!userData || !userData.prayerLogs) {
-        throw new Error('No prayer logs found');
-      }
+      const prayerLogs = userData?.prayerLogs || {};
+      const weeklyLogs: any = {};
 
-      const today = new Date();
-      const datesInMonth = eachDayOfInterval({
-        start: startOfMonth(today),
-        end: endOfMonth(today),
-      }).map(date => format(date, 'yyyy-MM-dd'));
-
-      const monthlyLogs = datesInMonth.map(date => {
-        const log = userData.prayerLogs[date];
-        const prayersCompleted = log ? Object.values(log.status).filter(val => val === true).length : 0;
-        return { date, prayersCompleted };
+      eachDayOfInterval({ start: new Date(startDate), end: new Date(endDate) }).forEach((date) => {
+        const formattedDate = format(date, 'yyyy-MM-dd');
+        weeklyLogs[formattedDate] = prayerLogs[formattedDate] || {
+          Subuh: false,
+          Zohor: false,
+          Asar: false,
+          Maghrib: false,
+          Isyak: false,
+        };
       });
 
-      return monthlyLogs;
+      return weeklyLogs;
     } catch (error) {
-      console.error('Error in fetchMonthlyPrayerLogs:', error);
-      return rejectWithValue('Failed to fetch monthly prayer logs');
+      return rejectWithValue('Failed to fetch weekly prayer logs');
     }
   }
 );
@@ -294,22 +290,6 @@ extraReducers: (builder) => {
     .addCase(fetchPrayerLog.rejected, (state, action) => {
       console.error('Error in fetchPrayerLog:', action.payload);
       state.error = 'Failed to fetch prayer log';  // Set error message
-      state.loading = false;  // Stop loading
-    })
-    .addCase(fetchMonthlyPrayerLogs.pending, (state) => {
-      state.loading = true;
-      state.error = null;  // Reset any previous errors
-    })
-    .addCase(fetchMonthlyPrayerLogs.fulfilled, (state, action) => {
-      // Only update monthly logs if state.user exists
-      if (state.user) {
-        state.user.monthlyLogs = action.payload || [];  // Use an empty array as a fallback
-      }
-      state.loading = false;  // Stop loading
-    })
-    .addCase(fetchMonthlyPrayerLogs.rejected, (state, action) => {
-      console.error('Error in fetchMonthlyPrayerLogs:', action.payload);
-      state.error ='Failed to fetch monthly prayer logs';  // Set error message
       state.loading = false;  // Stop loading
     })
     .addCase(listenForUserUpdates.pending, (state) => {

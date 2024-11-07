@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { useFocusEffect } from 'expo-router';
-import { fetchPrayerLog, savePrayerLog } from '../../../../redux/slices/userSlice';
+import { fetchPrayerLog, fetchWeeklyPrayerLogs, savePrayerLog } from '../../../../redux/slices/userSlice';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { differenceInDays, endOfMonth, startOfMonth, format, subDays, addDays, eachDayOfInterval } from 'date-fns';
+import { startOfWeek, format, subDays, addDays, eachDayOfInterval } from 'date-fns';
 import SignInModal from '../../../../components/SignInModal';
 import { getAuth } from '@react-native-firebase/auth';
 
@@ -22,6 +22,8 @@ const PrayersDashboard = () => {
   const { error } = useSelector((state: RootState) => state.user);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isAuthModalVisible, setIsAuthModalVisible] = useState<boolean>(false);
+  const [weeklyLogs, setWeeklyLogs] = useState<{ [date: string]: PrayerLog }>({});
   const [todayLogs, setTodayLogs] = useState<PrayerLog>({
     Subuh: false,
     Zohor: false,
@@ -29,26 +31,22 @@ const PrayersDashboard = () => {
     Maghrib: false,
     Isyak: false,
   });
-  const [isAuthModalVisible, setIsAuthModalVisible] = useState<boolean>(false);
-
-  const today = new Date();
-  const start = startOfMonth(today);
-  const end = endOfMonth(today);
-  const daysInMonth = eachDayOfInterval({ start, end });
-
-  // Organize days by week
-  const weeks = [];
-  let currentWeek = [];
-  daysInMonth.forEach((day, index) => {
-    if (index % 7 === 0 && currentWeek.length > 0) {
-      weeks.push(currentWeek);
-      currentWeek = [];
-    }
-    currentWeek.push(day);
-  });
-  if (currentWeek.length > 0) weeks.push(currentWeek);
 
   const prayerSessions = ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+
+  const isLogged = (dayIndex: number, session: string) => {
+    const date = format(addDays(weekStart, dayIndex), 'yyyy-MM-dd');
+    return weeklyLogs[date]?.[session] || false;
+  };
+
+  const getCurrentDayIndex = () => {
+    const today = new Date();
+    const dayIndex = today.getDay() - 1; // Adjust so that 0 = Monday
+    return dayIndex < 0 ? 6 : dayIndex; // Wrap around for Sunday as the last index
+  };
+  
+  const currentDayIndex = getCurrentDayIndex();
 
   // useFocusEffect to fetch logs whenever the page is focused
   useFocusEffect(
@@ -64,6 +62,22 @@ const PrayersDashboard = () => {
     }, [selectedDate, dispatch]) // Include selectedDate in the dependency array
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+  
+      if (currentUser) {
+        const startDate = format(subDays(new Date(), 3), 'yyyy-MM-dd');
+        const endDate = format(addDays(new Date(), 3), 'yyyy-MM-dd');
+        dispatch(fetchWeeklyPrayerLogs({ startDate, endDate }))
+          .unwrap()
+          .then(setWeeklyLogs)
+          .catch((error) => console.error('Error fetching weekly prayer logs:', error));
+      }
+    }, [dispatch])
+  );
+
   const handleTogglePrayer = async (prayer: string) => {
     const auth = getAuth();
     const currentUser = auth.currentUser;
@@ -74,6 +88,13 @@ const PrayersDashboard = () => {
         //@ts-ignore
         [prayer]: !todayLogs[prayer],
       };
+
+      // Update weeklyLogs for the selected date
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      setWeeklyLogs((prevLogs) => ({
+        ...prevLogs,
+        [formattedDate]: updatedLogs,
+      }));
 
       setTodayLogs(updatedLogs);
       try {
@@ -134,12 +155,15 @@ const PrayersDashboard = () => {
           <ScrollView>
             <View style={styles.section}>
               <View style={styles.dateContainer}>
-                <TouchableOpacity onPress={handlePreviousDay}>
-                  <FontAwesome6 name="arrow-left" size={20} color="#A3C0BB" />
+                <TouchableOpacity onPress={handlePreviousDay} style={{ paddingHorizontal: 20 }}>
+                  <FontAwesome6 name="arrow-left" size={24} color="#A3C0BB" />
                 </TouchableOpacity>
-                <Text style={styles.dateText}>{format(selectedDate, 'MMMM dd, yyyy')}</Text>
-                <TouchableOpacity onPress={handleNextDay}>
-                  <FontAwesome6 name="arrow-right" size={20} color="#A3C0BB" />
+                <View style={styles.dateInnerContainer}>
+                  <Text style={styles.dateText}>{format(selectedDate, 'MMMM dd, yyyy')}</Text>
+                  <Text style={styles.dayText}>{format(selectedDate, 'EEEE')}</Text>
+                </View>
+                <TouchableOpacity onPress={handleNextDay} style={{ paddingHorizontal: 20 }}>
+                  <FontAwesome6 name="arrow-right" size={24} color="#A3C0BB" />
                 </TouchableOpacity>
               </View>
 
@@ -161,39 +185,38 @@ const PrayersDashboard = () => {
                 </View>
               ))}
 
-              <Text style={styles.sectionHeader}>Monthly Prayer Log</Text>
+              <Text style={styles.sectionHeader}>Weekly Prayer Log</Text>
 
-              {/* Header for Days of the Week */}
-              <View style={styles.headerRow}>
-                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
-                  <Text key={index} style={styles.headerCell}>{day}</Text>
-                ))}
-              </View>
-
-              <ScrollView>
-              {/* Prayer Sessions Rows */}
-              {prayerSessions.map((session) => (
-                <View key={session} style={styles.sessionContainer}>
-                  <Text style={styles.sessionLabel}>{session}</Text>
-
-                  {/* Weeks */}
-                  {weeks.map((week, weekIndex) => (
-                    <View key={`${session}-${weekIndex}`} style={styles.weekRow}>
-                      {week.map((day) => (
-                        <View key={day.toString()} style={styles.cell}>
-                          <Text style={styles.cellText}>o</Text> {/* Placeholder for future data */}
-                        </View>
-                      ))}
-                      {/* Fill empty cells if week has less than 7 days */}
-                      {week.length < 7 && Array.from({ length: 7 - week.length }).map((_, i) => (
-                        <View key={i} style={styles.emptyCell} />
-                      ))}
-                    </View>
+              <View style={styles.calendarContainer}>
+                <View style={styles.row}>
+                  <Text style={styles.sessionHeaderCell} ></Text>
+                  {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
+                    <Text 
+                      key={index} 
+                      style={[styles.dayHeaderCell, index === currentDayIndex && styles.currentDayHeaderCell]}
+                    >
+                      {day}
+                    </Text>
                   ))}
                 </View>
-                ))}
-              </ScrollView>
 
+                {/* Prayer Sessions as rows */}
+                {prayerSessions.map((session, sessionIndex) => (
+                  <View key={session} style={styles.row}>
+                    <Text style={styles.sessionLabel}>{session}</Text>
+                    {Array.from({ length: 7 }).map((_, dayIndex) => (
+                      <View key={dayIndex} style={styles.cell}>
+                        <FontAwesome6 
+                          name="circle" 
+                          size={12} 
+                          color={isLogged(dayIndex, session) ? '#A3C0BB' : '#4D6561'} 
+                          solid={isLogged(dayIndex, session)} 
+                        />
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </View>
             </View>
           </ScrollView>
         </>
@@ -261,58 +284,54 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
+  dateInnerContainer: {
+    alignItems: 'center'
+  },
   dateText: {
     fontSize: 18,
     fontFamily: 'Outfit_600SemiBold',
     color: '#ECDFCC',
     marginHorizontal: 10,
   },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#3A504C',
+  dayText: {
+    fontSize: 14,
+    fontFamily: 'Outfit_400Regular',
+    color: '#ECDFCC',
+    marginTop: 4
   },
-  headerCell: {
+  calendarContainer: {
+    marginTop: 10,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  sessionHeaderCell: {
+    width: 60,
+  },
+  dayHeaderCell: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Outfit_600SemiBold',
     color: '#A3C0BB',
   },
-  sessionContainer: {
-    marginBottom: 20,
-  },
   sessionLabel: {
-    fontSize: 16,
+    width: 60, // Fixed width for alignment with daily columns
+    fontSize: 14,
     fontFamily: 'Outfit_600SemiBold',
     color: '#ECDFCC',
-    marginBottom: 5,
-  },
-  weekRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 5,
+    textAlign: 'center',
   },
   cell: {
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
+    flex: 1,
     alignItems: 'center',
-    backgroundColor: '#3A504C',
-    marginHorizontal: 2,
-    borderRadius: 5,
+    justifyContent: 'center',
   },
-  cellText: {
-    fontSize: 12,
-    fontFamily: 'Outfit_400Regular',
-    color: '#D1D5DB',
-  },
-  emptyCell: {
-    width: 30,
-    height: 30,
-    marginHorizontal: 2,
+  currentDayHeaderCell: {
+    color: '#ECDFCC', // Brighter text for the current day
+    backgroundColor: '#4D6561',// Underline for emphasis (optional)
   },
 });
 

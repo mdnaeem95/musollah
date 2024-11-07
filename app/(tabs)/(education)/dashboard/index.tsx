@@ -32,8 +32,8 @@ const Dashboard = () => {
         <View style={styles.teacherContentContainer}>
             <Image source={{ uri: teacher.imagePath }} style={styles.teacherImage} />
             <View style={styles.textContentContainer}>
-            <Text style={styles.courseHeaderText}>{teacher.name}</Text>
-            <Text style={styles.courseCategoryText}>{teacher.expertise}</Text>
+                <Text style={styles.courseHeaderText}>{teacher.name}</Text>
+                <Text style={styles.courseCategoryText}>{teacher.expertise}</Text>
             </View>
         </View>
     </TouchableOpacity>
@@ -162,11 +162,11 @@ const Dashboard = () => {
                                                 <View>
                                                     <Progress.Bar 
                                                         progress={progress}
-                                                        height={7}
+                                                        height={10}
                                                         color="#4D6561" 
                                                         />
                                                 </View>
-                                                <Text>{progress * 100}%</Text>
+                                                <Text style={styles.progressCourseTitle}>{progress * 100}%</Text>
                                             </View>
                                         </View>
                                     </TouchableOpacity>
@@ -180,7 +180,7 @@ const Dashboard = () => {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Text style={styles.coursesHeader}>Courses</Text>
                 <TouchableOpacity style={{ paddingRight: 16 }} onPress={() => router.push('/courses')}>
-                    <Text style={[styles.seeMoreText, { color: '#FFFFFF' }]}>See More</Text>
+                    <Text style={styles.seeMoreText}>See More</Text>
                 </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -201,7 +201,7 @@ const Dashboard = () => {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Text style={[styles.coursesHeader]}>Teachers</Text>
                 <TouchableOpacity style={{ paddingRight: 16 }} onPress={() => router.push('/teachers')}>
-                    <Text style={[styles.seeMoreText, { color: '#FFFFFF' }]}>See More</Text>
+                    <Text style={styles.seeMoreText}>See More</Text>
                 </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -209,7 +209,7 @@ const Dashboard = () => {
                     <MemoizedTeacherCard key={teacher.id} teacher={teacher} />
                 ))}
             </ScrollView>
-        </View>
+            </View>
         </ScrollView>
     )
 }
@@ -218,30 +218,24 @@ const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
         padding: 16,
-        backgroundColor: '#4D6561'
+        backgroundColor: '#2E3D3A'
     },
     headerContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        marginBottom: 10
     },
     greetingText: {
         fontFamily: 'Outfit_700Bold',
-        color: '#FFFFFF',
-        fontSize: 20,
-        lineHeight: 28
-    },
-    avatarContainer: {
-        width: 35,
-        height: 35,
-        borderRadius: 17.5,
-        backgroundColor: '#B9B9B9'
+        color: '#ECDFCC',
+        fontSize: 22,
     },
     progressHeader: {
         fontFamily: 'Outfit_600SemiBold',
         fontSize: 18,
         lineHeight: 22,
-        color: '#FFFFFF',
+        color: '#ECDFCC',
         marginBottom: 16
     },
     section: {
@@ -252,34 +246,43 @@ const styles = StyleSheet.create({
         fontFamily: 'Outfit_500Medium',
         fontSize: 14,
         lineHeight: 17,
-        color: '#FFFFFF'
+        color: '#ECDFCC'
     },
     progressCard: {
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#3A504C",
         borderRadius: 20,
         padding: 20,
-        marginRight: 20
+        marginRight: 20,
+        width: 220,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 3,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 4.65,
+        elevation: 6,
     },
     progressCourseTitle: {
         fontFamily: 'Outfit_500Medium',
         fontSize: 13,
         lineHeight: 18,
-        color: '#000000'
+        color: '#ECDFCC',
     },
     progressCardContent: {
-        gap: 11
+        gap: 10
     },
     coursesHeader: {
         fontFamily: 'Outfit_600SemiBold',
         fontSize: 18,
         lineHeight: 22,
-        color: '#FFFFFF',
+        color: '#ECDFCC',
     },
     courseCard: {
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#3A504C",
         borderRadius: 10,
-        padding: 10,
-        paddingVertical: 20,
+        padding: 15,
+        paddingVertical: 25,
         marginRight: 20,
         shadowColor: "#000",
         shadowOffset: {
@@ -290,25 +293,20 @@ const styles = StyleSheet.create({
         shadowRadius: 3.84,
         elevation: 5,
     },
-    courseContentContainer: {
-        width: '90%'
-    },
-    textContentContainer: {
-        gap: 5,
-        marginTop: 5
+    courseHeaderText: {
+        fontFamily: 'Outfit_600SemiBold',
+        fontSize: 14,
+        lineHeight: 20,
+        color: '#ECDFCC',
     },
     courseCategoryText: {
         fontFamily: 'Outfit_400Regular',
         fontSize: 12,
-        lineHeight: 17
-    },
-    courseHeaderText: {
-        fontFamily: 'Outfit_600SemiBold',
-        fontSize: 14,
-        lineHeight: 20
+        lineHeight: 17,
+        color: '#A3C0BB',
     },
     teacherCard: {
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#3A504C",
         borderRadius: 10,
         padding: 10,
         marginRight: 20,
@@ -328,12 +326,15 @@ const styles = StyleSheet.create({
         height: 140,
         borderRadius: 10,
         marginBottom: 10,
-      },
+    },
     teacherContentContainer: {
         alignContent: 'center',
         justifyContent: 'center'
+    },
+    textContentContainer: {
+        gap: 5,
+        marginTop: 5
     }
-
 })
 
 export default Dashboard

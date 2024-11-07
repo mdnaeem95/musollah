@@ -41,40 +41,36 @@ const CourseCardShort: React.FC<CourseCardProps> = ({ id, title, description, ca
 const styles = StyleSheet.create({
   cardContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    backgroundColor: '#3A504C',
+    borderRadius: 15,
     marginVertical: 10,
-    paddingBottom: 10, // Ensure there is spacing at the bottom
     overflow: 'hidden',
-    width: '100%', // Take full width
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 6,
   },
   cardContent: {
-    width: '100%',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
   iconContainer: {
-    alignSelf: 'stretch',
     width: '100%',
-    flexGrow: 1,
     height: 120, // Icon section height, adjust as needed
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#4D6561',
   },
   cardDetails: {
     paddingTop: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     alignItems: 'center',
   },
   cardHashTag: {
     borderWidth: 0.5,
-    borderColor: '#CCCCCC',
-    borderRadius: 50,
+    borderColor: '#A3C0BB',
+    borderRadius: 15,
     paddingVertical: 4,
     paddingHorizontal: 10,
     alignSelf: 'center',
@@ -83,13 +79,14 @@ const styles = StyleSheet.create({
   hashtagText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 12,
-    color: '#333333',
+    color: '#FFFFFF',
   },
   headerText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 16,
-    color: '#333333',
+    color: '#ECDFCC',
     textAlign: 'center',
+    paddingVertical: 5
   },
 });
 
