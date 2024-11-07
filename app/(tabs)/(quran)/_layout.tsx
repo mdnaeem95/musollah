@@ -64,19 +64,19 @@ const QuranLayout = () => {
             headerShown: true,
             headerTitle: 'Quran',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#1E1E1E' : '#4D6561',
+              backgroundColor: '#2E3D3A',
             },
             headerTintColor: '#FFFFFF',
             headerTitleStyle: {
               fontFamily: 'Outfit_700Bold',
               fontSize: 20,
-              color: isDarkMode ? '#ECDFCC' : '#FFFFFF'
+              color: '#ECDFCC'
             },
             headerLeft: () => (
               <FontAwesome6
                 name="arrow-left"
                 size={24}
-                color={isDarkMode ? '#ECDFCC' : '#FFFFFF'}
+                color='#ECDFCC'
                 style={{ padding: 10 }}
                 onPress={() => router.back()}
               />
@@ -85,7 +85,7 @@ const QuranLayout = () => {
               <FontAwesome6
                 name="gear"
                 size={24}
-                color={isDarkMode ? '#ECDFCC' : '#FFFFFF'}
+                color='#ECDFCC'
                 style={{ padding: 10 }}
                 onPress={toggleModal}
               />
@@ -98,19 +98,19 @@ const QuranLayout = () => {
             headerShown: true,
             headerTitle: 'Doas',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#1E1E1E' : '#4D6561',
+              backgroundColor: '#2E3D3A',
             },
             headerTintColor: '#FFFFFF',
             headerTitleStyle: {
               fontFamily: 'Outfit_700Bold',
               fontSize: 20,
-              color: isDarkMode ? '#ECDFCC' : '#FFFFFF'
+              color: '#ECDFCC'
             },
             headerLeft: () => (
               <FontAwesome6
                 name="arrow-left"
                 size={24}
-                color={isDarkMode ? '#ECDFCC' : '#FFFFFF'}
+                color='#ECDFCC'
                 style={{ padding: 10 }}
                 onPress={() => router.back()}
               />
@@ -132,19 +132,19 @@ const QuranLayout = () => {
             headerShown: true,
             headerTitle: 'Surahs',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#1E1E1E' : '#4D6561',
+              backgroundColor: '#2E3D3A',
             },
             headerTintColor: '#FFFFFF',
             headerTitleStyle: {
               fontFamily: 'Outfit_700Bold',
               fontSize: 20,
-              color: isDarkMode ? '#ECDFCC' : '#FFFFFF'
+              color: '#ECDFCC'
             },
             headerLeft: () => (
               <FontAwesome6
                 name="arrow-left"
                 size={24}
-                color= {isDarkMode ? '#ECDFCC' : '#FFFFFF'}
+                color= '#ECDFCC'
                 style={{ padding: 10 }}
                 onPress={() => router.back()}
               />
@@ -157,19 +157,19 @@ const QuranLayout = () => {
             headerShown: true,
             headerTitle: 'Doas',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#1E1E1E' : '#4D6561',
+              backgroundColor: '#2E3D3A',
             },
             headerTintColor: '#FFFFFF',
             headerTitleStyle: {
               fontFamily: 'Outfit_700Bold',
               fontSize: 20,
-              color: isDarkMode ? '#ECDFCC' : '#FFFFFF'
+              color: '#ECDFCC'
             },
             headerLeft: () => (
               <FontAwesome6
                 name="arrow-left"
                 size={24}
-                color= {isDarkMode ? '#ECDFCC' : '#FFFFFF'}
+                color='#ECDFCC'
                 style={{ padding: 10 }}
                 onPress={() => router.back()}
               />

@@ -56,7 +56,7 @@ const Profile = () => {
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    backgroundColor: '#9CC2BC',
+    backgroundColor: '#2E3D3A',
     height: '100%',
     width: '100%'
   },
@@ -65,47 +65,66 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     backgroundColor: '#FFFFFF',
     padding: 20,
-    borderRadius: 10
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
   },
   profileImage: {
     width: 100,
     height: 100,
     borderRadius: 50,
     marginBottom: 10,
-    backgroundColor: '#ccc', // Fallback for missing images
+    backgroundColor: '#CCCCCC',
   },
   profileName: {
     fontSize: 24,
-    fontFamily: 'Outfit_600SemiBold'
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#2E3D3A',
   },
   profileEmail: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 16,
-    color: '#888',
+    color: '#777',
   },
   section: {
-    marginBottom: 20,
     backgroundColor: '#FFFFFF',
     padding: 20,
-    borderRadius: 10
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 2,
   },
   sectionTitle: {
     fontSize: 18,
     fontFamily: 'Outfit_600SemiBold',
     marginBottom: 10,
+    color: '#2E3D3A',
   },
   courseProgress: {
     marginBottom: 15,
+    padding: 10,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   courseTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#333',
   },
   courseType: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
-    color: '#888',
-    marginBottom: 5,
+    color: '#666',
   },
   physicalCourseDetail: {
     fontFamily: 'Outfit_400Regular',

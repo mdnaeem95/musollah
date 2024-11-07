@@ -50,9 +50,7 @@ const Surahs = () => {
   }, [searchQuery]);
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? '#1E1E1E' : '#4D6561' }]}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor="#4D6561" />
-      
+    <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? '#2E3D3A' : '#4D6561' }]}>      
       {/* Header with Search Bar */}
       <View style={styles.headerContainer}>
         {isSearchExpanded && (
@@ -106,7 +104,7 @@ const Surahs = () => {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#4D6561',
+    backgroundColor: '#2E3D3A',
     paddingHorizontal: 16,
   },
   headerContainer: {
