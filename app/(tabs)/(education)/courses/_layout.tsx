@@ -50,7 +50,7 @@ const CoursesLayout = () => {
                 color:'#ECDFCC'
               },
               headerLeft: () => (
-                <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 6 }}>
+                <TouchableOpacity onPress={() => router.push('/(education)/dashboard/')} style={{ paddingLeft: 6 }}>
                   <FontAwesome6
                     name="arrow-left"
                     size={24}

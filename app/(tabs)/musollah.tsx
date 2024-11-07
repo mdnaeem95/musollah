@@ -11,6 +11,7 @@ import { AppDispatch, RootState } from '../../redux/store/store'
 import { fetchMusollahData } from '../../redux/slices/musollahSlice'  // Adjust the path as needed
 import { fetchUserLocation } from '../../redux/slices/userLocationSlice'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useFocusEffect } from 'expo-router'
 
 const locationTypes = ['Bidets', 'Musollahs', 'Mosques']
 
@@ -118,16 +119,18 @@ const MusollahTab = () => {
     dispatch(fetchUserLocation()); // Fetch the user's location when component mounts
   }, [dispatch]);
 
+  // Refetch location data on tab focus
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(fetchUserLocation());
+    }, [dispatch])
+  );
+
   useEffect(() => {
-    if (userLocation && !hasFetchedData) {
-      // initial fetching of data
-      console.log("User location available:", userLocation);  // Debugging userLocation
-      dispatch(fetchMusollahData(userLocation));
-      setHasFetchedData(true);
-    } else if (userLocation && isSignificantLocationChange(userLocation.coords)) {
+    if (userLocation && isSignificantLocationChange(userLocation.coords)) {
       dispatch(fetchMusollahData(userLocation));
     }
-  }, [userLocation, dispatch, hasFetchedData]);
+  }, [userLocation, dispatch]);
 
   useEffect(() => {
     debouncedSearch();

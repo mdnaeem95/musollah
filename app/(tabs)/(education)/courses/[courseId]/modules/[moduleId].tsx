@@ -112,6 +112,19 @@ const ModuleDetails = () => {
           ))}
         </PagerView>
 
+        {/* Pagination Dots */}
+        <View style={styles.pagination}>
+          {moduleData.content.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.paginationDot,
+                index === currentIndex && styles.paginationDotActive,
+              ]}
+            />
+          ))}
+        </View>
+
         {/* Button to mark module as complete */}
         <TouchableOpacity style={styles.completeButton} onPress={handleCompleteModule}>
           <Text style={styles.completeButtonText}>Complete Module</Text>
@@ -130,25 +143,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   page: {
-    width: SCREEN_WIDTH,
+    gap: 20,
+    width: SCREEN_WIDTH - 50,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
-  paginationContainer: {
+  pagination: {
+    marginBottom: 20,
     flexDirection: 'row',
     justifyContent: 'center',
-    marginVertical: 10,
+    paddingVertical: 10,
   },
-  dot: {
-    height: 8,
+  paginationDot: {
     width: 8,
+    height: 8,
     borderRadius: 4,
-    backgroundColor: '#757575',
+    backgroundColor: '#B0B0B0',
     marginHorizontal: 4,
   },
-  activeDot: {
-    backgroundColor: '#A3C0BB',
+  paginationDotActive: {
+    backgroundColor: '#FFFFFF',
   },
   loadingContainer: {
     flex: 1,

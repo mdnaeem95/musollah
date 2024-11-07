@@ -47,8 +47,9 @@ const EducationLayout = () => {
           }}
         />
         <Drawer.Screen
-          name="profile/index"
+          name="profile"
           options={{
+            headerShown: false,
             drawerLabel: 'Profile',
             title: 'Profile',
             drawerIcon: () => <FontAwesome6 name="user" solid />,

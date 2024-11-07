@@ -11,9 +11,9 @@ export const ThemeContext = createContext({
 });
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true) // default is darker theme
   const [textSize, setTextSize] = useState(30); // Default text size
-  const [reciter, setReciter] = useState('alafasy')
+  const [reciter, setReciter] = useState('ar.alafasy')
 
   // Load the theme state from AsyncStorage when the app loads
   useEffect(() => {

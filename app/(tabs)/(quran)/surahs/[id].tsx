@@ -27,7 +27,7 @@ const SurahTextScreen = () => {
     const dispatch = useDispatch<AppDispatch>()
 
     const soundRef = useRef<Audio.Sound | null>(null);
-    const listRef = useRef<FlatList>(null);
+    const listRef = useRef<FlashList<any>>(null);
     const { id } = useLocalSearchParams<{ id: string, ayahIndex?: string }>();
     const { surahs, isLoading, bookmarks } = useSelector((state: RootState) => state.quran);
     const { isDarkMode, textSize, reciter } = useContext(ThemeContext);
@@ -45,20 +45,19 @@ const SurahTextScreen = () => {
     const [isPickerVisible, setPickerVisible] = useState<boolean>(false);
     const [audioLinks, setAudioLinks] = useState<string[]>([]);
 
+    // Update audio links when the reciter or surah changes
     useEffect(() => {
+        console.log(audioLinks)
         if (surah?.audioLinks) {
             const updatedLinks = surah.audioLinks
                 .split(',')
                 .map(link => link.replace('ar.alafasy', reciter));
             setAudioLinks(updatedLinks);
+        } else {
+            setAudioLinks([]);
+            console.warn('No audio links available for this surah.');
         }
     }, [reciter, surah]);
-
-    useEffect(() => {
-        if (isPlaying) {
-            resetAudio().then(() => playAyah(currentAyahIndex));
-        }
-    }, [audioLinks])
 
     // Set the dynamic title in the header
     useLayoutEffect(() => {
@@ -109,7 +108,10 @@ const SurahTextScreen = () => {
     const playAyah = async (index: number) => {
         const ayahAudioLink = audioLinks[index]?.trim();
 
-        if (!ayahAudioLink) return;
+        if (!ayahAudioLink) {
+            console.warn(`No audio link found for ayah index ${index}`);
+            return;
+        }
 
         try {
             await Audio.setAudioModeAsync({
@@ -331,7 +333,7 @@ const SurahTextScreen = () => {
     };
 
     return (
-        <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? "#1E1E1E" : "#4D6561" }]}>
+        <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? '#2E3D3A' : '#4D6561' }]}>
             {/* Progress Tracker */}
             {renderProgressTracker()}
 
@@ -339,6 +341,7 @@ const SurahTextScreen = () => {
                 <ActivityIndicator />
             ) : (
                 <FlashList
+                    ref={listRef}
                     estimatedItemSize={219}
                     data={arabicAyahs}
                     renderItem={renderAyah}

@@ -16,7 +16,7 @@ const DoaContent = () => {
     const doa: Doa | undefined = doas.find((doa: Doa) => doa.number === id);
     const dispatch = useDispatch<AppDispatch>();
 
-    const DYNAMIC_BACKGROUND = isDarkMode ? "#1E1E1E" : "#4D6561";
+    const DYNAMIC_BACKGROUND = isDarkMode ? "#2E3D3A" : "#4D6561";
     const DYNAMIC_TEXT_COLOR = isDarkMode ? '#ECDFCC' : '#FFFFFF';
     const contentCardBackground = isDarkMode ? '#2A2A2A' : '#3A504C';
     const DYNAMIC_LINE_HEIGHT = textSize * 2.5
