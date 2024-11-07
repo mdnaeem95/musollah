@@ -6,8 +6,6 @@ import { RootState } from '../../../../redux/store/store';
 import CourseCard from '../../../../components/CourseCard';
 import { CourseData } from '../../../../utils/types';
 import { useNavigation } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import PrayerHeader from '../../../../components/PrayerHeader';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { CheckBox } from '@rneui/base';
 
@@ -20,7 +18,7 @@ const categories = [
   { title: 'Modern Challenges' },
 ];
 
-const EducationTab = () => {
+const Courses = () => {
   const { courses } = useSelector((state: RootState) => state.dashboard);
   const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState<boolean>(false);
@@ -89,10 +87,7 @@ const EducationTab = () => {
   
 
   return (
-    <SafeAreaView style={styles.mainContainer}>
-      {/* Header */}
-      <PrayerHeader title="Courses" backgroundColor="#4D6561" />
-
+    <View style={styles.mainContainer}>
       {/* Search Bar */}
       <View style={styles.headerContainer}>
         {isSearchExpanded && (
@@ -193,7 +188,7 @@ const EducationTab = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.coursesContainer}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -279,4 +274,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EducationTab;
+export default Courses;

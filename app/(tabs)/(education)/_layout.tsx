@@ -2,21 +2,19 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Drawer } from 'expo-router/drawer';
 import React from 'react';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
 
 const EducationLayout = () => {
-  const router = useRouter();
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Drawer 
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#4D6561',
+            backgroundColor: '#2E3D3A',
           },
           headerTitleStyle: {
-            fontFamily: 'Outfit_500Medium',
-            color: '#FFFFFF'
+            fontFamily: 'Outfit_700Bold',
+            fontSize: 20,
+            color:'#ECDFCC'
           },
           headerTintColor: '#FFFFFF',
           headerShadowVisible: false,
@@ -33,18 +31,19 @@ const EducationLayout = () => {
         <Drawer.Screen
           name="courses"
           options={{
+            headerShown: false,
             drawerLabel: 'Courses',
             title: 'Courses',
-            headerShown: false,
             drawerIcon: () => <FontAwesome6 name="chalkboard" />,
           }}
         />
         <Drawer.Screen 
           name="teachers"
           options={{
+            headerShown: false,
             drawerLabel: 'Teachers',
             title: 'Teachers',
-            drawerIcon: () => <FontAwesome6 name="chalkboard-user" />
+            drawerIcon: () => <FontAwesome6 name="chalkboard-user" />,
           }}
         />
         <Drawer.Screen

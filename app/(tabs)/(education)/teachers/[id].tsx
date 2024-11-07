@@ -26,12 +26,6 @@ const TeacherDetails = () => {
 
     return (
         <View style={styles.mainContainer}>
-            <View style={{ width: '100%', marginBottom: 20 }}>
-                <TouchableOpacity onPress={() => router.back()}>
-                    <FontAwesome6 name="arrow-left" color='white' size={24} />
-                </TouchableOpacity>
-            </View>
-
             <View style={styles.teacherCard}>
                 <Image source={{ uri: teacher?.imagePath }} style={styles.teacherImage} />
                 <View style={styles.teacherInfo}>
@@ -78,22 +72,29 @@ const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
         padding: 16,
-        backgroundColor: '#4D6561'
+        backgroundColor: '#2E3D3A'
     },
     teacherCard: {
         width: '100%',
         flexDirection: 'row',
         padding: 16,
         marginBottom: 16,
-        backgroundColor: '#f0f0f0',
-        borderRadius: 8,
+        backgroundColor: '#3A504C',
+        borderRadius: 12,
         alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 6,
     },
     teacherImage: {
         width: 80,
         height: 80,
         borderRadius: 40,
         marginRight: 16,
+        borderWidth: 2,
+        borderColor: '#A3C0BB'
     },
     teacherInfo: {
         justifyContent: 'center',
@@ -102,48 +103,63 @@ const styles = StyleSheet.create({
     },
     teacherName: {
         fontFamily: 'Outfit_500Medium',
-        fontSize: 16
+        fontSize: 18,
+        color: '#ECDFCC',
     },
     teacherExpertise: {
         fontFamily: 'Outfit_400Regular',
-        fontSize: 14
+        fontSize: 14,
+        color: '#A3C0BB', 
     },
     backgroundText: {
         fontFamily: 'Outfit_400Regular',
         fontSize: 16,
-        color: '#FFFFFF',
-        marginBottom: 16
+        color: '#ECDFCC',
+        marginBottom: 16,
+        lineHeight: 22,
     },
     coursesHeader: {
         fontFamily: 'Outfit_600SemiBold',
-        fontSize: 22,
+        fontSize: 18,
+        color: '#ECDFCC',
         marginBottom: 16,
-        color: '#FFFFFF'
     },
     courseCard: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 10,
+        backgroundColor: "#3A504C",
+        borderRadius: 12,
         padding: 10,
-        marginBottom: 16,
+        marginRight: 16,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 6,
     },
     courseContentContainer: {
-        width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
+    },
+    iconContainer: {
+        width: 100,
+        height: 98,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 8,
     },
     textContentContainer: {
         marginLeft: 16,
         flex: 1,
     },
-      courseCategoryText: {
+    courseCategoryText: {
         fontFamily: 'Outfit_400Regular',
         fontSize: 12,
-        lineHeight: 17,
+        color: '#A3C0BB',
+        marginBottom: 4,
     },
-      courseHeaderText: {
+    courseHeaderText: {
         fontFamily: 'Outfit_600SemiBold',
         fontSize: 14,
-        lineHeight: 20,
+        color: '#ECDFCC',
     },
 })
 
