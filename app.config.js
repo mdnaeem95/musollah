@@ -1,4 +1,7 @@
-{
+
+import withBoringSSLFix from './withBoringSSLFix'
+
+export default {
   "expo": {
     "name": "rihlah",
     "slug": "rihlah",
@@ -53,6 +56,7 @@
       "@react-native-firebase/auth",
       "@react-native-firebase/crashlytics",
       "@react-native-firebase/app",
+      withBoringSSLFix,
       [
         "expo-build-properties",
         {
