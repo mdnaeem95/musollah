@@ -45,6 +45,10 @@ const SurahTextScreen = () => {
     const [isPickerVisible, setPickerVisible] = useState<boolean>(false);
     const [audioLinks, setAudioLinks] = useState<string[]>([]);
 
+    useEffect(() => {
+        setAudioLinks(surah!.audioLinks.split('|'))
+    }, [surah])
+
     // Update audio links when the reciter or surah changes
     useEffect(() => {
         console.log(audioLinks)
