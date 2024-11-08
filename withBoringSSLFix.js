@@ -1,5 +1,3 @@
-// withBoringSSLFix.js
-
 const { withDangerousMod } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
@@ -13,25 +11,30 @@ const withBoringSSLFix = (config) => {
 
       //  Fix for the Podfile
       const fix = `
-  pre_install do |installer|
-    installer.pod_targets.each do |pod|
-      if pod.name.eql?('BoringSSL-GRPC')
-        def pod.build_type;
-          Pod::BuildType.static_library
+
+    # Fix BoringSSL-GRPC issue unsupported option '-G'
+    # Reason: BoringSSL-GRPC doesn't compatible with Xcode 16
+    # https://github.com/invertase/react-native-firebase/issues/8020?fbclid=IwY2xjawFc9KxleHRuA2FlbQIxMQABHenJMPNnLPuWcojthZjTcuIvoSKes2ATG69IuneRy2bUjAH3J2nYr-5nlQ_aem_XnJhQUj0eNzBy5xl6kjfmw#issuecomment-2359198907
+    installer.pods_project.targets.each do |target|
+      if target.name == 'BoringSSL-GRPC'
+        target.source_build_phase.files.each do |file|
+          if file.settings && file.settings['COMPILER_FLAGS']
+            flags = file.settings['COMPILER_FLAGS'].split
+            flags.reject! { |flag| flag == '-GCC_WARN_INHIBIT_ALL_WARNINGS' }
+            file.settings['COMPILER_FLAGS'] = flags.join(' ')
+          end
         end
       end
     end
-  end
 `;
-
-      // Adding the fix before the first 'post_install' occurrence
-      if (!podfileContents.includes("pod.name.eql?('BoringSSL-GRPC')")) {
-        const postInstallIndex = podfileContents.indexOf('post_install do |installer|');
+      if (!podfileContents.includes("if target.name == 'BoringSSL-GRPC'")) {
+        const findString = 'post_install do |installer|';
+        const postInstallIndex = podfileContents.indexOf(findString);
         if (postInstallIndex !== -1) {
-          podfileContents = podfileContents.slice(0, postInstallIndex) + fix + podfileContents.slice(postInstallIndex);
-        } else {
-          // If there's no post_install, append the fix at the end
-          podfileContents += fix;
+          podfileContents =
+            podfileContents.slice(0, postInstallIndex + findString.length) +
+            fix +
+            podfileContents.slice(postInstallIndex + findString.length);
         }
         fs.writeFileSync(podfilePath, podfileContents);
       }
