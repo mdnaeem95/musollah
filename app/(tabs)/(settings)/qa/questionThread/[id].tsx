@@ -35,11 +35,11 @@ const QuestionThreadScreen = () => {
   );
 
   if (loading) {
-    return <ActivityIndicator size="large" color="#4D6561" />;
-  }
-
-  if (loading) {
-    return <ActivityIndicator size="large" color="#4D6561" />;
+    return (
+      <View>
+        <ActivityIndicator size="large" color="#4D6561" />
+      </View>
+    )
   }
 
   if (!question) {

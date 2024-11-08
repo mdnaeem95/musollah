@@ -38,6 +38,7 @@ const QuranDashboard = () => {
         const loadLastStates = async () => {
             const lastListened = await AsyncStorage.getItem('lastListenedAyah');
             const lastRead = await AsyncStorage.getItem('lastReadAyah');
+            console.log(lastRead)
     
             if (lastListened) {
                 const { surahNumber, ayahIndex } = JSON.parse(lastListened);
@@ -89,21 +90,33 @@ const QuranDashboard = () => {
 
             {/* Last Read and Last Listened Sections */}
             {lastListenedAyah && (
-                <View style={styles.ayahContainer}>
-                    <Text style={styles.ayahHeaderText}>Last listened</Text>
+                <TouchableOpacity 
+                    style={styles.ayahContainer} 
+                    onPress={() => router.push({
+                        pathname: `/surahs/${lastListenedAyah.surahNumber}`,
+                        params: { ayahIndex: lastListenedAyah.ayahIndex }
+                    })}
+                >
+                    <Text style={styles.ayahHeaderText}>Last Listened</Text>
                     <Text style={styles.ayahDetailText}>
                         Surah {lastListenedAyah.surahNumber}, Ayah {lastListenedAyah.ayahIndex}
                     </Text>
-                </View>
+                </TouchableOpacity>
             )}
 
             {lastReadAyah && (
-                <View style={styles.ayahContainer}>
+                <TouchableOpacity 
+                    style={styles.ayahContainer} 
+                    onPress={() => router.push({
+                        pathname: `/surahs/${lastReadAyah.surahNumber}`,
+                        params: { ayahIndex: lastReadAyah.ayahNumber }
+                    })}
+                >
                     <Text style={styles.ayahHeaderText}>Last Read</Text>
                     <Text style={styles.ayahDetailText}>
-                        Surah {lastListenedAyah.surahNumber}, Ayah {lastListenedAyah.ayahIndex}
+                        Surah {lastReadAyah.surahNumber}, Ayah {lastReadAyah.ayahNumber}
                     </Text>
-                </View>
+                </TouchableOpacity>
             )}
             </ScrollView>
         </View>
