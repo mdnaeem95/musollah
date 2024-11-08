@@ -21,14 +21,14 @@ const BookmarkPage = () => {
     const toggleQuranFolder = () => setIsQuranExpanded(!isQuranExpanded);
     const toggleDoasFolder = () => setIsDoasExpanded(!isDoasExpanded);
     
-    const DYNAMIC_COLOUR = isDarkMode ? "#1E1E1E" : "#4D6561"
+    const DYNAMIC_COLOUR = isDarkMode ? "#2E3D3A" : "#4D6561"
     const DYNAMIC_TEXT_COLOR = isDarkMode ? '#ECDFCC' : '#FFFFFF'
 
     const handleBookmarkPress = (surahId: number, ayahIndex: number) => {
         // Navigate to the Surah and Ayah
         router.push({
             pathname: `/surahs/${surahId}`,
-            params: { ayahIndex },
+            params: { ayahIndex: ayahIndex },
         });
     };
 
@@ -40,7 +40,7 @@ const BookmarkPage = () => {
     const renderQuranBookmarkItem = ({ item }: { item: Bookmark }) => (
         <TouchableOpacity 
             onPress={() => handleBookmarkPress(item.surahNumber, item.ayahNumber)} 
-            style={[styles.bookmarkItem, { backgroundColor: isDarkMode ? "#3C3D37" : '#A3C0BB' }]}>
+            style={[styles.bookmarkItem, { backgroundColor: isDarkMode ? '#3A504C' : '#A3C0BB', }]}>
         <View>
             <Text style={[styles.surahName, { color: DYNAMIC_TEXT_COLOR }]}>{item.surahName}</Text>
             <Text style={[styles.ayahInfo, { color: DYNAMIC_TEXT_COLOR }]}>Ayah {item.ayahNumber}</Text>
@@ -51,7 +51,7 @@ const BookmarkPage = () => {
     const renderDoaBookmarkItem = ({ item }: { item: any }) => (
       <TouchableOpacity 
         onPress={() => handleDoaBookmarkPress(item.doaId)} 
-        style={[styles.bookmarkItem, { backgroundColor: isDarkMode ? "#3C3D37" : '#A3C0BB' }]}
+        style={[styles.bookmarkItem, { backgroundColor: isDarkMode ? '#3A504C' : '#A3C0BB' }]}
       >
         <Text style={[styles.surahName, { color: DYNAMIC_TEXT_COLOR }]}>{item.doaTitle}</Text>
       </TouchableOpacity>
@@ -95,16 +95,22 @@ const BookmarkPage = () => {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    padding: 16
+    padding: 16,
+    backgroundColor: '#2E3D3A',
   },
   folderHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#314441',
-    borderRadius: 8,
-    marginBottom: 10,
+    padding: 12,
+    backgroundColor: '#3A504C',
+    borderRadius: 10,
+    marginBottom: 12,
+    shadowColor: '#000', // Subtle shadow for depth
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3, // For Android shadow
   },
   folderTitle: {
     fontSize: 18,
@@ -114,7 +120,13 @@ const styles = StyleSheet.create({
   bookmarkItem: {
     marginBottom: 10,
     borderRadius: 8,
-    padding: 16
+    padding: 16,
+    backgroundColor: '#314441',
+    shadowColor: '#000', // Subtle shadow for depth
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3, // For Android shadow
   },
   surahName: {
     fontSize: 18,

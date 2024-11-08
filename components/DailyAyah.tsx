@@ -74,7 +74,10 @@ const DailyAyah = () => {
     }
 
     const handleAyahClick = () => {
-        router.push(`/(quran)/surahs/${ayah.surahNumber}`);
+        router.push({
+          pathname: `/surahs/${ayah.surahNumber}`,
+          params: { ayahIndex: ayah.ayahNumber }
+        });
     };
 
     return (

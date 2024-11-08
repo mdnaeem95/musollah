@@ -41,7 +41,6 @@ const QALayout = () => {
       <Stack.Screen
         name="questionThread/[id]"
         options={{
-          presentation: 'fullScreenModal',
           headerShown: true,
           headerTitle: '',
           headerStyle: { backgroundColor: '#2E3D3A' },

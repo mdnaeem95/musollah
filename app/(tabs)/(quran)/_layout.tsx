@@ -73,22 +73,24 @@ const QuranLayout = () => {
               color: '#ECDFCC'
             },
             headerLeft: () => (
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color='#ECDFCC'
-                style={{ padding: 10 }}
-                onPress={() => router.back()}
-              />
+              <TouchableOpacity onPress={() => router.back()}>
+                <FontAwesome6
+                  name="arrow-left"
+                  size={24}
+                  color='#ECDFCC'
+                  style={{ padding: 10 }}
+                />
+              </TouchableOpacity>
             ),
             headerRight: () => (
-              <FontAwesome6
-                name="gear"
-                size={24}
-                color='#ECDFCC'
-                style={{ padding: 10 }}
-                onPress={toggleModal}
-              />
+              <TouchableOpacity onPress={toggleModal}>
+                <FontAwesome6
+                  name="gear"
+                  size={24}
+                  color='#ECDFCC'
+                  style={{ padding: 10 }}
+                  />
+              </TouchableOpacity>
             ),
           }}
         />
@@ -107,23 +109,25 @@ const QuranLayout = () => {
               color: '#ECDFCC'
             },
             headerLeft: () => (
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color='#ECDFCC'
-                style={{ padding: 10 }}
-                onPress={() => router.back()}
-              />
+              <TouchableOpacity onPress={() => router.back()}>
+                <FontAwesome6
+                  name="arrow-left"
+                  size={24}
+                  color='#ECDFCC'
+                  style={{ padding: 10 }}
+                />
+              </TouchableOpacity>
             ),
             headerRight: () => (
-              <FontAwesome6
-                name="gear"
-                size={24}
-                color={isDarkMode ? '#ECDFCC' : '#FFFFFF'}
-                style={{ padding: 10 }}
-                onPress={toggleModal}
-              />
-            )
+              <TouchableOpacity onPress={toggleModal}>
+                <FontAwesome6
+                  name="gear"
+                  size={24}
+                  color='#ECDFCC'
+                  style={{ padding: 10 }}
+                  />
+              </TouchableOpacity>
+            ),
           }}
         />        
         <Stack.Screen
@@ -141,13 +145,14 @@ const QuranLayout = () => {
               color: '#ECDFCC'
             },
             headerLeft: () => (
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color= '#ECDFCC'
-                style={{ padding: 10 }}
-                onPress={() => router.back()}
-              />
+              <TouchableOpacity onPress={() => router.back()}>
+                <FontAwesome6
+                  name="arrow-left"
+                  size={24}
+                  color='#ECDFCC'
+                  style={{ padding: 10 }}
+                />
+              </TouchableOpacity>
             ),
           }}
         />
@@ -166,13 +171,14 @@ const QuranLayout = () => {
               color: '#ECDFCC'
             },
             headerLeft: () => (
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color='#ECDFCC'
-                style={{ padding: 10 }}
-                onPress={() => router.back()}
-              />
+              <TouchableOpacity onPress={() => router.back()}>
+                <FontAwesome6
+                  name="arrow-left"
+                  size={24}
+                  color='#ECDFCC'
+                  style={{ padding: 10 }}
+                />
+              </TouchableOpacity>
             ),
           }}
         />
@@ -182,22 +188,23 @@ const QuranLayout = () => {
             headerShown: true,
             headerTitle: 'My Bookmarks',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#1E1E1E' : '#4D6561',
+              backgroundColor: '#2E3D3A',
             },
             headerTintColor: '#FFFFFF',
             headerTitleStyle: {
               fontFamily: 'Outfit_700Bold',
               fontSize: 20,
-              color: isDarkMode ? '#ECDFCC' : '#FFFFFF'
+              color: '#ECDFCC'
             },
             headerLeft: () => (
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color= {isDarkMode ? '#ECDFCC' : '#FFFFFF'}
-                style={{ padding: 10 }}
-                onPress={() => router.back()}
-              />
+              <TouchableOpacity onPress={() => router.back()}>
+                <FontAwesome6
+                  name="arrow-left"
+                  size={24}
+                  color='#ECDFCC'
+                  style={{ padding: 10 }}
+                />
+              </TouchableOpacity>
             ),
           }}
         />

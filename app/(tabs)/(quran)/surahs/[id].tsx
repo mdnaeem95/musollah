@@ -28,6 +28,7 @@ const SurahTextScreen = () => {
 
     const soundRef = useRef<Audio.Sound | null>(null);
     const listRef = useRef<FlashList<any>>(null);
+    const { ayahIndex } = useLocalSearchParams();
     const { id } = useLocalSearchParams<{ id: string, ayahIndex?: string }>();
     const { surahs, isLoading, bookmarks } = useSelector((state: RootState) => state.quran);
     const { isDarkMode, textSize, reciter } = useContext(ThemeContext);
@@ -37,30 +38,47 @@ const SurahTextScreen = () => {
 
     const arabicAyahs = surah?.arabicText ? surah.arabicText.split('|') : [];
     const englishTranslations = surah?.englishTranslation ? surah.englishTranslation.split('|') : [];
+    const initialLinks = surah?.audioLinks ? surah.audioLinks.split(',').map(link => link.replace('ar.alafasy', reciter)): [];
 
     const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [readAyahs, setReadAyahs] = useState<number[]>([]);
     const [selectedSurah, setSelectedSurah] = useState<number>(surahNum);
     const [isPickerVisible, setPickerVisible] = useState<boolean>(false);
-    const [audioLinks, setAudioLinks] = useState<string[]>([]);
+    const [audioLinks, setAudioLinks] = useState<string[]>(initialLinks);
 
     useEffect(() => {
-        setAudioLinks(surah!.audioLinks.split('|'))
-    }, [surah])
+        const scrollToAyah = () => {
+            if (ayahIndex && listRef.current) {
+                // Scroll to the ayah index if provided
+                listRef.current.scrollToIndex({
+                    index: Number(ayahIndex) - 1, // -1 to adjust for 0-based index
+                    animated: true,
+                    viewPosition: 0.5, // Center the Ayah in the viewport
+                });
+        }};
+        
+        const timeoutId = setTimeout(scrollToAyah, 300);
 
-    // Update audio links when the reciter or surah changes
+        return () => clearTimeout(timeoutId);
+    }, [ayahIndex, arabicAyahs.length]);
+
+    // Ensure resetAudio completes before setting new audio links
     useEffect(() => {
-        console.log(audioLinks)
-        if (surah?.audioLinks) {
-            const updatedLinks = surah.audioLinks
-                .split(',')
-                .map(link => link.replace('ar.alafasy', reciter));
-            setAudioLinks(updatedLinks);
-        } else {
-            setAudioLinks([]);
-            console.warn('No audio links available for this surah.');
-        }
+        const updateAudioLinks = async () => {
+            await resetAudio();
+            if (surah?.audioLinks) {
+                const updatedLinks = surah.audioLinks
+                    .split(',')
+                    .map(link => link.replace('ar.alafasy', reciter));
+                setAudioLinks(updatedLinks); // Set updated audio
+            await resetAudio(); 
+            } else {
+                setAudioLinks([]); // Clear if no audio links are available
+                console.warn('No audio links available for this surah.');
+            }
+        };
+        updateAudioLinks();
     }, [reciter, surah]);
 
     // Set the dynamic title in the header
@@ -69,9 +87,9 @@ const SurahTextScreen = () => {
         navigation.setOptions({
             headerTitle: () => (
                 <View style={styles.headerContainer}>
-                    <Text style={[styles.headerText, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF' }]}>{surah.englishName}</Text>
+                    <Text style={[styles.headerText, { color: '#ECDFCC' }]}>{surah.englishName}</Text>
                     <TouchableOpacity onPress={togglePickerVisibility}>
-                        <FontAwesome6 name={isPickerVisible ? "chevron-up" : "chevron-down"} size={20} color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
+                        <FontAwesome6 name={isPickerVisible ? "chevron-up" : "chevron-down"} size={20} color={'#ECDFCC'} />
                     </TouchableOpacity>
                 </View>
             )
@@ -110,12 +128,13 @@ const SurahTextScreen = () => {
     }
     
     const playAyah = async (index: number) => {
-        const ayahAudioLink = audioLinks[index]?.trim();
-
-        if (!ayahAudioLink) {
+        if (audioLinks.length === 0 || !audioLinks[index]) {
             console.warn(`No audio link found for ayah index ${index}`);
             return;
         }
+
+        const ayahAudioLink = audioLinks[index]?.trim();
+        console.log('Current ayah: ', ayahAudioLink)
 
         try {
             await Audio.setAudioModeAsync({
@@ -228,6 +247,7 @@ const SurahTextScreen = () => {
             // Save the last read ayah if marked
             if (updatedReadAyahs.includes(ayahNumber)) {
                 const lastReadData = { surahNumber: surahNum, ayahNumber };
+                console.log(lastReadData)
                 AsyncStorage.setItem('lastReadAyah', JSON.stringify(lastReadData));
             }
     
@@ -288,7 +308,7 @@ const SurahTextScreen = () => {
                 </View>
 
                 <View >
-                    <Text style={[styles.quranText, { color: ayahTextColor, fontSize: textSize, lineHeight: textSize * 2 }]}>{item}</Text>
+                    <Text style={[styles.quranText, { color: ayahTextColor, fontSize: textSize, lineHeight: textSize * 2.5 }]}>{item}</Text>
                     {surah?.englishTranslation && (
                         <View style={styles.translationContainer}>
                             <Text style={[styles.translationText, { color: ayahTextColor }]}>
