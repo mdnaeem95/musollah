@@ -6,7 +6,8 @@
     "start": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@expo-google-fonts/amiri": "^0.2.3",
@@ -46,6 +47,7 @@
     "expo-status-bar": "~1.12.1",
     "expo-updates": "~0.25.27",
     "obscenity": "^0.4.0",
+    "patch-package": "^8.0.0",
     "react": "18.2.0",
     "react-hook-form": "^7.53.0",
     "react-live-clock": "^6.1.22",
