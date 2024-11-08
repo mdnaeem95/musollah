@@ -76,6 +76,39 @@ export const signUp = createAsyncThunk(
   }
 );
 
+// Thunk to fetch the latest user data, including role and profile data from Firestore
+export const fetchUser = createAsyncThunk(
+  'user/fetchUser',
+  async (_, { rejectWithValue }) => {
+    try {
+      const currentUser = getAuth().currentUser;
+      if (!currentUser) throw new Error('User not logged in');
+
+      // Retrieve user data from Firestore
+      const userDoc = await firestore().collection('users').doc(currentUser.uid).get();
+
+      if (!userDoc.exists) {
+        throw new Error('User data not found in Firestore.');
+      }
+
+      const userData = userDoc.data();
+      return {
+        id: currentUser.uid,
+        email: currentUser.email || '',
+        name: currentUser.displayName || 'New User',
+        avatarUrl: currentUser.photoURL || 'https://via.placeholder.com/100',
+        enrolledCourses: userData?.enrolledCourses || [],
+        prayerLogs: userData?.prayerLogs || [],
+        role: userData?.role || 'user',
+        likedQuestions: userData?.likedQuestions || [],
+      };
+    } catch (error: any) {
+      console.error('Failed to fetch user data:', error);
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 // SavePrayerLog Thunk - Logs user prayers
 export const savePrayerLog = createAsyncThunk(
   'user/savePrayerLog',
@@ -209,6 +242,18 @@ reducers: {
 },
 extraReducers: (builder) => {
     builder
+    .addCase(fetchUser.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    })
+    .addCase(fetchUser.fulfilled, (state, action) => {
+      state.user = action.payload;
+      state.loading = false;
+    })
+    .addCase(fetchUser.rejected, (state, action) => {
+      state.error = action.payload as string;
+      state.loading = false;
+    })
     .addCase(signIn.pending, (state) => {
         state.loading = true;
         state.error = null;

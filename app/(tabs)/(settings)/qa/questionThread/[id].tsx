@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Question } from '../../../../../utils/types';
-import { RootState } from '../../../../../redux/store/store';
+import { AppDispatch, RootState } from '../../../../../redux/store/store';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { formatDistanceToNow } from 'date-fns';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import AnswerModal from '../../../../../components/AnswerModal';
+import { fetchAnswers } from '../../../../../redux/slices/qaSlice';
+import { fetchUser } from '../../../../../redux/slices/userSlice';
 
 const QuestionThreadScreen = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { questions, loading } = useSelector((state: RootState) => state.qa);
   const user = useSelector((state: RootState) => state.user.user);
@@ -20,6 +23,20 @@ const QuestionThreadScreen = () => {
   const openModal = () => {
       setModalVisible(true);
   };
+
+  // Fetch answers whenever the screen is in focus
+  useFocusEffect(
+    useCallback(() => {
+      if (id) {
+        dispatch(fetchUser);
+        dispatch(fetchAnswers(id));
+      }
+    }, [dispatch, id])
+  );
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="#4D6561" />;
+  }
 
   if (loading) {
     return <ActivityIndicator size="large" color="#4D6561" />;
