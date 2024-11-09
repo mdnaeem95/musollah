@@ -18,6 +18,7 @@ import IshaBackground from '../../../assets/prayerBackgroundImages/isyaBackgroun
 import { RootState } from '../../../redux/store/store';
 import { PrayerTimes } from '../../../utils/types';
 import { getFormattedDate, getPrayerTimesInfo } from '../../../utils';
+import { schedulePrayerNotifications } from '../../../utils/notificationsScheduler';
 
 // Constants for background images
 const prayerBackgrounds = {
@@ -60,6 +61,7 @@ const PrayerTab = () => {
       const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes, new Date());
       setCurrentPrayer(currentPrayer);
       setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
+      schedulePrayerNotifications(prayerTimes, reminderInterval, scheduledReminders);
     } else {
       setCurrentPrayer('');
       setNextPrayerInfo(null);
