@@ -22,7 +22,9 @@ TaskManager.defineTask(PRAYER_NOTIFICATION_TASK, async () => {
 
     const state = store.getState();
     const { prayerTimes } = state.prayer;
+    console.log('Prayer times for bg notifs: ', prayerTimes);
     const { reminderInterval } = state.userPreferences;
+    console.log('Reminder Interval for bg notifs: ', reminderInterval)
 
     if (prayerTimes) {
       // Call the notification scheduling function with Redux state data
@@ -30,13 +32,13 @@ TaskManager.defineTask(PRAYER_NOTIFICATION_TASK, async () => {
       await schedulePrayerNotifications(prayerTimes, reminderInterval, new Set());
       console.log('Notifications scheduled successfully.');
       await registerBackgroundFetch();
-      return "NewData"
+      return BackgroundFetch.BackgroundFetchResult.NewData;
     } else {
-      return "NoData";
+      return BackgroundFetch.BackgroundFetchResult.NoData
     }
   } catch (error) {
     console.error('Error in PRAYER_NOTIFICATION_TASK:', error);
-    return "Failed";
+    return BackgroundFetch.BackgroundFetchResult.Failed
   }
 });
 
