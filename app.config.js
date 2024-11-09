@@ -54,7 +54,6 @@ export default {
     },
     "plugins": [
       "@react-native-firebase/auth",
-      "@react-native-firebase/crashlytics",
       "@react-native-firebase/app",
       withBoringSSLFix,
       [
