@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center', // Center content vertically
         alignItems: 'center', // Center content horizontally
-        backgroundColor: '#FFFFFF', // White background for clean appearance
+        backgroundColor: '#2E3D3A', // White background for clean appearance
       },
       logo: {
         width: 150, // Adjust size as needed
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
       loadingText: {
         fontSize: 18,
         fontFamily: 'Outfit_600SemiBold',
-        color: '#4D6561',
+        color: '#ECDFCC',
       },
 })
 

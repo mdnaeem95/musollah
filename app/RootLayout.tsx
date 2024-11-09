@@ -17,6 +17,7 @@ import { fetchDailyDoasData } from '../redux/slices/doasSlice';
 import LoadingScreen from '../components/LoadingScreen';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { listenForUserUpdates } from '../redux/slices/userSlice';
+import { registerBackgroundFetch } from '../utils/backgroundPrayerNotificationScheduler';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -49,6 +50,10 @@ const RootLayout = () => {
     });
 
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    registerBackgroundFetch();
   }, []);
   
   // Listener to monitor changes in user documents

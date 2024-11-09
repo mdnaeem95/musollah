@@ -53,63 +53,6 @@ const PrayerTab = () => {
   //@ts-ignore
   const backgroundImage = useMemo(() => prayerBackgrounds[currentPrayer] || SubuhBackground, [currentPrayer])
 
-  // Function to schedule notifications for the day
-  const schedulePrayerNotifications = async (prayerTimes: PrayerTimes) => {
-    try {
-      // Cancel any existing notifications to avoid duplicates
-      await Notifications.cancelAllScheduledNotificationsAsync();
-
-      const today = new Date();
-
-      Object.entries(prayerTimes).forEach(async ([prayerName, prayerTime]) => {
-        const [hour, minute] = prayerTime.split(':').map(Number);
-        const prayerDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hour, minute);
-        console.log('Reminder Interval', reminderInterval)
-
-        // Schedule a notification at the exact prayer time
-        if (prayerDate > today) {
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: `Time for ${prayerName}`,
-              body: `It's time for ${prayerName} prayer.`,
-              sound: true,
-            },
-            trigger: prayerDate,
-          });
-          console.log(`${prayerName} notification scheduled for ${prayerDate}`);
-        }
-        
-        // schdule an additional notification before the prayer based on reminderInterval
-        if (reminderInterval > 0 && !scheduledReminders.has(prayerName)) {
-          const reminderDate = new Date(prayerDate.getTime() - reminderInterval * 60 * 1000);
-          if (reminderDate > today) {
-            await Notifications.scheduleNotificationAsync({
-              content: {
-                title: `${reminderInterval} minutes until ${prayerName}`,
-                body: `Get ready for ${prayerName} prayer in ${reminderInterval} minutes.`,
-                sound: true,
-              },
-              trigger: reminderDate
-            });
-            console.log(`${prayerName} reminder notification scheduled for ${reminderDate}`)
-            scheduledReminders.add(prayerName);
-          }
-        }
-      });
-
-      // Mark notifications as scheduled for the day
-      setNotificationsScheduled(true);
-
-    } catch (error) {
-      console.error('Error scheduling prayer notifications:', error);
-    }
-  };
-
-  // Handle city press to open location modal
-  const handleCityPress = () => {
-    setIsPrayerLocationModalVisible(true);
-  }
-
   // Update current and next prayer info and schedule notifications once prayer times are fetched
   useEffect(() => {
     // Always update the current and next prayer info
@@ -117,12 +60,16 @@ const PrayerTab = () => {
       const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes, new Date());
       setCurrentPrayer(currentPrayer);
       setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
-      schedulePrayerNotifications(prayerTimes);
     } else {
       setCurrentPrayer('');
       setNextPrayerInfo(null);
     }
   }, [prayerTimes, notificationsScheduled, reminderInterval]);
+
+  // Handle city press to open location modal
+  const handleCityPress = () => {
+    setIsPrayerLocationModalVisible(true);
+  }
 
   // Recalculate the next prayer info every minute to keep it updated
   useEffect(() => {
