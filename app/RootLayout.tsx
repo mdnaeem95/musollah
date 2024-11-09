@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import { useDispatch } from 'react-redux';
 import Purchases from 'react-native-purchases';
 import * as SplashScreen from 'expo-splash-screen';
-import { Platform, StyleSheet, View } from 'react-native';
+import { AppState, Platform, StyleSheet, View } from 'react-native';
 
 import { Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from "@expo-google-fonts/outfit";
 import { Amiri_400Regular } from "@expo-google-fonts/amiri";
@@ -19,7 +19,10 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from '
 import { listenForUserUpdates } from '../redux/slices/userSlice';
 import { registerBackgroundFetch } from '../utils/backgroundPrayerNotificationScheduler';
 
-SplashScreen.preventAutoHideAsync();
+
+if (AppState.currentState === 'active') {
+  SplashScreen.preventAutoHideAsync();
+}
 
 const RootLayout = () => {
   const dispatch = useDispatch<AppDispatch>();  
