@@ -19,7 +19,6 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from '
 import { listenForUserUpdates } from '../redux/slices/userSlice';
 import { registerBackgroundFetch } from '../utils/backgroundPrayerNotificationScheduler';
 
-
 if (AppState.currentState === 'active') {
   SplashScreen.preventAutoHideAsync();
 }

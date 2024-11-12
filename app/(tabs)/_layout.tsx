@@ -10,7 +10,7 @@ const TabLayout = () => {
         tabBarStyle: {
           backgroundColor: '#2E3D3A',
           borderTopColor: '#3A504C',
-          height: 60,
+          height: 70,
           paddingBottom: 25,
           paddingTop: 10,
           borderTopWidth: 1, // Thin border line for slight separation
@@ -28,6 +28,9 @@ const TabLayout = () => {
               break;
             case '(education)':
               iconName = 'book-open-reader';
+              break;
+            case '(food)':
+              iconName = 'utensils';
               break;
             case 'musollah':
               iconName = 'location-dot';
@@ -57,6 +60,13 @@ const TabLayout = () => {
         options={{
           title: 'Education',
           headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="(food)"
+        options={{
+          title: ' Halal Food',
+          headerShown: false
         }}
       />
       <Tabs.Screen

@@ -283,3 +283,17 @@ export interface Vote {
     answerId?: string;
     type: 'upvote' | 'downvote';
 }
+
+export interface Restaurant {
+    id: string,
+    name : string,
+    address: string,
+    coordinates: {
+        latitude: number;
+        longitude: number;
+    };
+    status: string,
+    hours: string,
+    tags: string,
+    website: string
+}

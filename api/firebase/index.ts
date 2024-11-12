@@ -1,7 +1,7 @@
 import firestore from "@react-native-firebase/firestore";
 import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
-import { ContentData, CourseData, Doa, DoaAfterPrayer, FoodAdditive, ModuleData, Surah, TeacherData, UserData } from "../../utils/types";
+import { ContentData, CourseData, Doa, DoaAfterPrayer, FoodAdditive, ModuleData, Restaurant, Surah, TeacherData, UserData } from "../../utils/types";
 
 export const fetchUserData = async (userId: string ): Promise<UserData> => {
     try {
@@ -286,6 +286,33 @@ export const fetchFoodAdditives = async (): Promise<FoodAdditive[]> => {
         return additivesList
     } catch (error) {
         console.error('Error fetching additives list: ', error);
+        throw error
+    }
+}
+
+export const fetchRestaurants = async (): Promise<Restaurant[]> => {
+    try {
+        const restaurantSnapshot = await firestore().collection('restaurants').get();
+        const restaurantsList = restaurantSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                name : data.name,
+                address: data.address,
+                coordinates: {
+                    latitude: data.location.latitude,
+                    longitude: data.location.longitude,
+                },
+                status: data.status,
+                hours: data.hours,
+                tags: data.tags,
+                website: data.website
+            } as Restaurant
+        });
+        
+        return restaurantsList
+    } catch (error) {
+        console.error('Error fetching restaurants: ', error);
         throw error
     }
 }
