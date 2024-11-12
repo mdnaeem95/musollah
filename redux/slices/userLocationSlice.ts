@@ -48,15 +48,14 @@ export const fetchUserLocation = createAsyncThunk<LocationObject, void, { reject
   'location/fetchUserLocation',
   async (_, { rejectWithValue }) => {
     try {
-      const cachedLocation = await getCachedLocation();
-      if (cachedLocation) {
-        console.log('Using cached location');
-        return cachedLocation
-      }
-
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         const errorMsg = 'Permission to access location was denied';
+        const cachedLocation = await getCachedLocation();
+        if (cachedLocation) {
+          console.log('Using cached location');
+          return cachedLocation
+        }
         console.warn(errorMsg);
         return rejectWithValue(errorMsg);
       }
