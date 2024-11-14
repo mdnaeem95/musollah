@@ -15,6 +15,12 @@ const PrayerLayout = () => {
       headerShown: false
     }}>
       <Stack.Screen 
+        name="index"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
         name="qiblat/index"
         options={{
           headerShown: true,

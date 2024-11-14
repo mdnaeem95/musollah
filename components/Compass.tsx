@@ -1,87 +1,108 @@
-import { View, Text, Image, StyleSheet, Dimensions, Vibration, Animated } from 'react-native'
+import { View, Text, Image, StyleSheet, Dimensions, Vibration, Animated } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import * as Location from 'expo-location'
-import { useSelector } from 'react-redux';
-import { RootState } from '../redux/store/store';
+import * as Location from 'expo-location';
 
 const screenWidth = Dimensions.get('window').width;
 const compassSize = screenWidth * 0.8;
 const QIBLA_HEADING = 293;
+const KAABA_LAT = 21.4225;   // Latitude of Kaaba
+const KAABA_LON = 39.8262;   // Longitude of Kaaba
 
 const Compass = () => {
     const [userHeading, setUserHeading] = useState(0);
-    const [locationError, setLocationError] = useState<string | null>(null);
+    const [userLocation, setUserLocation] = useState({ latitude: 0, longitude: 0 });
+    const [qiblaHeading, setQiblaHeading] = useState(0);
+    const [qiblaAzimuth, setQiblaAzimuth] = useState(0);
     const [bgColor] = useState(new Animated.Value(0));
 
-    // Watch user heading and update it in real-time
+    const calculateAzimuth = (userLat: any, userLon: any) => {
+        const dLon = (KAABA_LON - userLon) * (Math.PI / 180);
+        const lat1 = userLat * (Math.PI / 180);
+        const lat2 = KAABA_LAT * (Math.PI / 180);
+
+        const y = Math.sin(dLon) * Math.cos(lat2);
+        const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+
+        let azimuth = Math.atan2(y, x) * (180 / Math.PI);
+        azimuth = (azimuth + 360) % 360; // Ensure the azimuth is within 0-360 degrees
+        return azimuth;
+    };
+
     useEffect(() => {
-        const startHeadingUpdates = async () => {
-        try {
-            // Request location permissions from the user
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-            setLocationError('Location permission denied.');
-            return;
-            }
+        const getUserLocationAndHeading = async () => {
+            try {
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    console.log('Location permission denied.');
+                    return;
+                }
 
-            // Start watching the device's heading (compass)
-            const headingSubscription = await Location.watchHeadingAsync((heading) => {
-            setUserHeading(heading.trueHeading || 0);
-            });
+                const { coords } = await Location.getCurrentPositionAsync({});
+                setUserLocation({ latitude: coords.latitude, longitude: coords.longitude });
 
-            // Cleanup the heading subscription when the component unmounts
-            return () => {
-            if (headingSubscription) {
-                headingSubscription.remove();
+                // Calculate azimuth (Qibla direction) from the user's location
+                const azimuth = calculateAzimuth(coords.latitude, coords.longitude);
+                setQiblaAzimuth(azimuth);
+
+                // Watch heading updates
+                const headingSubscription = await Location.watchHeadingAsync((heading) => {
+                    setUserHeading(heading.trueHeading || 0);
+                });
+
+                return () => headingSubscription && headingSubscription.remove();
+            } catch (error) {
+                console.log('Error accessing location or compass:', error);
             }
-            };
-        } catch (error) {
-            setLocationError('Error accessing compass.');
-        }
         };
 
-        startHeadingUpdates();
+        getUserLocationAndHeading();
     }, []);
 
     // Trigger vibration and background color animation when facing Qibla
     useEffect(() => {
         const proximityToQibla = Math.abs(userHeading - QIBLA_HEADING);
+        const isCloseEnough = proximityToQibla < 5;  // Increase threshold to 5 degrees
 
-        if (proximityToQibla < 0.5) {
+        if (isCloseEnough) {
             Vibration.vibrate();
         }
 
-        // Animate the background color based on proximity
         const proximityFactor = Math.min(proximityToQibla / 5, 1);
         Animated.timing(bgColor, {
             toValue: 1 - proximityFactor,
             duration: 200,
             useNativeDriver: false
         }).start();
-    }, [userHeading, bgColor])
+    }, [userHeading, bgColor]);
 
     const interpolateColor = bgColor.interpolate({
         inputRange: [0, 1],
         outputRange: ['#3A504C', '#A3C0BB']
-    })
+    });
 
     return (
         <View style={styles.mainContainer}>
             <View style={styles.textContainer}>
-                <Text style={styles.qiblatText}>Your heading: {Math.round(userHeading)} deg</Text>
-                <Text style={styles.qiblatText}>Kaabah's heading: {QIBLA_HEADING} deg</Text>
-                <Text style={styles.qiblatText}>When your heading and the Kaaba's heading match, you are facing the right direction.</Text>
+                <Text style={styles.qiblatText}>Your heading: {Math.round(userHeading)}°</Text>
+                <Text style={styles.qiblatText}>Qibla heading: {Math.round(qiblaAzimuth)}°</Text>
+                <Text style={styles.qiblatText}>When your heading matches the Kaaba's, you are facing the right direction.</Text>
             </View>
 
             <View style={styles.compassContainer}>
                 <Animated.View style={[styles.compassCircle, { backgroundColor: interpolateColor }]}>
                     <Image source={require('../assets/kaabah.png')} style={styles.kaabahIcon} />
-                    <Image source={require('../assets/arrow-up.png')} style={[styles.compassArrow, { transform: [{ rotate: `${QIBLA_HEADING - userHeading}deg`}] }]} />
+                    <Image 
+                        source={require('../assets/arrow-up.png')} 
+                        style={[
+                            styles.compassArrow, 
+                            { transform: [{ rotate: `${qiblaAzimuth - userHeading}deg` }] } 
+                        ]} 
+                    />
                 </Animated.View>
             </View>
         </View>
-    )
-}
+    );
+};
 
 const styles = StyleSheet.create({
     mainContainer: {
