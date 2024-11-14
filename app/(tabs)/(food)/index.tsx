@@ -94,7 +94,7 @@ const RestaurantLocator = () => {
     <View style={styles.mainContainer}>
       <MapView
         style={styles.map}
-        region={userLocation} // Center the map on the user's location
+        region={userLocation || undefined} // Center the map on the user's location
         scrollEnabled={false} // Disable scrolling
         showsUserLocation={true} // Show user's location on the map
         initialRegion={{
@@ -114,6 +114,7 @@ const RestaurantLocator = () => {
               }}
               title={restaurant.name}
               description={restaurant.address}
+              image={require('../../../assets/restaurant.png')}
             />
           ))}
       </MapView>
@@ -162,6 +163,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   newSection: {
+    flex: 1,
     padding: 16,
     backgroundColor: '#3D4F4C',
     borderRadius: 12,
