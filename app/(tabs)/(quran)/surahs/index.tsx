@@ -1,4 +1,4 @@
-import { FlatList, ActivityIndicator, View, TextInput, TouchableOpacity, StatusBar, StyleSheet } from 'react-native';
+import { FlatList, ActivityIndicator, View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';

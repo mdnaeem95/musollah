@@ -1,7 +1,9 @@
-import { Tabs } from 'expo-router';
+import { Tabs, useSegments } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 
 const TabLayout = () => {
+  const segments = useSegments();
+  const hide = segments.includes("surahs") && segments.includes("[id]")
   return (
     <Tabs
       screenOptions={({ route }) => ({
@@ -82,7 +84,7 @@ const TabLayout = () => {
           title: 'Quran',
           headerShown: false,
         }}
-      />
+          />
       <Tabs.Screen
         name="(settings)"
         options={{
