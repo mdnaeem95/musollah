@@ -10,6 +10,8 @@ import { Amiri_400Regular } from "@expo-google-fonts/amiri";
 import { useFonts } from 'expo-font';
 
 import { AppDispatch, persistor } from '../redux/store/store';
+import { useLogTrackPlayerState } from '../hooks/useLogTrackPlayerState'
+import { useSetupTrackPlayer } from "../hooks/useSetupTrackPlayer"
 import { fetchPrayerTimesData } from '../redux/slices/prayerSlice';
 import { fetchSurahsData } from '../redux/slices/quranSlice';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
@@ -18,15 +20,20 @@ import LoadingScreen from '../components/LoadingScreen';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { listenForUserUpdates } from '../redux/slices/userSlice';
 import { registerBackgroundFetch } from '../utils/backgroundPrayerNotificationScheduler';
+import TrackPlayer from 'react-native-track-player';
+import { playbackService } from '../constants/playbackService';
 
 if (AppState.currentState === 'active') {
   SplashScreen.preventAutoHideAsync();
 }
 
+TrackPlayer.registerPlaybackService(() => playbackService)
+
 const RootLayout = () => {
   const dispatch = useDispatch<AppDispatch>();  
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isEssentialDataFetched, setIsEssentialDataFetched] = useState<boolean>(false);
+  const [isTrackPlayerSetup, setIsTrackPlayerSetup] = useState(false);
   const [isNonEssentialDataFetched, setIsNonEssentialDataFetched] = useState<boolean>(false);
   const [isFontsLoaded] = useFonts({
     Outfit_300Light,
@@ -121,6 +128,16 @@ const RootLayout = () => {
     }
   }, [isAuthenticated]);
 
+  const handleTrackPlayerLoaded = useCallback(() => {
+    setIsTrackPlayerSetup(true);
+  }, [])
+
+  useSetupTrackPlayer({
+    onLoad: handleTrackPlayerLoaded
+  })
+
+  useLogTrackPlayerState();
+
   // Hide the splash screen once fonts and essential data are ready
   useEffect(() => {
     const hideSplashScreenandAnimate = async () => {
@@ -132,10 +149,10 @@ const RootLayout = () => {
       }
     };
 
-    if (isFontsLoaded && isEssentialDataFetched) {
+    if (isFontsLoaded && isEssentialDataFetched && isTrackPlayerSetup)  {
       hideSplashScreenandAnimate();
     }
-  }, [isFontsLoaded, isEssentialDataFetched, hideSplashScreen]);
+  }, [isFontsLoaded, isEssentialDataFetched, hideSplashScreen, isTrackPlayerSetup]);
 
   // reanimated style for splash screen sliding animation
   const animatedSplashStyle = useAnimatedStyle(() => {

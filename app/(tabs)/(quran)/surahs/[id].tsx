@@ -1,7 +1,6 @@
-import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, FlatList, Modal } from 'react-native';
-import React, { useRef, useState, useCallback, useContext, useEffect, useLayoutEffect, memo } from 'react';
+import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useRef, useState, useCallback, useContext, useEffect, useLayoutEffect } from 'react';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { AVPlaybackStatus, Audio } from 'expo-av';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { Bookmark, Surah } from '../../../../utils/types';
@@ -13,8 +12,8 @@ import Toast from 'react-native-toast-message';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FlashList } from '@shopify/flash-list';
-
-let lastPlaybackPosition = 0;
+import TrackPlayer, { Event } from 'react-native-track-player';
+import { PlayPauseButton } from '../../../../components/AyahPlayPauseButton';
 
 // Utility functions for bookmarking and marking read Ayahs
 const toggleItemInArray = (arr: number[], item: number) => (
@@ -25,8 +24,6 @@ const SurahTextScreen = () => {
     const router = useRouter();
     const navigation = useNavigation();
     const dispatch = useDispatch<AppDispatch>()
-
-    const soundRef = useRef<Audio.Sound | null>(null);
     const listRef = useRef<FlashList<any>>(null);
     const { ayahIndex } = useLocalSearchParams();
     const { id } = useLocalSearchParams<{ id: string, ayahIndex?: string }>();
@@ -41,46 +38,79 @@ const SurahTextScreen = () => {
     const initialLinks = surah?.audioLinks ? surah.audioLinks.split(',').map(link => link.replace('ar.alafasy', reciter)): [];
 
     const [currentAyahIndex, setCurrentAyahIndex] = useState<number>(0);
-    const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [readAyahs, setReadAyahs] = useState<number[]>([]);
     const [selectedSurah, setSelectedSurah] = useState<number>(surahNum);
     const [isPickerVisible, setPickerVisible] = useState<boolean>(false);
     const [audioLinks, setAudioLinks] = useState<string[]>(initialLinks);
-
+    
+    const generateTracks = (surah: Surah, reciter: string) => {
+        return surah.arabicText.split('|').map((ayah, index) => {
+        const rawUrl = surah.audioLinks.split(',')[index]?.replace('ar.alafasy', reciter);
+        const trimmedUrl = rawUrl?.trim(); // Ensure no extra spaces
+        return {
+            id: `${surah.number}-${index + 1}`,
+            url: trimmedUrl || '',
+            title: `Ayah ${index + 1}`,
+            artist: surah.englishName,
+        }
+        });
+    };
+    
+    // Add tracks and handle autoplay
     useEffect(() => {
-        const scrollToAyah = () => {
-            if (ayahIndex && listRef.current) {
-                // Scroll to the ayah index if provided
-                listRef.current.scrollToIndex({
-                    index: Number(ayahIndex) - 1, // -1 to adjust for 0-based index
-                    animated: true,
-                    viewPosition: 0.5, // Center the Ayah in the viewport
-                });
-        }};
-        
-        const timeoutId = setTimeout(scrollToAyah, 300);
-
-        return () => clearTimeout(timeoutId);
-    }, [ayahIndex, arabicAyahs.length]);
-
-    // Ensure resetAudio completes before setting new audio links
-    useEffect(() => {
-        const updateAudioLinks = async () => {
-            await resetAudio();
-            if (surah?.audioLinks) {
-                const updatedLinks = surah.audioLinks
-                    .split(',')
-                    .map(link => link.replace('ar.alafasy', reciter));
-                setAudioLinks(updatedLinks); // Set updated audio
-            await resetAudio(); 
-            } else {
-                setAudioLinks([]); // Clear if no audio links are available
-                console.warn('No audio links available for this surah.');
+        const setupTracks = async () => {
+            try {
+                const tracks = generateTracks(surah!, reciter);
+                await TrackPlayer.reset();
+                await TrackPlayer.add(tracks);
+            } catch (error) {
+                console.error('Error setting up tracks:', error);
             }
         };
-        updateAudioLinks();
-    }, [reciter, surah]);
+        setupTracks();
+    }, [surah, reciter]);
 
+    useEffect(() => {
+        //@ts-ignore
+        const onTrackChange = TrackPlayer.addEventListener('playback-track-changed', async ({ nextTrack }) => {
+            if (nextTrack !== null) {
+                setCurrentAyahIndex(nextTrack); 
+
+                const queue = await TrackPlayer.getQueue();
+                const activeTrack = queue[nextTrack];
+
+                if (activeTrack) {
+                    // Save the last listened Ayah to AsyncStorage
+                    await AsyncStorage.setItem('lastListenedAyah', JSON.stringify({
+                        surahNumber: parseInt(activeTrack.id.split('-')[0], 10), // Extract Surah number from ID
+                        ayahIndex: parseInt(activeTrack.id.split('-')[1], 10), // Extract Ayah index from ID
+                    }));
+    
+                    console.log('Saved last listened Ayah:', activeTrack.title);
+                }
+
+                listRef.current?.scrollToIndex({
+                    index: nextTrack,
+                    animated: true,
+                    viewPosition: 0.5, 
+                });
+            }
+        });
+
+        const onQueueEnd = TrackPlayer.addEventListener(Event.PlaybackQueueEnded, async ({ position }) => {
+            if (position !== null) {
+                console.log('Queue has ended. Stopping playback.');
+                await TrackPlayer.stop(); // Stop playback when the queue ends
+                setCurrentAyahIndex(0); // Optionally reset the current Ayah index
+            }
+        });
+
+        return () => {
+            onTrackChange.remove();
+            onQueueEnd.remove();
+        };
+    }, []);
+      
     // Set the dynamic title in the header
     useLayoutEffect(() => {
         if (surah) {
@@ -92,7 +122,7 @@ const SurahTextScreen = () => {
                         <FontAwesome6 name={isPickerVisible ? "chevron-up" : "chevron-down"} size={20} color={'#ECDFCC'} />
                     </TouchableOpacity>
                 </View>
-            )
+            ),
         });
         }
     }, [navigation, surah, isPickerVisible]);
@@ -126,99 +156,6 @@ const SurahTextScreen = () => {
             autoHide: true
         })
     }
-    
-    const playAyah = async (index: number) => {
-        if (audioLinks.length === 0 || !audioLinks[index]) {
-            console.warn(`No audio link found for ayah index ${index}`);
-            return;
-        }
-
-        const ayahAudioLink = audioLinks[index]?.trim();
-        console.log('Current ayah: ', ayahAudioLink)
-
-        try {
-            await Audio.setAudioModeAsync({
-                allowsRecordingIOS: false,
-                playsInSilentModeIOS: true,
-                shouldDuckAndroid: true,
-                playThroughEarpieceAndroid: false,
-                staysActiveInBackground: true,
-            });
-
-            if (soundRef.current) {
-                await soundRef.current.unloadAsync();
-                soundRef.current = null;
-            }
-
-            const { sound } = await Audio.Sound.createAsync(
-                { uri: ayahAudioLink },
-                { shouldPlay: true }
-            );
-            soundRef.current = sound;
-            setCurrentAyahIndex(index);
-            setIsPlaying(true);
-
-            await AsyncStorage.setItem('lastListenedAyah', JSON.stringify({
-                surahNumber: surahNum,
-                ayahIndex: index + 1
-            }))
-
-            sound.setOnPlaybackStatusUpdate(async (status: AVPlaybackStatus) => {
-                if (status.isLoaded && status.didJustFinish) {
-                    playNextAyah(index + 1);  // Save when stopped
-                }
-            });
-        } catch (error) {
-            console.error('Failed to play Ayah:', error);
-            setIsPlaying(false);
-        }
-    };
-
-    const playNextAyah = useCallback(
-        async (index: number) => {
-            if (index >= audioLinks.length) {
-                setIsPlaying(false);
-                return;
-            }
-            playAyah(index);
-        },
-        [audioLinks]
-    );
-
-    // Toggle play/pause for the Ayah
-    const togglePlayPause = async (index: number) => {
-        if (isPlaying && currentAyahIndex === index) {
-            if (soundRef.current) {
-                const status = await soundRef.current.getStatusAsync();
-                if (status.isLoaded && status.isPlaying) {
-                    lastPlaybackPosition = status.positionMillis;
-                    await soundRef.current.pauseAsync();
-                    setIsPlaying(false);
-                    return
-                }
-            }
-        }
-
-        // If the audio was paused, resume from last position
-        if (!isPlaying && currentAyahIndex === index) {
-            if (soundRef.current && lastPlaybackPosition > 0) {
-                await soundRef.current.playFromPositionAsync(lastPlaybackPosition); // Resume from last position
-                setIsPlaying(true);
-                return; // Exit after resuming
-            }
-        }
-
-        await resetAudio(); // Reset previous audio
-        await playAyah(index); // Start playing from the selected Ayah index
-    };
-
-    const resetAudio = async () => {
-        if (soundRef.current) {
-            await soundRef.current.unloadAsync();
-            soundRef.current = null;
-        }
-        setIsPlaying(false);
-    };
 
     const toggleBookmark = useCallback((ayahNumber: number) => {
         const isBookmarked = bookmarks.some(
@@ -279,9 +216,10 @@ const SurahTextScreen = () => {
                     </View>
 
                     <View style={styles.iconGroup}>
-                        <TouchableOpacity style={styles.iconButton} onPress={() => togglePlayPause(index)}>
-                            <FontAwesome6 name={isActiveAyah && isPlaying ? "pause" : "play"} size={20} color={ayahTextColor} />
-                        </TouchableOpacity>
+                        <PlayPauseButton 
+                            color={ayahTextColor} 
+                            isActiveAyah={isActiveAyah} 
+                        />
                         <TouchableOpacity
                             onPress={() => toggleBookmark(ayahNumber)}
                             style={styles.iconButton}
@@ -325,14 +263,21 @@ const SurahTextScreen = () => {
     }, [arabicAyahs.length, bookmarks, currentAyahIndex, isDarkMode, readAyahs, surah?.englishTranslation, textSize]);
 
     useEffect(() => {
-        if (listRef.current && currentAyahIndex >= 0 && currentAyahIndex < arabicAyahs.length) {
-            listRef.current.scrollToIndex({
-                index: currentAyahIndex,
-                animated: true,
-                viewPosition: 0.5
-            });
-        }
-    }, [currentAyahIndex, arabicAyahs.length]);
+        const scrollToAyah = () => {
+            if (ayahIndex && listRef.current) {
+                // Scroll to the ayah index if provided
+                listRef.current.scrollToIndex({
+                    index: Number(ayahIndex) - 1, // -1 to adjust for 0-based index
+                    animated: true,
+                    viewPosition: 0.5, // Center the Ayah in the viewport
+                });
+        }};
+        
+        const timeoutId = setTimeout(scrollToAyah, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [ayahIndex, arabicAyahs.length]);
+
 
     if (!surah) {
         return (

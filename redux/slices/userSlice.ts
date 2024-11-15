@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@react-native-firebase/auth'
 import firestore from '@react-native-firebase/firestore';
 import { UserState } from '../../utils/types';
-import { eachDayOfInterval, endOfMonth, format, startOfMonth, subDays } from 'date-fns';
+import { eachDayOfInterval, format } from 'date-fns';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const initialState: UserState = {
