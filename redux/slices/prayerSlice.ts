@@ -41,16 +41,16 @@ export const fetchPrayerTimesData = createAsyncThunk(
         const currentDate = new Date();
         const shortFormattedDate = getShortFormattedDate(currentDate);
 
-        // Check if prayer times for the current date are cached
-        const cachedData = await getCachedPrayerData(`prayers_${shortFormattedDate}`)
-        if (cachedData) {
-          console.log('Using cached prayer data...');
-          return cachedData;
-        }
+        // // Check if prayer times for the current date are cached
+        // const cachedData = await getCachedPrayerData(`prayers_${shortFormattedDate}`)
+        // if (cachedData) {
+        //   console.log('Using cached prayer data...');
+        //   return cachedData;
+        // }
   
         const prayerData = await fetchPrayerTimes();
-        const { Fajr: Subuh, Dhuhr: Zohor, Asr: Asar, Maghrib, Isha: Isyak } = prayerData.data.timings;
-        const newPrayerTimes = { Subuh, Zohor, Asar, Maghrib, Isyak };
+        const { Fajr: Subuh, Sunrise: Syuruk, Dhuhr: Zohor, Asr: Asar, Maghrib, Isha: Isyak } = prayerData.data.timings;
+        const newPrayerTimes = { Subuh, Syuruk, Zohor, Asar, Maghrib, Isyak };
   
         const islamicDateData = await fetchIslamicDate(shortFormattedDate);
         const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date);
@@ -82,8 +82,8 @@ export const fetchPrayerTimesByDate = createAsyncThunk(
   async (date: string, { rejectWithValue }) => {
     try {
       const prayerData = await fetchTimesByDate(date);
-      const { Fajr: Subuh, Dhuhr: Zohor, Asr: Asar, Maghrib, Isha: Isyak } = prayerData.data.timings;
-      const newPrayerTimes = { Subuh, Zohor, Asar, Maghrib, Isyak };
+      const { Fajr: Subuh, Sunrise: Syuruk, Dhuhr: Zohor, Asr: Asar, Maghrib, Isha: Isyak } = prayerData.data.timings;
+      const newPrayerTimes = { Subuh, Syuruk, Zohor, Asar, Maghrib, Isyak };
 
       const shortFormattedDate = getShortFormattedDate(new Date(date));
 
@@ -125,8 +125,8 @@ export const fetchPrayerTimesByLocationData = createAsyncThunk(
       }
 
       const prayerData = await fetchPrayerTimesByLocation(latitude, longitude);
-      const { Fajr: Subuh, Dhuhr: Zohor, Asr: Asar, Maghrib, Isha: Isyak } = prayerData.data.timings;
-      const newPrayerTimes = { Subuh, Zohor, Asar, Maghrib, Isyak };
+        const { Fajr: Subuh, Sunrise: Syuruk, Dhuhr: Zohor, Asr: Asar, Maghrib, Isha: Isyak } = prayerData.data.timings;
+        const newPrayerTimes = { Subuh, Syuruk, Zohor, Asar, Maghrib, Isyak };
 
       const islamicDateData = await fetchIslamicDate(shortFormattedDate);
       const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date);

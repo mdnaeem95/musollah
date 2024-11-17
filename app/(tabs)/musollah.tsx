@@ -12,6 +12,7 @@ import { fetchMusollahData } from '../../redux/slices/musollahSlice'  // Adjust 
 import { fetchUserLocation } from '../../redux/slices/userLocationSlice'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from 'expo-router'
+import { FlashList } from '@shopify/flash-list'
 
 const locationTypes = ['Bidets', 'Musollahs', 'Mosques']
 
@@ -114,21 +115,15 @@ const MusollahTab = () => {
     return false;
   };
 
-  // Fetch user location on component mount
+  // Initial fetch for user location on component mount
   useEffect(() => {
-    dispatch(fetchUserLocation()); // Fetch the user's location when component mounts
+    dispatch(fetchUserLocation());
   }, [dispatch]);
 
-  // Refetch location data on tab focus
-  useFocusEffect(
-    useCallback(() => {
-      dispatch(fetchUserLocation());
-    }, [dispatch])
-  );
-
+  // Trigger fetching of musollah data whenever user location changes
   useEffect(() => {
-    if (userLocation && isSignificantLocationChange(userLocation.coords)) {
-      dispatch(fetchMusollahData(userLocation));
+    if (userLocation) {
+      dispatch(fetchMusollahData(userLocation)); // Fetch data with updated user location
     }
   }, [userLocation, dispatch]);
 
@@ -203,9 +198,10 @@ const MusollahTab = () => {
       </View>
 
       <KeyboardAvoidingView 
-        style={{ flex: 1, padding: 10 }}
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'} >
         <SegmentedControl
+          style={{ margin: 10 }}
           backgroundColor='#A3C0BB'
           values={locationTypes}
           selectedIndex={selectedIndex}
@@ -214,15 +210,12 @@ const MusollahTab = () => {
         {isLoading ? (
           <ActivityIndicator size="large" color="#0000FF" />
         ) :(
-          <FlatList
-            style={{ margin: -10, marginTop: 10 }} 
+          <FlashList
+            estimatedItemSize={83}
             data={filteredLocations.length ? filteredLocations : currentLocations}
             renderItem={renderItem}
             keyExtractor={keyExtractor}
-            initialNumToRender={5}
-            windowSize={5}
             removeClippedSubviews={true}
-            getItemLayout={(data, index) => ({ length: 70, offset: 70 * index, index })}
           />
         )}
       </KeyboardAvoidingView>

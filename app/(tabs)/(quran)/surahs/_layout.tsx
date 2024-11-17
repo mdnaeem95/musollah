@@ -70,9 +70,6 @@ const SurahDetailLayout = () => {
                 }}
             />
 
-            {/* Floating Player for Surah Details */}
-            <FloatingPlayer style={styles.floatingPlayer} />
-
             {/* Modal for Reciter and Text Size Settings */}
             {isModalVisible && (
                 <Modal

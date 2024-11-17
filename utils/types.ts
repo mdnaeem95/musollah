@@ -89,6 +89,7 @@ export interface PrayerState {
 
 export interface PrayerTimes {
     Subuh: string;
+    Syuruk: string;
     Zohor: string;
     Asar: string;
     Maghrib: string;

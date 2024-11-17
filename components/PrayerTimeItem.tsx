@@ -25,8 +25,8 @@ const PrayerTimeItem = ({ name, time, style }: PrayerTimeItemProps) => {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.text, style]}>{name}</Text>
-      <Text style={[styles.text, style]}>{formatTime(time)}</Text>
+      <Text style={[styles.prayerName, style]}>{name}</Text>
+      <Text style={[styles.prayerTime, style]}>{formatTime(time)}</Text>
     </View>
   )
 }
@@ -37,20 +37,34 @@ const styles = StyleSheet.create({
       width: containerWidth,
       minHeight: 54,
       borderRadius: 15,
-      borderColor: '#FFFFFF',
-      borderWidth: 2,
+      borderColor: 'rgba(255, 255, 255)', 
+      borderWidth: 1,
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 10,
-      backgroundColor: 'rgba(255, 255, 255, 0.5)'
+      backgroundColor: 'rgba(255, 255, 255, 0.5)',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 6,
+      elevation: 4, // Shadow for Android
     },
-    text: {
-        fontFamily: 'Outfit_500Medium',
-        fontWeight: 400,
-        fontSize: 18,
-        lineHeight: 30,
-        color: '#333333'
-    }
+    prayerName: {
+      fontFamily: 'Outfit_500Medium',
+      fontWeight: '500',
+      fontSize: 18,
+      color: '#333333',
+      flex: 1,
+      textAlign: 'left',
+    },
+    prayerTime: {
+      fontFamily: 'Outfit_500Medium',
+      fontWeight: '400',
+      fontSize: 18,
+      color: '#333333',
+      flex: 1,
+      textAlign: 'right',
+    },
 })
 
 export default PrayerTimeItem

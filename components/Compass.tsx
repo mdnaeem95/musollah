@@ -11,7 +11,6 @@ const KAABA_LON = 39.8262;   // Longitude of Kaaba
 const Compass = () => {
     const [userHeading, setUserHeading] = useState(0);
     const [userLocation, setUserLocation] = useState({ latitude: 0, longitude: 0 });
-    const [qiblaHeading, setQiblaHeading] = useState(0);
     const [qiblaAzimuth, setQiblaAzimuth] = useState(0);
     const [bgColor] = useState(new Animated.Value(0));
 

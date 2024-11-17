@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useDispatch } from 'react-redux';
 import Purchases from 'react-native-purchases';
 import * as SplashScreen from 'expo-splash-screen';
@@ -30,6 +30,7 @@ if (AppState.currentState === 'active') {
 TrackPlayer.registerPlaybackService(() => playbackService)
 
 const RootLayout = () => {
+  const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();  
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isEssentialDataFetched, setIsEssentialDataFetched] = useState<boolean>(false);
@@ -144,6 +145,7 @@ const RootLayout = () => {
       try {
         hideSplashScreen();
         await SplashScreen.hideAsync();
+        router.push('/(tabs)/(prayer)');
       } catch (error) {
         console.error('Error hiding SplashScreen:', error);
       }
