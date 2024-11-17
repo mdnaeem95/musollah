@@ -23,7 +23,7 @@ export const getPrayerTimesInfo  = (prayerTimes: { [key: string]: string }, curr
  { currentPrayer: string, nextPrayer:string, timeUntilNextPrayer: string } => {
     const timeInMinutes = (date: Date): number => date.getHours() * 60 + date.getMinutes();
 
-    const prayerNames = ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
+    const prayerNames = ['Subuh', 'Syuruk', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
     const prayerTimesInMinutes = prayerNames.map(prayer => {
         const [hours, minutes] = prayerTimes[prayer].split(':').map(Number);
         return hours * 60 + minutes;
