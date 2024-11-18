@@ -100,8 +100,11 @@ const SurahTextScreen = () => {
         const onQueueEnd = TrackPlayer.addEventListener(Event.PlaybackQueueEnded, async ({ position }) => {
             if (position !== null) {
                 console.log('Queue has ended. Stopping playback.');
-                await TrackPlayer.stop(); // Stop playback when the queue ends
-                setCurrentAyahIndex(0); // Optionally reset the current Ayah index
+                await TrackPlayer.stop(); 
+                setCurrentAyahIndex(0); 
+                listRef.current?.scrollToIndex({
+                    index: 0
+                })
             }
         });
 

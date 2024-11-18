@@ -38,37 +38,79 @@ const SurahDetailLayout = () => {
         <View style={styles.container}>
             <Stack
                 screenOptions={{
-                    headerShown: true,
-                    headerTitle: 'Surahs',
-                    headerStyle: { backgroundColor: '#2E3D3A' },
-                    headerTintColor: '#FFFFFF',
-                    headerTitleStyle: {
-                        fontFamily: 'Outfit_700Bold',
-                        fontSize: 20,
-                        color: '#ECDFCC',
-                    },
-                    headerLeft: () => (
-                        <TouchableOpacity onPress={() => router.back()}>
-                            <FontAwesome6
-                                name="arrow-left"
-                                size={24}
-                                color='#ECDFCC'
-                                style={{ padding: 10 }}
-                            />
-                        </TouchableOpacity>
-                    ),
-                    headerRight: () => (
-                        <TouchableOpacity onPress={toggleModal}>
-                            <FontAwesome6
-                                name="gear"
-                                size={24}
-                                color='#ECDFCC'
-                                style={{ padding: 10 }}
-                            />
-                        </TouchableOpacity>
-                    ),
+                    headerShown: false,
                 }}
-            />
+            >
+                <Stack.Screen
+                    name='index' 
+                    options={{
+                        headerShown: true,
+                        headerTitle: 'Surahs',
+                        headerStyle: { backgroundColor: '#2E3D3A' },
+                        headerTintColor: '#FFFFFF',
+                        headerTitleStyle: {
+                            fontFamily: 'Outfit_700Bold',
+                            fontSize: 20,
+                            color: '#ECDFCC',
+                        },
+                        headerLeft: () => (
+                            <TouchableOpacity onPress={() => router.back()}>
+                                <FontAwesome6
+                                    name="arrow-left"
+                                    size={24}
+                                    color='#ECDFCC'
+                                    style={{ padding: 10 }}
+                                />
+                            </TouchableOpacity>
+                        ),
+                        headerRight: () => (
+                            <TouchableOpacity onPress={toggleModal}>
+                                <FontAwesome6
+                                    name="gear"
+                                    size={24}
+                                    color='#ECDFCC'
+                                    style={{ padding: 10 }}
+                                />
+                            </TouchableOpacity>
+                        ),
+                    }}
+                />
+                <Stack.Screen
+                    name='[id]' 
+                    options={{
+                        navigationBarHidden: true,
+                        headerShown: true,
+                        headerTitle: 'Surahs',
+                        headerStyle: { backgroundColor: '#2E3D3A' },
+                        headerTintColor: '#FFFFFF',
+                        headerTitleStyle: {
+                            fontFamily: 'Outfit_700Bold',
+                            fontSize: 20,
+                            color: '#ECDFCC',
+                        },
+                        headerLeft: () => (
+                            <TouchableOpacity onPress={() => router.back()}>
+                                <FontAwesome6
+                                    name="arrow-left"
+                                    size={24}
+                                    color='#ECDFCC'
+                                    style={{ padding: 10 }}
+                                />
+                            </TouchableOpacity>
+                        ),
+                        headerRight: () => (
+                            <TouchableOpacity onPress={toggleModal}>
+                                <FontAwesome6
+                                    name="gear"
+                                    size={24}
+                                    color='#ECDFCC'
+                                    style={{ padding: 10 }}
+                                />
+                            </TouchableOpacity>
+                        ),
+                    }}
+                />
+            </Stack>
 
             {/* Modal for Reciter and Text Size Settings */}
             {isModalVisible && (

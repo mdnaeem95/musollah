@@ -18,6 +18,7 @@ const TabLayout = () => {
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.2,
           shadowRadius: 3,
+          display: route.name === "(quran)/surahs/[id]" ? 'none' : 'flex'
         },
         tabBarShowLabel: false,
         tabBarIcon: ({ color, focused }) => {
@@ -65,6 +66,7 @@ const TabLayout = () => {
       <Tabs.Screen
         name="(food)"
         options={{
+          href: null,
           title: 'Halal Food',
           headerShown: false
         }}
@@ -78,11 +80,14 @@ const TabLayout = () => {
       />
       <Tabs.Screen
         name="(quran)"
-        options={{
+        options={({ route }) => ({
           title: 'Quran',
           headerShown: false,
-        }}
-          />
+          tabBarStyle: {
+            display: route.name === '(quran)surahs/[id]' ? 'none' : 'flex'
+          }
+        })}
+      />
       <Tabs.Screen
         name="(settings)"
         options={{
