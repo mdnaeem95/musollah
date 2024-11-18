@@ -1,4 +1,4 @@
-import { View, Text, Image, StyleSheet, Dimensions, Vibration, Animated } from 'react-native';
+import { View, Text, Image, StyleSheet, Dimensions, Vibration, Animated, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 
@@ -12,6 +12,7 @@ const Compass = () => {
     const [userHeading, setUserHeading] = useState(0);
     const [userLocation, setUserLocation] = useState({ latitude: 0, longitude: 0 });
     const [qiblaAzimuth, setQiblaAzimuth] = useState(0);
+    const [loading, setLoading] = useState<boolean>(true);
     const [bgColor] = useState(new Animated.Value(0));
 
     const calculateAzimuth = (userLat: any, userLon: any) => {
@@ -33,24 +34,33 @@ const Compass = () => {
                 const { status } = await Location.requestForegroundPermissionsAsync();
                 if (status !== 'granted') {
                     console.log('Location permission denied.');
+                    setLoading(false);
                     return;
                 }
 
-                const { coords } = await Location.getCurrentPositionAsync({});
-                setUserLocation({ latitude: coords.latitude, longitude: coords.longitude });
-
-                // Calculate azimuth (Qibla direction) from the user's location
-                const azimuth = calculateAzimuth(coords.latitude, coords.longitude);
-                setQiblaAzimuth(azimuth);
-
-                // Watch heading updates
-                const headingSubscription = await Location.watchHeadingAsync((heading) => {
-                    setUserHeading(heading.trueHeading || 0);
+                const locationPromise = Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.Balanced
                 });
 
-                return () => headingSubscription && headingSubscription.remove();
+                const headingPromise = Location.watchHeadingAsync((heading) => {
+                    if (heading.trueHeading !== null) {
+                        setUserHeading((prev) =>
+                            Math.abs(prev - heading.trueHeading) > 1 ? heading.trueHeading : prev 
+                        );
+                    }
+                })
+
+                const [location] = await Promise.all([locationPromise, headingPromise]);
+                const { latitude, longitude } = location.coords;
+
+                // Calculate azimuth (Qibla direction) from the user's location
+                const azimuth = calculateAzimuth(latitude, longitude);
+                setQiblaAzimuth(azimuth);
+
+                setLoading(false);
             } catch (error) {
                 console.log('Error accessing location or compass:', error);
+                setLoading(false);
             }
         };
 
@@ -81,24 +91,33 @@ const Compass = () => {
 
     return (
         <View style={styles.mainContainer}>
-            <View style={styles.textContainer}>
-                <Text style={styles.qiblatText}>Your heading: {Math.round(userHeading)}°</Text>
-                <Text style={styles.qiblatText}>Qibla heading: {Math.round(qiblaAzimuth)}°</Text>
-                <Text style={styles.qiblatText}>When your heading matches the Kaaba's, you are facing the right direction.</Text>
-            </View>
+            {loading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#CCC" />
+                    <Text style={styles.loadingText}>Calibrating Compass...</Text>
+                </View>
+            ) : (
+                <>
+                    <View style={styles.textContainer}>
+                        <Text style={styles.qiblatText}>Your heading: {Math.round(userHeading)}°</Text>
+                        <Text style={styles.qiblatText}>Qibla heading: {Math.round(qiblaAzimuth)}°</Text>
+                        <Text style={styles.qiblatText}>When your heading matches the Kaaba's, you are facing the right direction.</Text>
+                    </View>
 
-            <View style={styles.compassContainer}>
-                <Animated.View style={[styles.compassCircle, { backgroundColor: interpolateColor }]}>
-                    <Image source={require('../assets/kaabah.png')} style={styles.kaabahIcon} />
-                    <Image 
-                        source={require('../assets/arrow-up.png')} 
-                        style={[
-                            styles.compassArrow, 
-                            { transform: [{ rotate: `${qiblaAzimuth - userHeading}deg` }] } 
-                        ]} 
-                    />
-                </Animated.View>
-            </View>
+                    <View style={styles.compassContainer}>
+                        <Animated.View style={[styles.compassCircle, { backgroundColor: interpolateColor }]}>
+                            <Image source={require('../assets/kaabah.png')} style={styles.kaabahIcon} />
+                            <Image 
+                                source={require('../assets/arrow-up.png')} 
+                                style={[
+                                    styles.compassArrow, 
+                                    { transform: [{ rotate: `${qiblaAzimuth - userHeading}deg` }] } 
+                                ]} 
+                            />
+                        </Animated.View>
+                    </View>              
+                </>
+            )}
         </View>
     );
 };
@@ -109,9 +128,19 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         flex: 1
     },
+    loadingContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
+    },
+      loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+        color: '#A3C0BB',
+        fontFamily: 'Outfit_400Regular',
+    },
     textContainer: {
         alignItems: 'center',
-        marginVertical: 20,
         gap: 10,
     },
     qiblatText: {
