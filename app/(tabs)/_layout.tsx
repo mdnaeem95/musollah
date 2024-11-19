@@ -1,16 +1,20 @@
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname, useSegments } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 
 const TabLayout = () => {
+  const segments = useSegments();
+  const hide = segments.includes("surahs" as never) && segments.includes("[id]" as never)
+
   return (
     <Tabs
       screenOptions={({ route }) => ({
         tabBarActiveTintColor: '#BFE1DB',
         tabBarInactiveTintColor: '#688A84',
         tabBarStyle: {
+          display: hide ? 'none' : 'flex',
+          height: 70,
           backgroundColor: '#2E3D3A',
           borderTopColor: '#3A504C',
-          height: 70,
           paddingBottom: 25,
           paddingTop: 10,
           borderTopWidth: 1, // Thin border line for slight separation
@@ -18,7 +22,6 @@ const TabLayout = () => {
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.2,
           shadowRadius: 3,
-          display: route.name === "(quran)/surahs/[id]" ? 'none' : 'flex'
         },
         tabBarShowLabel: false,
         tabBarIcon: ({ color, focused }) => {
@@ -83,9 +86,6 @@ const TabLayout = () => {
         options={({ route }) => ({
           title: 'Quran',
           headerShown: false,
-          tabBarStyle: {
-            display: route.name === '(quran)surahs/[id]' ? 'none' : 'flex'
-          }
         })}
       />
       <Tabs.Screen
