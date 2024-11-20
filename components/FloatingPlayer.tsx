@@ -5,6 +5,7 @@ import { useLastActiveTrack } from '../hooks/useLastActiveTrack';
 import { PlayPauseButton } from '../components/AyahPlayPauseButton';
 import { MovingText } from './MovingText';
 import { SkipNextButton } from './SkipNextButton';
+import { SkipPreviousButton } from './SkipPreviousButton';
 
 export const FloatingPlayer = ({ style }: ViewProps) => {
     const activeTrack = useActiveTrack(); // Hook to get the current active track
@@ -37,6 +38,10 @@ export const FloatingPlayer = ({ style }: ViewProps) => {
 
                 {/* Play/Pause Button */}
                 <View style={styles.trackControlsContainer}>
+                    <SkipPreviousButton 
+                        iconSize={24}
+                        color='#FFFFFF'
+                    />
                     <PlayPauseButton
                         iconSize={24}
                         color="#FFFFFF"
