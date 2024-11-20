@@ -1,27 +1,24 @@
-import React from 'react';
-import { StyleSheet, TouchableOpacity, View, ViewProps } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View, ViewProps } from 'react-native';
 import { useActiveTrack } from 'react-native-track-player';
 import { useLastActiveTrack } from '../hooks/useLastActiveTrack';
 import { PlayPauseButton } from '../components/AyahPlayPauseButton';
 import { MovingText } from './MovingText';
+import { SkipNextButton } from './SkipNextButton';
 
 export const FloatingPlayer = ({ style }: ViewProps) => {
-    const router = useRouter();
-
     const activeTrack = useActiveTrack(); // Hook to get the current active track
     const lastActiveTrack = useLastActiveTrack(); // Hook to retrieve the last played track
-    const displayedTrack = activeTrack ?? lastActiveTrack; // Show the last track if no active track
+    const [displayedTrack, setDisplayedTrack] = useState(activeTrack ?? lastActiveTrack)
 
-    const handlePress = () => {
-        router.navigate('/player'); // Navigate to the full player screen
-    };
+    useEffect(() => {
+        setDisplayedTrack(activeTrack ?? lastActiveTrack);
+    }, [activeTrack, lastActiveTrack]);
 
     if (!displayedTrack) return null; // Hide the floating player if no track to display
 
     return (
         <TouchableOpacity
-            onPress={handlePress}
             activeOpacity={0.9}
             style={[styles.container, style]}
         >
@@ -33,6 +30,9 @@ export const FloatingPlayer = ({ style }: ViewProps) => {
                         text={displayedTrack.title ?? ''}
                         animationThreshold={25} // Scroll text if too long
                     />
+                    <Text style={styles.reciterName}>
+                        {displayedTrack.artist ?? 'Unknown Reciter'}
+                    </Text>
                 </View>
 
                 {/* Play/Pause Button */}
@@ -41,6 +41,10 @@ export const FloatingPlayer = ({ style }: ViewProps) => {
                         iconSize={24}
                         color="#FFFFFF"
                         isActiveAyah={!!activeTrack} // Highlight if actively playing
+                    />
+                    <SkipNextButton 
+                        iconSize={24}
+                        color='#FFFFFF'
                     />
                 </View>
             </>
@@ -54,9 +58,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#252525',
         padding: 10,
-        borderRadius: 12,
-        marginHorizontal: 16,
-        marginBottom: 16,
     },
     trackTitleContainer: {
         flex: 1,
@@ -65,8 +66,14 @@ const styles = StyleSheet.create({
     },
     trackTitle: {
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: 'Outfit_600SemiBold',
         color: '#FFFFFF',
+    },
+    reciterName: {
+        fontSize: 14,
+        fontFamily: 'Outfit_400Regular',
+        color: '#A0A0A0',
+        marginTop: 4,
     },
     trackControlsContainer: {
         flexDirection: 'row',

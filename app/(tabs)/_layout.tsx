@@ -2,16 +2,12 @@ import { Tabs, usePathname, useSegments } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 
 const TabLayout = () => {
-  const segments = useSegments();
-  const hide = segments.includes("surahs" as never) && segments.includes("[id]" as never)
-
   return (
     <Tabs
       screenOptions={({ route }) => ({
         tabBarActiveTintColor: '#BFE1DB',
         tabBarInactiveTintColor: '#688A84',
         tabBarStyle: {
-          display: hide ? 'none' : 'flex',
           height: 70,
           backgroundColor: '#2E3D3A',
           borderTopColor: '#3A504C',

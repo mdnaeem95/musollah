@@ -5,15 +5,33 @@ import TrackPlayer, { useIsPlaying } from "react-native-track-player"
 type PlayerButtonProps = {
 	iconSize?: number
     color?: string
-    isActiveAyah?: boolean
+    isActiveAyah?: boolean,
+    currentAyahIndex?: number,
+    trackIndex?: number,
 }
 
-export const PlayPauseButton = ({ iconSize = 20, color, isActiveAyah }: PlayerButtonProps) => {
+export const PlayPauseButton = ({ iconSize = 20, color, isActiveAyah, currentAyahIndex, trackIndex }: PlayerButtonProps) => {
 	const { playing } = useIsPlaying()
+
+    console.log(currentAyahIndex, trackIndex)
+
+    const handlePlayPress = async () => {
+        if (currentAyahIndex === trackIndex) {
+            if (playing) {
+                await TrackPlayer.pause();
+            } else {
+                await TrackPlayer.play();
+            }
+        } else {
+            await TrackPlayer.skip(trackIndex!);
+            await TrackPlayer.play();
+        }
+    }
+
 	return (
         <TouchableOpacity
             activeOpacity={0.85}
-            onPress={playing ? TrackPlayer.pause : TrackPlayer.play}
+            onPress={handlePlayPress}
             style={styles.iconButton}
         >
             <FontAwesome6 name={playing && isActiveAyah ? 'pause' : 'play'} size={iconSize} color={color} />

@@ -14,6 +14,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FlashList } from '@shopify/flash-list';
 import TrackPlayer, { Event } from 'react-native-track-player';
 import { PlayPauseButton } from '../../../../components/AyahPlayPauseButton';
+import { FloatingPlayer } from '../../../../components/FloatingPlayer';
+import { reciterOptions } from '../../../../utils/constants';
 
 // Utility functions for bookmarking and marking read Ayahs
 const toggleItemInArray = (arr: number[], item: number) => (
@@ -50,8 +52,8 @@ const SurahTextScreen = () => {
         return {
             id: `${surah.number}-${index + 1}`,
             url: trimmedUrl || '',
-            title: `Ayah ${index + 1}`,
-            artist: surah.englishName,
+            title: `${surah.englishName}, Ayah ${index + 1}`,
+            artist: reciterOptions.find(option => option.value === reciter)?.label || 'Unknown Reciter',
         }
         });
     };
@@ -99,9 +101,11 @@ const SurahTextScreen = () => {
 
         const onQueueEnd = TrackPlayer.addEventListener(Event.PlaybackQueueEnded, async ({ position }) => {
             if (position !== null) {
-                console.log('Queue has ended. Stopping playback.');
-                await TrackPlayer.stop(); 
-                setCurrentAyahIndex(0); 
+                const queue = await TrackPlayer.getQueue();
+                if (queue.length > 0) {
+                        await TrackPlayer.skip(0);
+                        setCurrentAyahIndex(0); 
+                }
                 listRef.current?.scrollToIndex({
                     index: 0
                 })
@@ -220,8 +224,10 @@ const SurahTextScreen = () => {
 
                     <View style={styles.iconGroup}>
                         <PlayPauseButton 
-                            color={ayahTextColor} 
-                            isActiveAyah={isActiveAyah} 
+                            color={ayahTextColor}
+                            isActiveAyah={isActiveAyah}
+                            trackIndex={index}
+                            currentAyahIndex={currentAyahIndex} 
                         />
                         <TouchableOpacity
                             onPress={() => toggleBookmark(ayahNumber)}
@@ -281,7 +287,6 @@ const SurahTextScreen = () => {
         return () => clearTimeout(timeoutId);
     }, [ayahIndex, arabicAyahs.length]);
 
-
     if (!surah) {
         return (
             <SafeAreaView style={{ backgroundColor: '#4D6561', flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 }}>
@@ -319,8 +324,12 @@ const SurahTextScreen = () => {
                     renderItem={renderAyah}
                     keyExtractor={(item, index) => index.toString()}
                     showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 80 }}
                 />
+
             )}
+
+            <FloatingPlayer style={styles.floatingPlayer} />
 
             {/* Surah Picker */}
             {isPickerVisible && (
@@ -452,6 +461,19 @@ const styles = StyleSheet.create({
     separator: {
         width: '100%',
         height: 1,
+    },
+    floatingPlayer: {
+        position: 'absolute',
+        bottom: 0, // Place it directly above the tab bar
+        left: 0,
+        right: 0,
+        height: 60, // Adjust height as needed for the player
+        backgroundColor: '#252525', // Matches the FloatingPlayer background
+        zIndex: 10, // Ensure it appears above other elements
+        paddingHorizontal: 16,
+        justifyContent: 'center',
+        borderTopLeftRadius: 12,
+        borderTopRightRadius: 12,
     },
 });
 
