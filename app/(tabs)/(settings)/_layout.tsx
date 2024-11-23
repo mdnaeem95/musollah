@@ -207,6 +207,12 @@ const SettingsLayout = () => {
           )
         }}
       />
+      <Stack.Screen
+        name="localbusinesses"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   )
 }
