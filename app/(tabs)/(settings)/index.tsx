@@ -59,7 +59,11 @@ const SettingsTab = () => {
             <FontAwesome6 name="message" size={30} color="#FFF" />
             <Text style={styles.iconLabel}>Ask Anything</Text>
           </TouchableOpacity>
-          {/* Add more items here */}
+
+          <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/localbusinesses')}>
+            <FontAwesome6 name="" size={30} color="#FFF" />
+            <Text style={styles.iconLabel}>Local Businesses</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
