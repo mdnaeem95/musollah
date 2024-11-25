@@ -1,4 +1,4 @@
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native'
 import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import Map, { Region, BidetLocation, MosqueLocation, MusollahLocation } from '../../components/Map'
 import { SearchBar } from '@rneui/themed'
@@ -11,13 +11,11 @@ import { AppDispatch, RootState } from '../../redux/store/store'
 import { fetchMusollahData } from '../../redux/slices/musollahSlice'  // Adjust the path as needed
 import { fetchUserLocation } from '../../redux/slices/userLocationSlice'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useFocusEffect } from 'expo-router'
 import { FlashList } from '@shopify/flash-list'
 
 const locationTypes = ['Bidets', 'Musollahs', 'Mosques']
 
 const LOCATION_UPDATE_THRESHOLD = 0.005;
-const DEBOUNCE_DELAY = 1000;
 
 interface ItemProps {
   item: BidetLocation | MosqueLocation | MusollahLocation;
@@ -98,22 +96,6 @@ const MusollahTab = () => {
   ));
 
   const keyExtractor = useCallback((item: BidetLocation | MosqueLocation | MusollahLocation) => item.id, []);
-
-  const isSignificantLocationChange = (newLocation: { latitude: number; longitude: number }) => {
-    if (!lastLocation.current) {
-      lastLocation.current = newLocation;
-      return true;
-    }
-    const distance = Math.sqrt(
-      Math.pow(newLocation.latitude - lastLocation.current.latitude, 2) +
-      Math.pow(newLocation.longitude - lastLocation.current.longitude, 2)
-    );
-    if (distance > LOCATION_UPDATE_THRESHOLD) {
-      lastLocation.current = newLocation;
-      return true;
-    }
-    return false;
-  };
 
   // Initial fetch for user location on component mount
   useEffect(() => {

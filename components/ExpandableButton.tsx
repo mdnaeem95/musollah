@@ -1,5 +1,5 @@
-import { View, StyleSheet } from 'react-native'
-import React, { useState } from 'react'
+import { View, StyleSheet, Dimensions, Animated } from 'react-native'
+import React, { useRef, useState } from 'react'
 import RoundButton from './RoundButton';
 
 interface ExpendableButtonProps {
@@ -12,6 +12,37 @@ interface ExpendableButtonProps {
 
 const ExpandableButton = ({ onQiblatPress, onDoaPress, onCalendarPress, onCityPress, onDashboardPress }: ExpendableButtonProps) => {
     const [expanded, setExpanded] = useState<boolean>(false);
+    const animationValue = useRef(new Animated.Value(0)).current;
+
+    // Handle expand/collapse animation
+    const toggleExpand = () => {
+        if (expanded) {
+            // Collapse animation
+            Animated.timing(animationValue, {
+                toValue: 0,
+                duration: 300, // Animation duration in ms
+                useNativeDriver: true,
+            }).start(() => setExpanded(false));
+        } else {
+            setExpanded(true); // Set expanded first to render buttons
+            Animated.timing(animationValue, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            }).start();
+        }
+    };
+
+    // Interpolations
+    const translateX = animationValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: [Dimensions.get('window').width / 2, 0], // Moves from right to full width
+    });
+
+    const opacity = animationValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, 1], // Fades in
+    });
 
     const handleQiblatPress = () => {
         setExpanded(false);
@@ -38,15 +69,20 @@ const ExpandableButton = ({ onQiblatPress, onDoaPress, onCalendarPress, onCityPr
             {!expanded && (
                 <RoundButton
                 iconName='plus'
-                onPress={() => setExpanded(!expanded)}
+                onPress={toggleExpand}
                 size={22} 
                 />
             )}
             {expanded && (
-                <View style={styles.expandedButtonsContainer}>
+                <Animated.View 
+                    style={[
+                        styles.expandedButtonsContainer,
+                        { transform: [{ translateX }], opacity }, // Apply animations
+                    ]}
+                >
                     <RoundButton
                         iconName="xmark"
-                        onPress={() => setExpanded(false)}
+                        onPress={toggleExpand}
                         size={22} 
                     />
                     <RoundButton
@@ -78,7 +114,7 @@ const ExpandableButton = ({ onQiblatPress, onDoaPress, onCalendarPress, onCityPr
                         onPress={handleDashboardPress}
                         size={22}
                     />
-                </View>
+                </Animated.View>
             )}
         </View>
     )
@@ -87,15 +123,17 @@ const ExpandableButton = ({ onQiblatPress, onDoaPress, onCalendarPress, onCityPr
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        right: 20,
-        bottom: 50
+        bottom: 50,
+        width: Dimensions.get('window').width, // Full screen width
+        paddingHorizontal: 20, // Ensure padding from screen edges
+        alignItems: 'flex-end', // Anchor the buttons to the right
     },
     expandedButtonsContainer: {
-        flexDirection: "row-reverse",
+        flexDirection: 'row-reverse', // Layout buttons from right to left
+        justifyContent: 'space-between', // Space buttons evenly across the width
         alignItems: 'center',
-        gap: 15,
-      },
-
+        width: '100%', // Full width for button container
+    },
 })
 
 export default ExpandableButton

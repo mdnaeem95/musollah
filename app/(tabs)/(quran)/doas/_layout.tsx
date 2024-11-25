@@ -56,7 +56,17 @@ const DoaLayout = () => {
                     },
                     headerStyle: {
                     backgroundColor: '#2E3D3A',
-                    }
+                    },
+                    headerLeft: () => (
+                        <TouchableOpacity onPress={() => router.back()}>
+                            <FontAwesome6
+                            name="arrow-left"
+                            size={24}
+                            color='#ECDFCC'
+                            style={{ padding: 10 }}
+                            />
+                        </TouchableOpacity>
+                        ),
                 }}
             />
             <Stack.Screen

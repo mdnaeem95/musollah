@@ -5,6 +5,8 @@ import DailyAyah from '../../../components/DailyAyah'
 import { FontAwesome6 } from '@expo/vector-icons'
 import { useFocusEffect, useRouter } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import DailyGoalTracker from '../../../components/DailyGoalTracker'
+import OverallProgressTracker from '../../../components/OverallProgressTracker'
 
 const QuranDashboard = () => {
     const router = useRouter();
@@ -87,6 +89,12 @@ const QuranDashboard = () => {
 
             {/* Daily Ayah Section */}
             <DailyAyah />
+
+            {/* Daily Progress */}
+            <DailyGoalTracker />
+
+            {/* Overall Progress */}
+            <OverallProgressTracker />
 
             {/* Last Read and Last Listened Sections */}
             {lastListenedAyah && (

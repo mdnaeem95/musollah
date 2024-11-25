@@ -261,6 +261,9 @@ export const fetchDoas = async (): Promise<Doa[]> => {
             } as Doa
         });
 
+        // Sort by number
+        doaList.sort((a, b) => parseInt(a.number) - parseInt(b.number));
+
         return doaList
     } catch (error) {
         console.error("Error fetching doas: ", error);

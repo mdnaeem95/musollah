@@ -164,7 +164,7 @@ const Dashboard = () => {
                                                         progress={progress}
                                                         height={10}
                                                         color="#4D6561" 
-                                                        />
+                                                    />
                                                 </View>
                                                 <Text style={styles.progressCourseTitle}>{progress * 100}%</Text>
                                             </View>

@@ -66,10 +66,19 @@ export const formatDateForAPI = (date: string) => {
     return `${day}-${month}-${year}`;
 };
 
-// Utility function to get random Ayah
-export const getRandomAyah = () => {
-    const randomIndex = Math.floor(Math.random() * ayahList.length);
-    return ayahList[randomIndex];
+export const getRandomAyahByMood = (mood: string) => {
+    // Filter ayahs based on mood
+    const filteredAyahs = ayahList.filter(ayah => ayah.mood === mood);
+
+    // If no ayahs match the mood, return a fallback random ayah
+    if (filteredAyahs.length === 0) {
+        console.warn(`No ayahs found for mood: ${mood}. Returning a random ayah.`);
+        return ayahList[Math.floor(Math.random() * ayahList.length)];
+    }
+
+    // Pick a random ayah from the filtered list
+    const randomIndex = Math.floor(Math.random() * filteredAyahs.length);
+    return filteredAyahs[randomIndex];
 };
 
 export const formatSecondsToMinutes = (seconds: number) => {

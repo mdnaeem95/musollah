@@ -66,12 +66,13 @@ export const fetchDailyDoasData = createAsyncThunk(
   'quran/fetchDailyDoasData',
   async (_, { rejectWithValue }) => {
     try {
-      // Check if daily doas data is cached locally
-      const cachedDoas = await loadDailyDoasDataFromLocal();
-      if (cachedDoas) {
-        console.log('Using cached daily doas data');
-        return cachedDoas; // Return cached data if it exists
-      }
+      // // Check if daily doas data is cached locally
+      // const cachedDoas = await loadDailyDoasDataFromLocal();
+      
+      // if (cachedDoas) {
+      //   console.log('Using cached daily doas data');
+      //   return cachedDoas; // Return cached data if it exists
+      // }
 
       // If no cache, fetch from the server
       const dailyDoasData = await fetchDoas();
