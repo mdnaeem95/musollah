@@ -1,21 +1,25 @@
-import { FlatList, ActivityIndicator, View, TextInput, TouchableOpacity, StatusBar, StyleSheet } from 'react-native';
+import { ActivityIndicator, View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { FontAwesome6 } from '@expo/vector-icons';
 import DoaItem from '../../../../components/DoaItem';
-import { RootState } from '../../../../redux/store/store';
+import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { Doa } from '../../../../utils/types';
 import { ThemeContext } from '../../../../context/ThemeContext';
+import { FlashList } from '@shopify/flash-list';
+import { fetchDailyDoasData } from '../../../../redux/slices/doasSlice';
 
 const Doas = () => {
   const { isDarkMode } = useContext(ThemeContext);
   const { doas, loading } = useSelector((state: RootState) => state.doas);
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
   const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   const toggleSearch = () => {
     setIsSearchExpanded(!isSearchExpanded);
@@ -47,6 +51,12 @@ const Doas = () => {
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await dispatch(fetchDailyDoasData()); // Fetch latest doas
+    setRefreshing(false);
+  };
+
   return (
     <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? '#2E3D3A' : '#4D6561' }]}>
       {/* Header with searchbar and bookmark */}
@@ -75,14 +85,14 @@ const Doas = () => {
       {loading ? (
         <ActivityIndicator />
       ) : (
-        <FlatList
+        <FlashList
+          estimatedItemSize={74}
           data={filteredDoas}
           renderItem={renderDoaItem}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
           keyExtractor={(item) => item.number.toString()}
           showsVerticalScrollIndicator={false}
-          style={styles.listContainer}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
         />
       )}
     </View>
@@ -124,9 +134,6 @@ const styles = StyleSheet.create({
   bookmarkIconContainer: {
     padding: 8,
   },
-  listContainer: {
-    paddingBottom: 20,
-  }
 })
 
 export default Doas;

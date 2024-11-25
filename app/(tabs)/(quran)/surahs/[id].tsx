@@ -17,6 +17,8 @@ import { PlayPauseButton } from '../../../../components/AyahPlayPauseButton';
 import { FloatingPlayer } from '../../../../components/FloatingPlayer';
 import { reciterOptions } from '../../../../utils/constants';
 
+const DAILY_PROGRESS_KEY = 'dailyProgress';
+
 // Utility functions for bookmarking and marking read Ayahs
 const toggleItemInArray = (arr: number[], item: number) => (
     arr.includes(item) ? arr.filter(num => num !== item) : [...arr, item]
@@ -71,6 +73,23 @@ const SurahTextScreen = () => {
         };
         setupTracks();
     }, [surah, reciter]);
+
+    // Load `readAyahs` from AsyncStorage when the Surah screen loads
+    useEffect(() => {
+        const loadReadAyahs = async () => {
+            const savedReadAyahs = await AsyncStorage.getItem(`readAyahs_${surahNum}`);
+            if (savedReadAyahs) {
+                setReadAyahs(JSON.parse(savedReadAyahs));
+            }
+        };
+
+        loadReadAyahs();
+    }, [surahNum]);
+
+    // Save `readAyahs` to AsyncStorage whenever it changes
+    useEffect(() => {
+        AsyncStorage.setItem(`readAyahs_${surahNum}`, JSON.stringify(readAyahs));
+    }, [readAyahs, surahNum]);
 
     useEffect(() => {
         //@ts-ignore
@@ -184,20 +203,48 @@ const SurahTextScreen = () => {
         }
     }, [bookmarks, surahNum, dispatch, surah]);
 
-    const toggleReadAyah = useCallback((ayahNumber: number) => {
+    const toggleReadAyah = useCallback(async (ayahNumber: number) => {
         setReadAyahs((prev) => {
             const updatedReadAyahs = toggleItemInArray(prev, ayahNumber);
-            
-            // Save the last read ayah if marked
-            if (updatedReadAyahs.includes(ayahNumber)) {
-                const lastReadData = { surahNumber: surahNum, ayahNumber };
-                console.log(lastReadData)
-                AsyncStorage.setItem('lastReadAyah', JSON.stringify(lastReadData));
+    
+            // Update daily ayah progress
+            AsyncStorage.getItem('readAyahsToday').then((data) => {
+                const readAyahsToday = data ? JSON.parse(data) : [];
+                const uniqueDailyAyahs = new Set([...readAyahsToday, `${surahNum}:${ayahNumber}`]);
+                AsyncStorage.setItem('readAyahsToday', JSON.stringify(Array.from(uniqueDailyAyahs)));
+            });
+    
+            // Update overall ayah progress
+            AsyncStorage.getItem('readAyahsOverall').then((data) => {
+                const readAyahsOverall = data ? JSON.parse(data) : [];
+                const uniqueOverallAyahs = new Set([...readAyahsOverall, `${surahNum}:${ayahNumber}`]);
+                AsyncStorage.setItem('readAyahsOverall', JSON.stringify(Array.from(uniqueOverallAyahs)));
+            });
+    
+            // Check if the surah is fully read for both daily and overall tracking
+            if (updatedReadAyahs.length === arabicAyahs.length) {
+                // Daily surah progress
+                AsyncStorage.getItem('readSurahsToday').then((data) => {
+                    const readSurahsToday = data ? JSON.parse(data) : [];
+                    if (!readSurahsToday.includes(surahNum)) {
+                        readSurahsToday.push(surahNum);
+                        AsyncStorage.setItem('readSurahsToday', JSON.stringify(readSurahsToday));
+                    }
+                });
+    
+                // Overall surah progress
+                AsyncStorage.getItem('readSurahsOverall').then((data) => {
+                    const readSurahsOverall = data ? JSON.parse(data) : [];
+                    if (!readSurahsOverall.includes(surahNum)) {
+                        readSurahsOverall.push(surahNum);
+                        AsyncStorage.setItem('readSurahsOverall', JSON.stringify(readSurahsOverall));
+                    }
+                });
             }
     
             return updatedReadAyahs;
         });
-    }, []);
+    }, [arabicAyahs.length, surahNum]);       
 
     const renderAyah = useCallback(({ item, index }: { item: string, index: number }) => {
         const ayahNumber = index + 1; // Adjust Ayah number for display
