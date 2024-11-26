@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useState } from 'react'
 import Clock from 'react-live-clock';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
-import * as Notifications from 'expo-notifications';
 
 import PrayerTimeItem from '../../../components/PrayerTimeItem';
 import ExpandableButton from '../../../components/ExpandableButton';
@@ -55,18 +54,20 @@ const PrayerTab = () => {
   //@ts-ignore
   const backgroundImage = useMemo(() => prayerBackgrounds[currentPrayer] || SubuhBackground, [currentPrayer])
 
-  // Update current and next prayer info and schedule notifications once prayer times are fetched
   useEffect(() => {
     if (prayerTimes) {
       const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes, new Date());
       setCurrentPrayer(currentPrayer);
       setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
+  
+      // Create an empty set for scheduled reminders
+      const scheduledReminders = new Set<string>();
       schedulePrayerNotifications(prayerTimes, reminderInterval, scheduledReminders);
     } else {
       setCurrentPrayer('');
       setNextPrayerInfo(null);
     }
-  }, [prayerTimes, notificationsScheduled, reminderInterval]);
+  }, [prayerTimes, reminderInterval]);  
 
   // Handle city press to open location modal
   const handleCityPress = () => {

@@ -74,7 +74,13 @@ export default {
           "locationAlwaysAndWhenInUsePermission": "Allow Rihlah to use your location."
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development"
+        }
+      ]
     ],
     "extra": {
       "router": {
@@ -83,7 +89,7 @@ export default {
       "eas": {
         "projectId": "deec8169-b934-4eff-8714-421a695e3d9b"
       },
-      "oneSignalAppId": "c29ae03e-7f34-4c06-a0ff-c430d2187991ç"
+      "oneSignalAppId": "c29ae03e-7f34-4c06-a0ff-c430d2187991"
     },
     "owner": "naeemsani95",
     "updates": {
