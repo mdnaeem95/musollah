@@ -7,11 +7,12 @@ export const schedulePrayerNotifications = async (
   scheduledReminders: Set<string>
 ) => {
   try {
-    // Cancel any existing notifications to avoid duplicates
-    console.log('Cancelling any existing notifications.');
+    const today = new Date();
+
+    // Cancel all previously scheduled notifications to apply new settings
+    console.log('Cancelling all existing notifications to apply new settings.');
     await Notifications.cancelAllScheduledNotificationsAsync();
 
-    const today = new Date();
     console.log('Scheduling notifications for the following prayer times:', prayerTimes);
 
     for (const [prayerName, prayerTime] of Object.entries(prayerTimes)) {
@@ -20,7 +21,7 @@ export const schedulePrayerNotifications = async (
 
       // Schedule a notification at the exact prayer time
       if (prayerDate > today) {
-        console.log(`Scheduling exact notification for ${prayerName} at ${prayerDate}`);
+        console.log(`Scheduling notification for ${prayerName} at ${prayerDate}`);
         await Notifications.scheduleNotificationAsync({
           content: {
             title: `Time for ${prayerName}`,
@@ -29,29 +30,27 @@ export const schedulePrayerNotifications = async (
           },
           trigger: prayerDate,
         });
-        console.log(`${prayerName} notification scheduled for ${prayerDate}`);
       }
-      
-      // Schedule an additional notification before the prayer based on reminderInterval
+
+      // Schedule a pre-prayer reminder notification
       if (reminderInterval > 0 && !scheduledReminders.has(prayerName)) {
         const reminderDate = new Date(prayerDate.getTime() - reminderInterval * 60 * 1000);
         if (reminderDate > today) {
-          console.log(`Scheduling reminder notification for ${prayerName} ${reminderInterval} minutes before, at ${reminderDate}`);
+          console.log(`Scheduling reminder for ${prayerName} ${reminderInterval} minutes before at ${reminderDate}`);
           await Notifications.scheduleNotificationAsync({
             content: {
               title: `${reminderInterval} minutes until ${prayerName}`,
               body: `Get ready for ${prayerName} prayer in ${reminderInterval} minutes.`,
               sound: true,
             },
-            trigger: reminderDate
+            trigger: reminderDate,
           });
-          console.log(`${prayerName} reminder notification scheduled for ${reminderDate}`);
           scheduledReminders.add(prayerName);
         }
       }
     }
 
-    console.log("All notifications scheduled for the day.");
+    console.log('All notifications for the day successfully scheduled.');
 
   } catch (error) {
     console.error('Error scheduling prayer notifications:', error);

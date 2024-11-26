@@ -59,42 +59,46 @@ const Doas = () => {
 
   return (
     <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? '#2E3D3A' : '#4D6561' }]}>
-      {/* Header with searchbar and bookmark */}
-      <View style={styles.headerContainer}>
-        {isSearchExpanded && (
-          <View style={styles.searchBarContainer}>
-            <TextInput
-              placeholder="Search Dua"
-              placeholderTextColor="#B0B0B0"
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
-        )}
-        <TouchableOpacity onPress={toggleSearch} style={styles.searchIconContainer}>
-          <FontAwesome6 name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} size={24} color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.bookmarkIconContainer} onPress={() => router.push('/bookmarks')}>
-          <FontAwesome6 name="bookmark" size={24} solid color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Duas List */}
-      {loading ? (
-        <ActivityIndicator />
+      {loading && !refreshing ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+        </View>
       ) : (
-        <FlashList
-          estimatedItemSize={74}
-          data={filteredDoas}
-          renderItem={renderDoaItem}
-          keyExtractor={(item) => item.number.toString()}
-          showsVerticalScrollIndicator={false}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-        />
+        <>
+          <View style={styles.headerContainer}>
+            {isSearchExpanded && (
+              <View style={styles.searchBarContainer}>
+                <TextInput
+                  placeholder="Search Dua"
+                  placeholderTextColor="#B0B0B0"
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </View>
+            )}
+            <TouchableOpacity onPress={toggleSearch} style={styles.searchIconContainer}>
+              <FontAwesome6 name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} size={24} color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.bookmarkIconContainer} onPress={() => router.push('/bookmarks')}>
+              <FontAwesome6 name="bookmark" size={24} solid color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Duas List */}
+          <FlashList
+            estimatedItemSize={74}
+            data={filteredDoas}
+            renderItem={renderDoaItem}
+            keyExtractor={(item) => item.number.toString()}
+            showsVerticalScrollIndicator={false}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+          />   
+        </>
       )}
+      {/* Header with searchbar and bookmark */}
     </View>
   );
 };
@@ -104,6 +108,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#4D6561',
     paddingHorizontal: 16,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   headerContainer: {
     flexDirection: 'row',
