@@ -1,7 +1,11 @@
-import { View, TouchableOpacity, Platform } from 'react-native'
+import { View, TouchableOpacity, Platform, Image } from 'react-native'
 import React from 'react'
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
+
+import BidetMarker from '../assets/bidetMarker.png'
+import MusollahMarker from '../assets/musollahMarker.png'
+import MosqueMarker from '../assets/mosqueMarker.png'
 
 export interface Region {
     latitude: number,
@@ -17,6 +21,7 @@ interface MapProps {
     shouldFollowUserLocation: boolean,
     onRegionChangeComplete: () => void,
     onRefocusPress: () => void,
+    locationType: string,
 }
 
 export interface BidetLocation {
@@ -64,7 +69,18 @@ export interface MusollahLocation {
   distance?: number;
 }
 
-const Map = ({ region, markerLocations, onMarkerPress, onRegionChangeComplete, shouldFollowUserLocation, onRefocusPress }: MapProps) => {
+const Map = ({ region, markerLocations, onMarkerPress, onRegionChangeComplete, shouldFollowUserLocation, onRefocusPress, locationType }: MapProps) => {
+  console.log('Location Type', locationType)
+  const getMarkerIcon = (type: string) => {
+    if (locationType === "Bidets") {
+      return '../assets/bidetMarker.png';
+    } else if (locationType === "Mosques") {
+      return '../assets/bidetMarker.png';
+    } else {
+      return '../assets/bidetMarker.png';
+    }
+  };
+
   return (
     <View>
       <MapView 
@@ -86,6 +102,7 @@ const Map = ({ region, markerLocations, onMarkerPress, onRegionChangeComplete, s
             title={location.building}
             description={'postal' in location ? `${location.address}, Singapore ${location.postal}` : location.address}
             onCalloutPress={() => onMarkerPress(location)}
+            image={{ uri: getMarkerIcon(locationType)}}
           />
         ))}
       </MapView>
