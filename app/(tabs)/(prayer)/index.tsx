@@ -16,8 +16,9 @@ import IshaBackground from '../../../assets/prayerBackgroundImages/isyaBackgroun
 
 import { RootState } from '../../../redux/store/store';
 import { PrayerTimes } from '../../../utils/types';
-import { getFormattedDate, getPrayerTimesInfo } from '../../../utils';
-import { schedulePrayerNotifications } from '../../../utils/notificationsScheduler';
+import { extractNextDaysPrayerTimes, getFormattedDate, getPrayerTimesInfo } from '../../../utils';
+import { fetchMonthlyPrayerTimes } from '../../../api/prayers';
+import { scheduleNextDaysNotifications } from '../../../utils/notificationsScheduler';
 
 // Constants for background images
 const prayerBackgrounds = {
@@ -37,12 +38,10 @@ const PrayerTab = () => {
   const { prayerTimes, islamicDate, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
   const { reminderInterval } = useSelector((state: RootState) => state.userPreferences);
   const desiredPrayers: (keyof PrayerTimes)[] = ['Subuh', 'Syuruk', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
-  const scheduledReminders = new Set<string>();
 
   const [isPrayerLocationModalVisible, setIsPrayerLocationModalVisible] = useState<boolean>(false);
   const [currentPrayer, setCurrentPrayer] = useState<string>('');
   const [nextPrayerInfo, setNextPrayerInfo] = useState<{ nextPrayer: string, timeUntilNextPrayer: string } | null>(null);
-  const [notificationsScheduled, setNotificationsScheduled] = useState<boolean>(false); // Track if notifications are scheduled
 
   // Format the selected date
   const formattedDate = useMemo(() => {
@@ -59,15 +58,35 @@ const PrayerTab = () => {
       const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes, new Date());
       setCurrentPrayer(currentPrayer);
       setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
-  
-      // Create an empty set for scheduled reminders
-      const scheduledReminders = new Set<string>();
-      schedulePrayerNotifications(prayerTimes, reminderInterval, scheduledReminders);
     } else {
       setCurrentPrayer('');
       setNextPrayerInfo(null);
     }
   }, [prayerTimes, reminderInterval]);  
+
+  useEffect(() => {
+    const fetchAndScheduleNotifications = async () => {
+      try {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1; // Current month
+        const numDays = 5; // Schedule for the next 5 days
+  
+        // Get monthly prayer times (cached or fetched)
+        const monthlyPrayerTimes = await fetchMonthlyPrayerTimes(year, month);
+  
+        // Extract prayer times for the next 5 days
+        const nextDaysPrayerTimes = extractNextDaysPrayerTimes(monthlyPrayerTimes, numDays);
+  
+        // Schedule notifications for the extracted days
+        await scheduleNextDaysNotifications(nextDaysPrayerTimes, reminderInterval);
+      } catch (error) {
+        console.error('Error fetching or scheduling notifications:', error);
+      }
+    };
+  
+    fetchAndScheduleNotifications();
+  }, [reminderInterval]); // Re-run if reminderInterval changes
 
   // Handle city press to open location modal
   const handleCityPress = () => {

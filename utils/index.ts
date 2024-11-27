@@ -94,3 +94,26 @@ export const formatSecondsToMinutes = (seconds: number) => {
 export const generateTracksListId = (trackListName: string, search?: string) => {
 	return `${trackListName}${`-${search}` || ''}`
 }
+
+export const extractNextDaysPrayerTimes = (
+    monthlyPrayerTimes: any[],
+    numDays: number
+  ): Record<string, any> => {
+    const today = new Date();
+    const endDate = new Date();
+    endDate.setDate(today.getDate() + numDays);
+  
+    return monthlyPrayerTimes.reduce((acc: Record<string, any>, item: any) => {
+      const itemDate = new Date(today.getFullYear(), today.getMonth(), parseInt(item.date));
+      if (itemDate >= today && itemDate <= endDate) {
+        acc[itemDate.toISOString().split('T')[0]] = {
+          Subuh: item.Subuh,
+          Zohor: item.Zohor,
+          Asar: item.Asar,
+          Maghrib: item.Maghrib,
+          Isyak: item.Isyak,
+        };
+      }
+      return acc;
+    }, {});
+  };  

@@ -176,6 +176,7 @@ const MusollahTab = () => {
           onRegionChangeComplete={handleRegionChangeComplete}
           shouldFollowUserLocation={shouldFollowUserLocation}
           onRefocusPress={handleRefocusPress}
+          locationType={locationTypes[selectedIndex]}
         />
       </View>
 

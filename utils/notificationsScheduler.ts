@@ -1,27 +1,42 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
-import { PrayerTimes } from './types';
 
-export const schedulePrayerNotifications = async (
-  prayerTimes: PrayerTimes, 
-  reminderInterval: number,
-  scheduledReminders: Set<string>
+const MONTHLY_PRAYER_TIMES_KEY = 'monthly_prayer_times';
+const SCHEDULED_NOTIFICATIONS_KEY = 'scheduled_notifications';
+
+export const scheduleNextDaysNotifications = async (
+  prayerTimesForDays: Record<string, any>,
+  reminderInterval: number
 ) => {
   try {
-    const today = new Date();
+    const now = new Date(); // Current time for validation
+    const scheduledNotifications = await AsyncStorage.getItem(SCHEDULED_NOTIFICATIONS_KEY);
+    const scheduledDays = scheduledNotifications ? JSON.parse(scheduledNotifications) : {};
 
-    // Cancel all previously scheduled notifications to apply new settings
-    console.log('Cancelling all existing notifications to apply new settings.');
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    for (const [date, prayerTimes] of Object.entries(prayerTimesForDays)) {
+      const shouldReschedule = reminderInterval !== scheduledDays[date]?.reminderInterval;
 
-    console.log('Scheduling notifications for the following prayer times:', prayerTimes);
+      // Skip if already scheduled and no interval change
+      if (scheduledDays[date] && !shouldReschedule) {
+        console.log(`Notifications for ${date} are already scheduled.`);
+        continue;
+      }
 
-    for (const [prayerName, prayerTime] of Object.entries(prayerTimes)) {
-      const [hour, minute] = prayerTime.split(':').map(Number);
-      const prayerDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hour, minute);
+      console.log(`Scheduling notifications for ${date}.`);
+      for (const [prayerName, prayerTime] of Object.entries(prayerTimes)) {
+        //@ts-ignore
+        const [hour, minute] = prayerTime.split(':').map(Number);
+        const prayerDate = new Date(date);
+        prayerDate.setHours(hour, minute);
 
-      // Schedule a notification at the exact prayer time
-      if (prayerDate > today) {
-        console.log(`Scheduling notification for ${prayerName} at ${prayerDate}`);
+        // Ensure prayer time is in the future
+        if (prayerDate <= now) {
+          console.log(`Skipping ${prayerName} notification for ${date} because the time is in the past.`);
+          continue;
+        }
+
+        // Exact prayer time notification
+        console.log(`Scheduling notification for ${prayerName} on ${date} at ${prayerDate}.`);
         await Notifications.scheduleNotificationAsync({
           content: {
             title: `Time for ${prayerName}`,
@@ -30,29 +45,34 @@ export const schedulePrayerNotifications = async (
           },
           trigger: prayerDate,
         });
-      }
 
-      // Schedule a pre-prayer reminder notification
-      if (reminderInterval > 0 && !scheduledReminders.has(prayerName)) {
-        const reminderDate = new Date(prayerDate.getTime() - reminderInterval * 60 * 1000);
-        if (reminderDate > today) {
-          console.log(`Scheduling reminder for ${prayerName} ${reminderInterval} minutes before at ${reminderDate}`);
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: `${reminderInterval} minutes until ${prayerName}`,
-              body: `Get ready for ${prayerName} prayer in ${reminderInterval} minutes.`,
-              sound: true,
-            },
-            trigger: reminderDate,
-          });
-          scheduledReminders.add(prayerName);
+        // Pre-prayer reminder
+        if (reminderInterval > 0) {
+          const reminderDate = new Date(prayerDate.getTime() - reminderInterval * 60 * 1000);
+          if (reminderDate > now) {
+            console.log(`Scheduling reminder for ${prayerName} ${reminderInterval} minutes before at ${reminderDate}.`);
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                title: `${reminderInterval} minutes until ${prayerName}`,
+                body: `Get ready for ${prayerName} prayer in ${reminderInterval} minutes.`,
+                sound: true,
+              },
+              trigger: reminderDate,
+            });
+          } else {
+            console.log(`Skipping reminder for ${prayerName} because the reminder time is in the past.`);
+          }
         }
       }
+
+      // Mark day as scheduled
+      scheduledDays[date] = { reminderInterval };
     }
 
-    console.log('All notifications for the day successfully scheduled.');
-
+    // Save updated scheduled days
+    await AsyncStorage.setItem(SCHEDULED_NOTIFICATIONS_KEY, JSON.stringify(scheduledDays));
   } catch (error) {
-    console.error('Error scheduling prayer notifications:', error);
+    console.error('Error scheduling notifications:', error);
+    throw error;
   }
 };
