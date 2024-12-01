@@ -35,6 +35,22 @@ export const scheduleNextDaysNotifications = async (
           continue;
         }
 
+        // Handle Syuruk differently
+        if (prayerName.toLowerCase() === 'syuruk') {
+          console.log(`Scheduling Syuruk notification for ${date} at ${prayerDate}.`);
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: `It's Sunrise`,
+              body: `The sun is rising now. Reflect and prepare for the day.`,
+              sound: true,
+            },
+            trigger: prayerDate,
+          });
+
+          // No reminder for Syuruk as it's not a prayer
+          continue;
+        }
+
         // Exact prayer time notification
         console.log(`Scheduling notification for ${prayerName} on ${date} at ${prayerDate}.`);
         await Notifications.scheduleNotificationAsync({

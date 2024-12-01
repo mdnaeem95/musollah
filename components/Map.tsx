@@ -3,16 +3,16 @@ import React from 'react'
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 
-import BidetMarker from '../assets/bidetMarker.png'
-import MusollahMarker from '../assets/musollahMarker.png'
-import MosqueMarker from '../assets/mosqueMarker.png'
-
 export interface Region {
     latitude: number,
     longitude: number,
     latitudeDelta: number,
     longitudeDelta: number,
 }
+
+import BidetMarker from '../assets/bidetMarker.png';
+import MusollahMarker from '../assets/musollahMarker.png';
+import MosqueMarker from '../assets/mosqueMarker.png';
 
 interface MapProps {
     region: Region | undefined,
@@ -70,16 +70,16 @@ export interface MusollahLocation {
 }
 
 const Map = ({ region, markerLocations, onMarkerPress, onRegionChangeComplete, shouldFollowUserLocation, onRefocusPress, locationType }: MapProps) => {
-  console.log('Location Type', locationType)
-  const getMarkerIcon = (type: string) => {
-    if (locationType === "Bidets") {
-      return '../assets/bidetMarker.png';
-    } else if (locationType === "Mosques") {
-      return '../assets/bidetMarker.png';
-    } else {
-      return '../assets/bidetMarker.png';
+  const getMarkerIcon = (locationType: string) => {
+    if (locationType === 'Bidets') {
+      return BidetMarker;
+    } else if (locationType === 'Mosques') {
+      return MosqueMarker;
+    } else if (locationType === 'Musollahs') {
+      return MusollahMarker;
     }
   };
+  
 
   return (
     <View>
@@ -102,7 +102,7 @@ const Map = ({ region, markerLocations, onMarkerPress, onRegionChangeComplete, s
             title={location.building}
             description={'postal' in location ? `${location.address}, Singapore ${location.postal}` : location.address}
             onCalloutPress={() => onMarkerPress(location)}
-            image={{ uri: getMarkerIcon(locationType)}}
+            image={getMarkerIcon(locationType)}
           />
         ))}
       </MapView>

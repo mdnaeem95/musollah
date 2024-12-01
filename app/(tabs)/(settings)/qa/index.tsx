@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Button, TouchableOpacity, TextInput } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import QuestionList from '../../../../components/QaQuestionList';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 const LandingPage = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
   const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
 
   const toggleSearch = () => {
@@ -16,31 +17,42 @@ const LandingPage = () => {
     }
   };
 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebounceQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
   return (
     <View style={styles.container}>
-      {/* Header with Search Bar */}
-      <View style={styles.headerContainer}>
-        {isSearchExpanded && (
-          <View style={styles.searchBarContainer}>
-            <TextInput
-              placeholder="Search questions or content"
-              placeholderTextColor="#B0B0B0"
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
-        )}
+      <ScrollView style={styles.scrollContainer}>
+        {/* Header with Search Bar */}
+        <View style={styles.headerContainer}>
+          {isSearchExpanded && (
+            <View style={styles.searchBarContainer}>
+              <TextInput
+                placeholder="Search questions or content"
+                placeholderTextColor="#B0B0B0"
+                style={styles.searchInput}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
+          )}
 
-        <TouchableOpacity onPress={toggleSearch} style={styles.searchIconContainer}>
-          <FontAwesome6 
-            name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} 
-            size={24} 
-            color="#ECDFCC" 
-          />
-        </TouchableOpacity>
-      </View>
-      <QuestionList searchQuery={searchQuery} />
+          <TouchableOpacity onPress={toggleSearch} style={styles.searchIconContainer}>
+            <FontAwesome6 
+              name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} 
+              size={24} 
+              color="#ECDFCC" 
+            />
+          </TouchableOpacity>
+        </View>
+        <QuestionList searchQuery={debounceQuery} />
+      </ScrollView>
+
+      {/* Fixed Ask a Question Button */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.askButton}
@@ -57,15 +69,17 @@ const LandingPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingVertical: 16,
     backgroundColor: '#2E3D3A',
-    gap: 20
+  },
+  scrollContainer: {
+    flex: 1,
+    paddingVertical: 16,
   },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16
+    paddingHorizontal: 16,
   },
   searchBarContainer: {
     flex: 1,
@@ -88,7 +102,10 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   buttonContainer: {
-    marginTop: 20,
+    position: 'absolute',
+    bottom: 20,
+    left: 16,
+    right: 16,
     alignItems: 'center',
   },
   askButton: {

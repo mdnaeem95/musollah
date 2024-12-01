@@ -1,24 +1,21 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { addQuestion } from '../../../../../redux/slices/qaSlice';
+import { addNewQuestion } from '../../../../../redux/slices/questionSlice';
 import { AppDispatch, RootState } from '../../../../../redux/store/store';
-import { Question } from '../../../../../utils/types';
 import { getAuth } from '@react-native-firebase/auth';
 import SignInModal from '../../../../../components/SignInModal';
 import {
-	RegExpMatcher,
-	englishDataset,
-	englishRecommendedTransformers,
+  RegExpMatcher,
+  englishDataset,
+  englishRecommendedTransformers,
 } from 'obscenity';
 import { useRouter } from 'expo-router';
 
 const NewQuestionScreen = () => {
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
-  const [tags, setTags] = useState('');
-  const { questions } = useSelector((state: RootState) => state.qa);
+  const [form, setForm] = useState({ title: '', body: '', tags: '' });
   const [isAuthModalVisible, setIsAuthModalVisible] = useState(false); 
+  const { ids, entities } = useSelector((state: RootState) => state.questions);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
@@ -30,66 +27,79 @@ const NewQuestionScreen = () => {
   const auth = getAuth();
   const currentUser = auth.currentUser;
 
-  const handleSubmit = () => {
+  const handleChange = (field: keyof typeof form, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async () => {
     if (!currentUser) {
       Alert.alert(
         'Authentication Required',
         'Please create an account or sign in to post a question.',
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Sign Up', onPress: () => setIsAuthModalVisible(true) }
+          { text: 'Sign Up', onPress: () => setIsAuthModalVisible(true) },
         ]
       );
       return;
     }
 
-    if (!title || !body) {
-      Alert.alert('Error', 'Title and body are required');
+    const { title, body, tags } = form;
+
+    if (!title.trim() || !body.trim()) {
+      Alert.alert('Error', 'Title and body are required.');
       return;
     }
 
-    // Check for similar questions
-    const isSimilarQuestion = questions.some(
-      (q) => q.title.toLowerCase() === title.toLowerCase() || q.body.toLowerCase().includes(body.toLowerCase())
-    );
-
-    if (isSimilarQuestion) {
-      Alert.alert('Similar Question Detected', 'A similar question has already been asked. Please check the existing questions.');
+    if (checkForSimilarQuestions(title, body)) {
+      Alert.alert('Similar Question Detected', 'A similar question has already been asked.');
       return;
     }
 
-    // Check for profanities in title, body, and tags using obscenity matcher
-    if (
-      matcher.hasMatch(title) ||
-      matcher.hasMatch(body) ||
-      tags.split(',').some(tag => matcher.hasMatch(tag.trim()))
-    ) {
-      Alert.alert('Profanity Detected', 'Please remove any inappropriate language from the title, body, or tags.');
+    if (checkForProfanity(title, body, tags)) {
+      Alert.alert('Profanity Detected', 'Please remove any inappropriate language.');
       return;
     }
 
-    const newQuestion: Partial<Question> = {
+    const newQuestion = {
       title,
       body,
-      tags: tags.split(',').map(tag => tag.trim()),
+      tags: tags.split(',').map((tag) => tag.trim()),
       userId: currentUser.uid,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
       votes: 0,
       answerCount: 0,
       views: 0,
-      status: 'open',
+      status: 'open' as 'open',
     };
 
     try {
-        dispatch(addQuestion(newQuestion));
-        Alert.alert('Success', 'Your question has been posted!');
-        setTitle('')
-        setBody('')
-        setTags('')
-        router.push('/qa')
+      await dispatch(addNewQuestion(newQuestion)).unwrap();
+      Alert.alert('Success', 'Your question has been posted!');
+      setForm({ title: '', body: '', tags: '' });
+      router.push('/qa');
     } catch (error) {
-        Alert.alert('Error', 'Failed to post question.')
+      Alert.alert('Error', 'Failed to post the question. Please try again.');
+      console.error('Error posting question:', error);
     }
+  };
+
+  const checkForSimilarQuestions = (title: string, body: string) => {
+    return ids.some((id) => {
+      const question = entities[id];
+      return (
+        question.title.toLowerCase() === title.toLowerCase() ||
+        question.body.toLowerCase().includes(body.toLowerCase())
+      );
+    });
+  };
+
+  const checkForProfanity = (title: string, body: string, tags: string) => {
+    return (
+      matcher.hasMatch(title) ||
+      matcher.hasMatch(body) ||
+      tags.split(',').some((tag) => matcher.hasMatch(tag.trim()))
+    );
   };
 
   return (
@@ -98,9 +108,9 @@ const NewQuestionScreen = () => {
       <TextInput
         style={styles.input}
         placeholderTextColor="#ECDFCC"
-        placeholder="Type catching attention title"
-        value={title}
-        onChangeText={setTitle}
+        placeholder="Type a catchy title"
+        value={form.title}
+        onChangeText={(value) => handleChange('title', value)}
       />
 
       <Text style={styles.label}>Body</Text>
@@ -108,8 +118,8 @@ const NewQuestionScreen = () => {
         style={[styles.input, styles.textArea]}
         placeholderTextColor="#ECDFCC"
         placeholder="Type your question"
-        value={body}
-        onChangeText={setBody}
+        value={form.body}
+        onChangeText={(value) => handleChange('body', value)}
         multiline
       />
 
@@ -117,9 +127,9 @@ const NewQuestionScreen = () => {
       <TextInput
         style={styles.input}
         placeholderTextColor="#ECDFCC"
-        placeholder="e.g. islam, fiqh, prayer"
-        value={tags}
-        onChangeText={setTags}
+        placeholder="e.g., islam, fiqh, prayer"
+        value={form.tags}
+        onChangeText={(value) => handleChange('tags', value)}
       />
 
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>

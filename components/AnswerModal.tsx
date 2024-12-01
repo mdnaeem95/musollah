@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
-import { Modal, View, TextInput, Button, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, Keyboard, ScrollView, Alert } from 'react-native';
+import {
+  Modal,
+  View,
+  TextInput,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  Keyboard,
+  ScrollView,
+  Alert,
+} from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { addAnswer, fetchAnswers } from '../redux/slices/qaSlice'; // Ensure you have this action or implement it accordingly
 import { ActivityIndicator } from 'react-native-paper';
 import { AppDispatch, RootState } from '../redux/store/store';
+import { addNewAnswer } from '../redux/slices/answerSlice';
 
 interface AnswerModalProps {
   visible: boolean;
@@ -17,34 +28,47 @@ const AnswerModal: React.FC<AnswerModalProps> = ({ visible, onClose, questionId 
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.user.user);
 
-  const handleSubmit = async () => {
+  const validateAnswer = (): boolean => {
     if (!answerText.trim()) {
-        Alert.alert('Error', 'Answer cannot be empty.');
-        return;
+      Alert.alert('Error', 'Answer cannot be empty.');
+      return false;
     }
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in to submit an answer.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateAnswer()) return;
   
     setIsSubmitting(true);
-
+  
     try {
-        await dispatch(addAnswer({ 
-            questionId, 
-            newAnswer: { 
-                body: answerText, 
-                userId: user?.id,
-                votes: 0,
-                isAccepted: false 
-            } 
-        }));
-        Alert.alert('Success', 'Your answer has been submitted.');
-        setAnswerText('');
-        await dispatch(fetchAnswers(questionId));
-        onClose();
-      } catch (error) {
-        Alert.alert('Error', 'Failed to submit your answer. Please try again.');
-        console.error('Error submitting answer:', error);
-      } finally {
-        setIsSubmitting(false);
-      }
+      // Dispatch the add answer thunk
+      await dispatch(
+        addNewAnswer({
+          questionId,
+          newAnswer: {
+            body: answerText.trim(),
+            userId: user?.id,
+            votes: 0,
+            isAccepted: false,
+          },
+        })
+      ).unwrap();
+  
+      // Notify user and reset modal
+      Alert.alert('Success', 'Your answer has been submitted.');
+      setAnswerText('');
+      onClose();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to submit your answer. Please try again.');
+      console.error('Error submitting answer:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -57,7 +81,7 @@ const AnswerModal: React.FC<AnswerModalProps> = ({ visible, onClose, questionId 
               <TextInput
                 style={styles.input}
                 multiline
-                placeholderTextColor='#ECDFCC'
+                placeholderTextColor="#ECDFCC"
                 placeholder="Type your answer here..."
                 value={answerText}
                 onChangeText={setAnswerText}
@@ -67,11 +91,11 @@ const AnswerModal: React.FC<AnswerModalProps> = ({ visible, onClose, questionId 
                   <Text style={styles.buttonText}>Close</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-                    {isSubmitting ? (
-                        <ActivityIndicator color="#FFFFFF" />
-                    ) : (
-                        <Text style={styles.buttonText}>Submit</Text>
-                    )}
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.buttonText}>Submit</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -83,62 +107,62 @@ const AnswerModal: React.FC<AnswerModalProps> = ({ visible, onClose, questionId 
 };
 
 const styles = StyleSheet.create({
-    modalContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        paddingHorizontal: 20,
-      },
-      scrollContainer: {
-        flexGrow: 1,
-        justifyContent: 'center',
-      },
-      modalContent: {
-        backgroundColor: '#2E3D3A',
-        borderRadius: 10,
-        padding: 20,
-        maxHeight: '80%',
-        flex: 1,
-      },
-      title: {
-        fontSize: 18,
-        fontFamily: 'Outfit_600SemiBold',
-        color: '#ECDFCC',
-        marginBottom: 10,
-      },
-      input: {
-        flex: 1,
-        borderColor: '#3A504C',
-        borderWidth: 1,
-        borderRadius: 5,
-        padding: 10,
-        fontSize: 14,
-        color: '#ECDFCC',
-        backgroundColor: '#3A504C',
-        fontFamily: 'Outfit_400Regular',
-        marginBottom: 20,
-        textAlignVertical: 'top',
-      },
-      buttonRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-      },
-      button: {
-        backgroundColor: '#A3C0BB',
-        paddingVertical: 15,
-        borderRadius: 10,
-        alignItems: 'center',
-        flex: 1,
-        marginHorizontal: 5,
-      },
-      closeButton: {
-        backgroundColor: '#FF6B6B', // Custom color for the close button
-      },
-      buttonText: {
-        fontFamily: 'Outfit_600SemiBold',
-        color: '#FFFFFF',
-        fontSize: 16,
-      },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 20,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#2E3D3A',
+    borderRadius: 10,
+    padding: 20,
+    maxHeight: '80%',
+    flex: 1,
+  },
+  title: {
+    fontSize: 18,
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#ECDFCC',
+    marginBottom: 10,
+  },
+  input: {
+    flex: 1,
+    borderColor: '#3A504C',
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
+    fontSize: 14,
+    color: '#ECDFCC',
+    backgroundColor: '#3A504C',
+    fontFamily: 'Outfit_400Regular',
+    marginBottom: 20,
+    textAlignVertical: 'top',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  button: {
+    backgroundColor: '#A3C0BB',
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  closeButton: {
+    backgroundColor: '#FF6B6B', // Custom color for the close button
+  },
+  buttonText: {
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
 });
 
 export default AnswerModal;
