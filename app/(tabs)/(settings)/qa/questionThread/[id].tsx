@@ -1,124 +1,156 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { Question } from '../../../../../utils/types';
-import { AppDispatch, RootState } from '../../../../../redux/store/store';
-import { FontAwesome6 } from '@expo/vector-icons';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { formatDistanceToNow } from 'date-fns';
 import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../../../../redux/store/store';
+import { fetchAnswersFromFirebase } from '../../../../../redux/slices/answerSlice';
+import { formatDistanceToNow } from 'date-fns';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import AnswerModal from '../../../../../components/AnswerModal';
-import { fetchAnswers } from '../../../../../redux/slices/qaSlice';
-import { fetchUser } from '../../../../../redux/slices/userSlice';
+import { FontAwesome6 } from '@expo/vector-icons';
+import { selectAnswersByQuestionId } from '../../../../../redux/slices/answerSlice';
+import { getAuth } from '@react-native-firebase/auth';
+import { fetchUserRole } from '../../../../../api/firebase';
+
+const auth = getAuth();
+const currentUser = auth.currentUser;
 
 const QuestionThreadScreen = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { questions, loading } = useSelector((state: RootState) => state.qa);
-  const user = useSelector((state: RootState) => state.user.user);
-  const question: Question | undefined = questions.find((question: Question) => question.id === id);
-  const answers = useSelector((state: RootState) => state.qa.answers[question!.id] || []);
+
+  // Redux Selectors
+  const { entities: questionEntities, loading: questionLoading } = useSelector((state: RootState) => state.questions);
+  const { entities: answerEntities, loading: answersLoading } = useSelector((state: RootState) => state.answers);
+  const [userRole, setUserRole] = useState<string>('')
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      if (!currentUser) return;
+
+      try {
+        const userRole = await fetchUserRole(currentUser.uid);
+        setUserRole(userRole);
+      } catch (error) {
+        console.error('Error fetching liked questions:', error);
+      }
+    };
+
+    fetchRole();
+  }, [dispatch, currentUser]);
+
   const [isModalVisible, setModalVisible] = useState(false);
 
-  const openModal = () => {
-      setModalVisible(true);
-  };
+  const question = id ? questionEntities[id] : undefined;
+  const answers = useSelector((state: RootState) => selectAnswersByQuestionId(state, id || ''));
 
-  // Fetch answers whenever the screen is in focus
+  const openModal = () => setModalVisible(true);
+
+  // Fetch answers and user data when the screen is focused
   useFocusEffect(
     useCallback(() => {
       if (id) {
-        dispatch(fetchUser);
-        dispatch(fetchAnswers(id));
+        dispatch(fetchAnswersFromFirebase(id));
       }
     }, [dispatch, id])
   );
 
-  if (loading) {
+  if (questionLoading) {
     return (
-      <View>
+      <View style={styles.centered}>
         <ActivityIndicator size="large" color="#4D6561" />
       </View>
-    )
+    );
   }
 
   if (!question) {
     return (
-      <Text>Question is not found.</Text>
-    )
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>Question not found.</Text>
+      </View>
+    );
   }
 
-  const createdAtDate = typeof question.createdAt === 'string' ?  new Date(question.createdAt) : question.createdAt;
-  const relativeTime = formatDistanceToNow(createdAtDate, { addSuffix: true })
+  const createdAtDate = new Date(question.createdAt);
+  const relativeTime = formatDistanceToNow(createdAtDate, { addSuffix: true });
 
   return (
-      <Animated.View style={styles.container}>
-        <View style={{ gap: 10, marginBottom: 20 }}>
-          <Text style={styles.title}>{question.title}</Text>
-          <Text style={styles.body}>{question.body}</Text>
+    <Animated.View style={styles.container}>
+      {/* Question Details */}
+      <View style={{ gap: 10, marginBottom: 20 }}>
+        <Text style={styles.title}>{question.title}</Text>
+        <Text style={styles.body}>{question.body}</Text>
 
-          {!question.tags.includes("") && (
-              <View style={styles.tagsContainer}>
-                {question.tags.map((tag, index) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{tag}</Text>
-                  </View>
-                ))}
+        {!question.tags.includes("") && (
+          <View style={styles.tagsContainer}>
+            {question.tags.map((tag, index) => (
+              <View key={index} style={styles.tag}>
+                <Text style={styles.tagText}>{tag}</Text>
               </View>
-            )}
-
-          <Text style={styles.date}>{relativeTime}</Text>
-
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            {/* STATS */}
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <FontAwesome6 name="comment" size={20} color="#BFE1DB" />
-                <Text style={styles.statText}>{question.answerCount}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <FontAwesome6 name="thumbs-up" size={20} color="#BFE1DB" />
-                <Text style={styles.statText}>{question.votes}</Text>
-              </View>
-            </View>
-
-            {/* REPLY FOR ADMINS */}
-            {user?.role === 'admin' && (
-              <TouchableOpacity onPress={openModal}>
-                <FontAwesome6 name="reply" size={20} color="#BFE1DB" />
-              </TouchableOpacity>
-            )}
+            ))}
           </View>
-        </View>
-
-        {loading ? (
-        <ActivityIndicator size="large" color="#00ff00" />
-        ) : (
-          answers.map((answer) => (
-            <View key={answer.id} style={styles.answerContainer}>
-              <Text style={styles.answerText}>{answer.body}</Text>
-              <View style={styles.answerDetailsContainer}>
-                <Text style={styles.answerDate}>{`${formatDistanceToNow(new Date(answer.createdAt), { addSuffix: true })}`}</Text>
-              </View>
-            </View>
-          ))
         )}
 
-        {/* Answer Modal */}
-        <AnswerModal
-          visible={isModalVisible}
-          onClose={() => setModalVisible(false)}
-          questionId={question.id}
-        />
-      </Animated.View>
+        <Text style={styles.date}>{relativeTime}</Text>
+
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          {/* Stats Row */}
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <FontAwesome6 name="comment" size={20} color="#BFE1DB" />
+              <Text style={styles.statText}>{question.answerCount}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <FontAwesome6 name="thumbs-up" size={20} color="#BFE1DB" />
+              <Text style={styles.statText}>{question.votes}</Text>
+            </View>
+          </View>
+
+          {/* Reply Button for Admins */}
+          {userRole === 'admin' && (
+            <TouchableOpacity onPress={openModal}>
+              <FontAwesome6 name="reply" size={20} color="#BFE1DB" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Answers Section */}
+      {answersLoading ? (
+        <ActivityIndicator size="large" color="#00ff00" />
+      ) : answers.length > 0 ? (
+        answers.map((answer: any) => (
+          <View key={answer.id} style={styles.answerContainer}>
+            <Text style={styles.answerText}>{answer.body}</Text>
+            <View style={styles.answerDetailsContainer}>
+              <Text style={styles.answerDate}>{`${formatDistanceToNow(new Date(answer.createdAt), { addSuffix: true })}`}</Text>
+            </View>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.emptyText}>No answers yet. Be the first to respond!</Text>
+      )}
+
+      {/* Answer Modal */}
+      <AnswerModal
+        visible={isModalVisible}
+        onClose={() => setModalVisible(false)}
+        questionId={question.id}
+      />
+    </Animated.View>
   );
-  
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: '#2E3D3A',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#2E3D3A',
   },
   statsRow: {
@@ -147,11 +179,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_400Regular',
     color: '#D1D5DB',
     marginBottom: 15,
-  },
-  stats: {
-    fontSize: 12,
-    fontFamily: 'Outfit_400Regular',
-    color: '#BFE1DB',
   },
   date: {
     fontSize: 12,
@@ -192,12 +219,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  answerDetails: {
-    fontSize: 12,
-    fontFamily: 'Outfit_400Regular',
-    color: '#A3C0BB',
-    marginLeft: 5,
-  },
   answerDate: {
     fontSize: 12,
     fontFamily: 'Outfit_400Regular',
@@ -207,8 +228,15 @@ const styles = StyleSheet.create({
     color: '#FF6B6B',
     fontSize: 16,
     textAlign: 'center',
-    marginTop: 20
-  }
+    marginTop: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontFamily: 'Outfit_400Regular',
+    color: '#ECDFCC',
+    textAlign: 'center',
+    marginTop: 20,
+  },
 });
 
 export default QuestionThreadScreen;

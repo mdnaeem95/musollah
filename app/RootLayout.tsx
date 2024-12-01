@@ -19,7 +19,6 @@ import { fetchDailyDoasData } from '../redux/slices/doasSlice';
 import LoadingScreen from '../components/LoadingScreen';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { listenForUserUpdates } from '../redux/slices/userSlice';
-import { registerBackgroundFetch } from '../utils/backgroundPrayerNotificationScheduler';
 import TrackPlayer from 'react-native-track-player';
 import { playbackService } from '../constants/playbackService';
 import { LogLevel, OneSignal } from 'react-native-onesignal'
@@ -65,10 +64,6 @@ const RootLayout = () => {
     });
 
     return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    registerBackgroundFetch();
   }, []);
   
   // Listener to monitor changes in user documents

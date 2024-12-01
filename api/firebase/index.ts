@@ -1,7 +1,7 @@
 import firestore from "@react-native-firebase/firestore";
 import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
-import { ContentData, CourseData, Doa, DoaAfterPrayer, FoodAdditive, ModuleData, Restaurant, Surah, TeacherData, UserData } from "../../utils/types";
+import { ContentData, CourseData, Doa, DoaAfterPrayer, FoodAdditive, ModuleData, Restaurant, Surah, TeacherData, UserData, Question, Answer, Vote, Comment } from "../../utils/types";
 
 export const fetchUserData = async (userId: string ): Promise<UserData> => {
     try {
@@ -319,3 +319,157 @@ export const fetchRestaurants = async (): Promise<Restaurant[]> => {
         throw error
     }
 }
+
+export const fetchQuestions = async (): Promise<Question[]> => {
+    try {
+        const questionsSnapshot = await firestore().collection('questions').get();
+        return questionsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data()?.createdAt?.toDate().toISOString(),
+        })) as Question[];
+    } catch (error) {
+        console.error('Error fetching questions: ', error);
+        throw error;
+    }
+};
+
+export const addQuestion = async (newQuestion: Partial<Question>): Promise<Question> => {
+    try {
+        const questionWithTimestamp = {
+            ...newQuestion,
+            createdAt: firestore.FieldValue.serverTimestamp(),
+        };
+        const questionRef = await firestore().collection('questions').add(questionWithTimestamp);
+        const questionSnapshot = await questionRef.get();
+        return {
+            id: questionSnapshot.id,
+            ...questionSnapshot.data(),
+            createdAt: questionSnapshot.data()?.createdAt?.toDate().toISOString(),
+        } as Question;
+    } catch (error) {
+        console.error('Error adding question: ', error);
+        throw error;
+    }
+};
+
+export const fetchAnswers = async (questionId: string): Promise<Answer[]> => {
+    try {
+        const answersSnapshot = await firestore()
+            .collection('questions')
+            .doc(questionId)
+            .collection('answers')
+            .orderBy('createdAt', 'asc')
+            .get();
+        return answersSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data()?.createdAt?.toDate().toISOString(),
+        })) as Answer[];
+    } catch (error) {
+        console.error('Error fetching answers: ', error);
+        throw error;
+    }
+};
+
+export const addAnswer = async (questionId: string, newAnswer: Partial<Answer>): Promise<Answer> => {
+    try {
+        const answerWithTimestamp = {
+            ...newAnswer,
+            createdAt: firestore.FieldValue.serverTimestamp(),
+        };
+        const answerRef = await firestore()
+            .collection('questions')
+            .doc(questionId)
+            .collection('answers')
+            .add(answerWithTimestamp);
+        const answerSnapshot = await answerRef.get();
+        return {
+            id: answerSnapshot.id,
+            ...answerSnapshot.data(),
+            createdAt: answerSnapshot.data()?.createdAt?.toDate().toISOString(),
+        } as Answer;
+    } catch (error) {
+        console.error('Error adding answer: ', error);
+        throw error;
+    }
+};
+
+export const toggleLikeQuestionInBackend = async (
+    questionId: string,
+    isLiked: boolean
+  ): Promise<{ newVotes: number }> => {
+    try {
+      const questionRef = firestore().collection('questions').doc(questionId);
+      const voteChange = isLiked ? 1 : -1;
+  
+      // Increment votes in Firestore
+      await questionRef.update({
+        votes: firestore.FieldValue.increment(voteChange),
+      });
+  
+      // Fetch updated data
+      const questionSnapshot = await questionRef.get();
+      const newVotes = questionSnapshot.data()?.votes || 0;
+  
+      return { newVotes };
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      throw error;
+    }
+  };
+    
+export const incrementQuestionViewsInBackend = async (questionId: string): Promise<number> => {
+    const questionRef = firestore().collection('questions').doc(questionId);
+  
+    await questionRef.update({
+      views: firestore.FieldValue.increment(1),
+    });
+  
+    const questionSnapshot = await questionRef.get();
+    const newViews = questionSnapshot.data()?.views || 0;
+  
+    return newViews;
+};
+
+export const fetchUserLikedQuestions = async (userId: string): Promise<string[]> => {
+    try {
+      // Reference to the user's document in the 'users' collection
+      const userDocRef = firestore().collection('users').doc(userId);
+      
+      // Fetch the user's document
+      const userDoc = await userDocRef.get();
+  
+      // Extract the likedQuestions field from the document data
+      const userData = userDoc.data();
+      if (!userData) {
+        throw new Error('User data not found');
+      }
+  
+      return userData.likedQuestions || []; // Return an empty array if likedQuestions is undefined
+    } catch (error) {
+      console.error('Error fetching liked questions:', error);
+      throw error;
+    }
+};
+
+export const fetchUserRole = async (userId: string): Promise<string> => {
+    try {
+      // Reference to the user's document in the 'users' collection
+      const userDocRef = firestore().collection('users').doc(userId);
+      
+      // Fetch the user's document
+      const userDoc = await userDocRef.get();
+  
+      // Extract the likedQuestions field from the document data
+      const userData = userDoc.data();
+      if (!userData) {
+        throw new Error('User data not found');
+      }
+  
+      return userData.role; // Return an empty array if likedQuestions is undefined
+    } catch (error) {
+      console.error('Error fetching liked questions:', error);
+      throw error;
+    }
+};
