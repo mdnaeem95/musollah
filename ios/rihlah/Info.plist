@@ -19,7 +19,7 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>3.0.1</string>
+	<string>3.0.2</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
@@ -60,16 +60,18 @@
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Allow Rihlah to use your location.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>We use your location to show you locations of interest are updated according to your background even when the app is in the background.</string>
+	<string>We use your location to show you relevant data even when the app is in the background.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We use your location to show you locations of interest nearby, as well as for calculation of the Qiblat.</string>
+	<string>We use your location to show you relevant data.</string>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>
+		<string>location</string>
 		<string>fetch</string>
+		<string>remote-notification</string>
 		<string>audio</string>
 	</array>
 	<key>UILaunchStoryboardName</key>

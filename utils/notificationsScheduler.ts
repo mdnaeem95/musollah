@@ -36,7 +36,7 @@ export const scheduleNextDaysNotifications = async (
         }
 
         // Handle Syuruk differently
-        if (prayerName.toLowerCase() === 'syuruk') {
+        if (prayerName.toLowerCase() === 'sunrise') {
           console.log(`Scheduling Syuruk notification for ${date} at ${prayerDate}.`);
           await Notifications.scheduleNotificationAsync({
             content: {
