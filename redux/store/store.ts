@@ -10,6 +10,7 @@ import doasReducer from '../slices/doasSlice'
 import answersReducer from '../slices/answerSlice'
 import questionsReducer from '../slices/questionSlice'
 import userPreferencesReducer from '../slices/userPreferencesSlice';
+import gamificationReducer from '../slices/gamificationSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persistReducer, persistStore, FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
 import autoMergeLevel2 from 'redux-persist/lib/stateReconciler/autoMergeLevel2'; // For deep merging
@@ -26,7 +27,8 @@ const rootReducer = combineReducers({
   course: courseReducer,
   doas: doasReducer,
   answers: answersReducer,
-  questions: questionsReducer
+  questions: questionsReducer,
+  gamification: gamificationReducer
 });
 
 // Define RootState type using ReturnType
