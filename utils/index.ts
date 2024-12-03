@@ -108,6 +108,7 @@ export const extractNextDaysPrayerTimes = (
       if (itemDate >= today && itemDate <= endDate) {
         acc[itemDate.toISOString().split('T')[0]] = {
           Subuh: item.Subuh,
+          Syuruk: item.Syuruk,
           Zohor: item.Zohor,
           Asar: item.Asar,
           Maghrib: item.Maghrib,
@@ -116,4 +117,4 @@ export const extractNextDaysPrayerTimes = (
       }
       return acc;
     }, {});
-  };  
+};  

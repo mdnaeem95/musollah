@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 
-const MONTHLY_PRAYER_TIMES_KEY = 'monthly_prayer_times';
 const SCHEDULED_NOTIFICATIONS_KEY = 'scheduled_notifications';
 
 export const scheduleNextDaysNotifications = async (
