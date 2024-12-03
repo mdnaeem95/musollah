@@ -3,7 +3,7 @@ import { fetchCoursesData, fetchTeachersData, fetchUserData } from '../../api/fi
 import { CourseAndModuleProgress, CourseData, CourseStatus, DashboardState, ModuleData, UserData } from '../../utils/types';
 
 const initialState: DashboardState = {
-  user: { name: "Akhi", avatarUrl: 'https://via.placeholder.com/100', id: '', email: '', enrolledCourses: [] },
+  user: { name: "Akhi", avatarUrl: 'https://via.placeholder.com/100', id: '', email: '', enrolledCourses: [], role: 'user', likedQuestions: [] },
   courses: [],
   teachers: [],
   loading: false,

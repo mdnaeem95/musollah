@@ -4,20 +4,33 @@ import { deleteUser, getAuth, signOut, updateProfile } from '@react-native-fireb
 import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from '@react-native-firebase/firestore';
 import { FontAwesome6 } from '@expo/vector-icons'; // For consistent icons
 import { useRouter, useSegments } from 'expo-router';
-import { persistor } from '../../../../redux/store/store'
+import { AppDispatch, persistor } from '../../../../redux/store/store'
 import Modal from 'react-native-modal'
 import SignInModal from '../../../../components/SignInModal';
+import { useDispatch } from 'react-redux';
 
 const AccountSettings = () => {
     const auth = getAuth();
     const firestore = getFirestore();
     const router = useRouter();
     const segments = useSegments();
+    const dispatch = useDispatch<AppDispatch>();
 
     // State for Firebase Auth data
     const [currentUser, setCurrentUser] = useState(auth.currentUser);
     const [name, setName] = useState<string>('');
     const [coursesCompleted, setCoursesCompleted] = useState<number>(0);
+    const [gamification, setGamification] = useState({
+      streak: 0,
+      xp: 0,
+      level: 1,
+      badges: [],
+      challenges: {
+        daily: false,
+        weekly: false,
+        monthly: false,
+      }
+    })
 
     // Modal state
     const [isModalVisible, setModalVisible] = useState<boolean>(false);
@@ -35,6 +48,7 @@ const AccountSettings = () => {
                         const userData = userDoc.data();
                         setName(userData?.name || '');
                         setCoursesCompleted(userData?.coursesCompleted || 0);
+                        setGamification(userData?.gamification)
                     }
                 } catch (error) {
                     console.error('Error fetching user data from Firestore:', error);
@@ -144,6 +158,25 @@ const AccountSettings = () => {
                         <Text style={styles.settingsLabel}>Courses Completed</Text>
                     </View>
                     <Text style={styles.valueText}>{coursesCompleted}</Text>
+                </View>
+
+                {/* Gamification Section */}
+                <View style={styles.gamificationContainer}>
+                  <Text style={styles.gamificationText}>Level: {gamification.level}</Text>
+                  <Text style={styles.gamificationText}>XP: {gamification.xp}</Text>
+
+                  {gamification.badges.length > 0 && (
+                    <View style={styles.badgesContainer}>
+                      <Text style={styles.badgesHeader}>Badges</Text>
+                      <View style={styles.badgesGrid}>
+                        {gamification.badges.map((badge, index) => (
+                          <View key={index} style={styles.badgeItem}>
+                            <Text>{badge}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
                 </View>
 
                 {currentUser && (
@@ -306,6 +339,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
   },
+  gamificationContainer: {
+    backgroundColor: '#3D4F4C',
+    borderRadius: 10,
+    marginBottom: 20
+  },
+  gamificationText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 16,
+    color: '#ECDFCC',
+    marginVertical: 4
+  },
+  badgesContainer: {
+    marginTop: 10
+  },
+  badgesHeader: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 16,
+    color: '#ECDFCC',
+    marginBottom: 10
+  },
+  badgesGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 15
+  },
+  badgeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 15
+  },
+  badgeText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+    color: '#FFD700',
+    marginLeft: 5   
+  }
 });
 
 export default AccountSettings;

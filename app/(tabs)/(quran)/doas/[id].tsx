@@ -1,13 +1,13 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import React, { useContext } from 'react';
+import React, { useContext, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Doa, DoaBookmark } from '../../../../utils/types';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { ThemeContext } from '../../../../context/ThemeContext';
 import { addBookmark, removeBookmark } from '../../../../redux/slices/doasSlice';
-import { FontAwesome6 } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import BookmarkIcon from '../../../../components/BookmarkIcon';
 
 const DoaContent = () => {
     const { doas, bookmarks } = useSelector((state: RootState) => state.doas);
@@ -20,9 +20,6 @@ const DoaContent = () => {
     const DYNAMIC_TEXT_COLOR = isDarkMode ? '#ECDFCC' : '#FFFFFF';
     const contentCardBackground = isDarkMode ? '#2A2A2A' : '#3A504C';
     const DYNAMIC_LINE_HEIGHT = textSize * 2.5
-
-    // Check if the current doa is bookmarked
-    const isBookmarked = bookmarks.some((bookmark) => bookmark.doaId === id);
 
     const showAddBookMarkToast = () => {
         Toast.show({
@@ -41,6 +38,8 @@ const DoaContent = () => {
             autoHide: true
         });
     };
+
+    const isBookmarked = bookmarks.some((bookmark) => bookmark.doaId === id);
 
     // Handle bookmark toggle
     const toggleBookmark = () => {
@@ -64,14 +63,11 @@ const DoaContent = () => {
                 <View style={[styles.contentCard, { backgroundColor: contentCardBackground }]}>
                     <View style={styles.headerContainer}>
                         <Text style={[styles.titleText, { color: DYNAMIC_TEXT_COLOR }]}>{doa?.title}</Text>
-                        <TouchableOpacity onPress={toggleBookmark}>
-                            <FontAwesome6
-                                name="bookmark"
-                                size={28}
-                                color={isBookmarked ? '#ECDFCC' : DYNAMIC_TEXT_COLOR}
-                                solid={isBookmarked}
-                            />
-                        </TouchableOpacity>
+                        <BookmarkIcon
+                            isBookmarked={isBookmarked}
+                            onToggle={toggleBookmark}
+                            size={45} // Adjust size as needed
+                        />
                     </View>
 
                     <Text style={[styles.arabicText, { color: DYNAMIC_TEXT_COLOR, fontSize: textSize, lineHeight: DYNAMIC_LINE_HEIGHT }]}>

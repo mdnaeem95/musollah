@@ -1,4 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { getAuth } from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface GamificationState {
   streak: number; // Current streak in days
@@ -24,6 +26,42 @@ const initialState: GamificationState = {
   },
 };
 
+export const fetchGamificationState = createAsyncThunk(
+  'gamification/fetchGamificationState',
+  async (userId: string, { rejectWithValue }) => {
+    try {
+      const gamificationDoc = await firestore().collection('users').doc(userId).get();
+      const gamificationData = gamificationDoc.data()?.gamification;
+
+      if (!gamificationData) {
+        throw new Error('Gamification data not found.');
+      }
+
+      return gamificationData;
+    } catch (error) {
+      console.error('Failed to fetch gamification state: ', error);
+      return rejectWithValue('Failed to fetch gamification data');
+    }
+  }
+)
+
+export const saveGamificationState = createAsyncThunk(
+  'gamification/saveState',
+  async (state: GamificationState, { rejectWithValue }) => {
+    try {
+      const userId = getAuth().currentUser?.uid;
+      if (!userId) throw new Error('User not authenticated');
+
+      await firestore().collection('users').doc(userId).update({
+        gamification: state
+      })
+    } catch (error) {
+      console.error('Failed to save gamification state: ', error);
+      return rejectWithValue('Failed to save gamification state');
+    }
+  }
+)
+
 const gamificationSlice = createSlice({
   name: 'gamification',
   initialState,
@@ -47,6 +85,18 @@ const gamificationSlice = createSlice({
       state.challenges[action.payload] = false;
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchGamificationState.pending, (state) => {
+
+      })
+      .addCase(fetchGamificationState.fulfilled, (state, action: PayloadAction<GamificationState>) => {
+        return { ...state, ...action.payload }
+      })
+      .addCase(fetchGamificationState.rejected, (state, action) => {
+        console.error('Failed to fetch gamification state:', action.payload)
+      })
+  }
 });
 
 export const { updateStreak, addXP, addBadge, completeChallenge, resetChallenge } =
