@@ -75,12 +75,6 @@ export default {
         }
       ],
       "expo-asset",
-      [
-        "onesignal-expo-plugin",
-        {
-          "mode": "development"
-        }
-      ]
     ],
     "extra": {
       "router": {

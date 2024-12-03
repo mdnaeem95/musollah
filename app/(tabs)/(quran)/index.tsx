@@ -104,6 +104,7 @@ const QuranDashboard = () => {
                         pathname: `/surahs/${lastListenedAyah.surahNumber}`,
                         params: { ayahIndex: lastListenedAyah.ayahIndex }
                     })}
+                    disabled={lastListenedAyah?.surahNumber === 0}
                 >
                     <Text style={styles.ayahHeaderText}>Last Listened</Text>
                     <Text style={styles.ayahDetailText}>
@@ -119,6 +120,7 @@ const QuranDashboard = () => {
                         pathname: `/surahs/${lastReadAyah.surahNumber}`,
                         params: { ayahIndex: lastReadAyah.ayahNumber }
                     })}
+                    disabled={lastReadAyah?.surahNumber === 0}
                 >
                     <Text style={styles.ayahHeaderText}>Last Read</Text>
                     <Text style={styles.ayahDetailText}>

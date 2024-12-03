@@ -96,6 +96,8 @@ export const fetchMonthlyPrayerTimes = async (year: number, month: number) => {
             Isyak: item.timings.Isha.replace(' (+08)', '')
         }))
 
+        console.log('Formatted Data from monthly prayer fetch', formattedData[0])
+
         return formattedData;
     } catch (error) {
         console.error('Error fetching monthly times:', error);

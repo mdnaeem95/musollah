@@ -21,17 +21,12 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from '
 import { listenForUserUpdates } from '../redux/slices/userSlice';
 import TrackPlayer from 'react-native-track-player';
 import { playbackService } from '../constants/playbackService';
-import { LogLevel, OneSignal } from 'react-native-onesignal'
 
 if (AppState.currentState === 'active') {
   SplashScreen.preventAutoHideAsync();
 }
 
 TrackPlayer.registerPlaybackService(() => playbackService)
-
-OneSignal.Debug.setLogLevel(LogLevel.Verbose)
-OneSignal.initialize("c29ae03e-7f34-4c06-a0ff-c430d2187991")
-OneSignal.Notifications.requestPermission(true);
 
 const RootLayout = () => {
   const router = useRouter();
