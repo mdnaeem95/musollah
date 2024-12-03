@@ -16,6 +16,7 @@ import TrackPlayer, { Event } from 'react-native-track-player';
 import { PlayPauseButton } from '../../../../components/AyahPlayPauseButton';
 import { FloatingPlayer } from '../../../../components/FloatingPlayer';
 import { reciterOptions } from '../../../../utils/constants';
+import BookmarkIcon from '../../../../components/BookmarkIcon';
 
 const DAILY_PROGRESS_KEY = 'dailyProgress';
 
@@ -276,17 +277,11 @@ const SurahTextScreen = () => {
                             trackIndex={index}
                             currentAyahIndex={currentAyahIndex} 
                         />
-                        <TouchableOpacity
-                            onPress={() => toggleBookmark(ayahNumber)}
-                            style={styles.iconButton}
-                            >
-                            <FontAwesome6
-                                name="bookmark"
-                                size={20}
-                                solid={isBookmarked}
-                                color={isBookmarked ? 'white' : 'gray'}
-                                />
-                        </TouchableOpacity>
+                        <BookmarkIcon
+                            isBookmarked={isBookmarked}
+                            onToggle={() => toggleBookmark(ayahNumber)}
+                            size={45} // Adjust size as needed
+                        />
                         <TouchableOpacity
                             onPress={() => toggleReadAyah(ayahNumber)}
                             style={styles.iconButton}

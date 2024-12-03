@@ -19,15 +19,30 @@ export const signIn = createAsyncThunk(
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Next, fetch the user data from Firestore (using the UID from Auth)
-    const userDoc = await firestore().collection('users').doc(user.uid).get();
+    const userDocRef = firestore().collection('users').doc(user.uid);
+    const userDoc = await userDocRef.get();
+    const userData = userDoc.data();
 
-    if (!userDoc.exists) {
-      throw new Error('User data not found in Firestore.');
+    if (!userData) {
+      throw new Error('User data not found in firestore.');
     }
 
-    // Get the additional user data (enrolledCourses, prayerLogs) from Firestore
-    const userData = userDoc.data();
+    if (!userData?.gamification) {
+      const defaultGamification = {
+        streak: 0,
+        xp: 0,
+        level: 1,
+        badges: [],
+        challenges: {
+          daily: false,
+          weekly: false,
+          monthly: false
+        }        
+      };
+
+      await userDocRef.update({ gamification: defaultGamification });
+      userData.gamification = defaultGamification;
+    }
     
     return {
       uid: user.uid,                      // From Firebase Auth
@@ -36,7 +51,8 @@ export const signIn = createAsyncThunk(
       photoURL: user.photoURL,            // From Firebase Auth
       enrolledCourses: userData?.enrolledCourses || [],  // From Firestore
       prayerLogs: userData?.prayerLogs || [],            // From Firestore
-      likedQuestions: userData?.likedQuestions || []
+      likedQuestions: userData?.likedQuestions || [],
+      gamification: userData?.gamification || [],
     };
   }
 );
@@ -59,7 +75,18 @@ export const signUp = createAsyncThunk(
         enrolledCourses: [],                           // Default: no enrolled courses
         prayerLogs: [],                           // Default: empty prayer logs
         role: 'user',
-        likedQuestions: []
+        likedQuestions: [],
+        gamification: {
+          streak: 0,
+          xp: 0,
+          level: 1,
+          badges: [],
+          challenges: {
+            daily: false,
+            weekly: false,
+            monthly: false
+          }
+        }
     });
 
     // Return the Auth User data (no need to fetch Firestore again here)

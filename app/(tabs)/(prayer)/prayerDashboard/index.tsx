@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert, ActivityIndicator } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
@@ -8,6 +8,8 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { startOfWeek, format, subDays, addDays, eachDayOfInterval } from 'date-fns';
 import SignInModal from '../../../../components/SignInModal';
 import { getAuth } from '@react-native-firebase/auth';
+import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from '@react-native-firebase/firestore';
+import { addXP, completeChallenge, updateStreak } from '../../../../redux/slices/gamificationSlice';
 
 type PrayerLog = {
   Subuh: boolean;
@@ -31,12 +33,18 @@ const PrayersDashboard = () => {
     Maghrib: false,
     Isyak: false,
   });
+  const gamification = useSelector((state: RootState) => state.gamification)
+
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+  const firestore = getFirestore();
 
   const prayerSessions = ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
 
   const isLogged = (dayIndex: number, session: string) => {
     const date = format(addDays(weekStart, dayIndex), 'yyyy-MM-dd');
+    //@ts-ignore
     return weeklyLogs[date]?.[session] || false;
   };
 
@@ -51,9 +59,6 @@ const PrayersDashboard = () => {
   // useFocusEffect to fetch logs whenever the page is focused
   useFocusEffect(
     useCallback(() => {
-      const auth = getAuth();
-      const currentUser = auth.currentUser;
-
       if (currentUser) {
         fetchLogsForDate(selectedDate); // Fetch logs for the currently selected date
       } else {
@@ -64,9 +69,6 @@ const PrayersDashboard = () => {
 
   useFocusEffect(
     useCallback(() => {
-      const auth = getAuth();
-      const currentUser = auth.currentUser;
-  
       if (currentUser) {
         const startDate = format(subDays(new Date(), 3), 'yyyy-MM-dd');
         const endDate = format(addDays(new Date(), 3), 'yyyy-MM-dd');
@@ -105,6 +107,15 @@ const PrayersDashboard = () => {
             prayerLog: updatedLogs,
           })
         ).unwrap();
+
+        dispatch(addXP(10));
+
+        // Check if all prayers logged for the day
+        const allPrayersCompleted = Object.values(updatedLogs).every((logged) => logged);
+        if (allPrayersCompleted) {
+          dispatch(updateStreak(1));
+          dispatch(completeChallenge('daily'));
+        } 
       } catch (error) {
         console.error('Error saving prayer log:', error);
         Alert.alert('Error', 'Failed to save prayer log. Please try again.');
@@ -153,6 +164,13 @@ const PrayersDashboard = () => {
       ) : (
         <>
           <ScrollView>
+            {/* GAMIFICATION PROGRESS SECTION */}
+            <View>
+              <Text>Level: {gamification.level}</Text>
+              <Text>XP: {gamification.xp}</Text>
+              <Text>Streak: {gamification.streak}</Text>
+            </View>
+
             <View style={styles.section}>
               <View style={styles.dateContainer}>
                 <TouchableOpacity onPress={handlePreviousDay} style={{ paddingHorizontal: 20 }}>
@@ -174,7 +192,12 @@ const PrayersDashboard = () => {
                   //@ts-ignore
                   style={[styles.prayerContainer, !todayLogs[prayer] && styles.inactivePrayerContainer]}
                 >
-                  <Text style={[styles.prayerLabel, !todayLogs[prayer] && styles.inactivePrayerLabel]}>{prayer}</Text>
+                  <Text
+                    //@ts-ignore
+                    style={[styles.prayerLabel, !todayLogs[prayer] && styles.inactivePrayerLabel]}
+                  >
+                    {prayer}
+                  </Text>
                   <TouchableOpacity onPress={() => handleTogglePrayer(prayer)}>
                     {todayLogs[prayer] ? (
                       <FontAwesome6 name="check" color="#A3C0BB" size={22} />
