@@ -41,12 +41,12 @@ export const fetchPrayerTimesData = createAsyncThunk(
         const currentDate = new Date();
         const shortFormattedDate = getShortFormattedDate(currentDate);
 
-        // // Check if prayer times for the current date are cached
-        // const cachedData = await getCachedPrayerData(`prayers_${shortFormattedDate}`)
-        // if (cachedData) {
-        //   console.log('Using cached prayer data...');
-        //   return cachedData;
-        // }
+        // Check if prayer times for the current date are cached
+        const cachedData = await getCachedPrayerData(`prayers_${shortFormattedDate}`)
+        if (cachedData) {
+          console.log('Using cached prayer data...');
+          return cachedData;
+        }
   
         const prayerData = await fetchPrayerTimes();
         const { Fajr: Subuh, Sunrise: Syuruk, Dhuhr: Zohor, Asr: Asar, Maghrib, Isha: Isyak } = prayerData.data.timings;
@@ -75,7 +75,7 @@ export const fetchPrayerTimesData = createAsyncThunk(
         return rejectWithValue('Failed to fetch prayer times');
       }
     }
-  );
+);
 
 export const fetchPrayerTimesByDate = createAsyncThunk(
   'prayers/fetchPrayerTimesByDate',

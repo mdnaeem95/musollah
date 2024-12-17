@@ -4,33 +4,31 @@ import { deleteUser, getAuth, signOut, updateProfile } from '@react-native-fireb
 import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from '@react-native-firebase/firestore';
 import { FontAwesome6 } from '@expo/vector-icons'; // For consistent icons
 import { useRouter, useSegments } from 'expo-router';
-import { AppDispatch, persistor } from '../../../../redux/store/store'
+import { persistor } from '../../../../redux/store/store'
 import Modal from 'react-native-modal'
 import SignInModal from '../../../../components/SignInModal';
-import { useDispatch } from 'react-redux';
 
 const AccountSettings = () => {
     const auth = getAuth();
     const firestore = getFirestore();
     const router = useRouter();
     const segments = useSegments();
-    const dispatch = useDispatch<AppDispatch>();
 
     // State for Firebase Auth data
     const [currentUser, setCurrentUser] = useState(auth.currentUser);
     const [name, setName] = useState<string>('');
     const [coursesCompleted, setCoursesCompleted] = useState<number>(0);
-    const [gamification, setGamification] = useState({
-      streak: 0,
-      xp: 0,
-      level: 1,
-      badges: [],
-      challenges: {
-        daily: false,
-        weekly: false,
-        monthly: false,
-      }
-    })
+    // const [gamification, setGamification] = useState({
+    //   streak: 0,
+    //   xp: 0,
+    //   level: 1,
+    //   badges: [],
+    //   challenges: {
+    //     daily: false,
+    //     weekly: false,
+    //     monthly: false,
+    //   }
+    // })
 
     // Modal state
     const [isModalVisible, setModalVisible] = useState<boolean>(false);
@@ -48,7 +46,7 @@ const AccountSettings = () => {
                         const userData = userDoc.data();
                         setName(userData?.name || '');
                         setCoursesCompleted(userData?.coursesCompleted || 0);
-                        setGamification(userData?.gamification)
+                        // setGamification(userData?.gamification)
                     }
                 } catch (error) {
                     console.error('Error fetching user data from Firestore:', error);
@@ -160,7 +158,7 @@ const AccountSettings = () => {
                     <Text style={styles.valueText}>{coursesCompleted}</Text>
                 </View>
 
-                {/* Gamification Section */}
+                {/* Gamification Section
                 <View style={styles.gamificationContainer}>
                   <Text style={styles.gamificationText}>Level: {gamification.level}</Text>
                   <Text style={styles.gamificationText}>XP: {gamification.xp}</Text>
@@ -177,7 +175,7 @@ const AccountSettings = () => {
                       </View>
                     </View>
                   )}
-                </View>
+                </View> */}
 
                 {currentUser && (
                   <TouchableOpacity 

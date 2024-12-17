@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert, ActivityIndicator } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Alert, ActivityIndicator } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { useFocusEffect } from 'expo-router';
@@ -8,8 +8,10 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { startOfWeek, format, subDays, addDays, eachDayOfInterval } from 'date-fns';
 import SignInModal from '../../../../components/SignInModal';
 import { getAuth } from '@react-native-firebase/auth';
-import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from '@react-native-firebase/firestore';
-import { addXP, completeChallenge, updateStreak } from '../../../../redux/slices/gamificationSlice';
+import { addXP, completeChallenge, fetchGamificationState, updateStreak } from '../../../../redux/slices/gamificationSlice';
+import { getShortFormattedDate } from '../../../../utils';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
 type PrayerLog = {
   Subuh: boolean;
@@ -20,8 +22,10 @@ type PrayerLog = {
 };
 
 const PrayersDashboard = () => {
+  const shakeAnimation = useRef(new Animated.Value(0)).current;
   const dispatch = useDispatch<AppDispatch>();
   const { error } = useSelector((state: RootState) => state.user);
+  const [toggablePrayers, setToggablePrayers] = useState<{isAvailable: boolean, prayer: string}[]>();
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isAuthModalVisible, setIsAuthModalVisible] = useState<boolean>(false);
@@ -33,14 +37,35 @@ const PrayersDashboard = () => {
     Maghrib: false,
     Isyak: false,
   });
-  const gamification = useSelector((state: RootState) => state.gamification)
+  const { gamificationData } = useSelector((state: RootState) => state.gamification)
 
   const auth = getAuth();
   const currentUser = auth.currentUser;
-  const firestore = getFirestore();
 
   const prayerSessions = ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const currentDate = new Date();
+  const shortFormattedDate = getShortFormattedDate(currentDate);
+
+  const shakeButton = () => {
+    Animated.sequence([
+      Animated.timing(shakeAnimation, {
+        toValue: 10, // Move 10 pixels to the right
+        duration: 50,
+        useNativeDriver: true, // Required for performance
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: -10, // Move 10 pixels to the left
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: 0, // Return to original position
+        duration: 50,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   const isLogged = (dayIndex: number, session: string) => {
     const date = format(addDays(weekStart, dayIndex), 'yyyy-MM-dd');
@@ -53,14 +78,39 @@ const PrayersDashboard = () => {
     const dayIndex = today.getDay() - 1; // Adjust so that 0 = Monday
     return dayIndex < 0 ? 6 : dayIndex; // Wrap around for Sunday as the last index
   };
+
+  const checkPrayerPassed = async () => {
+    const prayerSessionTimes = await AsyncStorage.getItem(`prayers_${shortFormattedDate}`);
+    const prayerSessionTimesData = JSON.parse(prayerSessionTimes);
+  
+    if (!prayerSessionTimesData) return;
+  
+    const currentTime = new Date();
+    const { prayerTimes } = prayerSessionTimesData;
+  
+    // Convert prayer times to comparable Date objects
+    const parsedPrayerTimes = Object.entries(prayerTimes).map(([prayer, time]) => {
+      const [hour, minute] = time.split(":").map(Number);
+      const prayerDate = new Date();
+      prayerDate.setHours(hour, minute, 0, 0);
+      return { prayer, time: prayerDate };
+    });
+  
+    return parsedPrayerTimes.map(({ prayer, time }) => ({
+      prayer,
+      isAvailable: currentTime >= time, // Available if the current time is past the prayer time
+    }));
+  };
   
   const currentDayIndex = getCurrentDayIndex();
 
   // useFocusEffect to fetch logs whenever the page is focused
   useFocusEffect(
     useCallback(() => {
+      checkPrayerPassed();
       if (currentUser) {
-        fetchLogsForDate(selectedDate); // Fetch logs for the currently selected date
+        fetchLogsForDate(selectedDate);
+        // dispatch(fetchGamificationState(currentUser.uid))
       } else {
         console.log('User not authenticated. Skipping prayer log fetch.');
       }
@@ -80,9 +130,39 @@ const PrayersDashboard = () => {
     }, [dispatch])
   );
 
+  useEffect(() => {
+    const fetchPrayerData = async () => {
+      const availability = await checkPrayerPassed();
+      setToggablePrayers(availability)
+    };
+
+    fetchPrayerData();
+  }, []);
+
+  const isPrayerAvailable = (prayer: string) =>
+    toggablePrayers?.find((item: any) => item.prayer === prayer)?.isAvailable;
+
   const handleTogglePrayer = async (prayer: string) => {
     const auth = getAuth();
     const currentUser = auth.currentUser;
+
+    // Check if prayer is available
+    const isAvailable = isPrayerAvailable(prayer);
+    console.log(`${prayer} status: ${isAvailable}`)
+
+    if (!isAvailable) { 
+      shakeButton();
+
+      // Show toast message
+      Toast.show({
+        type: 'removed',
+        text1: `Can't log for ${prayer} as it's not time yet.`,
+        visibilityTime: 2000,
+        autoHide: true
+      });
+  
+      return; // Prevent further processing
+    }
 
     if (currentUser) {
       const updatedLogs = {
@@ -108,11 +188,10 @@ const PrayersDashboard = () => {
           })
         ).unwrap();
 
-        dispatch(addXP(10));
-
         // Check if all prayers logged for the day
         const allPrayersCompleted = Object.values(updatedLogs).every((logged) => logged);
         if (allPrayersCompleted) {
+          dispatch(addXP(10));
           dispatch(updateStreak(1));
           dispatch(completeChallenge('daily'));
         } 
@@ -141,6 +220,9 @@ const PrayersDashboard = () => {
 
   // Function to navigate to the next day
   const handleNextDay = () => {
+    if (selectedDate.toDateString() === currentDate.toDateString()) {
+      return; // Prevent navigating beyond today
+    }
     const newDate = addDays(selectedDate, 1);
     setSelectedDate(newDate);
     fetchLogsForDate(newDate);
@@ -164,13 +246,6 @@ const PrayersDashboard = () => {
       ) : (
         <>
           <ScrollView>
-            {/* GAMIFICATION PROGRESS SECTION */}
-            <View>
-              <Text>Level: {gamification.level}</Text>
-              <Text>XP: {gamification.xp}</Text>
-              <Text>Streak: {gamification.streak}</Text>
-            </View>
-
             <View style={styles.section}>
               <View style={styles.dateContainer}>
                 <TouchableOpacity onPress={handlePreviousDay} style={{ paddingHorizontal: 20 }}>
@@ -180,33 +255,42 @@ const PrayersDashboard = () => {
                   <Text style={styles.dateText}>{format(selectedDate, 'MMMM dd, yyyy')}</Text>
                   <Text style={styles.dayText}>{format(selectedDate, 'EEEE')}</Text>
                 </View>
-                <TouchableOpacity onPress={handleNextDay} style={{ paddingHorizontal: 20 }}>
-                  <FontAwesome6 name="arrow-right" size={24} color="#A3C0BB" />
-                </TouchableOpacity>
+                {/* Right chevron or placeholder */}
+                {selectedDate.toDateString() !== new Date().toDateString() ? (
+                  <TouchableOpacity onPress={handleNextDay} style={styles.chevronContainer}>
+                    <FontAwesome6 name="arrow-right" size={24} color="#A3C0BB" />
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.chevronContainer} />
+                )}
               </View>
 
               {/* Display each prayer session in its own container */}
-              {prayerSessions.map((prayer) => (
-                <View 
-                  key={prayer}
-                  //@ts-ignore
-                  style={[styles.prayerContainer, !todayLogs[prayer] && styles.inactivePrayerContainer]}
-                >
-                  <Text
+              {prayerSessions.map((prayer) => {
+                return (
+                  <View 
+                    key={prayer}
                     //@ts-ignore
-                    style={[styles.prayerLabel, !todayLogs[prayer] && styles.inactivePrayerLabel]}
+                    style={[styles.prayerContainer, !todayLogs[prayer] && styles.inactivePrayerContainer ]}
                   >
-                    {prayer}
-                  </Text>
-                  <TouchableOpacity onPress={() => handleTogglePrayer(prayer)}>
-                    {todayLogs[prayer] ? (
-                      <FontAwesome6 name="check" color="#A3C0BB" size={22} />
-                    ) : (
-                      <FontAwesome6 name="xmark" color="red" size={22} />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              ))}
+                    <Text
+                      //@ts-ignore
+                      style={[styles.prayerLabel, !todayLogs[prayer] && styles.inactivePrayerLabel]}
+                    >
+                      {prayer}
+                    </Text>
+                    <Animated.View style={{ transform: [{ translateX: shakeAnimation }] }}>
+                      <TouchableOpacity onPress={() => handleTogglePrayer(prayer)}>
+                        {todayLogs[prayer] ? (
+                          <FontAwesome6 name="check" color="#A3C0BB" size={22} />
+                        ) : (
+                          <FontAwesome6 name="xmark" color="red" size={22} />
+                        )}
+                      </TouchableOpacity>
+                    </Animated.View>
+                  </View>
+                )
+              })}
 
               <Text style={styles.sectionHeader}>Weekly Prayer Log</Text>
 
@@ -315,6 +399,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_600SemiBold',
     color: '#ECDFCC',
     marginHorizontal: 10,
+  },
+  chevronContainer: {
+    width: 40, // Ensure chevrons and placeholders take equal space
+    alignItems: 'center',
   },
   dayText: {
     fontSize: 14,

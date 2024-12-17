@@ -1,127 +1,167 @@
-// RestaurantLocator.tsx
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  FlatList,
+  Image,
+  ScrollView,
+} from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { fetchRestaurants } from '../../../api/firebase';
+import { useRouter } from 'expo-router';
 import { Restaurant } from '../../../utils/types';
-import { FlashList } from '@shopify/flash-list';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '../../../redux/store/store';
-import * as Location from 'expo-location';
-import { Region } from '../../../components/Map';
+import { fetchRestaurants } from '../../../api/firebase';
 
 const { width, height } = Dimensions.get('window');
 
+const categories = ['Halal Certified', 'Cafe', 'Family-Friendly', 'New', 'Buffet'];
+
 const RestaurantLocator = () => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userLocation, setUserLocation] = useState<Region | null>(null);
-  const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
 
   useEffect(() => {
     const loadRestaurants = async () => {
-      const data = await fetchRestaurants();
-      setRestaurants(data);
-      setLoading(false);
+      try {
+        const data = await fetchRestaurants();
+        setRestaurants(data);
+        setFilteredRestaurants(data); // Default to all restaurants
+      } catch (error) {
+        console.error('Error loading restaurants:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    loadRestaurants();
 
-    // Fetch user location and update map region
-    const loadUserLocation = async () => {
-        try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-              const errorMsg = 'Permission to access location was denied';
-              console.warn(errorMsg);
-              return;
-            }
-      
-            const userLocation = await Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.Balanced,
-            });
-      
-            if (!userLocation) {
-              const errorMsg = 'Failed to get user location';
-              console.error(errorMsg);
-              return;
-            }
-            
-            if (userLocation) {
-                setUserLocation({
-                    latitude: userLocation.coords.latitude,
-                    longitude: userLocation.coords.longitude,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01
-                })
-            }
-          } catch (error) {
-            const errorMsg = 'Failed to fetch user location';
-            console.error(errorMsg, error);
-          } 
-    };
-    loadUserLocation();
+    loadRestaurants();
   }, []);
 
-  const renderCategorySection = () => (
-    <View style={styles.categorySection}>
-      <Text style={styles.sectionTitle}>Categories</Text>
-      <View style={styles.categoryContainer}>
-        <Text style={styles.category}>Cafe</Text>
-        <Text style={styles.category}>Halal</Text>
-        <Text style={styles.category}>Family-friendly</Text>
-      </View>
-    </View>
+  useEffect(() => {
+    if (selectedCategories.length === 0) {
+      // If no categories are selected, show all restaurants
+      setFilteredRestaurants(restaurants);
+    } else {
+      // Filter restaurants matching any of the selected categories
+      const filtered = restaurants.filter((restaurant) =>
+        restaurant.categories.some((cat) => selectedCategories.includes(cat))
+      );
+      setFilteredRestaurants(filtered);
+    }
+  }, [selectedCategories, restaurants]);
+
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategories((prevCategories) => {
+      if (prevCategories.includes(category)) {
+        // If already selected, remove it
+        return prevCategories.filter((cat) => cat !== category);
+      } else {
+        // Otherwise, add it to the selection
+        return [...prevCategories, category];
+      }
+    });
+  };
+
+  const renderCategoryItem = ({ item }: { item: string }) => (
+    <TouchableOpacity
+      style={[
+        styles.categoryPill,
+        selectedCategories.includes(item) && styles.categoryPillActive,
+      ]}
+      onPress={() => handleCategorySelect(item)}
+    >
+      <Text
+        style={[
+          styles.categoryText,
+          selectedCategories.includes(item) && styles.categoryTextActive,
+        ]}
+      >
+        {item}
+      </Text>
+    </TouchableOpacity>
   );
 
-  const renderNewSection = () => (
-    <View style={styles.newSection}>
-      <Text style={styles.sectionTitle}>New Restaurants</Text>
-      <FlashList
-        estimatedItemSize={74}
-        data={restaurants.slice(0, 5)}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.restaurantItem}>
-            <Text style={styles.restaurantName}>{item.name}</Text>
-            <Text style={styles.restaurantAddress}>{item.address}</Text>
-          </View>
-        )}
+  const renderRecommendation = ({ item }: { item: Restaurant }) => (
+    <TouchableOpacity 
+      style={styles.recommendationCard}
+      onPress={() => router.push(`${item.id}`)}
+    >
+      <Image
+        source={{ uri: item.image }}
+        style={styles.recommendationImage}
       />
-    </View>
+      <View style={styles.recommendationDetails}>
+        <Text style={styles.recommendationTitle}>{item.name}</Text>
+        {/* <Text style={styles.recommendationSubtitle}>{item.address}</Text> */}
+      </View>
+    </TouchableOpacity>
   );
 
   return (
-    <View style={styles.mainContainer}>
-      <MapView
-        style={styles.map}
-        region={userLocation || undefined} // Center the map on the user's location
-        scrollEnabled={false} // Disable scrolling
-        showsUserLocation={true} // Show user's location on the map
-        initialRegion={{
-          latitude: userLocation ? userLocation.latitude : 1.3521, // Default location
-          longitude: userLocation ? userLocation.longitude : 103.8198,
-          latitudeDelta: 0.01, // Closer zoom
-          longitudeDelta: 0.01,
-        }}
+    <ScrollView style={styles.mainContainer}>
+      {/* Search Bar */}
+      <TouchableOpacity
+        style={styles.searchBar}
+        onPress={() => router.push('/search')}
       >
-        {!loading &&
-          restaurants.map((restaurant) => (
-            <Marker
-              key={restaurant.id}
-              coordinate={{
-                latitude: restaurant.coordinates.latitude,
-                longitude: restaurant.coordinates.longitude,
-              }}
-              title={restaurant.name}
-              description={restaurant.address}
-              image={require('../../../assets/restaurant.png')}
-            />
-          ))}
-      </MapView>
+        <Text style={styles.searchPlaceholder}>Find Halal food near you...</Text>
+      </TouchableOpacity>
 
-      {renderCategorySection()}
-      {renderNewSection()}
-    </View>
+      {/* Map Section */}
+      <View style={styles.mapContainer}>
+        <MapView
+          style={styles.map}
+          initialRegion={{
+            latitude: 1.3521,
+            longitude: 103.8198,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }}
+        >
+          {!loading &&
+            filteredRestaurants.map((restaurant) => (
+              <Marker
+                key={restaurant.id}
+                coordinate={{
+                  latitude: restaurant.coordinates.latitude,
+                  longitude: restaurant.coordinates.longitude,
+                }}
+                title={restaurant.name}
+                description={restaurant.address}
+                onPress={() => router.push(`${restaurant.id}`)}
+              />
+            ))}
+        </MapView>
+      </View>
+
+      {/* Categories Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Categories</Text>
+        <FlatList
+          data={categories}
+          renderItem={renderCategoryItem}
+          horizontal
+          keyExtractor={(item) => item}
+          showsHorizontalScrollIndicator={false}
+        />
+      </View>
+
+      {/* Recommendations Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Recommended for You</Text>
+        <FlatList
+          data={filteredRestaurants.slice(0, 5)}
+          renderItem={renderRecommendation}
+          keyExtractor={(item) => item.id}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+        />
+      </View>
+    </ScrollView>
   );
 };
 
@@ -129,61 +169,80 @@ const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#2E3D3A', // Main background color
+    backgroundColor: '#2E3D3A',
+  },
+  searchBar: {
+    height: 50,
+    backgroundColor: '#3D4F4C',
+    borderRadius: 25,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  searchPlaceholder: {
+    color: '#999',
+    fontSize: 16,
+  },
+  mapContainer: {
+    width: width - 32,
+    height: height * 0.3,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 16,
   },
   map: {
-    width: width - 32,
-    height: height * 0.3, // Map takes half of the screen height
+    flex: 1,
   },
-  categorySection: {
-    padding: 16,
-    backgroundColor: '#3D4F4C', // Slightly darker shade for section background
-    borderRadius: 12,
-    marginTop: 20,
+  section: {
+    marginTop: 16,
   },
   sectionTitle: {
     fontSize: 18,
+    color: '#F4E2C1',
     fontFamily: 'Outfit_600SemiBold',
-    color: '#ECDFCC',
     marginBottom: 10,
   },
-  categoryContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  categoryPill: {
+    backgroundColor: '#3D4F4C',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    marginRight: 10,
   },
-  category: {
-    backgroundColor: '#2E3D3A',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    margin: 5,
-    borderRadius: 10,
-    color: '#F4E2C1',
-    fontFamily: 'Outfit_400Regular',
+  categoryPillActive: {
+    backgroundColor: '#F4E2C1',
+  },
+  categoryText: {
     fontSize: 14,
-    textAlign: 'center',
+    color: '#F4E2C1',
   },
-  newSection: {
-    flex: 1,
-    padding: 16,
+  categoryTextActive: {
+    color: '#2E3D3A',
+  },
+  recommendationCard: {
+    width: 150,
     backgroundColor: '#3D4F4C',
     borderRadius: 12,
-    marginTop: 20,
-    marginBottom: 20,
+    marginRight: 16,
   },
-  restaurantItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F4E2C1',
+  recommendationImage: {
+    width: '100%',
+    height: 100,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    objectFit: "cover"
   },
-  restaurantName: {
-    fontSize: 16,
-    fontFamily: 'Outfit_500Medium',
+  recommendationDetails: {
+    padding: 10,
+  },
+  recommendationTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
     color: '#F4E2C1',
   },
-  restaurantAddress: {
-    fontSize: 14,
-    fontFamily: 'Outfit_400Regular',
-    color: '#FFFFFF',
+  recommendationSubtitle: {
+    fontSize: 12,
+    color: '#999',
   },
 });
 
