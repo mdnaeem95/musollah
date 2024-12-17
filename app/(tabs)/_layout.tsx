@@ -65,7 +65,6 @@ const TabLayout = () => {
       <Tabs.Screen
         name="(food)"
         options={{
-          href: null,
           title: 'Halal Food',
           headerShown: false
         }}

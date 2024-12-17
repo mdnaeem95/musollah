@@ -2,7 +2,7 @@ import { getAuth } from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface GamificationState {
+interface GamificationData {
   streak: number; // Current streak in days
   xp: number; // Total XP earned
   level: number; // User's current level
@@ -14,17 +14,27 @@ interface GamificationState {
   };
 }
 
+export interface GamificationState {
+  gamificationData: GamificationData,
+  loading: boolean;
+  error: string | null;
+}
+
 const initialState: GamificationState = {
-  streak: 0,
-  xp: 0,
-  level: 1,
-  badges: [],
-  challenges: {
-    daily: false,
-    weekly: false,
-    monthly: false,
+  gamificationData: {
+    streak: 0,
+    xp: 0,
+    level: 1,
+    badges: [],
+    challenges: {
+      daily: false,
+      weekly: false,
+      monthly: false
+    },
   },
-};
+  loading: false,
+  error: null,
+}
 
 export const fetchGamificationState = createAsyncThunk(
   'gamification/fetchGamificationState',
@@ -67,31 +77,33 @@ const gamificationSlice = createSlice({
   initialState,
   reducers: {
     updateStreak(state, action: PayloadAction<number>) {
-      state.streak = action.payload;
+      state.gamificationData.streak = action.payload;
     },
     addXP(state, action: PayloadAction<number>) {
-      state.xp += action.payload;
-      state.level = Math.floor(state.xp / 100); // Example: 100 XP per level
+      state.gamificationData.xp += action.payload;
+      state.gamificationData.streak = Math.floor(state.gamificationData.xp / 100); // Example: 100 XP per level
     },
     addBadge(state, action: PayloadAction<string>) {
-      if (!state.badges.includes(action.payload)) {
-        state.badges.push(action.payload);
+      if (!state.gamificationData.badges.includes(action.payload)) {
+        state.gamificationData.badges.push(action.payload);
       }
     },
     completeChallenge(state, action: PayloadAction<'daily' | 'weekly' | 'monthly'>) {
-      state.challenges[action.payload] = true;
+      state.gamificationData.challenges[action.payload] = true;
     },
     resetChallenge(state, action: PayloadAction<'daily' | 'weekly' | 'monthly'>) {
-      state.challenges[action.payload] = false;
+      state.gamificationData.challenges[action.payload] = false;
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchGamificationState.pending, (state) => {
-
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(fetchGamificationState.fulfilled, (state, action: PayloadAction<GamificationState>) => {
-        return { ...state, ...action.payload }
+      .addCase(fetchGamificationState.fulfilled, (state, action: PayloadAction<GamificationData>) => {
+        state.loading = false;
+        state.gamificationData = action.payload
       })
       .addCase(fetchGamificationState.rejected, (state, action) => {
         console.error('Failed to fetch gamification state:', action.payload)

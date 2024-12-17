@@ -287,6 +287,7 @@ export interface Vote {
 
 export interface Restaurant {
     id: string,
+    image: string,
     name : string,
     address: string,
     coordinates: {
@@ -295,6 +296,6 @@ export interface Restaurant {
     };
     status: string,
     hours: string,
-    tags: string,
-    website: string
+    website: string,
+    categories: string[],
 }

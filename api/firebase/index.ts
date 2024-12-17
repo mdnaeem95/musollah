@@ -300,6 +300,7 @@ export const fetchRestaurants = async (): Promise<Restaurant[]> => {
             const data = doc.data();
             return {
                 id: doc.id,
+                image: data.image,
                 name : data.name,
                 address: data.address,
                 coordinates: {
@@ -308,8 +309,8 @@ export const fetchRestaurants = async (): Promise<Restaurant[]> => {
                 },
                 status: data.status,
                 hours: data.hours,
-                tags: data.tags,
-                website: data.website
+                website: data.website,
+                categories: data.categories
             } as Restaurant
         });
         
@@ -319,6 +320,39 @@ export const fetchRestaurants = async (): Promise<Restaurant[]> => {
         throw error
     }
 }
+
+export const fetchRestaurantById = async (id: string): Promise<Restaurant | null> => {
+    try {
+        const doc = await firestore().collection('restaurants').doc(id).get();
+        if (!doc.exists) {
+            console.warn(`Restaurant with id ${id} not found.`);
+            return null; // Handle case where the document doesn't exist
+        }
+
+        const data = doc.data();
+        if (!data) {
+            return null;
+        }
+
+        return {
+            id: doc.id,
+            image: data.image,
+            name: data.name,
+            address: data.address,
+            coordinates: {
+                latitude: data.location.latitude,
+                longitude: data.location.longitude,
+            },
+            status: data.status,
+            hours: data.hours,
+            website: data.website,
+            categories: data.categories,
+        } as Restaurant;
+    } catch (error) {
+        console.error(`Error fetching restaurant by id (${id}):`, error);
+        throw error;
+    }
+};
 
 export const fetchQuestions = async (): Promise<Question[]> => {
     try {
