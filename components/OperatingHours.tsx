@@ -7,7 +7,6 @@
   
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Operating Hours</Text>
         {parsedHours.map((entry, index) => {
             const isToday = entry.day.includes(today)
 

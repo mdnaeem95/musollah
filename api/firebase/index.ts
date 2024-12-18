@@ -1,7 +1,7 @@
 import firestore from "@react-native-firebase/firestore";
 import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
-import { ContentData, CourseData, Doa, DoaAfterPrayer, FoodAdditive, ModuleData, Restaurant, Surah, TeacherData, UserData, Question, Answer, Vote, Comment } from "../../utils/types";
+import { ContentData, CourseData, Doa, DoaAfterPrayer, FoodAdditive, ModuleData, Restaurant, Surah, TeacherData, UserData, Question, Answer, Vote, Comment, RestaurantReview } from "../../utils/types";
 
 export const fetchUserData = async (userId: string ): Promise<UserData> => {
     try {
@@ -310,7 +310,9 @@ export const fetchRestaurants = async (): Promise<Restaurant[]> => {
                 status: data.status,
                 hours: data.hours,
                 website: data.website,
-                categories: data.categories
+                categories: data.categories,
+                averageRating: data.averageRating || 0,
+                totalReviews: data.totalReviews || 0,
             } as Restaurant
         });
         
@@ -347,6 +349,8 @@ export const fetchRestaurantById = async (id: string): Promise<Restaurant | null
             hours: data.hours,
             website: data.website,
             categories: data.categories,
+            averageRating: data.averageRating || 0,
+            totalReviews: data.totalReviews || 0,
         } as Restaurant;
     } catch (error) {
         console.error(`Error fetching restaurant by id (${id}):`, error);
@@ -507,3 +511,110 @@ export const fetchUserRole = async (userId: string): Promise<string> => {
       throw error;
     }
 };
+
+// Restaurant Favourite Functions
+export const addToFavourites = async (userId: string, restaurantId: string) => {
+    try {
+        await firestore()
+            .collection('users')
+            .doc(userId)
+            .collection('favouriteRestaurants')
+            .doc(restaurantId)
+            .set({
+                restaurantId,
+                timestamp: new Date().toISOString(),
+            });
+    } catch (error) {
+        console.error('Error adding to favourite:', error);
+        throw error;
+    }
+}
+
+export const removeFromFavourites = async (userId: string, restaurantId: string) => {
+    try {
+        await firestore()
+            .collection('users')
+            .doc(userId)
+            .collection('favouriteRestaurants')
+            .doc(restaurantId)
+            .delete();
+    } catch (error) {
+        console.error('Error removing from favourites:', error);
+        throw error;
+    }
+}
+
+export const fetchFavourites = async (userId: string): Promise<string[]> => {
+    try {
+        const snapshot = await firestore()
+            .collection('users')
+            .doc(userId)
+            .collection('favouriteRestaurants')
+            .get();
+
+        const favourites = snapshot.docs.map((doc) => doc.data().restaurantId);
+        return favourites;
+    } catch (error) {
+        console.error('Error fetching favourites:', error);
+        throw error;
+    }
+}
+
+export const submitReview = async (restaurantId: string, userId: string, rating: number, review: string) => {
+    try {
+        const newReviewRef = firestore().collection('restaurantReviews').doc();
+        const reviewData = {
+            id: newReviewRef.id,
+            restaurantId,
+            userId,
+            rating,
+            review,
+            timestamp: new Date().toISOString(),
+        };
+
+        await newReviewRef.set(reviewData)
+
+        await updateRestaurantRating(restaurantId);
+    } catch (error) {
+        console.error('Error submitting review: ', error);
+        throw error;
+    }
+}
+
+export const fetchReviews = async (restaurantId: string): Promise<RestaurantReview[]> => {
+    const snapshot = await firestore()
+        .collection('restaurantReviews')
+        .where('restaurantId', '==', restaurantId)
+        .orderBy('timestamp', 'desc')
+        .get();
+
+    const reviews = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            restaurantId: data.restaurantId,
+            userId: data.userId,
+            rating: data.rating,
+            review: data.review,
+            timestamp: data.timestamp
+        } as RestaurantReview
+    });
+
+    return reviews
+}
+
+const updateRestaurantRating = async (restaurantId: string) => {
+    const snapshot = await firestore()
+        .collection('restaurantReviews')
+        .where('restaurantId', '==', restaurantId)
+        .get();
+    
+    const totalReviews = snapshot.size;
+    const totalRating = snapshot.docs.reduce((sum, doc) => sum + doc.data().rating, 0);
+    const averageRating = totalReviews > 0 ? totalRating /totalReviews : 0;
+
+    await firestore().collection('restaurants').doc(restaurantId).update({
+        averageRating: averageRating.toFixed(1),
+        totalReviews
+    })
+}

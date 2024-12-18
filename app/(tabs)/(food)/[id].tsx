@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,23 +8,66 @@ import {
   ScrollView,
   ActivityIndicator,
   Linking,
+  Alert,
+  Animated,
+  Dimensions,
+  FlatList
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { fetchRestaurantById } from '../../../api/firebase'; // Function to fetch restaurant details by ID
-import { Restaurant } from '../../../utils/types';
+import { addToFavourites, fetchFavourites, fetchRestaurantById, fetchReviews, removeFromFavourites } from '../../../api/firebase'; // Function to fetch restaurant details by ID
+import { Restaurant, RestaurantReview } from '../../../utils/types';
 import OperatingHours from '../../../components/OperatingHours';
+import FavoriteButton from '../../../components/FavouriteButton'
+import { getAuth } from '@react-native-firebase/auth';
+import SignInModal from '../../../components/SignInModal';
+import { AirbnbRating } from 'react-native-ratings';
+import { FontAwesome6 } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
+const HERO_IMAGE_HEIGHT = 250;
 
 const RestaurantDetails = () => {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [reviews, setReviews] = useState<RestaurantReview[]>([]);
+  const [averageRating, setAverageRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
   const { id } = useLocalSearchParams(); // Get the restaurant ID from the URL
   const router = useRouter();
+  const [isAuthModalVisible, setIsAuthModalVisible] = useState<boolean>(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  const user = getAuth();
+  const currentUser = user.currentUser;
+  const currentUserId = user.currentUser?.uid;
+
+  const heroImageHeight = scrollY.interpolate({
+    inputRange: [-HERO_IMAGE_HEIGHT, 0, HERO_IMAGE_HEIGHT],
+    outputRange: [HERO_IMAGE_HEIGHT * 1.5, HERO_IMAGE_HEIGHT, HERO_IMAGE_HEIGHT],
+    extrapolate: 'clamp',
+  });
+
+  const heroImageTranslate = scrollY.interpolate({
+    inputRange: [-HERO_IMAGE_HEIGHT, 0, HERO_IMAGE_HEIGHT],
+    outputRange: [-HERO_IMAGE_HEIGHT * 0.25, 0, 0],
+    extrapolate: 'clamp',
+  });
 
   useEffect(() => {
+    if (!id) return;
     const loadRestaurant = async () => {
       try {
         const data = await fetchRestaurantById(id as string); // Fetch data using ID
         setRestaurant(data);
+
+        const reviewsData = await fetchReviews(id as string);
+        setReviews(reviewsData)
+
+        if (reviewsData.length > 0) {
+            setAverageRating(restaurant?.averageRating!);
+            setTotalReviews(restaurant?.totalReviews!);
+        }
       } catch (error) {
         console.error('Failed to load restaurant details:', error);
       } finally {
@@ -32,8 +75,47 @@ const RestaurantDetails = () => {
       }
     };
 
+    const checkFavoriteStatus = async () => {
+        try {
+          const favorites = await fetchFavourites(currentUserId!);
+          setIsFavorited(favorites.includes(id as string));
+        } catch (error) {
+          console.error('Failed to fetch favorites:', error);
+        }
+      };
+
     loadRestaurant();
+    checkFavoriteStatus();
   }, [id]);
+
+  const toggleFavorite = async () => {
+    console.log(isFavorited)
+    if (!currentUser) {
+        Alert.alert(
+            'Sign In Required',
+            'You need to sign in to save favourites.',
+            [
+                { text: 'Cancel', style: 'cancel'},
+                {
+                    text: 'Sign In',
+                    onPress: () => setIsAuthModalVisible(true)
+                }
+            ]
+        );
+        return;
+    }
+
+    try {
+      if (isFavorited) {
+        await removeFromFavourites(currentUserId!, restaurant?.id as string);
+      } else {
+        await addToFavourites(currentUserId!, restaurant?.id as string);
+      }
+      setIsFavorited(!isFavorited); // Toggle local state
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -55,42 +137,121 @@ const RestaurantDetails = () => {
   }
 
   const openGoogleMaps = () => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${restaurant.coordinates.latitude},${restaurant.coordinates.longitude}`;
+    const url = `https://www.google.com/maps/search/?api=1&query=${restaurant?.address}`
     Linking.openURL(url);
   };
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Restaurant Image */}
-      {restaurant.image && (
-        <Image source={{ uri: restaurant.image }} style={styles.image} />
-      )}
+    <Animated.ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+    >        
+      {/* Hero Image */}
+      <Animated.View
+        style={[
+        styles.heroImageContainer,
+        { height: heroImageHeight, transform: [{ translateY: heroImageTranslate }] },
+        ]}
+      >
+        {restaurant.image && (
+            <>
+                <Image source={{ uri: restaurant.image }} style={styles.heroImage} />
+                <View style={styles.heroImageOverlay} />
+            </>
+        )}
+      </Animated.View>
+  
+      {/* Details Section */}
+      <View style={styles.detailsSection}>
+        {/* Restaurant Name */}
+        <Text style={styles.restaurantName}>{restaurant.name}</Text>
+  
+        {/* Categories */}
+        <Text style={styles.categories}>
+          {restaurant.categories.join(' • ')}
+        </Text>
+  
+        {/* Ratings */}
+        <View style={styles.ratingRow}>
+            <View style={styles.ratingRowLeft}>
+                <AirbnbRating 
+                    isDisabled
+                    showRating={false}
+                    defaultRating={averageRating}
+                    size={20}
+                    />
+                <Text style={styles.ratingText}>
+                {averageRating} ({totalReviews} Reviews)
+                </Text>
+            </View>
+            <FavoriteButton isFavorited={isFavorited} onToggle={toggleFavorite} />
+        </View>
+      </View>
+      
+      {/* Reviews Section */}
+      <View style={styles.reviewsSection}>
+        <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>User Reviews</Text>
+            <TouchableOpacity onPress={() => router.push(`/reviews/${restaurant.id}`)}>
+            <Text style={styles.seeAllText}>See All →</Text>
+            </TouchableOpacity>
+        </View>
 
-      {/* Restaurant Details */}
-      <View style={styles.detailsContainer}>
-        <Text style={styles.title}>{restaurant.name}</Text>
-        <Text style={styles.subtitle}>{restaurant.address}</Text>
-
-        {/* Google Maps Button */}
+        {/* Reviews Carousel */}
+        {reviews.length > 0 ? (
+        <FlatList
+            data={reviews.slice(0, 3)} // Show top 3 reviews
+            renderItem={({ item }) => (
+                <View style={styles.reviewCard}>
+                <Text style={styles.reviewText}>{item.review}</Text>
+                <View style={{ flexDirection: 'row', gap: 5 }}>
+                    <FontAwesome6 name="star" solid size={16} style={styles.icon} />
+                    <Text style={styles.reviewRating}>
+                        {item.rating > 1 ? `${item.rating} Stars` : `${item.rating} Star`}
+                    </Text>
+                </View>
+                <Text style={styles.reviewTimestamp}>
+                    {new Date(item.timestamp).toLocaleDateString()}
+                </Text>
+                </View>
+            )}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.carouselContainer}
+        />
+        ) : (
+            <Text style={styles.emptyText}>No reviews yet. Be the first to write one!</Text>
+        )}
+        </View>
+  
+      {/* Operating Hours */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Operating Hours</Text>
+        <OperatingHours hoursString={restaurant.hours} />
+      </View>
+  
+      {/* Call to Action */}
+      <View style={styles.section}>
         <TouchableOpacity style={styles.button} onPress={openGoogleMaps}>
           <Text style={styles.buttonText}>Get Directions</Text>
         </TouchableOpacity>
-
-        {/* Operating Hours */}
-        <View style={styles.section}>
-            <OperatingHours hoursString={restaurant.hours} />
-        </View>
-
-        {/* Contact Details */}
-        {restaurant.website && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Contact</Text>
-            <Text style={styles.sectionText}>{restaurant.website}</Text>
-          </View>
-        )}
+        <TouchableOpacity
+          style={[styles.button, styles.writeReviewButton]}
+          onPress={() => router.push(`/reviews/${restaurant.id}`)}
+        >
+          <Text style={styles.buttonText}>Write a Review</Text>
+        </TouchableOpacity>
       </View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
+  
+  
 };
 
 const styles = StyleSheet.create({
@@ -102,92 +263,164 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#2B343A',
+    backgroundColor: '#2E3D3A', // Match the page background
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#2B343A',
+    paddingHorizontal: 16,
+    backgroundColor: '#2E3D3A', // Match the page background
   },
   errorText: {
-    fontFamily: "Outfit_400Regular",
     fontSize: 16,
-    color: '#F4E2C1',
+    color: '#ECDFCC',
+    fontFamily: 'Outfit_600SemiBold',
     marginBottom: 10,
+    textAlign: 'center',
   },
   goBackText: {
-    fontFamily: "Outfit_400Regular",
     fontSize: 14,
-    color: '#F4E2C1',
+    color: '#ECDFCC',
+    fontFamily: 'Outfit_400Regular',
+    textDecorationLine: 'underline',
   },
-  image: {
+  heroImageContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: HERO_IMAGE_HEIGHT,
+    zIndex: -1,
+  },  
+  heroImage: {
     width: '100%',
-    height: 240,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    objectFit: "contain"
+    height: '100%',
+    resizeMode: 'cover',
   },
-  detailsContainer: {
+  heroImageOverlay: {
+    ...StyleSheet.absoluteFillObject, // Ensures it covers the entire image
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Semi-transparent black
+  },
+  detailsSection: {
+    marginTop: HERO_IMAGE_HEIGHT,
     padding: 16,
     backgroundColor: '#3D4F4C',
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5
   },
-  title: {
+  restaurantName: {
     fontSize: 24,
     fontFamily: 'Outfit_700Bold',
-    color: '#F4E2C1',
-    marginBottom: 4,
+    color: '#ECDFCC',
+    marginBottom: 8,
   },
-  subtitle: {
-    fontFamily: "Outfit_400Regular",
-    fontSize: 16,
-    color: '#999',
-    marginBottom: 12,
+  categories: {
+    fontSize: 14,
+    fontFamily: 'Outfit_400Regular',
+    color: '#ECDFCC',
+    marginBottom: 8,
   },
-  button: {
-    backgroundColor: '#F4E2C1',
-    padding: 14,
-    borderRadius: 12,
+  ratingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 3
   },
-  buttonText: {
-    color: '#2E3D3A',
+  ratingRowLeft: {
+    flexDirection: 'row', 
+    gap: 10,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  ratingText: {
+    fontSize: 16,
     fontFamily: 'Outfit_600SemiBold',
-    fontSize: 16
+    color: '#ECDFCC',
+  },
+  icon: {
+    color: "#F4A261"
   },
   section: {
-    padding: 12,
-    marginBottom: 24,
-    backgroundColor: '#3D4F4C',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 2
+    marginHorizontal: 16,
+    marginVertical: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderColor: '#3D4F4C',
   },
   sectionTitle: {
     fontSize: 18,
     fontFamily: 'Outfit_600SemiBold',
-    color: '#F4E2C1',
+    color: '#ECDFCC',
     marginBottom: 8,
   },
-  sectionText: {
-    fontSize: 14,
-    color: '#F4E2C1',
-    fontFamily: "Outfit_400Regular",
-    lineHeight: 20
+  button: {
+    backgroundColor: '#A3C0BB',
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 12,
   },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  writeReviewButton: {
+    backgroundColor: '#A3C0BB',
+  },
+  reviewsSection: {
+    marginTop: 16,
+    marginBottom: 24,
+    paddingHorizontal: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#ECDFCC',
+  },
+  carouselContainer: {
+    gap: 12, // Adds spacing between cards
+  },
+  reviewCard: {
+    width: 240,
+    padding: 12,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    marginRight: 8,
+  },
+  reviewText: {
+    fontSize: 14,
+    fontFamily: 'Outfit_400Regular',
+    color: '#333',
+    marginBottom: 8,
+  },
+  reviewRating: {
+    fontSize: 14,
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#F4A261',
+    marginBottom: 4,
+  },
+  reviewTimestamp: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'right',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    fontFamily: 'Outfit_400Regular',
+    marginTop: 8,
+  }, 
 });
 
+  
 export default RestaurantDetails;

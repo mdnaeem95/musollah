@@ -67,6 +67,7 @@ export interface UserData {
     monthlyLogs?: { date: string; prayersCompleted: number }[];  // Add this field
     role: UserRole
     likedQuestions: string[];
+    favouriteRestaurants?: { restaurantId: string; timestamp: string }[];
 }
 
 export interface MusollahState {
@@ -298,4 +299,15 @@ export interface Restaurant {
     hours: string,
     website: string,
     categories: string[],
+    averageRating?: number;
+    totalReviews?: number;
+}
+
+export interface RestaurantReview {
+    id: string;
+    restaurantId: string;
+    userId?: string;
+    rating: number;
+    review: string;
+    timestamp: string;
 }
