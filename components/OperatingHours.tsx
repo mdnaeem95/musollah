@@ -4,11 +4,32 @@
   const OperatingHours = ({ hoursString }: { hoursString: string }) => {
     const parsedHours = parseOperatingHours(hoursString);
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+
+    // Get current time 
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const isOpen = (hours: string) => {
+      if (hours.toLowerCase() === "closed") return false;
+
+      // Handle multiple ranges separated by &
+      const timeRanges = hours.split("&").map((range) => range.trim());
+
+      return timeRanges.some((range) => {
+        const [start, end] = range.split("-").map((time) => {
+          const [hour, minute] = time.split(":").map(Number);
+          return hour * 60 + (minute || 0);
+        });
+
+        return currentMinutes >= start && currentMinutes < end;
+      })
+    }
   
     return (
       <View style={styles.container}>
         {parsedHours.map((entry, index) => {
             const isToday = entry.day.includes(today)
+            const shopIsOpen = isToday && isOpen(entry.hours)
 
             return (
                 <View
@@ -20,6 +41,14 @@
                 >
                     <Text style={[styles.day, isToday && styles.todayDay]}>{entry.day}</Text>
                     <Text style={[styles.hours, isToday && styles.todayHours]}>{entry.hours}</Text>
+                    {isToday && (
+                      <Text style={[
+                        styles.status,
+                        shopIsOpen ? styles.openStatus : styles.closedStatus
+                      ]}>
+                        {shopIsOpen ? "Open Now" : "Closed Now"}
+                      </Text>
+                    )}
                 </View>
             )
         })}
@@ -78,6 +107,17 @@
     todayHours: {
       color: '#2E3D3A', // Dark text for highlighted hours
     },
+    status: {
+      fontSize: 14,
+      fontFamily: 'Outfit_400Regular',
+      marginLeft: 10,
+    },
+    openStatus: {
+      color: "#4CAF50"
+    },
+    closedStatus: {
+      color: "#F44336"
+    }
   });
   
   
