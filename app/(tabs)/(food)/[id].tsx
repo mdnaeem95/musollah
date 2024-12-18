@@ -75,8 +75,9 @@ const RestaurantDetails = () => {
         setReviews(reviewsData)
 
         if (reviewsData.length > 0) {
-            setAverageRating(restaurant?.averageRating!);
-            setTotalReviews(restaurant?.totalReviews!);
+          const average = reviewsData.reduce((acc, review) => acc + review.rating, 0) / reviewsData.length;
+          setAverageRating(Number(average.toFixed(1)));
+          setTotalReviews(reviewsData.length)
         }
       } catch (error) {
         console.error('Failed to load restaurant details:', error);
