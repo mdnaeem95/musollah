@@ -53,6 +53,7 @@ export const signIn = createAsyncThunk(
       prayerLogs: userData?.prayerLogs || [],            // From Firestore
       likedQuestions: userData?.likedQuestions || [],
       gamification: userData?.gamification || [],
+      favouriteRestaurants: userData?.favouriteRestaurants || []
     };
   }
 );
@@ -86,7 +87,8 @@ export const signUp = createAsyncThunk(
             weekly: false,
             monthly: false
           }
-        }
+        },
+        favouriteRestaurants: []
     });
 
     // Return the Auth User data (no need to fetch Firestore again here)
