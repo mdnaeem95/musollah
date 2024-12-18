@@ -2,6 +2,27 @@ import { FontAwesome6 } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
 import { StyleSheet, TouchableOpacity } from "react-native";
 
+const commonHeaderStyles = {
+  headerTitleStyle: {
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 20,
+    color: '#ECDFCC'
+  },
+  headerStyle: {
+    backgroundColor: '#2E3D3A',
+  }
+}
+
+const CircleButton = ({ onPress }: any) => (
+  <TouchableOpacity onPress={onPress} style={styles.circleButton}>
+    <FontAwesome6
+      name="arrow-left"
+      size={24}
+      color='#ECDFCC'
+      />
+  </TouchableOpacity>
+)
+
 const FoodLayout = () => {
   const router = useRouter();
   return (
@@ -14,14 +35,7 @@ const FoodLayout = () => {
           gestureEnabled: false,
           headerShown: true,
           headerTitle: 'Halal Food',
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color: '#ECDFCC'
-          },
-          headerStyle: {
-            backgroundColor: '#2E3D3A',
-          }
+          ...commonHeaderStyles
         }}
       />
       <Stack.Screen
@@ -31,14 +45,7 @@ const FoodLayout = () => {
           gestureEnabled: false,
           headerShown: true,
           headerTitle: 'Search',
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color: '#ECDFCC'
-          },
-          headerStyle: {
-            backgroundColor: '#2E3D3A',
-          },
+          ...commonHeaderStyles,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
               <FontAwesome6
@@ -58,15 +65,7 @@ const FoodLayout = () => {
           headerShown: true,
           headerTitle: '',
           headerTransparent: true,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={styles.circleButton}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color='#ECDFCC'
-                />
-            </TouchableOpacity>
-          )
+          headerLeft: () => <CircleButton onPress={() => router.back()} />
         }}
       />
         <Stack.Screen
@@ -76,14 +75,7 @@ const FoodLayout = () => {
           gestureEnabled: false,
           headerShown: true,
           headerTitle: 'Submit Your Review',
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color: '#ECDFCC'
-          },
-          headerStyle: {
-            backgroundColor: '#2E3D3A',
-          },
+          ...commonHeaderStyles,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
               <FontAwesome6
