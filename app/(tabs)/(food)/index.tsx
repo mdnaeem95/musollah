@@ -119,6 +119,8 @@ const RestaurantLocator = () => {
 
   const renderRecommendation = ({ item }: { item: Restaurant }) => {
     const distance = haversineDistance(userLocationCoords, item.coordinates).toFixed(1);
+    const hasReviews = item.averageRating !== 0 && item.totalReviews !== 0;
+
     return (
     <TouchableOpacity 
       style={styles.recommendationCard}
@@ -130,20 +132,33 @@ const RestaurantLocator = () => {
       />
       <View style={styles.recommendationDetails}>
         <Text style={styles.recommendationTitle}>{item.name}</Text>
-        <View style={{ flexDirection: 'row', alignItems: "center", justifyContent: 'center' }}>
-          <AirbnbRating 
-            isDisabled
-            showRating={false}
-            defaultRating={item.averageRating}
-            size={14}
-            />
-          <Text style={styles.recommendationSubtitle}>
-            {item.averageRating ? `${item.averageRating}` : "No ratings"} {item.totalReviews ? `(${item.totalReviews})` : "0"}
-          </Text>
-        </View>
-        <Text style={styles.recommendationSubtitle}>
-          {distance} km
-        </Text>
+          {hasReviews ? (
+            <>
+              <View style={{ flexDirection: 'row', alignItems: "center", justifyContent: 'center' }}>
+                <AirbnbRating 
+                  isDisabled
+                  showRating={false}
+                  defaultRating={item.averageRating}
+                  size={14}
+                  />
+                <Text style={styles.recommendationSubtitle}>
+                  {item.averageRating ? `${item.averageRating}` : "No ratings"} {item.totalReviews ? `(${item.totalReviews})` : "0"}
+                </Text>
+              </View>
+              <Text style={styles.recommendationSubtitle}>
+              {distance} km
+              </Text>
+            </>
+          ) : (
+            <>
+              <View>
+                <Text style={[styles.recommendationSubtitle]}>No reviews yet.</Text>
+              </View>
+              <Text style={styles.recommendationSubtitle}>
+              {distance} km
+              </Text>
+            </>
+          )}
       </View>
     </TouchableOpacity>
   )};
