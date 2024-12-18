@@ -105,24 +105,24 @@ const RootLayout = () => {
   }, [dispatch, isNonEssentialDataFetched]);
 
   // Lazy-load Purchases SDK after authentication
-  useEffect(() => {
-    const configurePurchases = async () => {
-      try {
-        if (Platform.OS === 'ios') {
-          await Purchases.configure({ apiKey: 'appl_MajNlUmfjhcjaiAeGxrjxxmNlMl' });
-        } else if (Platform.OS === 'android') {
-          await Purchases.configure({ apiKey: 'goog_eNONXJAXWNVctmKATKkiJgdtZoB' });
-        }
-        console.log('Purchases SDK configured.');
-      } catch (error) {
-        console.error('Error configuring Purchases SDK:', error);
-      }
-    };
+  // useEffect(() => {
+  //   const configurePurchases = async () => {
+  //     try {
+  //       if (Platform.OS === 'ios') {
+  //         await Purchases.configure({ apiKey: 'appl_MajNlUmfjhcjaiAeGxrjxxmNlMl' });
+  //       } else if (Platform.OS === 'android') {
+  //         await Purchases.configure({ apiKey: 'goog_eNONXJAXWNVctmKATKkiJgdtZoB' });
+  //       }
+  //       console.log('Purchases SDK configured.');
+  //     } catch (error) {
+  //       console.error('Error configuring Purchases SDK:', error);
+  //     }
+  //   };
 
-    if (isAuthenticated) {
-      configurePurchases(); // Load SDK only after authentication
-    }
-  }, [isAuthenticated]);
+  //   if (isAuthenticated) {
+  //     configurePurchases(); // Load SDK only after authentication
+  //   }
+  // }, [isAuthenticated]);
 
   const handleTrackPlayerLoaded = useCallback(() => {
     setIsTrackPlayerSetup(true);
