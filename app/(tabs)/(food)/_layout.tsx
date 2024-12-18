@@ -13,7 +13,7 @@ const commonHeaderStyles = {
   }
 }
 
-const CircleButton = ({ onPress }: any) => (
+export const CircleButton = ({ onPress }: any) => (
   <TouchableOpacity onPress={onPress} style={styles.circleButton}>
     <FontAwesome6
       name="arrow-left"
@@ -62,19 +62,38 @@ const FoodLayout = () => {
         name="[id]"
         options={{
           gestureEnabled: false,
-          headerShown: true,
+          headerShown: false,
           headerTitle: '',
           headerTransparent: true,
-          headerLeft: () => <CircleButton onPress={() => router.back()} />
         }}
       />
-        <Stack.Screen
-        name="reviews/[id]"
+      <Stack.Screen
+        name="reviews/submit/[id]"
         options={{
           presentation: 'fullScreenModal',
           gestureEnabled: false,
           headerShown: true,
           headerTitle: 'Submit Your Review',
+          ...commonHeaderStyles,
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()}>
+              <FontAwesome6
+                name="arrow-left"
+                size={24}
+                color='#ECDFCC'
+                style={{ padding: 10 }}
+                />
+            </TouchableOpacity>
+          )
+        }}
+      />
+      <Stack.Screen
+        name="reviews/[id]"
+        options={{
+          presentation: 'fullScreenModal',
+          gestureEnabled: false,
+          headerShown: true,
+          headerTitle: 'All Reviews',
           ...commonHeaderStyles,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
@@ -97,7 +116,7 @@ const styles = StyleSheet.create({
     width: 40,           // Diameter of the circle
     height: 40,
     borderRadius: 20,    // Half of width/height to make it a circle
-    backgroundColor: '#333333', // Example background color
+    backgroundColor: '#3D4F4C', // Example background color
     alignItems: 'center', // Center the icon horizontally
     justifyContent: 'center', // Center the icon vertically
     padding: 8,         // Padding around the icon
