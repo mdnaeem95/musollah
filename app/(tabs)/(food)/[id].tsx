@@ -11,7 +11,8 @@ import {
   Alert,
   Animated,
   Dimensions,
-  FlatList
+  FlatList,
+  StatusBar
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { addToFavourites, fetchFavourites, fetchRestaurantById, fetchReviews, removeFromFavourites } from '../../../api/firebase'; // Function to fetch restaurant details by ID
@@ -22,9 +23,12 @@ import { getAuth } from '@react-native-firebase/auth';
 import SignInModal from '../../../components/SignInModal';
 import { AirbnbRating } from 'react-native-ratings';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { CircleButton } from './_layout';
 
 const { width } = Dimensions.get('window');
 const HERO_IMAGE_HEIGHT = 250;
+const HEADER_HEIGHT = 60
+const statusBarHeight = (StatusBar.currentHeight || 24) + 20
 
 const RestaurantDetails = () => {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -51,6 +55,12 @@ const RestaurantDetails = () => {
   const heroImageTranslate = scrollY.interpolate({
     inputRange: [-HERO_IMAGE_HEIGHT, 0, HERO_IMAGE_HEIGHT],
     outputRange: [-HERO_IMAGE_HEIGHT * 0.25, 0, 0],
+    extrapolate: 'clamp',
+  });
+
+  const headerBackground = scrollY.interpolate({
+    inputRange: [0, HERO_IMAGE_HEIGHT - HEADER_HEIGHT],
+    outputRange: ['transparent', '#3D4F4C'],
     extrapolate: 'clamp',
   });
 
@@ -142,113 +152,125 @@ const RestaurantDetails = () => {
   };
 
   return (
-    <Animated.ScrollView 
-        style={styles.container} 
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: false }
-          )}
-    >        
-      {/* Hero Image */}
-      <Animated.View
-        style={[
-        styles.heroImageContainer,
-        { height: heroImageHeight, transform: [{ translateY: heroImageTranslate }] },
-        ]}
-      >
-        {restaurant.image && (
-            <>
-                <Image source={{ uri: restaurant.image }} style={styles.heroImage} />
-                <View style={styles.heroImageOverlay} />
-            </>
-        )}
-      </Animated.View>
-  
-      {/* Details Section */}
-      <View style={styles.detailsSection}>
-        {/* Restaurant Name */}
-        <Text style={styles.restaurantName}>{restaurant.name}</Text>
-  
-        {/* Categories */}
-        <Text style={styles.categories}>
-          {restaurant.categories.join(' • ')}
-        </Text>
-  
-        {/* Ratings */}
-        <View style={styles.ratingRow}>
-            <View style={styles.ratingRowLeft}>
-                <AirbnbRating 
-                    isDisabled
-                    showRating={false}
-                    defaultRating={averageRating}
-                    size={20}
-                    />
-                <Text style={styles.ratingText}>
-                {averageRating} ({totalReviews} Reviews)
-                </Text>
+    <View style={styles.container}>
+        <Animated.View 
+            style={[
+                styles.header,
+                { backgroundColor: headerBackground, paddingTop: statusBarHeight }
+            ]}
+        >
+            <CircleButton onPress={() => router.back()} />
+        </Animated.View>
+        <Animated.ScrollView 
+            style={{ flex: 1 }} 
+            showsVerticalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                { useNativeDriver: false }
+            )}
+        >        
+        {/* Hero Image */}
+        <Animated.View
+            style={[
+            styles.heroImageContainer,
+            { height: heroImageHeight, transform: [{ translateY: heroImageTranslate }] },
+            ]}
+        >
+            {restaurant.image && (
+                <>
+                    <Image source={{ uri: restaurant.image }} style={styles.heroImage} />
+                    <View style={styles.heroImageOverlay} />
+                </>
+            )}
+        </Animated.View>
+    
+        {/* Details Section */}
+        <View style={styles.detailsSection}>
+            {/* Restaurant Name */}
+            <Text style={styles.restaurantName}>{restaurant.name}</Text>
+    
+            {/* Categories */}
+            <Text style={styles.categories}>
+            {restaurant.categories.join(' • ')}
+            </Text>
+    
+            {/* Ratings */}
+            <View style={styles.ratingRow}>
+                <View style={styles.ratingRowLeft}>
+                    <AirbnbRating 
+                        isDisabled
+                        showRating={false}
+                        defaultRating={averageRating}
+                        size={20}
+                        />
+                    <Text style={styles.ratingText}>
+                    {averageRating} ({totalReviews} Reviews)
+                    </Text>
+                </View>
+                <FavoriteButton isFavorited={isFavorited} onToggle={toggleFavorite} />
             </View>
-            <FavoriteButton isFavorited={isFavorited} onToggle={toggleFavorite} />
         </View>
-      </View>
-      
-      {/* Reviews Section */}
-      <View style={styles.reviewsSection}>
-        <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>User Reviews</Text>
-            <TouchableOpacity onPress={() => router.push(`/reviews/${restaurant.id}`)}>
-            <Text style={styles.seeAllText}>See All →</Text>
+        
+        {/* Reviews Section */}
+        <View style={styles.reviewsSection}>
+            <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>User Reviews</Text>
+                <TouchableOpacity onPress={() => router.push(`/reviews/${restaurant.id}`)}>
+                <Text style={styles.seeAllText}>See All →</Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Reviews Carousel */}
+            {reviews.length > 0 ? (
+            <FlatList
+                data={reviews.slice(0, 3)} // Show top 3 reviews
+                renderItem={({ item }) => (
+                    <View style={styles.reviewCard}>
+                    <Text style={styles.reviewText}>{item.review}</Text>
+                    <View style={{ flexDirection: 'row', gap: 5 }}>
+                        <FontAwesome6 name="star" solid size={16} style={styles.icon} />
+                        <Text style={styles.reviewRating}>
+                            {item.rating > 1 ? `${item.rating} Stars` : `${item.rating} Star`}
+                        </Text>
+                    </View>
+                    <Text style={styles.reviewTimestamp}>
+                        {new Date(item.timestamp).toLocaleDateString()}
+                    </Text>
+                    </View>
+                )}
+                keyExtractor={(item) => item.id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.carouselContainer}
+            />
+            ) : (
+                <Text style={styles.emptyText}>No reviews yet. Be the first to write one!</Text>
+            )}
+            </View>
+    
+        {/* Operating Hours */}
+        <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Operating Hours</Text>
+            <OperatingHours hoursString={restaurant.hours} />
+        </View>
+    
+        {/* Call to Action */}
+        <View style={styles.section}>
+            <TouchableOpacity style={styles.button} onPress={openGoogleMaps}>
+            <Text style={styles.buttonText}>Get Directions</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+            style={[styles.button, styles.writeReviewButton]}
+            onPress={() => router.push(`/reviews/submit/${restaurant.id}`)}
+            >
+            <Text style={styles.buttonText}>Write a Review</Text>
             </TouchableOpacity>
         </View>
 
-        {/* Reviews Carousel */}
-        {reviews.length > 0 ? (
-        <FlatList
-            data={reviews.slice(0, 3)} // Show top 3 reviews
-            renderItem={({ item }) => (
-                <View style={styles.reviewCard}>
-                <Text style={styles.reviewText}>{item.review}</Text>
-                <View style={{ flexDirection: 'row', gap: 5 }}>
-                    <FontAwesome6 name="star" solid size={16} style={styles.icon} />
-                    <Text style={styles.reviewRating}>
-                        {item.rating > 1 ? `${item.rating} Stars` : `${item.rating} Star`}
-                    </Text>
-                </View>
-                <Text style={styles.reviewTimestamp}>
-                    {new Date(item.timestamp).toLocaleDateString()}
-                </Text>
-                </View>
-            )}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.carouselContainer}
-        />
-        ) : (
-            <Text style={styles.emptyText}>No reviews yet. Be the first to write one!</Text>
-        )}
-        </View>
-  
-      {/* Operating Hours */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Operating Hours</Text>
-        <OperatingHours hoursString={restaurant.hours} />
-      </View>
-  
-      {/* Call to Action */}
-      <View style={styles.section}>
-        <TouchableOpacity style={styles.button} onPress={openGoogleMaps}>
-          <Text style={styles.buttonText}>Get Directions</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.button, styles.writeReviewButton]}
-          onPress={() => router.push(`/reviews/${restaurant.id}`)}
-        >
-          <Text style={styles.buttonText}>Write a Review</Text>
-        </TouchableOpacity>
-      </View>
-    </Animated.ScrollView>
+        <SignInModal isVisible={isAuthModalVisible} onClose={() => setIsAuthModalVisible(false)} />
+        </Animated.ScrollView>
+    </View>
   );
   
   
@@ -258,6 +280,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#2E3D3A',
+  },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: HEADER_HEIGHT + statusBarHeight,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    zIndex: 10
   },
   loadingContainer: {
     flex: 1,

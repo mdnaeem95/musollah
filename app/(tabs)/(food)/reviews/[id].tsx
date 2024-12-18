@@ -1,75 +1,82 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
-  Button,
   StyleSheet,
-  Alert,
-} from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { submitReview } from '../../../../api/firebase';
-import { getAuth } from '@react-native-firebase/auth';
+  FlatList,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { fetchReviews } from "../../../../api/firebase";
+import { FontAwesome6 } from "@expo/vector-icons";
+import { RestaurantReview } from "../../../../utils/types";
+import { AirbnbRating } from "react-native-ratings";
 
-const SubmitReview = () => {
-  const [rating, setRating] = useState<number>(5);
-  const [reviewText, setReviewText] = useState('');
-  const [loading, setLoading] = useState(false);
-  const user = getAuth();
-  const currentUser = user.currentUser;
-
-  const { id } = useLocalSearchParams(); // Restaurant ID from the URL
+const AllReviews = () => {
+  const { id } = useLocalSearchParams(); // Restaurant ID
+  const [reviews, setReviews] = useState<RestaurantReview[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const handleSubmit = async () => {
-    if (!currentUser) {
-      Alert.alert('Sign In Required', 'Please sign in to submit a review.');
-      return;
-    }
+  useEffect(() => {
+    const loadReviews = async () => {
+      try {
+        const data = await fetchReviews(id as string);
+        setReviews(data);
+      } catch (error) {
+        console.error("Failed to load reviews:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (!reviewText.trim()) {
-      Alert.alert('Error', 'Please write something before submitting.');
-      return;
-    }
+    loadReviews();
+  }, [id]);
 
-    try {
-      setLoading(true);
-      await submitReview(id as string, currentUser.uid, rating, reviewText);
-      Alert.alert('Success', 'Review submitted successfully!');
-      router.back(); // Navigate back to the restaurant details page
-    } catch (error) {
-      console.error('Error submitting review:', error);
-      Alert.alert('Error', 'Failed to submit the review. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#F4E2C1" />
+      </View>
+    );
+  }
+
+  if (!reviews.length) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>No reviews yet. Be the first to write one!</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Rating (1-5):</Text>
-      <TextInput
-        style={styles.input}
-        keyboardType="numeric"
-        value={rating.toString()}
-        onChangeText={(text) => setRating(Number(text) || 5)}
-        maxLength={1}
-      />
-
-      <Text style={styles.label}>Your Review:</Text>
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        value={reviewText}
-        onChangeText={setReviewText}
-        multiline
-        placeholder="Write your review here..."
-      />
-
-      <Button
-        title={loading ? 'Submitting...' : 'Submit Review'}
-        onPress={handleSubmit}
-        color="#F4E2C1"
-        disabled={loading}
+      <FlatList
+        data={reviews}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.reviewCard}>
+            <Text style={styles.reviewText}>{item.review}</Text>
+            <View style={styles.reviewFooter}>
+              <View style={{ flexDirection: 'row', alignItems: "center", justifyContent: "center", gap: 5 }}>
+                <AirbnbRating 
+                  isDisabled
+                  showRating={false}
+                  defaultRating={item.rating}
+                  size={14}
+                  />
+                <Text style={styles.reviewRating}>
+                  {item.rating > 1 ? `${item.rating}` : `${item.rating}`}
+                </Text>
+              </View>
+              <Text style={styles.reviewTimestamp}>
+                {new Date(item.timestamp).toLocaleDateString()}
+              </Text>
+            </View>
+          </View>
+        )}
+        contentContainerStyle={styles.listContainer}
       />
     </View>
   );
@@ -78,26 +85,64 @@ const SubmitReview = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2E3D3A',
     padding: 16,
-    justifyContent: 'center',
+    backgroundColor: "#2E3D3A",
   },
-  label: {
-    fontSize: 16,
-    color: '#F4E2C1',
+  title: {
+    fontSize: 20,
+    fontFamily: "Outfit_600SemiBold",
+    color: "#ECDFCC",
+    marginBottom: 16,
+  },
+  reviewCard: {
+    backgroundColor: "#3D4F4C",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  reviewText: {
+    fontSize: 14,
+    fontFamily: "Outfit_400Regular",
+    color: "#ECDFCC",
     marginBottom: 8,
   },
-  input: {
-    backgroundColor: '#FFFFFF',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    fontSize: 16,
+  reviewFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
+  icon: {
+    color: "#F4A261",
+  },
+  reviewRating: {
+    fontSize: 14,
+    fontFamily: "Outfit_600SemiBold",
+    color: "#ECDFCC",
+  },
+  reviewTimestamp: {
+    fontSize: 12,
+    fontFamily: "Outfit_400Regular",
+    color: "#999",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    fontFamily: "Outfit_400Regular",
+    color: "#ECDFCC",
+    marginBottom: 16,
+  },
+  listContainer: {
+    paddingBottom: 16,
   },
 });
 
-export default SubmitReview;
+export default AllReviews;

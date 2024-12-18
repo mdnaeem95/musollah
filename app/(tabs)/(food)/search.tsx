@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   TextInput,
@@ -14,9 +14,11 @@ import { Restaurant } from '../../../utils/types';
 import useAutoFocus from '../../../hooks/useAutoFocus'
 import { FontAwesome6 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fetchRestaurants } from '../../../api/firebase';
 
 const SearchPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]); 
   const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
@@ -27,19 +29,29 @@ const SearchPage = () => {
 
   useEffect(() => {
     // Load recent searches from AsyncStorage on component mount
-    const loadRecentSearches = async () => {
+    const loadData = async () => {
       try {
         const savedSearches = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
         if (savedSearches) {
           setRecentSearches(JSON.parse(savedSearches));
         }
+
+        const data = await fetchRestaurants();
+        setRestaurants(data);
       } catch (error) {
         console.error('Failed to load recent searches', error);
       }
     };
 
-    loadRecentSearches();
+    loadData();
   }, []);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebounceQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   const saveRecentSearches = async (searches: string[]) => {
     try {
@@ -49,15 +61,17 @@ const SearchPage = () => {
     }
   };
 
-  const handleSearch = (query: string) => {
-    // Filter restaurants based on query
-    const lowerCaseQuery = query.toLowerCase();
-    const filtered = restaurants.filter(
-      (restaurant) =>
-        restaurant.name.toLowerCase().includes(lowerCaseQuery)
-    );
-    setFilteredRestaurants(filtered);
-  };
+  const handleSearch = useCallback(
+    (query: string) => {
+      const lowerCaseQuery = query.toLowerCase();
+      const filtered = restaurants.filter(
+        (restaurant) =>
+          restaurant.name.toLowerCase().includes(lowerCaseQuery) ||
+          restaurant.categories.some((cat) => cat.toLowerCase().includes(lowerCaseQuery))
+      );
+      setFilteredRestaurants(filtered);
+    }, [restaurants]
+  )
 
   const handleSubmit = async () => {
     // Save the search query to recent searches only if it's non-empty and unique
@@ -68,7 +82,7 @@ const SearchPage = () => {
     }
 
     // Trigger the search logic
-    handleSearch(searchQuery);
+    handleSearch(debounceQuery);
   };
 
   const handleRecentSearchTap = (query: string) => {
@@ -93,7 +107,10 @@ const SearchPage = () => {
         placeholder="Search restaurants or categories..."
         placeholderTextColor="#999"
         value={searchQuery}
-        onChangeText={setSearchQuery}
+        onChangeText={(text) => {
+          setSearchQuery(text);
+          handleSearch(text);
+        }}
         onSubmitEditing={handleSubmit}
       />
 
@@ -129,7 +146,7 @@ const SearchPage = () => {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.restaurantItem}
-            onPress={() => router.back()}
+            onPress={() => router.push(`(food)/${item.id}`)}
           >
             <Text style={styles.restaurantName}>{item.name}</Text>
             <Text style={styles.restaurantAddress}>{item.address}</Text>
