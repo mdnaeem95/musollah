@@ -1,41 +1,36 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Slot } from 'expo-router';
-import AppProviders from '../providers/AppProviders';
-import useAppSetup from '../hooks/useAppSetup';
+import { Provider } from 'react-redux';
+import * as Notifications from "expo-notifications"
+import { store, persistor } from '../redux/store/store';
+import { NotificationProvider } from "../context/NotificationContext"
+import RootLayout from './RootLayout'; // Adjust the path as necessary
+import { PersistGate } from 'redux-persist/integration/react';
+import LoadingScreen from '../components/LoadingScreen';
+import { ThemeProvider } from '../context/ThemeContext';
+import { ActionSheetProvider } from '@expo/react-native-action-sheet'
+import Toast from 'react-native-toast-message'
+import { toastConfig } from '../utils/toastConfig';
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  })
+})
 
-const AppLayout = () => {
-  const { isReady } = useAppSetup(); // Hook to handle app initialization
-
-  return (
-    <AppProviders>
-      <View style={{ flex: 1 }}>
-        {/* Always render Slot to satisfy Expo Router */}
-        <Slot />
-
-        {/* Loading screen while waiting for app setup */}
-        {!isReady && (
-          <View style={styles.loading}>
-            <Text style={styles.loadingText}>Loading...</Text>
-          </View>
-        )}
-      </View>
-    </AppProviders>
-  );
-};
-
-const styles = StyleSheet.create({
-  loading: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#2E3D3A',
-    zIndex: 10,
-  },
-  loadingText: {
-    color: '#FFF',
-    fontSize: 16,
-  },
-});
+const AppLayout = () => (
+  <ActionSheetProvider>
+    <ThemeProvider>
+      <NotificationProvider>
+        <Provider store={store}>
+          <PersistGate persistor={persistor} loading={<LoadingScreen message='Setting up the app...' />}>
+            <RootLayout />
+            <Toast config={toastConfig} />
+          </PersistGate>
+        </Provider>
+      </NotificationProvider>
+    </ThemeProvider>
+  </ActionSheetProvider>
+);
 
 export default AppLayout;
