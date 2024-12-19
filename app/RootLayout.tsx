@@ -1,26 +1,19 @@
 import React from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
-import { Stack } from 'expo-router';
-import AnimatedSplashScreen from '../components/AnimatedSplashScreen';
+import { View, StyleSheet, Text } from 'react-native';
+import { Slot } from 'expo-router';
 import useAppSetup from '../hooks/useAppSetup';
 
 const RootLayout = () => {
   const { isReady, animatedStyle } = useAppSetup();
 
   if (!isReady) {
-    return <AnimatedSplashScreen animatedStyle={animatedStyle} />;
+    return (
+      <Text>Loading...</Text>
+    )
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <Animated.View style={[styles.splashScreen, animatedStyle]} />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen
-          name="(tabs)"
-          options={{ headerShown: false, gestureEnabled: false }}
-        />
-      </Stack>
-    </View>
+    <Slot />
   );
 };
 

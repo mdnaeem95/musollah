@@ -47,7 +47,6 @@ const useAppSetup = () => {
   const hideSplashScreen = useCallback(async () => {
     translateY.value = withTiming(1000, { duration: 300, easing: Easing.inOut(Easing.ease) });
     await SplashScreen.hideAsync();
-    router.push('/(tabs)/(prayer)');
     setIsReady(true);
   }, [router, translateY]);
 

@@ -1,4 +1,4 @@
-import { Tabs, usePathname, useSegments } from 'expo-router';
+import { Tabs  } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 
 const TabLayout = () => {
