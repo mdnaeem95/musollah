@@ -8,103 +8,34 @@ import PrayerTimeItem from '../../../components/PrayerTimeItem';
 import ExpandableButton from '../../../components/ExpandableButton';
 import PrayerLocationModal from '../../../components/PrayerLocationModal';
 
-import SubuhBackground from '../../../assets/prayerBackgroundImages/subuhBackground.png';
-import ZuhurBackground from '../../../assets/prayerBackgroundImages/zuhurBackground.png';
-import AsrBackground from '../../../assets/prayerBackgroundImages/asarBackground.png';
-import MaghribBackground from '../../../assets/prayerBackgroundImages/maghribBackground.png';
-import IshaBackground from '../../../assets/prayerBackgroundImages/isyaBackground.png';
-
 import { RootState } from '../../../redux/store/store';
 import { PrayerTimes } from '../../../utils/types';
-import { extractNextDaysPrayerTimes, getFormattedDate, getPrayerTimesInfo } from '../../../utils';
-import { fetchMonthlyPrayerTimes } from '../../../api/prayers';
-import { scheduleNextDaysNotifications } from '../../../utils/notificationsScheduler';
-
-// Constants for background images
-const prayerBackgrounds = {
-  Subuh: SubuhBackground,
-  Syuruk: SubuhBackground,
-  Zohor: ZuhurBackground,
-  Asar: AsrBackground,
-  Maghrib: MaghribBackground,
-  Isyak: IshaBackground,
-}
-
-// Constants for screen width
-const screenWidth = Dimensions.get('window').width;
+import { getFormattedDate, scaleSize } from '../../../utils';
+import { usePrayerTimes } from '../../../hooks/usePrayerTimes'
 
 const PrayerTab = () => {
   const router = useRouter();
   const { prayerTimes, islamicDate, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
   const { reminderInterval } = useSelector((state: RootState) => state.userPreferences);
+  const { currentPrayer, nextPrayerInfo, fetchAndScheduleNotifications, backgroundImage } = usePrayerTimes(prayerTimes, reminderInterval)
   const desiredPrayers: (keyof PrayerTimes)[] = ['Subuh', 'Syuruk', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
 
   const [isPrayerLocationModalVisible, setIsPrayerLocationModalVisible] = useState<boolean>(false);
-  const [currentPrayer, setCurrentPrayer] = useState<string>('');
-  const [nextPrayerInfo, setNextPrayerInfo] = useState<{ nextPrayer: string, timeUntilNextPrayer: string } | null>(null);
 
   // Format the selected date
   const formattedDate = useMemo(() => {
     const date = selectedDate ? new Date(selectedDate) : new Date();
     return getFormattedDate(date);
-  }, [selectedDate]);
-
-  // Get background image based on current prayer session
-  //@ts-ignore
-  const backgroundImage = useMemo(() => prayerBackgrounds[currentPrayer] || SubuhBackground, [currentPrayer])
-
-  useEffect(() => {
-    if (prayerTimes) {
-      const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes, new Date());
-      setCurrentPrayer(currentPrayer);
-      setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
-    } else {
-      setCurrentPrayer('');
-      setNextPrayerInfo(null);
-    }
-  }, [prayerTimes, reminderInterval]);  
-
-  useEffect(() => {
-    const fetchAndScheduleNotifications = async () => {
-      try {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = today.getMonth() + 1; // Current month
-        const numDays = 5; // Schedule for the next 5 days
-  
-        // Get monthly prayer times (cached or fetched)
-        const monthlyPrayerTimes = await fetchMonthlyPrayerTimes(year, month);
-  
-        // Extract prayer times for the next 5 days
-        const nextDaysPrayerTimes = extractNextDaysPrayerTimes(monthlyPrayerTimes, numDays);
-  
-        // Schedule notifications for the extracted days
-        await scheduleNextDaysNotifications(nextDaysPrayerTimes, reminderInterval);
-      } catch (error) {
-        console.error('Error fetching or scheduling notifications:', error);
-      }
-    };
-  
-    fetchAndScheduleNotifications();
-  }, [reminderInterval]); // Re-run if reminderInterval changes
+  }, [selectedDate])
 
   // Handle city press to open location modal
   const handleCityPress = () => {
     setIsPrayerLocationModalVisible(true);
   }
 
-  // Recalculate the next prayer info every minute to keep it updated
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (prayerTimes) {
-        const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes, new Date());
-        setCurrentPrayer(currentPrayer);
-        setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
-      }
-    }, 60000); // Update every 1 minute
-
-    return () => clearInterval(intervalId); // Cleanup the interval when the component unmounts
-  }, [prayerTimes]);
+    fetchAndScheduleNotifications();
+  }, [fetchAndScheduleNotifications])
 
   return (
     <ImageBackground source={backgroundImage} style={styles.backgroundImage}>
@@ -157,11 +88,6 @@ const PrayerTab = () => {
     </ImageBackground>
   );
 };
-
-function scaleSize(size: number) {
-  const scaleFactor = screenWidth / 375; // Base screen width (iPhone standard)
-  return size * scaleFactor;
-}
 
 const styles = StyleSheet.create({
   backgroundImage: {
