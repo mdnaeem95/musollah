@@ -4,7 +4,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 const TabLayout = () => {
   return (
     <Tabs
-      initialRouteName='(prayer)'
+    initialRouteName='(prayer)'
       screenOptions={({ route }) => ({
         tabBarActiveTintColor: '#BFE1DB',
         tabBarInactiveTintColor: '#688A84',
