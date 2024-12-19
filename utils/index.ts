@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { ayahList } from './constants';
+import { Dimensions } from 'react-native';
 
 export const getFormattedDate = (date: Date) => {
     return format(date, "EEEE, do MMMM yyyy");
@@ -117,4 +118,10 @@ export const extractNextDaysPrayerTimes = (
       }
       return acc;
     }, {});
-};  
+};
+
+export const scaleSize = (size: number) => {
+    const screenWidth = Dimensions.get('window').width;
+    const scaleFactor = screenWidth / 375;
+    return size * scaleFactor
+}
