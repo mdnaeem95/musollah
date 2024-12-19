@@ -1,37 +1,11 @@
 import React from 'react';
-import { Provider } from 'react-redux';
-import * as Notifications from "expo-notifications"
-import { store, persistor } from '../redux/store/store';
-import { NotificationProvider } from "../context/NotificationContext"
-import RootLayout from './RootLayout'; // Adjust the path as necessary
-import { PersistGate } from 'redux-persist/integration/react';
-import LoadingScreen from '../components/LoadingScreen';
-import { ThemeProvider } from '../context/ThemeContext';
-import { ActionSheetProvider } from '@expo/react-native-action-sheet'
-import Toast from 'react-native-toast-message'
-import { toastConfig } from '../utils/toastConfig';
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  })
-})
+import AppProviders from '../providers/AppProviders';
+import RootLayout from './RootLayout';
 
 const AppLayout = () => (
-  <ActionSheetProvider>
-    <ThemeProvider>
-      <NotificationProvider>
-        <Provider store={store}>
-          <PersistGate persistor={persistor} loading={<LoadingScreen message='Setting up the app...' />}>
-            <RootLayout />
-            <Toast config={toastConfig} />
-          </PersistGate>
-        </Provider>
-      </NotificationProvider>
-    </ThemeProvider>
-  </ActionSheetProvider>
+  <AppProviders>
+    <RootLayout />
+  </AppProviders>
 );
 
 export default AppLayout;
