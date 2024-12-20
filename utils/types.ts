@@ -1,4 +1,5 @@
 import { LocationObject } from 'expo-location';
+import { GamificationData, GamificationState } from '../redux/slices/gamificationSlice';
 
 export type CourseStatus = 'completed' | 'in progress' | 'unenrolled';
 export type ModuleStatus = 'completed' | 'in progress' | 'locked';
@@ -301,6 +302,12 @@ export interface Restaurant {
     categories: string[],
     averageRating?: number;
     totalReviews?: number;
+    socials?: {
+        instagram?: string;
+        tiktok?: string;
+        facebook?: string;
+        number?: string;
+    }
 }
 
 export interface RestaurantReview {

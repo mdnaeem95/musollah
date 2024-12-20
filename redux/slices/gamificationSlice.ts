@@ -2,16 +2,12 @@ import { getAuth } from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface GamificationData {
-  streak: number; // Current streak in days
-  xp: number; // Total XP earned
-  level: number; // User's current level
-  badges: string[]; // List of earned badges
-  challenges: {
-    daily: boolean; // Daily challenge completed or not
-    weekly: boolean; // Weekly challenge completed or not
-    monthly: boolean; // Monthly challenge completed or not
-  };
+export interface GamificationData {
+  prayerStreak: {
+    current: number;
+    highest: number;
+    lastLoggedDate: string;
+  }
 }
 
 export interface GamificationState {
@@ -22,15 +18,11 @@ export interface GamificationState {
 
 const initialState: GamificationState = {
   gamificationData: {
-    streak: 0,
-    xp: 0,
-    level: 1,
-    badges: [],
-    challenges: {
-      daily: false,
-      weekly: false,
-      monthly: false
-    },
+    prayerStreak: {
+      current: 0,
+      highest: 0,
+      lastLoggedDate: ''
+    }
   },
   loading: false,
   error: null,
@@ -38,10 +30,13 @@ const initialState: GamificationState = {
 
 export const fetchGamificationState = createAsyncThunk(
   'gamification/fetchGamificationState',
-  async (userId: string, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
+      const userId = getAuth().currentUser?.uid;
+      if (!userId) throw new Error('User not authenticated');
+
       const gamificationDoc = await firestore().collection('users').doc(userId).get();
-      const gamificationData = gamificationDoc.data()?.gamification;
+      const gamificationData = gamificationDoc.data()?.gamification
 
       if (!gamificationData) {
         throw new Error('Gamification data not found.');
@@ -55,19 +50,21 @@ export const fetchGamificationState = createAsyncThunk(
   }
 )
 
-export const saveGamificationState = createAsyncThunk(
-  'gamification/saveState',
-  async (state: GamificationState, { rejectWithValue }) => {
+export const updatePrayerStreak = createAsyncThunk(
+  'gamification/updatePrayerStreak',
+  async (streak: GamificationData['prayerStreak'], { rejectWithValue }) => {
     try {
       const userId = getAuth().currentUser?.uid;
       if (!userId) throw new Error('User not authenticated');
 
       await firestore().collection('users').doc(userId).update({
-        gamification: state
-      })
+        'gamification.prayerStreak': streak
+      });
+
+      return streak;
     } catch (error) {
-      console.error('Failed to save gamification state: ', error);
-      return rejectWithValue('Failed to save gamification state');
+      console.error('Failed to update streak:', error);
+      return rejectWithValue('Failed to update streak');
     }
   }
 )
@@ -75,26 +72,7 @@ export const saveGamificationState = createAsyncThunk(
 const gamificationSlice = createSlice({
   name: 'gamification',
   initialState,
-  reducers: {
-    updateStreak(state, action: PayloadAction<number>) {
-      state.gamificationData.streak = action.payload;
-    },
-    addXP(state, action: PayloadAction<number>) {
-      state.gamificationData.xp += action.payload;
-      state.gamificationData.streak = Math.floor(state.gamificationData.xp / 100); // Example: 100 XP per level
-    },
-    addBadge(state, action: PayloadAction<string>) {
-      if (!state.gamificationData.badges.includes(action.payload)) {
-        state.gamificationData.badges.push(action.payload);
-      }
-    },
-    completeChallenge(state, action: PayloadAction<'daily' | 'weekly' | 'monthly'>) {
-      state.gamificationData.challenges[action.payload] = true;
-    },
-    resetChallenge(state, action: PayloadAction<'daily' | 'weekly' | 'monthly'>) {
-      state.gamificationData.challenges[action.payload] = false;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchGamificationState.pending, (state) => {
@@ -106,12 +84,13 @@ const gamificationSlice = createSlice({
         state.gamificationData = action.payload
       })
       .addCase(fetchGamificationState.rejected, (state, action) => {
-        console.error('Failed to fetch gamification state:', action.payload)
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(updatePrayerStreak.fulfilled, (state, action: PayloadAction<GamificationData['prayerStreak']>) => {
+        state.gamificationData.prayerStreak = action.payload
       })
   }
 });
-
-export const { updateStreak, addXP, addBadge, completeChallenge, resetChallenge } =
-  gamificationSlice.actions;
 
 export default gamificationSlice.reducer;

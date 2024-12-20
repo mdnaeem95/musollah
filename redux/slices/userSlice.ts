@@ -26,23 +26,6 @@ export const signIn = createAsyncThunk(
     if (!userData) {
       throw new Error('User data not found in firestore.');
     }
-
-    if (!userData?.gamification) {
-      const defaultGamification = {
-        streak: 0,
-        xp: 0,
-        level: 1,
-        badges: [],
-        challenges: {
-          daily: false,
-          weekly: false,
-          monthly: false
-        }        
-      };
-
-      await userDocRef.update({ gamification: defaultGamification });
-      userData.gamification = defaultGamification;
-    }
     
     return {
       uid: user.uid,                      // From Firebase Auth
@@ -52,7 +35,6 @@ export const signIn = createAsyncThunk(
       enrolledCourses: userData?.enrolledCourses || [],  // From Firestore
       prayerLogs: userData?.prayerLogs || [],            // From Firestore
       likedQuestions: userData?.likedQuestions || [],
-      gamification: userData?.gamification || [],
       favouriteRestaurants: userData?.favouriteRestaurants || []
     };
   }
@@ -77,17 +59,6 @@ export const signUp = createAsyncThunk(
         prayerLogs: [],                           // Default: empty prayer logs
         role: 'user',
         likedQuestions: [],
-        gamification: {
-          streak: 0,
-          xp: 0,
-          level: 1,
-          badges: [],
-          challenges: {
-            daily: false,
-            weekly: false,
-            monthly: false
-          }
-        },
         favouriteRestaurants: []
     });
 
@@ -218,40 +189,6 @@ export const fetchWeeklyPrayerLogs = createAsyncThunk(
     }
   }
 );
-
-// Async function to listen for user updates
-export const listenForUserUpdates = createAsyncThunk(
-  'user/listenForUserUpdates',
-  async (_, { getState, dispatch }) => {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
-
-    if (!currentUser) {
-      throw new Error('User not logged in');
-    }
-
-    const userDocRef = firestore().collection('users').doc(currentUser.uid);
-
-    userDocRef.onSnapshot((doc) => {
-      if (doc.exists) {
-        const userData = doc.data();
-        if (userData) {
-          // Dispatch an action to update the Redux state with new user data
-          dispatch(updateUserState({
-            id: currentUser.uid,
-            avatarUrl: currentUser.photoURL || 'https://via.placeholder.com/100',
-            email: currentUser.email || '',
-            name: currentUser.displayName || 'New User',
-            enrolledCourses: userData.enrolledCourses || [],
-            prayerLogs: userData.prayerLogs || [],
-            role: userData.role || 'user',
-            likedQuestions: userData.likedQuestions || [],
-          }));
-        }
-      }
-    });
-  }
-);
    
 const userSlice = createSlice({
 name: 'user',
@@ -366,17 +303,6 @@ extraReducers: (builder) => {
       state.error = 'Failed to fetch prayer log';  // Set error message
       state.loading = false;  // Stop loading
     })
-    .addCase(listenForUserUpdates.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    })
-    .addCase(listenForUserUpdates.fulfilled, (state) => {
-      state.loading = false;
-    })
-    .addCase(listenForUserUpdates.rejected, (state, action) => {
-      state.error = action.error.message || 'Failed to listen for user updates';
-      state.loading = false;
-    });
 },
 });
 

@@ -16,7 +16,6 @@ import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import { fetchDailyDoasData } from '../redux/slices/doasSlice';
 import LoadingScreen from '../components/LoadingScreen';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { listenForUserUpdates } from '../redux/slices/userSlice';
 import TrackPlayer from 'react-native-track-player';
 import { playbackService } from '../constants/playbackService';
 if (AppState.currentState === 'active') {
@@ -52,11 +51,7 @@ const RootLayout = () => {
     });
     return () => unsubscribe();
   }, []);
-  
-  // Listener to monitor changes in user documents
-  useEffect(() => {
-    dispatch(listenForUserUpdates());
-  }, [dispatch]);
+
   // Fetch only essential data (Prayer Times) first
   useEffect(() => {
     if (!isRehydrated) return;
@@ -123,7 +118,6 @@ const RootLayout = () => {
     return (
       <View style={{ flex: 1 }}>
         <LoadingScreen message="Setting up the app..." />
-        <Slot />
       </View>
     );
   }
@@ -134,7 +128,7 @@ const RootLayout = () => {
       {/* SplashScreen */}
       <Animated.View style={[styles.splashScreen, animatedSplashStyle]} />
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} redirect />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
       </Stack>
     </View>
   );

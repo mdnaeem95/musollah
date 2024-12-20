@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { ayahList } from './constants';
-import { Dimensions } from 'react-native';
+import { Animated, Dimensions } from 'react-native';
 
 export const getFormattedDate = (date: Date) => {
     return format(date, "EEEE, do MMMM yyyy");
@@ -125,3 +125,23 @@ export const scaleSize = (size: number) => {
     const scaleFactor = screenWidth / 375;
     return size * scaleFactor
 }
+
+export const shakeButton = (shakeAnimation: any) => {
+    Animated.sequence([
+      Animated.timing(shakeAnimation, {
+        toValue: 10, // Move 10 pixels to the right
+        duration: 50,
+        useNativeDriver: true, // Required for performance
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: -10, // Move 10 pixels to the left
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: 0, // Return to original position
+        duration: 50,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
