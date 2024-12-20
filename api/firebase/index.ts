@@ -313,6 +313,7 @@ export const fetchRestaurants = async (): Promise<Restaurant[]> => {
                 categories: data.categories,
                 averageRating: data.averageRating || 0,
                 totalReviews: data.totalReviews || 0,
+                socials: data.socials,
             } as Restaurant
         });
         
@@ -351,6 +352,7 @@ export const fetchRestaurantById = async (id: string): Promise<Restaurant | null
             categories: data.categories,
             averageRating: data.averageRating || 0,
             totalReviews: data.totalReviews || 0,
+            socials: data.socials
         } as Restaurant;
     } catch (error) {
         console.error(`Error fetching restaurant by id (${id}):`, error);

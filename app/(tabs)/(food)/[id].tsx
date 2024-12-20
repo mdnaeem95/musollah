@@ -24,6 +24,7 @@ import SignInModal from '../../../components/SignInModal';
 import { AirbnbRating } from 'react-native-ratings';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { CircleButton } from './_layout';
+import { useActionSheet } from '@expo/react-native-action-sheet';
 
 const { width } = Dimensions.get('window');
 const HERO_IMAGE_HEIGHT = 250;
@@ -37,6 +38,8 @@ const RestaurantDetails = () => {
   const [reviews, setReviews] = useState<RestaurantReview[]>([]);
   const [averageRating, setAverageRating] = useState(0);
   const [totalReviews, setTotalReviews] = useState(0);
+  const [showOperatingHours, setShowOperatingHours] = useState(false);
+  const [showSocials, setShowSocials] = useState(false);
   const { id } = useLocalSearchParams(); // Get the restaurant ID from the URL
   const router = useRouter();
   const [isAuthModalVisible, setIsAuthModalVisible] = useState<boolean>(false);
@@ -100,7 +103,6 @@ const RestaurantDetails = () => {
   }, [id]);
 
   const toggleFavorite = async () => {
-    console.log(isFavorited)
     if (!currentUser) {
         Alert.alert(
             'Sign In Required',
@@ -148,9 +150,70 @@ const RestaurantDetails = () => {
   }
 
   const openGoogleMaps = () => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${restaurant?.address}`
+    const url = `https://www.google.com/maps/search/?api=1&query=${restaurant?.name},${restaurant?.address}`
     Linking.openURL(url);
   };
+
+  const handlePhone = (phoneNumber: string) => {
+    const { showActionSheetWithOptions } = useActionSheet();
+
+    const options = ['Call', 'Cancel'];
+    const destructiveButtonIndex = -1;
+    const cancelButtonIndex = 1;
+
+    showActionSheetWithOptions(
+      {
+        options,
+        cancelButtonIndex,
+        destructiveButtonIndex,
+        title: `Call ${phoneNumber}`,
+      },
+      (buttonIndex) => {
+        if (buttonIndex === 0) {
+          Linking.openURL(`tel:${phoneNumber}`)
+        }
+      }
+    )
+  }
+
+  const openSocialLink = (url: string) => {
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (supported) {
+          Linking.openURL(url);
+        } else {
+          Alert.alert('Error', 'Unable to open this link.');
+        }
+      })
+      .catch((err) => console.error('Error opening link:', err));
+  }
+
+  const renderSocialIcon = (platform: string, link: string) => {
+    const icons = {
+      facebook: 'facebook',
+      instagram: 'instagram',
+      tiktok: 'tiktok',
+      number: 'phone'
+    }
+
+    const handlePress = () => {
+      if (platform === 'phone') {
+        handlePhone(link);
+      } else {
+        openSocialLink(link);
+      }
+    }
+
+    return (
+      <TouchableOpacity
+        key={platform}
+        onPress={handlePress}
+        style={styles.socialIconContainer}
+      >
+        <FontAwesome6 name={icons[platform]} size={24} color="#ECDFCC" />
+      </TouchableOpacity>
+    )
+  }
 
   return (
     <View style={styles.container}>
@@ -248,12 +311,46 @@ const RestaurantDetails = () => {
             ) : (
                 <Text style={styles.emptyText}>No reviews yet. Be the first to write one!</Text>
             )}
-            </View>
+        </View>
     
         {/* Operating Hours */}
         <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Operating Hours</Text>
-            <OperatingHours hoursString={restaurant.hours} />
+            <TouchableOpacity
+              style={styles.expandableHeader}
+              onPress={() => setShowOperatingHours(!showOperatingHours)}
+            >
+              <Text style={styles.sectionTitle}>Operating Hours</Text>
+              <FontAwesome6 
+                name={showOperatingHours ? 'chevron-up': 'chevron-down'}
+                size={16}
+                color="#ECDFCC" 
+              />
+            </TouchableOpacity>
+            {showOperatingHours && (
+              <OperatingHours hoursString={restaurant.hours} />
+            )}
+        </View>
+
+        {/* Socials */}
+        <View style={styles.section}>
+        <TouchableOpacity
+              style={styles.expandableHeader}
+              onPress={() => setShowSocials(!showSocials)}
+            >
+              <Text style={styles.sectionTitle}>Socials</Text>
+              <FontAwesome6 
+                name={showOperatingHours ? 'chevron-up': 'chevron-down'}
+                size={16}
+                color="#ECDFCC" 
+              />
+            </TouchableOpacity>
+            {showSocials && restaurant.socials && (
+              <View style={styles.socialsContainer}>
+                {Object.entries(restaurant.socials).map(([platform, link]) => 
+                  renderSocialIcon(platform, link)
+                )}
+              </View>
+            )}     
         </View>
     
         {/* Call to Action */}
@@ -273,8 +370,6 @@ const RestaurantDetails = () => {
         </Animated.ScrollView>
     </View>
   );
-  
-  
 };
 
 const styles = StyleSheet.create({
@@ -452,7 +547,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Outfit_400Regular',
     marginTop: 8,
-  }, 
+  },
+  expandableHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8
+  },
+  socialIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#3D4F4C',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  socialsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    gap: 10,
+    marginTop: 8
+  }
 });
 
   

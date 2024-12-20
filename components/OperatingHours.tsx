@@ -1,4 +1,5 @@
-  import React from 'react';
+  import { FontAwesome6 } from '@expo/vector-icons';
+import React from 'react';
   import { View, Text, StyleSheet } from 'react-native';
   
   const OperatingHours = ({ hoursString }: { hoursString: string }) => {
@@ -24,35 +25,42 @@
         return currentMinutes >= start && currentMinutes < end;
       })
     }
+
+    const todayEntry = parsedHours.find((entry) => entry.day.includes(today));
+    const shopIsOpen = todayEntry ? isOpen(todayEntry.hours) : false;
   
     return (
       <View style={styles.container}>
         {parsedHours.map((entry, index) => {
             const isToday = entry.day.includes(today)
-            const shopIsOpen = isToday && isOpen(entry.hours)
-
             return (
-                <View
-                    key={index}
-                    style={[
-                    styles.entry,
-                    entry.day.includes(today) && styles.todayHighlight, // Highlight current day
-                    ]}
-                >
-                    <Text style={[styles.day, isToday && styles.todayDay]}>{entry.day}</Text>
-                    <Text style={[styles.hours, isToday && styles.todayHours]}>{entry.hours}</Text>
-                    {isToday && (
-                      <Text style={[
-                        styles.status,
-                        shopIsOpen ? styles.openStatus : styles.closedStatus
-                      ]}>
-                        {shopIsOpen ? "Open Now" : "Closed Now"}
-                      </Text>
-                    )}
-                </View>
-            )
+              <View
+                  key={index}
+                  style={[
+                  styles.entry,
+                  entry.day.includes(today) && styles.todayHighlight, // Highlight current day
+                  ]}
+              >
+                  <Text style={[styles.day, isToday && styles.todayDay]}>{entry.day}</Text>
+                  <Text style={[styles.hours, isToday && styles.todayHours]}>{entry.hours}</Text>
+              </View>
+            );
         })}
-      </View>
+
+        {todayEntry && (
+          <View style={styles.statusContainer}>
+            <FontAwesome6 
+              name={shopIsOpen ? 'check-circle' : 'times-circle'} 
+              size={16}
+              color={shopIsOpen ? '#4CAF50' : '#F44336' }
+              style={styles.statusIcon}
+            />
+            <Text style={[styles.status, shopIsOpen ? styles.openStatus : styles.closedStatus]}>
+              {shopIsOpen ? 'Open Now' : 'Closed Now'}
+            </Text>
+          </View>
+        )}
+        </View>
     );
   };
   
@@ -106,6 +114,14 @@
     },
     todayHours: {
       color: '#2E3D3A', // Dark text for highlighted hours
+    },
+    statusContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 12,
+    },
+    statusIcon: {
+      marginRight: 8,
     },
     status: {
       fontSize: 14,

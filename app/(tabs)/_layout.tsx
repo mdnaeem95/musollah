@@ -50,6 +50,14 @@ const TabLayout = () => {
       })}
     >
       <Tabs.Screen
+        name="index"
+        options={{
+          href: null,
+          title: 'Prayers',
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
         name="(prayer)"
         options={{
           title: 'Prayers',

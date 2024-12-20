@@ -15,6 +15,7 @@ import useAutoFocus from '../../../hooks/useAutoFocus'
 import { FontAwesome6 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchRestaurants } from '../../../api/firebase';
+import { FlashList } from '@shopify/flash-list';
 
 const SearchPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,7 +68,8 @@ const SearchPage = () => {
       const filtered = restaurants.filter(
         (restaurant) =>
           restaurant.name.toLowerCase().includes(lowerCaseQuery) ||
-          restaurant.categories.some((cat) => cat.toLowerCase().includes(lowerCaseQuery))
+          restaurant.categories.some((cat) => cat.toLowerCase().includes(lowerCaseQuery)) ||
+          restaurant.address.toLowerCase().includes(lowerCaseQuery)
       );
       setFilteredRestaurants(filtered);
     }, [restaurants]
@@ -140,7 +142,13 @@ const SearchPage = () => {
         </View>
       )}
 
-      <FlatList
+      {/* Spacer */}
+      {recentSearches.length > 0 && filteredRestaurants.length > 0 &&(
+        <View style={styles.spacer} />
+      )}
+
+      <FlashList
+        estimatedItemSize={69}
         data={filteredRestaurants}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -192,6 +200,9 @@ const styles = StyleSheet.create({
   },
   iconLeft: {
     marginRight: 10, // Space between the icon and the text
+  },
+  spacer: {
+    height: 10,
   },
   searchTextContainer: {
     flex: 1, // Ensures the text takes up available space
