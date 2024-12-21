@@ -210,6 +210,7 @@ const PrayersDashboard = () => {
 
   const renderFlames = () => {
     const { current } = streakInfo;
+    console.log('Current streak: ', current);
     const flames = Array.from({ length: 7 }, (_, index) => (
       <FontAwesome6 
         key={index}

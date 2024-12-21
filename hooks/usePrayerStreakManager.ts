@@ -5,6 +5,7 @@ import { useStreakCalculator } from './usePrayerStreakCalculator';
 import { updatePrayerStreak } from '../redux/slices/gamificationSlice';
 
 export const usePrayerStreakManager = (prayerLogs: { [date: string]: any }, userId: string | null) => {
+    console.log('prayerLogs: ', prayerLogs)
     const { current, highest } = useStreakCalculator(prayerLogs);
     const dispatch = useDispatch<AppDispatch>();
     const [streakInfo, setStreakInfo] = useState({
@@ -16,16 +17,22 @@ export const usePrayerStreakManager = (prayerLogs: { [date: string]: any }, user
     const syncStreaks = async () => {
         if (!userId) return;
         const lastLoggedDate = Object.keys(prayerLogs).pop() || '';
-        setStreakInfo({ current, highest, lastLoggedDate });
+        const updatedStreak = {
+            current: current,
+            highest: highest,
+            lastLoggedDate
+        };
+
+        setStreakInfo(updatedStreak)
 
         await dispatch(
-            updatePrayerStreak(streakInfo)
+            updatePrayerStreak(updatedStreak)
         ).unwrap();
     };
 
     useEffect(() => {
         syncStreaks();
-    }, [current, highest, userId]);
+    }, [current, highest, prayerLogs, userId]);
 
     return streakInfo;
 }

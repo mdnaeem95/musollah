@@ -19,6 +19,7 @@ export default {
       "supportsTablet": false,
       "infoPlist": {
         "UIBackgroundModes": ["location", "fetch", "remote-notification", "audio"],
+        "LSApplicationQueriesSchemes": "file",
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "We use your location to show you relevant data.",
         "NSLocationAlwaysUsageDescription": "We use your location to show you relevant data even when the app is in the background."
