@@ -170,7 +170,7 @@ const RestaurantDetails = () => {
       },
       (buttonIndex) => {
         if (buttonIndex === 0) {
-          Linking.openURL(`tel://${phoneNumber}`)
+          Linking.openURL(`tel:${phoneNumber}`)
         }
       }
     )
