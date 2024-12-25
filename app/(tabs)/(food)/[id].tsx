@@ -24,6 +24,7 @@ import SignInModal from '../../../components/SignInModal';
 import { AirbnbRating } from 'react-native-ratings';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { CircleButton } from './_layout';
+import * as WebBrowser from 'expo-web-browser';
 import { useActionSheet } from '@expo/react-native-action-sheet';
 
 const { width } = Dimensions.get('window');
@@ -32,6 +33,7 @@ const HEADER_HEIGHT = 60
 const statusBarHeight = (StatusBar.currentHeight || 24) + 20
 
 const RestaurantDetails = () => {
+  const { showActionSheetWithOptions } = useActionSheet();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -73,6 +75,7 @@ const RestaurantDetails = () => {
       try {
         const data = await fetchRestaurantById(id as string); // Fetch data using ID
         setRestaurant(data);
+        console.log(data?.socials)
 
         const reviewsData = await fetchReviews(id as string);
         setReviews(reviewsData)
@@ -155,8 +158,6 @@ const RestaurantDetails = () => {
   };
 
   const handlePhone = (phoneNumber: string) => {
-    const { showActionSheetWithOptions } = useActionSheet();
-
     const options = ['Call', 'Cancel'];
     const destructiveButtonIndex = -1;
     const cancelButtonIndex = 1;
@@ -170,6 +171,7 @@ const RestaurantDetails = () => {
       },
       (buttonIndex) => {
         if (buttonIndex === 0) {
+          console.log(`Opening ${phoneNumber}`)
           Linking.openURL(`tel:${phoneNumber}`)
         }
       }
@@ -197,7 +199,7 @@ const RestaurantDetails = () => {
     }
 
     const handlePress = () => {
-      if (platform === 'phone') {
+      if (platform === 'number') {
         handlePhone(link);
       } else {
         openSocialLink(link);
@@ -214,6 +216,15 @@ const RestaurantDetails = () => {
       </TouchableOpacity>
     )
   }
+
+  const openMenu = async () => {
+    if (restaurant?.menuUrl) {
+      const result = await WebBrowser.openBrowserAsync(restaurant.menuUrl);
+      console.log('In-app browser closed', result);
+    } else {
+      Alert.alert('Menu not available', 'This restaurant has no menu link.');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -275,6 +286,15 @@ const RestaurantDetails = () => {
                 <FavoriteButton isFavorited={isFavorited} onToggle={toggleFavorite} />
             </View>
         </View>
+
+        {/* Menu */}
+        <View style={styles.section}>
+          <TouchableOpacity style={styles.menuButton} onPress={openMenu}>
+            <Text style={styles.menuButtonText}>View Menu</Text>
+            <FontAwesome6 name="sheet-plastic" size={16} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+
         
         {/* Reviews Section */}
         <View style={styles.reviewsSection}>
@@ -346,7 +366,7 @@ const RestaurantDetails = () => {
             </TouchableOpacity>
             {showSocials && restaurant.socials && (
               <View style={styles.socialsContainer}>
-                {Object.entries(restaurant.socials).map(([platform, link]) => 
+                {Object.entries(restaurant.socials).map(([platform, link]) =>
                   renderSocialIcon(platform, link)
                 )}
               </View>
@@ -567,7 +587,22 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     gap: 10,
     marginTop: 8
-  }
+  },
+  menuButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#A3C0BB',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+  },
+  menuButtonText: {
+    fontSize: 16,
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#FFFFFF',
+  },
+  
 });
 
   

@@ -314,6 +314,7 @@ export const fetchRestaurants = async (): Promise<Restaurant[]> => {
                 averageRating: data.averageRating || 0,
                 totalReviews: data.totalReviews || 0,
                 socials: data.socials,
+                menuUrl: data.menuUrl
             } as Restaurant
         });
         
@@ -352,7 +353,8 @@ export const fetchRestaurantById = async (id: string): Promise<Restaurant | null
             categories: data.categories,
             averageRating: data.averageRating || 0,
             totalReviews: data.totalReviews || 0,
-            socials: data.socials
+            socials: data.socials,
+            menuUrl: data.menuUrl
         } as Restaurant;
     } catch (error) {
         console.error(`Error fetching restaurant by id (${id}):`, error);
@@ -562,7 +564,7 @@ export const fetchFavourites = async (userId: string): Promise<string[]> => {
     }
 }
 
-export const submitReview = async (restaurantId: string, userId: string, rating: number, review: string) => {
+export const submitReview = async (restaurantId: string, userId: string, rating: number, review: string, images: string[] = []) => {
     try {
         const newReviewRef = firestore().collection('restaurantReviews').doc();
         const reviewData = {
@@ -572,6 +574,7 @@ export const submitReview = async (restaurantId: string, userId: string, rating:
             rating,
             review,
             timestamp: new Date().toISOString(),
+            images
         };
 
         await newReviewRef.set(reviewData)
@@ -598,7 +601,8 @@ export const fetchReviews = async (restaurantId: string): Promise<RestaurantRevi
             userId: data.userId,
             rating: data.rating,
             review: data.review,
-            timestamp: data.timestamp
+            timestamp: data.timestamp,
+            images: data.images
         } as RestaurantReview
     });
 

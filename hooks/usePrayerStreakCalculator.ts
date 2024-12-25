@@ -1,41 +1,51 @@
 import { useMemo } from "react";
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, parseISO } from "date-fns";
 
-export const useStreakCalculator = (prayerLogs: { [date: string]: any}) => {
-    const calculateStreak = () => {
-        const dates = Object.keys(prayerLogs)
-          .filter((date) => Object.values(prayerLogs[date]).every((logged) => logged)) // Only fully logged days
-          .sort((a, b) => new Date(b).getTime() - new Date(a).getTime()); // Sort dates descending
-      
-        console.log('Valid streak dates:', dates);
-      
-        let streak = 0;
-        let previousDate = null;
-      
-        for (let i = 0; i < dates.length; i++) {
-          const currentDate = new Date(dates[i]);
-      
-          if (i === 0) {
-            previousDate = currentDate; // Set initial previous date
-            streak++;
-          } else {
-            const diff = differenceInDays(previousDate!, currentDate);
-            if (diff === 1) {
-              streak++;
-              previousDate = currentDate; // Update previous date
-            } else {
-              break; // Streak is broken
-            }
-          }
+export const useStreakCalculator = (prayerLogs: { [date: string]: any }) => {
+  const calculateStreak = () => {
+    console.log("Calculating streak with prayer Logs:", prayerLogs);
+
+    const dates = Object.keys(prayerLogs)
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
+    console.log("Sorted dates:", dates);
+
+    let streak = 0;
+
+    for (let i = 0; i < dates.length; i++) {
+      const currentDate = parseISO(dates[i]);
+
+      // Check if all prayers are logged for the current day
+      const allPrayersLogged = Object.values(prayerLogs[dates[i]]).every((logged) => logged);
+
+      if (!allPrayersLogged) {
+        // Break the streak if any day's prayers are incomplete
+        console.log(`Streak broken on ${dates[i]}: Not all prayers logged.`);
+        break;
+      }
+
+      if (i > 0) {
+        const prevDate = parseISO(dates[i - 1]);
+
+        // Check for a gap in consecutive days
+        if (differenceInDays(prevDate, currentDate) > 1) {
+          console.log(`Streak broken on ${dates[i]}: Gap detected.`);
+          break;
         }
-      
-        console.log('Calculated streak:', streak);
-        return streak;
-      };
-      
+      }
 
-    const current = useMemo(() => calculateStreak(), [prayerLogs]);
-    const highest = useMemo(() => Math.max(current, 0), [current]);
+      // Increment the streak if all conditions are met
+      streak++;
+    }
 
-    return { current, highest };
-}
+    console.log("Calculated streak:", streak);
+    return streak;
+  };
+
+  const currentStreak = useMemo(() => calculateStreak(), [prayerLogs]);
+  const highestStreak = useMemo(() => Math.max(currentStreak, 0), [currentStreak]);
+
+  console.log("Current streak:", currentStreak);
+
+  return { current: currentStreak, highest: highestStreak };
+};
