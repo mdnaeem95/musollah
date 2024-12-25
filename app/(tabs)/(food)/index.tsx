@@ -44,6 +44,7 @@ const RestaurantLocator = () => {
       latitude: userLocation?.coords.latitude || 1.3521,
       longitude: userLocation?.coords.longitude || 103.8198
     })
+    console.log('UserLocation coords:', userLocation?.coords)
   }, [dispatch])
 
   useEffect(() => {

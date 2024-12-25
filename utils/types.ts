@@ -302,6 +302,7 @@ export interface Restaurant {
     categories: string[],
     averageRating?: number;
     totalReviews?: number;
+    menuUrl?: string;
     socials?: {
         instagram?: string;
         tiktok?: string;
@@ -317,4 +318,5 @@ export interface RestaurantReview {
     rating: number;
     review: string;
     timestamp: string;
+    images?: string[];
 }
