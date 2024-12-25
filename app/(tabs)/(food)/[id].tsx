@@ -5,12 +5,10 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
   Linking,
   Alert,
   Animated,
-  Dimensions,
   FlatList,
   StatusBar
 } from 'react-native';
@@ -27,7 +25,6 @@ import { CircleButton } from './_layout';
 import * as WebBrowser from 'expo-web-browser';
 import { useActionSheet } from '@expo/react-native-action-sheet';
 
-const { width } = Dimensions.get('window');
 const HERO_IMAGE_HEIGHT = 250;
 const HEADER_HEIGHT = 60
 const statusBarHeight = (StatusBar.currentHeight || 24) + 20
@@ -312,6 +309,9 @@ const RestaurantDetails = () => {
                 renderItem={({ item }) => (
                     <View style={styles.reviewCard}>
                     <Text style={styles.reviewText}>{item.review}</Text>
+                    {item.images && item.images.length > 0 && (
+                      <Text style={styles.imageTag}>Contains Images</Text>
+                    )}
                     <View style={{ flexDirection: 'row', gap: 5 }}>
                         <FontAwesome6 name="star" solid size={16} style={styles.icon} />
                         <Text style={styles.reviewRating}>
@@ -482,6 +482,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Outfit_600SemiBold',
     color: '#ECDFCC',
+  },
+  imageTag: {
+    fontSize: 12,
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#F4A261',
+    marginBottom: 8
   },
   icon: {
     color: "#F4A261"
