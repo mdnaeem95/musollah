@@ -95,12 +95,12 @@ import React from 'react';
       paddingVertical: 4,
     },
     day: {
-      fontSize: 16,
+      fontSize: 14,
       fontFamily: "Outfit_600SemiBold",
       color: '#F4E2C1',
     },
     hours: {
-      fontSize: 16,
+      fontSize: 14,
       fontFamily: "Outfit_400Regular",
       color: '#F4E2C1',
     },
