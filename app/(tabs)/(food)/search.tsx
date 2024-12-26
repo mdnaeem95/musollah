@@ -148,13 +148,13 @@ const SearchPage = () => {
       )}
 
       <FlashList
-        estimatedItemSize={69}
+        estimatedItemSize={174}
         data={filteredRestaurants}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.restaurantItem}
-            onPress={() => router.push(`(food)/${item.id}`)}
+            onPress={() => router.replace(`/${item.id}`)}
           >
             <Text style={styles.restaurantName}>{item.name}</Text>
             <Text style={styles.restaurantAddress}>{item.address}</Text>
