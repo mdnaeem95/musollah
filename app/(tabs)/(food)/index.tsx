@@ -22,11 +22,10 @@ import { AirbnbRating } from 'react-native-ratings';
 
 const { width, height } = Dimensions.get('window');
 
-const categories = ['Halal Certified', 'Cafe', 'Family-Friendly', 'New', 'Buffet'];
-
 const RestaurantLocator = () => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [region, setRegion] = useState<Region | undefined>(undefined);
+  const [categories, setCategories] = useState<string[]>([]);
   const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [userLocationCoords, setUserLocationCoords] = useState<{ latitude: number, longitude: number }>({
@@ -63,6 +62,13 @@ const RestaurantLocator = () => {
       try {
         const data = await fetchRestaurants();
         setRestaurants(data);
+
+        const allCategories = new Set<string>();
+        data.forEach((restaurant) => {
+          restaurant.categories.forEach((category) => allCategories.add(category));
+        });
+        setCategories(Array.from(allCategories));
+        
         setFilteredRestaurants(data); // Default to all restaurants
       } catch (error) {
         console.error('Error loading restaurants:', error);
