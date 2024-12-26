@@ -269,7 +269,7 @@ const RestaurantDetails = () => {
             </Text>
     
             {/* Ratings */}
-            <View style={styles.ratingRow}>
+            <View style={[styles.ratingRow, { justifyContent: 'space-between' }]}>
                 <View style={styles.ratingRowLeft}>
                     <AirbnbRating 
                         isDisabled
@@ -305,38 +305,41 @@ const RestaurantDetails = () => {
 
             {/* Reviews Carousel */}
             {reviews.length > 0 ? (
-            <FlashList
-                estimatedItemSize={174}
-                data={reviews.slice(0, 3)} // Show top 3 reviews
-                renderItem={({ item }) => (
-                    <View style={styles.reviewCard}>
-                      <View style={styles.reviewHeader}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          <FontAwesome6 name="user-circle" size={20} color="#F4E2C1" />
-                          <Text style={styles.reviewerName}>'Anonymous'</Text>
-                        </View>
-                        <Text style={styles.reviewTimestamp}>
-                          {new Date(item.timestamp).toLocaleDateString()}
-                        </Text>
-                      </View>
-                      <Text style={styles.reviewText}>{item.review}</Text>
-                      {item.images && item.images.length > 0 && (
-                        <View style={styles.imageTagContainer}>
-                          <Text style={styles.imageTag}>Contains Images</Text>
-                        </View>
-                      )}
-                      <View style={styles.ratingRow}>
-                          <FontAwesome6 name="star" solid size={16} style={styles.icon} />
-                          <Text style={styles.ratingText}>
-                              {item.rating > 1 ? `${item.rating} Stars` : `${item.rating} Star`}
+            <View style={styles.reviewListContainer}>
+              <FlashList
+                  estimatedItemSize={174}
+                  data={reviews.slice(0, 3)} // Show top 3 reviews
+                  contentContainerStyle={styles.carouselContainer}
+                  renderItem={({ item }) => (
+                      <View style={styles.reviewCard}>
+                        <View style={styles.reviewHeader}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <FontAwesome6 name="user-circle" size={20} color="#F4E2C1" />
+                            <Text style={styles.reviewerName}>Anonymous</Text>
+                          </View>
+                          <Text style={styles.reviewTimestamp}>
+                            {new Date(item.timestamp).toLocaleDateString()}
                           </Text>
+                        </View>
+                        <Text style={styles.reviewText} numberOfLines={2} ellipsizeMode='tail'>{item.review}</Text>
+                        {item.images && item.images.length > 0 && (
+                          <View style={styles.imageTagContainer}>
+                            <Text style={styles.imageTag}>Contains Images</Text>
+                          </View>
+                        )}
+                        <View style={styles.ratingRow}>
+                            <FontAwesome6 name="star" solid size={16} style={styles.icon} />
+                            <Text style={styles.ratingText}>
+                                {item.rating > 1 ? `${item.rating} Stars` : `${item.rating} Star`}
+                            </Text>
+                        </View>
                       </View>
-                    </View>
-                )}
-                keyExtractor={(item) => item.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-            />
+                  )}
+                  keyExtractor={(item) => item.id}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+              />
+            </View>
             ) : (
                 <Text style={styles.emptyText}>No reviews yet. Be the first to write one!</Text>
             )}
@@ -545,6 +548,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingHorizontal: 16,
   },
+  reviewListContainer: {
+    flex: 1,
+    marginBottom: 12
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -557,7 +564,8 @@ const styles = StyleSheet.create({
     color: '#ECDFCC',
   },
   carouselContainer: {
-    marginHorizontal: 6, // Adds spacing between cards
+    paddingHorizontal: 6,
+    paddingBottom: 12 // Adds spacing between cards
   },
   reviewCard: {
     width: 240,
@@ -568,8 +576,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    marginRight: 12,
-    justifyContent: 'space-between'
+    marginRight: 20,
+    justifyContent: 'space-between',
+    height: 145
   },
   reviewHeader: {
     flexDirection: 'row',
