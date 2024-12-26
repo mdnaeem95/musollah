@@ -24,6 +24,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { CircleButton } from './_layout';
 import * as WebBrowser from 'expo-web-browser';
 import { useActionSheet } from '@expo/react-native-action-sheet';
+import { FlashList } from '@shopify/flash-list';
 
 const HERO_IMAGE_HEIGHT = 250;
 const HEADER_HEIGHT = 60
@@ -304,29 +305,37 @@ const RestaurantDetails = () => {
 
             {/* Reviews Carousel */}
             {reviews.length > 0 ? (
-            <FlatList
+            <FlashList
+                estimatedItemSize={174}
                 data={reviews.slice(0, 3)} // Show top 3 reviews
                 renderItem={({ item }) => (
                     <View style={styles.reviewCard}>
-                    <Text style={styles.reviewText}>{item.review}</Text>
-                    {item.images && item.images.length > 0 && (
-                      <Text style={styles.imageTag}>Contains Images</Text>
-                    )}
-                    <View style={{ flexDirection: 'row', gap: 5 }}>
-                        <FontAwesome6 name="star" solid size={16} style={styles.icon} />
-                        <Text style={styles.reviewRating}>
-                            {item.rating > 1 ? `${item.rating} Stars` : `${item.rating} Star`}
+                      <View style={styles.reviewHeader}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <FontAwesome6 name="user-circle" size={20} color="#F4E2C1" />
+                          <Text style={styles.reviewerName}>'Anonymous'</Text>
+                        </View>
+                        <Text style={styles.reviewTimestamp}>
+                          {new Date(item.timestamp).toLocaleDateString()}
                         </Text>
-                    </View>
-                    <Text style={styles.reviewTimestamp}>
-                        {new Date(item.timestamp).toLocaleDateString()}
-                    </Text>
+                      </View>
+                      <Text style={styles.reviewText}>{item.review}</Text>
+                      {item.images && item.images.length > 0 && (
+                        <View style={styles.imageTagContainer}>
+                          <Text style={styles.imageTag}>Contains Images</Text>
+                        </View>
+                      )}
+                      <View style={styles.ratingRow}>
+                          <FontAwesome6 name="star" solid size={16} style={styles.icon} />
+                          <Text style={styles.ratingText}>
+                              {item.rating > 1 ? `${item.rating} Stars` : `${item.rating} Star`}
+                          </Text>
+                      </View>
                     </View>
                 )}
                 keyExtractor={(item) => item.id}
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.carouselContainer}
             />
             ) : (
                 <Text style={styles.emptyText}>No reviews yet. Be the first to write one!</Text>
@@ -376,13 +385,20 @@ const RestaurantDetails = () => {
         {/* Call to Action */}
         <View style={styles.section}>
             <TouchableOpacity style={styles.button} onPress={openGoogleMaps}>
-            <Text style={styles.buttonText}>Get Directions</Text>
+              <Text style={styles.buttonText}>Get Directions</Text>
             </TouchableOpacity>
+
+            {restaurant?.website && (
+              <TouchableOpacity style={styles.button} onPress={() => Linking.openURL(restaurant.website)}>
+                <Text style={styles.buttonText}>Make a Reservation</Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
-            style={[styles.button, styles.writeReviewButton]}
-            onPress={() => router.push(`/reviews/submit/${restaurant.id}`)}
+              style={[styles.button, styles.writeReviewButton]}
+              onPress={() => router.push(`/reviews/submit/${restaurant.id}`)}
             >
-            <Text style={styles.buttonText}>Write a Review</Text>
+              <Text style={styles.buttonText}>Write a Review</Text>
             </TouchableOpacity>
         </View>
 
@@ -469,8 +485,8 @@ const styles = StyleSheet.create({
   },
   ratingRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 4
   },
   ratingRowLeft: {
     flexDirection: 'row', 
@@ -479,15 +495,19 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   ratingText: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Outfit_600SemiBold',
-    color: '#ECDFCC',
+    color: '#F4A261',
   },
   imageTag: {
     fontSize: 12,
     fontFamily: 'Outfit_600SemiBold',
     color: '#F4A261',
-    marginBottom: 8
+    backgroundColor: '#2E3D3A',
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    borderRadius: 4,
+    alignSelf: 'flex-start'
   },
   icon: {
     color: "#F4A261"
@@ -537,23 +557,34 @@ const styles = StyleSheet.create({
     color: '#ECDFCC',
   },
   carouselContainer: {
-    gap: 12, // Adds spacing between cards
+    marginHorizontal: 6, // Adds spacing between cards
   },
   reviewCard: {
     width: 240,
-    padding: 12,
-    backgroundColor: '#F9F9F9',
+    padding: 16,
+    backgroundColor: '#3D4F4C',
     borderRadius: 12,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    marginRight: 8,
+    marginRight: 12,
+    justifyContent: 'space-between'
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8
+  },
+  reviewerName: {
+    fontSize: 14,
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#F4E2C1'
   },
   reviewText: {
     fontSize: 14,
     fontFamily: 'Outfit_400Regular',
-    color: '#333',
+    color: '#ECDFCC',
     marginBottom: 8,
   },
   reviewRating: {
@@ -565,7 +596,10 @@ const styles = StyleSheet.create({
   reviewTimestamp: {
     fontSize: 12,
     color: '#999',
-    textAlign: 'right',
+    fontFamily: 'Outfit_400Regular'
+  },
+  imageTagContainer: {
+    marginBottom: 8
   },
   emptyText: {
     fontSize: 14,
