@@ -68,7 +68,7 @@ const RestaurantLocator = () => {
           restaurant.categories.forEach((category) => allCategories.add(category));
         });
         setCategories(Array.from(allCategories));
-        
+
         setFilteredRestaurants(data); // Default to all restaurants
       } catch (error) {
         console.error('Error loading restaurants:', error);
@@ -204,7 +204,7 @@ const RestaurantLocator = () => {
                 }}
                 title={restaurant.name}
                 description={restaurant.address}
-                onPress={() => router.push(`${restaurant.id}`)}
+                onCalloutPress={() => router.push(`${restaurant.id}`)}
               />
             ))}
         </MapView>
