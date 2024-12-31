@@ -65,15 +65,21 @@ const SearchPage = () => {
   const handleSearch = useCallback(
     (query: string) => {
       const lowerCaseQuery = query.toLowerCase();
-      const filtered = restaurants.filter(
-        (restaurant) =>
-          restaurant.name.toLowerCase().includes(lowerCaseQuery) ||
-          restaurant.categories.some((cat) => cat.toLowerCase().includes(lowerCaseQuery)) ||
-          restaurant.address.toLowerCase().includes(lowerCaseQuery)
-      );
+      const filtered = restaurants.filter((restaurant) => {
+        const name = restaurant.name?.toLowerCase() || ''; // Safely handle undefined
+        const address = restaurant.address?.toLowerCase() || ''; // Safely handle undefined
+        const categories = restaurant.categories || []; // Ensure categories is an array
+  
+        return (
+          name.includes(lowerCaseQuery) ||
+          address.includes(lowerCaseQuery) ||
+          categories.some((cat) => cat?.toLowerCase().includes(lowerCaseQuery)) // Safely handle category case
+        );
+      });
       setFilteredRestaurants(filtered);
-    }, [restaurants]
-  )
+    },
+    [restaurants]
+  );  
 
   const handleSubmit = async () => {
     // Save the search query to recent searches only if it's non-empty and unique

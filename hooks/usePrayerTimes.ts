@@ -26,11 +26,14 @@ export const usePrayerTimes = (
 
             // get monthly prayer times (cached or fetched)
             const monthlyPrayerTimes = await fetchMonthlyPrayerTimes(year, month);
+            console.log('Monthly Prayer Times:', monthlyPrayerTimes);
 
             // extract prayer times for next 5 days
             const nextDaysPrayerTimes = extractNextDaysPrayerTimes(monthlyPrayerTimes, numDays);
+            console.log('Next 5 days prayer times: ', nextDaysPrayerTimes)
 
             // schedule notifications for the extracted days
+            console.log('Scheduling notifications for:', nextDaysPrayerTimes, 'with interval:', reminderInterval);
             await scheduleNextDaysNotifications(nextDaysPrayerTimes, reminderInterval);
         } catch (error) {
             console.error('Error fetching or scheduling notifications: ', error);

@@ -97,15 +97,28 @@ export const generateTracksListId = (trackListName: string, search?: string) => 
 }
 
 export const extractNextDaysPrayerTimes = (
-    monthlyPrayerTimes: any[],
-    numDays: number
-  ): Record<string, any> => {
-    const today = new Date();
-    const endDate = new Date();
-    endDate.setDate(today.getDate() + numDays);
-  
-    return monthlyPrayerTimes.reduce((acc: Record<string, any>, item: any) => {
-      const itemDate = new Date(today.getFullYear(), today.getMonth(), parseInt(item.date));
+  monthlyPrayerTimes: any[],
+  numDays: number
+): Record<string, any> => {
+  const today = new Date();
+  const endDate = new Date();
+  endDate.setDate(today.getDate() + numDays);
+
+  return monthlyPrayerTimes.reduce((acc: Record<string, any>, item: any) => {
+    try {
+      // Parse item.date as a day of the current month and year
+      const itemDay = parseInt(item.date, 10); // Assuming item.date is a day of the month (e.g., '31')
+      const itemDate = new Date(today.getFullYear(), today.getMonth(), itemDay);
+
+      // Adjust for months/years where the parsed date exceeds the current month
+      if (itemDay < today.getDate()) {
+        itemDate.setMonth(today.getMonth() + 1); // Move to the next month if the day has already passed
+        if (itemDate.getMonth() === 0) {
+          itemDate.setFullYear(today.getFullYear() + 1); // Handle year transition
+        }
+      }
+
+      // Ensure itemDate is valid and within the desired range
       if (itemDate >= today && itemDate <= endDate) {
         acc[itemDate.toISOString().split('T')[0]] = {
           Subuh: item.Subuh,
@@ -116,8 +129,11 @@ export const extractNextDaysPrayerTimes = (
           Isyak: item.Isyak,
         };
       }
-      return acc;
-    }, {});
+    } catch (error) {
+      console.error('Error processing item:', item, error);
+    }
+    return acc;
+  }, {});
 };
 
 export const scaleSize = (size: number) => {
