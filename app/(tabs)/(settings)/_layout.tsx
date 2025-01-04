@@ -1,220 +1,60 @@
+import React, { useContext } from "react";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useRouter, Stack } from "expo-router";
 import { TouchableOpacity } from "react-native";
+import { ThemeContext } from "../../../context/ThemeContext";
 
 const SettingsLayout = () => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light; // Access the correct theme based on mode
   const router = useRouter();
 
-  return (
-    <Stack screenOptions={{
-      headerShown: false
-    }}>
-      <Stack.Screen
-        name="index"
-        options={{
-          gestureEnabled: false,
-          headerShown: true,
-          headerTitle: 'Settings & Others',
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color: '#ECDFCC'
-          },
-          headerStyle: {
-            backgroundColor: '#2E3D3A',
-          }
-        }}
-      />
-      <Stack.Screen
-        name="account/index"
-        options={{
-          headerShown: true,
-          headerTitle: 'Account Information',
-          headerStyle: {
-            backgroundColor: '#2E3D3A',
-          },
-          headerTintColor: '#FFFFFF',
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color:'#ECDFCC'
-          },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color='#ECDFCC'
-                style={{ padding: 10 }}
-                />
-            </TouchableOpacity>
-          )
-        }}
-      />
-      <Stack.Screen
-        name="prayers/index"
-        options={{
-          headerShown: true,
-          headerTitle: 'Prayer Settings',
-          headerStyle: {
-            backgroundColor: '#2E3D3A',
-          },
-          headerTintColor: '#FFFFFF',
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color:'#ECDFCC'
-          },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color='#ECDFCC'
-                style={{ padding: 10 }}
-                />
-            </TouchableOpacity>
-          )
-        }}
-      />
-      <Stack.Screen
-        name="support/index"
-        options={{
-          headerShown: true,
-          headerTitle: 'Support & Feedback',
-          headerStyle: {
-            backgroundColor: '#2E3D3A',
-          },
-          headerTintColor: '#FFFFFF',
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color:'#ECDFCC'
-          },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color='#ECDFCC'
-                style={{ padding: 10 }}
-                />
-            </TouchableOpacity>
-          )
-        }}
-      />
-      <Stack.Screen
-        name="food-additives/index"
-        options={{
-          headerShown: true,
-          headerTitle: 'Food Additives',
-          headerStyle: {
-            backgroundColor: '#2E3D3A',
-          },
-          headerTintColor: '#FFFFFF',
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color:'#ECDFCC'
-          },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color='#ECDFCC'
-                style={{ padding: 10 }}
-                />
-            </TouchableOpacity>
-          )
-        }}
-      />
-      <Stack.Screen
-        name="zakat/index"
-        options={{
-          headerShown: true,
-          headerTitle: 'Zakat',
-          headerStyle: {
-            backgroundColor: '#2E3D3A',
-          },
-          headerTintColor: '#FFFFFF',
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color:'#ECDFCC'
-          },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color='#ECDFCC'
-                style={{ padding: 10 }}
-                />
-            </TouchableOpacity>
-          )
-        }}
-      />
-      <Stack.Screen
-        name="zakat/fidyah/index"
-        options={{
-          headerShown: true,
-          headerTitle: 'Zakat Fidyah',
-          headerStyle: {
-            backgroundColor: '#2E3D3A',
-          },
-          headerTintColor: '#FFFFFF',
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color:'#ECDFCC'
-          },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color='#ECDFCC'
-                style={{ padding: 10 }}
-                />
-            </TouchableOpacity>
-          )
-        }}
-      />
-      <Stack.Screen
-        name="zakat/harta/index"
-        options={{
-          headerShown: true,
-          headerTitle: 'Zakat Harta',
-          headerStyle: {
-            backgroundColor: '#2E3D3A',
-          },
-          headerTintColor: '#FFFFFF',
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color:'#ECDFCC'
-          },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color='#ECDFCC'
-                style={{ padding: 10 }}
-                />
-            </TouchableOpacity>
-          )
-        }}
-      />
-      <Stack.Screen
-        name="localbusinesses"
-        options={{
-          headerShown: false,
-        }}
-      />
-    </Stack>
-  )
-}
+  // Reusable function for header options
+  const getHeaderOptions = (title: string, showHeaderLeft: boolean = true) => ({
+    headerShown: true,
+    headerTitle: title,
+    headerStyle: {
+      backgroundColor: activeTheme.colors.primary,
+    },
+    headerTintColor: activeTheme.colors.text.primary,
+    headerTitleStyle: {
+      fontFamily: "Outfit_700Bold",
+      fontSize: 20,
+      color: activeTheme.colors.text.primary,
+    },
+    headerLeft: showHeaderLeft
+      ? () => (
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: 10 }}>
+            <FontAwesome6 name="arrow-left" size={24} color={activeTheme.colors.text.primary} />
+          </TouchableOpacity>
+        )
+      : undefined,
+  });
 
-export default SettingsLayout
+  // Define screens with their titles and whether to show the header left
+  const screens = [
+    { name: "index", title: "Settings & Others", showHeaderLeft: false },
+    { name: "account/index", title: "Account Information" },
+    { name: "prayers/index", title: "Prayer Settings" },
+    { name: "support/index", title: "Support & Feedback" },
+    { name: "appearance/index", title: "Appearance" },
+    { name: "food-additives/index", title: "Food Additives" },
+    { name: "zakat/index", title: "Zakat" },
+    { name: "zakat/fidyah/index", title: "Zakat Fidyah" },
+    { name: "zakat/harta/index", title: "Zakat Harta" },
+  ];
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      {screens.map((screen) => (
+        <Stack.Screen
+          key={screen.name}
+          name={screen.name}
+          options={getHeaderOptions(screen.title, screen.showHeaderLeft ?? true)}
+        />
+      ))}
+    </Stack>
+  );
+};
+
+export default SettingsLayout;

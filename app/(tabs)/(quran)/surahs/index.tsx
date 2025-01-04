@@ -7,9 +7,12 @@ import SurahItem from '../../../../components/SurahItem';
 import { RootState } from '../../../../redux/store/store';
 import { Surah } from '../../../../utils/types';
 import { ThemeContext } from '../../../../context/ThemeContext';
+import { FlashList } from '@shopify/flash-list';
 
 const Surahs = () => {
-  const { isDarkMode } = useContext(ThemeContext);
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
   const { surahs, isLoading } = useSelector((state: RootState) => state.quran);
   const router = useRouter();
   
@@ -49,15 +52,17 @@ const Surahs = () => {
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
+  const styles = createStyles(activeTheme);
+
   return (
-    <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? '#2E3D3A' : '#4D6561' }]}>      
+    <View style={styles.mainContainer}>
       {/* Header with Search Bar */}
       <View style={styles.headerContainer}>
         {isSearchExpanded && (
           <View style={styles.searchBarContainer}>
             <TextInput
               placeholder="Search Surah"
-              placeholderTextColor="#B0B0B0"
+              placeholderTextColor={activeTheme.colors.text.muted}
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -69,7 +74,7 @@ const Surahs = () => {
           <FontAwesome6 
             name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} 
             size={24} 
-            color={isDarkMode ? '#ECDFCC' : '#FFFFFF'}
+            color={activeTheme.colors.text.primary}
           />
         </TouchableOpacity>
 
@@ -78,20 +83,19 @@ const Surahs = () => {
             name="bookmark" 
             size={24} 
             solid 
-            color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} 
+            color={activeTheme.colors.text.primary} 
           />
         </TouchableOpacity>
       </View>
 
       {/* Surah List or Loading Indicator */}
       {isLoading ? (
-        <ActivityIndicator style={styles.loadingIndicator} color="#FFFFFF" size="large" />
+        <ActivityIndicator style={styles.loadingIndicator} color={activeTheme.colors.text.primary} size="large" />
       ) : (
-        <FlatList
+        <FlashList
+          estimatedItemSize={75}
           data={filteredSurahs}
           renderItem={renderSurahItem}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
           keyExtractor={(item) => item.number.toString()}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
@@ -101,49 +105,47 @@ const Surahs = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: '#2E3D3A',
-    paddingHorizontal: 16,
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-  },
-  searchBarContainer: {
-    flex: 1,
-    backgroundColor: '#3A504C',
-    borderRadius: 15,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    marginRight: 10,
-  },
-  searchInput: {
-    color: '#FFFFFF',
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 16,
-  },
-  searchIconContainer: {
-    padding: 8,
-  },
-  bookmarkIconContainer: {
-    padding: 8,
-  },
-  loadingIndicator: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  listContainer: {
-    paddingBottom: 20,
-  },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    mainContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: theme.spacing.medium,
+    },
+    headerContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: theme.spacing.small,
+    },
+    searchBarContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.secondary,
+      borderRadius: theme.borderRadius.medium,
+      paddingHorizontal: theme.spacing.small,
+      paddingVertical: theme.spacing.small / 2,
+      ...theme.shadows.default,
+      marginRight: theme.spacing.small,
+    },
+    searchInput: {
+      color: theme.colors.text.primary,
+      fontFamily: 'Outfit_400Regular',
+      fontSize: theme.fontSizes.medium,
+    },
+    searchIconContainer: {
+      padding: theme.spacing.small / 2,
+    },
+    bookmarkIconContainer: {
+      padding: theme.spacing.small / 2,
+    },
+    loadingIndicator: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    listContainer: {
+      paddingBottom: theme.spacing.large,
+    },
+  });
 
 export default Surahs;

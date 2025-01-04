@@ -1,23 +1,32 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Drawer } from 'expo-router/drawer';
-import React from 'react';
+import React, { useContext } from 'react';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { ThemeContext } from '../../../context/ThemeContext';
 
 const EducationLayout = () => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Drawer 
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: activeTheme.colors.primary }}>
+      <Drawer
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#2E3D3A',
+            backgroundColor: activeTheme.colors.primary,
           },
           headerTitleStyle: {
             fontFamily: 'Outfit_700Bold',
             fontSize: 20,
-            color:'#ECDFCC'
+            color: activeTheme.colors.text.primary,
           },
-          headerTintColor: '#FFFFFF',
+          headerTintColor: activeTheme.colors.text.primary,
           headerShadowVisible: false,
+          drawerStyle: {
+            backgroundColor: activeTheme.colors.secondary,
+          },
+          drawerActiveTintColor: activeTheme.colors.text.primary,
+          drawerInactiveTintColor: activeTheme.colors.text.muted,
         }}
       >
         <Drawer.Screen
@@ -25,7 +34,7 @@ const EducationLayout = () => {
           options={{
             drawerLabel: 'Dashboard',
             title: 'Dashboard',
-            drawerIcon: () => <FontAwesome6 name="house" />,
+            drawerIcon: ({ color }) => <FontAwesome6 name="house" color={color} />,
           }}
         />
         <Drawer.Screen
@@ -34,16 +43,16 @@ const EducationLayout = () => {
             headerShown: false,
             drawerLabel: 'Courses',
             title: 'Courses',
-            drawerIcon: () => <FontAwesome6 name="chalkboard" />,
+            drawerIcon: ({ color }) => <FontAwesome6 name="chalkboard" color={color} />,
           }}
         />
-        <Drawer.Screen 
+        <Drawer.Screen
           name="teachers"
           options={{
             headerShown: false,
             drawerLabel: 'Teachers',
             title: 'Teachers',
-            drawerIcon: () => <FontAwesome6 name="chalkboard-user" />,
+            drawerIcon: ({ color }) => <FontAwesome6 name="chalkboard-user" color={color} />,
           }}
         />
         <Drawer.Screen
@@ -52,7 +61,7 @@ const EducationLayout = () => {
             headerShown: false,
             drawerLabel: 'Profile',
             title: 'Profile',
-            drawerIcon: () => <FontAwesome6 name="user" solid />,
+            drawerIcon: ({ color }) => <FontAwesome6 name="user" solid color={color} />,
           }}
         />
       </Drawer>

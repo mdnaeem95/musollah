@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Modal } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { Picker } from '@react-native-picker/picker';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { setReminderInterval, toggleTimeFormat } from '../../../../redux/slices/userPreferencesSlice';
+import { ThemeContext } from '../../../../context/ThemeContext';
 
 const PrayersSettings = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { timeFormat, reminderInterval } = useSelector((state: RootState) => state.userPreferences);
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
 
   const [isReminderPickerVisible, setIsReminderPickerVisible] = useState<boolean>(false);
 
@@ -20,26 +23,33 @@ const PrayersSettings = () => {
     setIsReminderPickerVisible(false);
   };
 
+  const styles = createStyles(activeTheme);
+
   return (
     <View style={styles.mainContainer}>
       <View style={styles.settingsContainer}>
         {/* 24-hour format toggle */}
         <View style={styles.settingsField}>
-          <View style={styles.settingsLeftField}>
-            <Text style={styles.settingsName}>24 Hour Prayer Format</Text>
-          </View>
+          <Text style={styles.settingsName}>24 Hour Prayer Format</Text>
           <Switch
             value={timeFormat === '24-hour'}
             onValueChange={handleTimeFormatToggle}
+            trackColor={{ false: activeTheme.colors.text.muted, true: activeTheme.colors.accent }}
+            thumbColor={
+              timeFormat === '24-hour'
+                ? activeTheme.colors.primary
+                : activeTheme.colors.secondary
+            }
           />
         </View>
 
         {/* Pre-prayer reminder */}
-        <TouchableOpacity style={styles.settingsField} onPress={() => setIsReminderPickerVisible(true)}>
-          <View style={styles.settingsLeftField}>
-            <Text style={styles.settingsName}>Pre-Prayer Reminder Interval</Text>
-          </View>
-          <Text style={styles.settingsName}>
+        <TouchableOpacity
+          style={styles.settingsField}
+          onPress={() => setIsReminderPickerVisible(true)}
+        >
+          <Text style={styles.settingsName}>Pre-Prayer Reminder Interval</Text>
+          <Text style={styles.settingsValue}>
             {reminderInterval === 0 ? 'None' : `${reminderInterval} mins`}
           </Text>
         </TouchableOpacity>
@@ -49,7 +59,7 @@ const PrayersSettings = () => {
       <Modal
         visible={isReminderPickerVisible}
         transparent={true}
-        animationType='slide'
+        animationType="slide"
         onRequestClose={() => setIsReminderPickerVisible(false)}
       >
         <View style={styles.modalBackground}>
@@ -58,14 +68,17 @@ const PrayersSettings = () => {
             <Picker
               selectedValue={reminderInterval}
               style={styles.picker}
-              onValueChange={(itemValue) => handleReminderIntervalChange(itemValue as number)}
+              onValueChange={(value) => handleReminderIntervalChange(value as number)}
             >
-              <Picker.Item label='None' value={0} />
+              <Picker.Item label="None" value={0} />
               {[5, 10, 15, 20, 25, 30].map((interval) => (
                 <Picker.Item key={interval} label={`${interval} minutes`} value={interval} />
               ))}
             </Picker>
-            <TouchableOpacity onPress={() => setIsReminderPickerVisible(false)} style={styles.closeButton}>
+            <TouchableOpacity
+              onPress={() => setIsReminderPickerVisible(false)}
+              style={styles.closeButton}
+            >
               <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
@@ -75,70 +88,70 @@ const PrayersSettings = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: '#2E3D3A',
-    padding: 16,
-  },
-  settingsContainer: {
-    backgroundColor: '#3D4F4C',
-    borderRadius: 15,
-    padding: 16,
-    gap: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  settingsField: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-  },
-  settingsLeftField: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  settingsName: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 14,
-    color: '#ECDFCC',
-  },
-  modalBackground: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContainer: {
-    backgroundColor: '#3A504C',
-    borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: 'Outfit_600SemiBold',
-    color: '#ECDFCC',
-  },
-  picker: {
-    marginBottom: 30,
-    width: 200,
-    height: 150,
-  },
-  closeButton: {
-    marginTop: 30,
-    padding: 10,
-    backgroundColor: '#A3C0BB',
-    borderRadius: 5,
-  },
-  closeButtonText: {
-    color: '#2E3D3A',
-    fontSize: 16,
-  },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    mainContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.primary,
+      padding: theme.spacing.medium,
+    },
+    settingsContainer: {
+      backgroundColor: theme.colors.secondary,
+      borderRadius: theme.borderRadius.large,
+      padding: theme.spacing.medium,
+      gap: theme.spacing.medium,
+      ...theme.shadows.default,
+    },
+    settingsField: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: theme.spacing.small,
+    },
+    settingsName: {
+      fontFamily: 'Outfit_400Regular',
+      fontSize: theme.fontSizes.medium,
+      color: theme.colors.text.secondary,
+    },
+    settingsValue: {
+      fontFamily: 'Outfit_400Regular',
+      fontSize: theme.fontSizes.medium,
+      color: theme.colors.text.primary,
+    },
+    modalBackground: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContainer: {
+      backgroundColor: theme.colors.secondary,
+      borderRadius: theme.borderRadius.medium,
+      padding: theme.spacing.medium,
+      alignItems: 'center',
+    },
+    modalTitle: {
+      fontSize: theme.fontSizes.large,
+      fontFamily: 'Outfit_600SemiBold',
+      color: theme.colors.text.secondary,
+      marginBottom: theme.spacing.medium,
+    },
+    picker: {
+      width: 200,
+      height: 150,
+      marginBottom: theme.spacing.medium,
+    },
+    closeButton: {
+      marginTop: theme.spacing.medium,
+      padding: theme.spacing.small,
+      backgroundColor: theme.colors.accent,
+      borderRadius: theme.borderRadius.small,
+    },
+    closeButtonText: {
+      fontFamily: 'Outfit_400Regular',
+      fontSize: theme.fontSizes.medium,
+      color: theme.colors.text.primary,
+    },
+  });
 
 export default PrayersSettings;

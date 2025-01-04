@@ -1,61 +1,66 @@
-import { FontAwesome6 } from "@expo/vector-icons";
-import { Stack, useRouter } from "expo-router";
-import { StyleSheet, TouchableOpacity } from "react-native";
+import React, { useContext } from 'react';
+import { FontAwesome6 } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
+import { StyleSheet, TouchableOpacity } from 'react-native';
+import { ThemeContext } from '../../../context/ThemeContext';
 
-const commonHeaderStyles = {
-  headerTitleStyle: {
-    fontFamily: 'Outfit_700Bold',
-    fontSize: 20,
-    color: '#ECDFCC'
-  },
-  headerStyle: {
-    backgroundColor: '#2E3D3A',
-  }
-}
-
-export const CircleButton = ({ onPress }: any) => (
-  <TouchableOpacity onPress={onPress} style={styles.circleButton}>
-    <FontAwesome6
-      name="arrow-left"
-      size={24}
-      color='#ECDFCC'
+export const CircleButton = ({ onPress }: any) => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[styles.circleButton, { backgroundColor: activeTheme.colors.secondary }]}
+    >
+      <FontAwesome6
+        name="arrow-left"
+        size={24}
+        color={activeTheme.colors.text.primary}
       />
-  </TouchableOpacity>
-)
+    </TouchableOpacity>
+  );
+};
 
 const FoodLayout = () => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
   const router = useRouter();
+
+  const commonHeaderStyles = {
+    headerTitleStyle: {
+      fontFamily: 'Outfit_700Bold',
+      fontSize: 20,
+      color: activeTheme.colors.text.primary,
+    },
+    headerStyle: {
+      backgroundColor: activeTheme.colors.primary,
+    },
+  };
+
   return (
-    <Stack screenOptions={{
-      headerShown: false
-    }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
       <Stack.Screen
         name="index"
         options={{
           gestureEnabled: false,
           headerShown: true,
           headerTitle: 'Halal Food',
-          ...commonHeaderStyles
+          ...commonHeaderStyles,
         }}
       />
       <Stack.Screen
         name="search"
         options={{
-          presentation: "fullScreenModal",
+          presentation: 'fullScreenModal',
           gestureEnabled: false,
           headerShown: true,
           headerTitle: 'Search',
           ...commonHeaderStyles,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color='#ECDFCC'
-                style={{ padding: 10 }}
-                />
-            </TouchableOpacity>
-          )
+          headerLeft: () => <CircleButton onPress={() => router.back()} />,
         }}
       />
       <Stack.Screen
@@ -75,16 +80,7 @@ const FoodLayout = () => {
           headerShown: true,
           headerTitle: 'Submit Your Review',
           ...commonHeaderStyles,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color='#ECDFCC'
-                style={{ padding: 10 }}
-                />
-            </TouchableOpacity>
-          )
+          headerLeft: () => <CircleButton onPress={() => router.back()} />,
         }}
       />
       <Stack.Screen
@@ -95,32 +91,22 @@ const FoodLayout = () => {
           headerShown: true,
           headerTitle: 'All Reviews',
           ...commonHeaderStyles,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color='#ECDFCC'
-                style={{ padding: 10 }}
-                />
-            </TouchableOpacity>
-          )
+          headerLeft: () => <CircleButton onPress={() => router.back()} />,
         }}
       />
     </Stack>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   circleButton: {
-    width: 40,           // Diameter of the circle
+    width: 40, // Diameter of the circle
     height: 40,
-    borderRadius: 20,    // Half of width/height to make it a circle
-    backgroundColor: '#3D4F4C', // Example background color
+    borderRadius: 20, // Half of width/height to make it a circle
     alignItems: 'center', // Center the icon horizontally
     justifyContent: 'center', // Center the icon vertically
-    padding: 8,         // Padding around the icon
+    padding: 8, // Padding around the icon
   },
 });
 
-export default FoodLayout
+export default FoodLayout;

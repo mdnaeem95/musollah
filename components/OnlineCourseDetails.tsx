@@ -1,5 +1,5 @@
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
@@ -8,15 +8,28 @@ import { AppDispatch, RootState, store } from '../redux/store/store';
 import { getAuth } from '@react-native-firebase/auth';
 import { CourseAndModuleProgress, CourseData, ModuleData } from '../utils/types';
 import SignInModal from './SignInModal';
+import { ThemeContext } from '../context/ThemeContext';
 
-const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: CourseData, teacherName: string, teacherImage: string }) => {
+const OnlineCourseDetails = ({
+  course,
+  teacherName,
+  teacherImage,
+}: {
+  course: CourseData;
+  teacherName: string;
+  teacherImage: string;
+}) => {
   const auth = getAuth();
   const router = useRouter();
   const user = useSelector((state: RootState) => state.dashboard.user);
 
-  // Fetch user progress from enrolled courses
-  const userProgress: CourseAndModuleProgress | undefined = 
-    user?.enrolledCourses.find((enrolledCourse: CourseAndModuleProgress) => enrolledCourse.courseId === course.id)
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
+  const userProgress: CourseAndModuleProgress | undefined =
+    user?.enrolledCourses.find(
+      (enrolledCourse: CourseAndModuleProgress) => enrolledCourse.courseId === course.id,
+    );
 
   const [isEnrolling, setIsEnrolling] = useState<boolean>(false);
   const [isAuthModalVisible, setIsAuthModalVisible] = useState<boolean>(false);
@@ -26,91 +39,82 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
     const currentUser = auth.currentUser;
 
     if (!currentUser) {
-      Alert.alert(
-        'Authentication Required',
-        'You need to sign in or create an account to start this course.',
-        [
-          { text: "Cancel", style: 'cancel'},
-          { text: "Sign In", onPress: () => setIsAuthModalVisible(true)},
-        ]
-      );
-      return
+      Alert.alert('Authentication Required', 'You need to sign in or create an account to start this course.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign In', onPress: () => setIsAuthModalVisible(true) },
+      ]);
+      return;
     }
 
     if (currentUser && !isEnrolling) {
-        setIsEnrolling(true);
-        const userId = currentUser.uid;
+      setIsEnrolling(true);
+      const userId = currentUser.uid;
 
-        try {
-            await dispatch(startCourse({ courseId: course.id, userId })).unwrap();
+      try {
+        await dispatch(startCourse({ courseId: course.id, userId })).unwrap();
 
-            // Add a small delay
-            setTimeout(() => {
-              // Log the updated Redux state
-              const updatedCourses = store.getState().dashboard.courses;
-              console.log('Updated courses in Redux:', updatedCourses);
+        setTimeout(() => {
+          const updatedCourses = store.getState().dashboard.courses;
+          const enrolledCourse = updatedCourses.find((c: CourseData) => c.id === course.id);
 
-              // Navigate if course is present in Redux state
-              const enrolledCourse = updatedCourses.find((c: CourseData) => c.id === course.id);
-              if (enrolledCourse && enrolledCourse.modules.length > 0) {
-                const firstModuleId = enrolledCourse.modules[0].moduleId;
-                router.push(`/courses/${enrolledCourse.id}/modules/${firstModuleId}`);
-              } else {
-                console.error('Course not found in the state after enrollment');
-              }
-            }, 500); // Adjust the delay if needed
-        } catch (error) {
-            console.error('Failed to start course:', error);
-        } finally {
-            setIsEnrolling(false);
-        }
-    } else {
-        console.error("No user is logged in.");
+          if (enrolledCourse && enrolledCourse.modules.length > 0) {
+            const firstModuleId = enrolledCourse.modules[0].moduleId;
+            router.push(`/courses/${enrolledCourse.id}/modules/${firstModuleId}`);
+          } else {
+            console.error('Course not found in the state after enrollment');
+          }
+        }, 500);
+      } catch (error) {
+        console.error('Failed to start course:', error);
+      } finally {
+        setIsEnrolling(false);
+      }
     }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: activeTheme.colors.primary }]}>
       <ScrollView contentContainerStyle={{ gap: 5 }} showsVerticalScrollIndicator={false}>
         {/* Author Information */}
-        <View style={styles.authorContainer}>
+        <View style={[styles.authorContainer, { backgroundColor: activeTheme.colors.secondary }]}>
           <Image source={{ uri: teacherImage }} style={styles.authorAvatar} />
           <View style={{ marginLeft: 10, justifyContent: 'center' }}>
-            <Text style={styles.subText}>Author</Text>
-            <Text style={styles.mainText}>{teacherName}</Text>
+            <Text style={[styles.subText, { color: activeTheme.colors.text.secondary }]}>Author</Text>
+            <Text style={[styles.mainText, { color: activeTheme.colors.text.primary }]}>{teacherName}</Text>
           </View>
         </View>
 
         {/* Course Details */}
         <View style={styles.section}>
-          <Text style={styles.subText}>Description</Text>
-          <Text style={styles.contentText}>{course.description}</Text>
+          <Text style={[styles.subText, { color: activeTheme.colors.text.secondary }]}>Description</Text>
+          <Text style={[styles.contentText, { color: activeTheme.colors.text.muted }]}>{course.description}</Text>
         </View>
 
         {/* Modules */}
         <View style={styles.section}>
-          <Text style={styles.subText}>Modules</Text>
+          <Text style={[styles.subText, { color: activeTheme.colors.text.secondary }]}>Modules</Text>
           {course.modules.map((module: ModuleData, index: number) => {
             const moduleProgress = userProgress?.status.modules[module.moduleId];
             const isLocked = !userProgress || moduleProgress === 'locked';
-            console.log(userProgress)
-            console.log('Module, ', module.moduleId, 'status, ', isLocked);
 
             return (
               <TouchableOpacity
                 key={index}
-                style={[styles.module, isLocked && styles.lockedModule]}
-                disabled={isLocked} // Disable locked modules
+                style={[
+                  styles.module,
+                  { backgroundColor: isLocked ? activeTheme.colors.text.muted : activeTheme.colors.secondary },
+                ]}
+                disabled={isLocked}
                 onPress={() => router.push(`/courses/${course.id}/modules/${module.moduleId}`)}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <View>
-                    <Text style={[styles.subText, { color: '#000000' }]}>{`${index + 1}. ${module.title}`}</Text>
-                    <Text style={[styles.contentText, { color: '#000000' }]}>1 hour</Text>
+                    <Text style={[styles.subText, { color: activeTheme.colors.text.primary }]}>
+                      {`${index + 1}. ${module.title}`}
+                    </Text>
+                    <Text style={[styles.contentText, { color: activeTheme.colors.text.secondary }]}>1 hour</Text>
                   </View>
-                  <View>
-                    {isLocked && <FontAwesome6 name="lock" size={20} color="#888" />}
-                  </View>
+                  {isLocked && <FontAwesome6 name="lock" size={20} color={activeTheme.colors.text.muted} />}
                 </View>
               </TouchableOpacity>
             );
@@ -120,19 +124,23 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
         {/* Start Learning Button */}
         <View>
           <TouchableOpacity
-            style={[styles.learningBtn, userProgress && styles.lockedModule]}
+            style={[
+              styles.learningBtn,
+              {
+                backgroundColor: userProgress ? activeTheme.colors.accent : activeTheme.colors.text.success,
+              },
+            ]}
             onPress={handleStartLearning}
             disabled={!!userProgress || isEnrolling}
-            >
-            <Text style={styles.btnText}>{isEnrolling ? 'Enrolling...' : userProgress ? 'Enrolled' : 'Start Learning'}</Text>
+          >
+            <Text style={[styles.btnText, { color: activeTheme.colors.text.primary }]}>
+              {isEnrolling ? 'Enrolling...' : userProgress ? 'Enrolled' : 'Start Learning'}
+            </Text>
           </TouchableOpacity>
         </View>
 
         {/* Sign In Modal */}
-        <SignInModal
-          isVisible={isAuthModalVisible}
-          onClose={() => setIsAuthModalVisible(false)}
-        />
+        <SignInModal isVisible={isAuthModalVisible} onClose={() => setIsAuthModalVisible(false)} />
       </ScrollView>
     </View>
   );
@@ -140,7 +148,6 @@ const OnlineCourseDetails = ({ course, teacherName, teacherImage }: { course: Co
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#2E3D3A',
     padding: 16,
     flex: 1,
   },
@@ -152,39 +159,32 @@ const styles = StyleSheet.create({
     marginTop: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#3A504C', // Background for author section
     padding: 10,
     borderRadius: 10,
   },
   authorAvatar: {
     width: 50,
     height: 50,
-    backgroundColor: '#FFFFFF',
     borderRadius: 25,
     marginRight: 10,
   },
   subText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 14,
-    color: '#ECDFCC',
   },
   mainText: {
     fontFamily: 'Outfit_600SemiBold',
     fontSize: 16,
-    color: '#ECDFCC',
   },
   contentText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
-    color: '#D1D5DB',
   },
   btnText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 16,
-    color: '#FFFFFF'
   },
   module: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 10,
     padding: 12,
     marginVertical: 8,
@@ -194,12 +194,8 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
-  lockedModule: {
-    backgroundColor: '#757575', // Greyed-out background for locked modules
-  },
   learningBtn: {
     alignItems: 'center',
-    backgroundColor: '#A3C0BB',
     paddingVertical: 12,
     borderRadius: 10,
     marginTop: 20,

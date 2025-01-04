@@ -1,12 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  ActivityIndicator,
-} from 'react-native';
+import React, { useEffect, useState, useContext } from 'react';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { fetchMonthlyPrayerTimes } from '../../../../api/prayers';
 import MonthlyPrayerTimesTable, { PrayerTime } from '../../../../components/MonthlyPrayerTimesTable';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ThemeContext } from '../../../../context/ThemeContext';
 
 // Constants for year and month
 const currentYear = new Date().getFullYear();
@@ -15,63 +12,70 @@ const currentMonth = new Date().getMonth() + 1;
 const MONTHLY_PRAYER_TIMES_KEY = 'monthly_prayer_times';
 
 const saveToStorage = async (key: string, data: any) => {
-    try {
-        AsyncStorage.setItem(key, JSON.stringify(data));
-    } catch (error) {
-        console.error('Failed to save data to AsyncStorage:', error);
-    }
-}
+  try {
+    await AsyncStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    console.error('Failed to save data to AsyncStorage:', error);
+  }
+};
 
 // Load prayer times from AsyncStorage
 const loadFromStorage = async (key: string) => {
-    try {
-        const value = await AsyncStorage.getItem(key);
-        return value ? JSON.parse(value) : null;
-    } catch (error) {
-        console.error('Failed to load data from AsyncStorage:', error);
-        return null;
-    }
+  try {
+    const value = await AsyncStorage.getItem(key);
+    return value ? JSON.parse(value) : null;
+  } catch (error) {
+    console.error('Failed to load data from AsyncStorage:', error);
+    return null;
+  }
 };
 
 const MonthlyPrayerTimesPage = () => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
   const [monthlyPrayerTimes, setMonthlyPrayerTimes] = useState<PrayerTime[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchMonthlyData = async () => {
-        const cacheKey = `${MONTHLY_PRAYER_TIMES_KEY}_${currentYear}_${currentMonth}`;
+      const cacheKey = `${MONTHLY_PRAYER_TIMES_KEY}_${currentYear}_${currentMonth}`;
 
-        const cachedData = await loadFromStorage(cacheKey);
+      const cachedData = await loadFromStorage(cacheKey);
 
-        if (cachedData) {
-            console.log(`Using cached data for ${cacheKey}`);
-            setMonthlyPrayerTimes(cachedData);
-            return;
+      if (cachedData) {
+        console.log(`Using cached data for ${cacheKey}`);
+        setMonthlyPrayerTimes(cachedData);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const data = await fetchMonthlyPrayerTimes(currentYear, currentMonth);
+        if (data) {
+          setMonthlyPrayerTimes(data);
+          await saveToStorage(cacheKey, data);
         }
-
-        try {
-            setLoading(true)
-            const data = await fetchMonthlyPrayerTimes(currentYear, currentMonth)
-            if (data) {
-                setMonthlyPrayerTimes(data);
-                await saveToStorage(cacheKey, data);
-            }
-        } catch (error) {
-            console.log('Failed to fetch monthly times.');
-        } finally {
-            setLoading(false)
-        }
-    }
+      } catch (error) {
+        console.log('Failed to fetch monthly times.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
     fetchMonthlyData();
-  }, [currentYear, currentMonth])
+  }, [currentYear, currentMonth]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: activeTheme.colors.primary }]}>
       {loading ? (
-        <ActivityIndicator size="large" color="#CCC" style={{ justifyContent: 'center', alignItems: 'center' }} />
-      ): (
-        <View style={styles.prayerTimesTable}>
+        <ActivityIndicator
+          size="large"
+          color={activeTheme.colors.text.muted}
+          style={{ justifyContent: 'center', alignItems: 'center' }}
+        />
+      ) : (
+        <View style={[styles.prayerTimesTable, { backgroundColor: activeTheme.colors.secondary }]}>
           <MonthlyPrayerTimesTable monthlyPrayerTimes={monthlyPrayerTimes} />
         </View>
       )}
@@ -82,7 +86,6 @@ const MonthlyPrayerTimesPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2E3D3A',
     alignContent: 'center',
     justifyContent: 'center',
   },

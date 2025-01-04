@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Alert, ActivityIndicator } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../../../redux/store/store';
@@ -12,6 +12,7 @@ import { getShortFormattedDate, shakeButton } from '../../../../utils';
 import { usePrayerStreakManager } from '../../../../hooks/usePrayerStreakManager'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
+import { ThemeContext } from '../../../../context/ThemeContext';
 
 type PrayerLog = {
   Subuh: boolean;
@@ -22,6 +23,10 @@ type PrayerLog = {
 };
 
 const PrayersDashboard = () => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const styles = createStyles(activeTheme);
+
   // State and Redux
   const dispatch = useDispatch<AppDispatch>();
   const auth = getAuth();
@@ -225,25 +230,25 @@ const PrayersDashboard = () => {
   }
 
   return (
-    <View style={styles.safeArea}>
+    <View style={[styles.safeArea, { backgroundColor: activeTheme.colors.primary }]}>
       {loading ? (
-        <ActivityIndicator size="large" color="#CCC" style={{ justifyContent: 'center', alignItems: 'center' }} />
+        <ActivityIndicator size="large" color={activeTheme.colors.text.muted} />
       ) : (
         <>
           <ScrollView>
             <View style={styles.section}>
               <View style={styles.dateContainer}>
                 <TouchableOpacity onPress={handlePreviousDay} style={{ paddingHorizontal: 20 }}>
-                  <FontAwesome6 name="arrow-left" size={24} color="#A3C0BB" />
+                  <FontAwesome6 name="arrow-left" size={24} color={activeTheme.colors.text.muted} />
                 </TouchableOpacity>
                 <View style={styles.dateInnerContainer}>
-                  <Text style={styles.dateText}>{format(selectedDate, 'MMMM dd, yyyy')}</Text>
-                  <Text style={styles.dayText}>{format(selectedDate, 'EEEE')}</Text>
+                  <Text style={[styles.dateText, { color: activeTheme.colors.text.primary }]}>{format(selectedDate, 'MMMM dd, yyyy')}</Text>
+                  <Text style={[styles.dayText, { color: activeTheme.colors.text.secondary }]}>{format(selectedDate, 'EEEE')}</Text>
                 </View>
                 {/* Right chevron or placeholder */}
                 {selectedDate.toDateString() !== new Date().toDateString() ? (
                   <TouchableOpacity onPress={handleNextDay} style={styles.chevronContainer}>
-                    <FontAwesome6 name="arrow-right" size={24} color="#A3C0BB" />
+                    <FontAwesome6 name="arrow-right" size={24} color={activeTheme.colors.text.muted} />
                   </TouchableOpacity>
                 ) : (
                   <View style={styles.chevronContainer} />
@@ -256,11 +261,11 @@ const PrayersDashboard = () => {
                   <View 
                     key={prayer}
                     //@ts-ignore
-                    style={[styles.prayerContainer, !todayLogs[prayer] && styles.inactivePrayerContainer ]}
+                    style={[styles.prayerContainer, { backgroundColor: activeTheme.colors.secondary }, !todayLogs[prayer] && styles.inactivePrayerContainer ]}
                   >
                     <Text
                       //@ts-ignore
-                      style={[styles.prayerLabel, !todayLogs[prayer] && styles.inactivePrayerLabel]}
+                      style={[styles.prayerLabel, { color: activeTheme.colors.text.primary }, !todayLogs[prayer] && styles.inactivePrayerLabel]}
                     >
                       {prayer}
                     </Text>
@@ -273,11 +278,11 @@ const PrayersDashboard = () => {
                         )}
                       </TouchableOpacity>
                     </Animated.View>
-                  </View>
+                  </View> 
                 )
               })}
 
-              <Text style={styles.sectionHeader}>Weekly Prayer Log</Text>
+              <Text style={[styles.sectionHeader, { color: activeTheme.colors.text.primary }]}>Weekly Prayer Log</Text>
 
               <View style={styles.calendarContainer}>
                 <View style={styles.row}>
@@ -293,15 +298,15 @@ const PrayersDashboard = () => {
                 </View>
 
                 {/* Prayer Sessions as rows */}
-                {prayerSessions.map((session, sessionIndex) => (
+                {prayerSessions.map((session) => (
                   <View key={session} style={styles.row}>
-                    <Text style={styles.sessionLabel}>{session}</Text>
+                    <Text style={[styles.sessionLabel, { color: activeTheme.colors.text.primary }]}>{session}</Text>
                     {Array.from({ length: 7 }).map((_, dayIndex) => (
                       <View key={dayIndex} style={styles.cell}>
                         <FontAwesome6 
                           name="circle" 
                           size={12} 
-                          color={isLogged(dayIndex, session) ? '#A3C0BB' : '#4D6561'} 
+                          color={isLogged(dayIndex, session) ? activeTheme.colors.text.primary : activeTheme.colors.text.muted } 
                           solid={isLogged(dayIndex, session)} 
                         />
                       </View>
@@ -311,8 +316,8 @@ const PrayersDashboard = () => {
               </View>
             </View>
 
-            <View style={styles.streakContainer}>
-              <Text style={styles.streakText}>Prayer Streak</Text>
+            <View style={[styles.streakContainer, { backgroundColor: activeTheme.colors.secondary }]}>
+              <Text style={[styles.streakText, { color: activeTheme.colors.text.primary }]}>Prayer Streak</Text>
               <View style={styles.flamesContainer}>{renderFlames()}</View>
             </View>
           </ScrollView>
@@ -323,10 +328,10 @@ const PrayersDashboard = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) =>  
+  StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#2E3D3A',
     padding: 16
   },
   section: {
@@ -344,29 +349,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 15,
-    backgroundColor: '#3A504C',
     borderRadius: 10,
     marginBottom: 10,
   },
   prayerLabel: {
     fontSize: 16,
     fontFamily: 'Outfit_400Regular',
-    color: '#ECDFCC',
-  },
-  logButton: {
-    alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 20,
-    width: '100%',
-    backgroundColor: '#A3C0BB',
-    paddingHorizontal: 8,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  logButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontFamily: 'Outfit_400Regular'
   },
   inactivePrayerContainer: {
     backgroundColor: '#757575', // Greyed-out background for false state
@@ -387,7 +375,6 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 18,
     fontFamily: 'Outfit_600SemiBold',
-    color: '#ECDFCC',
     marginHorizontal: 10,
   },
   chevronContainer: {
@@ -397,7 +384,6 @@ const styles = StyleSheet.create({
   dayText: {
     fontSize: 14,
     fontFamily: 'Outfit_400Regular',
-    color: '#ECDFCC',
     marginTop: 4
   },
   calendarContainer: {
@@ -431,8 +417,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   currentDayHeaderCell: {
-    color: '#ECDFCC', // Brighter text for the current day
-    backgroundColor: '#4D6561',// Underline for emphasis (optional)
+    color: theme.colors.text.primary, // Brighter text for the current day
+    backgroundColor: theme.colors.secondary
   },
   streakContainer: {
     alignItems: 'center',

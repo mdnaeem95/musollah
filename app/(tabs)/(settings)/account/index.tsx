@@ -1,378 +1,257 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, Alert, StyleSheet, TextInput } from 'react-native';
+import Modal from 'react-native-modal';
+import { FontAwesome6 } from '@expo/vector-icons';
 import { deleteUser, getAuth, signOut, updateProfile } from '@react-native-firebase/auth';
 import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from '@react-native-firebase/firestore';
-import { FontAwesome6 } from '@expo/vector-icons'; // For consistent icons
+import { persistor } from '../../../../redux/store/store';
 import { useRouter, useSegments } from 'expo-router';
-import { persistor } from '../../../../redux/store/store'
-import Modal from 'react-native-modal'
+import { ThemeContext } from '../../../../context/ThemeContext';
+import ThemedButton from '../../../../components/ThemedButton'; // Reusable button component
 import SignInModal from '../../../../components/SignInModal';
 
 const AccountSettings = () => {
-    const auth = getAuth();
-    const firestore = getFirestore();
-    const router = useRouter();
-    const segments = useSegments();
+  const auth = getAuth();
+  const firestore = getFirestore();
+  const router = useRouter();
+  const segments = useSegments();
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
 
-    // State for Firebase Auth data
-    const [currentUser, setCurrentUser] = useState(auth.currentUser);
-    const [name, setName] = useState<string>('');
-    const [coursesCompleted, setCoursesCompleted] = useState<number>(0);
-    // const [gamification, setGamification] = useState({
-    //   streak: 0,
-    //   xp: 0,
-    //   level: 1,
-    //   badges: [],
-    //   challenges: {
-    //     daily: false,
-    //     weekly: false,
-    //     monthly: false,
-    //   }
-    // })
+  const [currentUser, setCurrentUser] = useState(auth.currentUser);
+  const [name, setName] = useState<string>('');
+  const [coursesCompleted, setCoursesCompleted] = useState<number>(0);
 
-    // Modal state
-    const [isModalVisible, setModalVisible] = useState<boolean>(false);
-    const [isSignUpModalVisible, setIsSignUpModalVisible] = useState<boolean>(false);
-    const [newName, setNewName] = useState<string>(''); // Track new value for name
+  const [isModalVisible, setModalVisible] = useState<boolean>(false);
+  const [isSignUpModalVisible, setIsSignUpModalVisible] = useState<boolean>(false);
+  const [newName, setNewName] = useState<string>('');
 
-    // Fetch both Firebase Auth data and Firestore user data
-    useEffect(() => {
-        const fetchUserDataFromFirestore = async () => {
-            if (currentUser) {
-                try {
-                    const userDocRef = doc(firestore, 'users', currentUser.uid);
-                    const userDoc = await getDoc(userDocRef);
-                    if (userDoc.exists) {
-                        const userData = userDoc.data();
-                        setName(userData?.name || '');
-                        setCoursesCompleted(userData?.coursesCompleted || 0);
-                        // setGamification(userData?.gamification)
-                    }
-                } catch (error) {
-                    console.error('Error fetching user data from Firestore:', error);
-                }
-            }
-        };
-
-        fetchUserDataFromFirestore();
-    }, [currentUser, firestore]);
-
-    // Handle updating both Firebase Authentication and Firestore users collection
-    const handleSaveName = async () => {
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (currentUser) {
         try {
-            if (currentUser) {
+          const userDocRef = doc(firestore, 'users', currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            setName(userData?.name || '');
+            setCoursesCompleted(userData?.coursesCompleted || 0);
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [currentUser, firestore]);
+
+  const handleSaveName = async () => {
+    try {
+      if (currentUser) {
+        const userDocRef = doc(firestore, 'users', currentUser.uid);
+        await updateProfile(currentUser, { displayName: newName });
+        await updateDoc(userDocRef, { name: newName });
+        setName(newName);
+        setModalVisible(false);
+        Alert.alert('Success', 'Name updated successfully!');
+      }
+    } catch (error) {
+      console.error('Error updating name:', error);
+      Alert.alert('Error', 'Failed to update name. Please try again.');
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      await persistor.purge();
+      setCurrentUser(null);
+      router.replace(segments.join('/'));
+      Alert.alert('You have been successfully signed out.');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      Alert.alert('Error', 'Failed to sign out. Please try again.');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      'Delete Account',
+      'This action cannot be undone. Do you want to proceed?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Proceed',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (currentUser) {
                 const userDocRef = doc(firestore, 'users', currentUser.uid);
-
-                // Update Firebase Auth display name
-                await updateProfile(currentUser, { displayName: newName });
-                await updateDoc(userDocRef, { name: newName });
-                setName(newName);
-
-                setModalVisible(false);
-                Alert.alert('Success', 'Name updated successfully!', [{ text: 'OK' }]);
+                await deleteDoc(userDocRef);
+                await deleteUser(currentUser);
+                await persistor.purge();
+                router.push('/(auth)/AuthScreen');
+                Alert.alert('Account deleted successfully.');
+              }
+            } catch (error) {
+              console.error('Error deleting account:', error);
+              Alert.alert('Error', 'Failed to delete your account. Please try again.');
             }
-        } catch (error) {
-            console.error('Error updating name:', error);
-            Alert.alert('Error', 'Failed to update name. Please try again.');
-        }
-    };
-
-    // Show the modal and prepare the correct field for editing
-    const openEditModal = () => {
-        setNewName(name); // Set current value in modal
-        setModalVisible(true);
-    };
-
-    const openSignInModal = () => {
-      setIsSignUpModalVisible(true)
-    }
-
-    const closeSignInModal = () => {
-      setIsSignUpModalVisible(false)
-    }
-
-    // Handle user sign-out
-    const handleSignOut = async () => {
-        try {
-            await signOut(auth);
-            await persistor.purge();
-            setCurrentUser(null);
-            router.replace(segments.join('/'));
-            Alert.alert('You have been successfully signed out.');
-        } catch (error) {
-            console.error('Error signing out:', error);
-            Alert.alert('Error', 'Failed to sign out. Please try again.');
-        }
-    };
-
-    // Handle delete account
-    const handleDeleteAccount = async () => {
-        Alert.alert(
-            'Delete Account',
-            'This action cannot be undone. All your data will be deleted. Do you want to proceed?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Proceed', style: 'destructive', onPress: async () => {
-                        try {
-                            if (currentUser) {
-                                const userDocRef = doc(firestore, 'users', currentUser.uid);
-                                await deleteDoc(userDocRef);
-                                await deleteUser(currentUser);
-                                await persistor.purge();
-                                router.push('/(auth)/AuthScreen');
-                                Alert.alert('Account deleted.', 'Your account and data has been permanently deleted.');
-                            }
-                        } catch (error) {
-                            console.error('Error deleting account: ', error);
-                            Alert.alert('Error', 'Failed to delete your account. Please try again.');
-                        }
-                    }
-                },
-            ]
-        );
-    };
-
-    return (
-        <View style={styles.container}>
-            <View style={{ flex: 1 }}>
-              <View style={styles.form}>
-                <View style={styles.settingsField}>
-                    <View style={styles.settingsLeftField}>
-                        <FontAwesome6 name="user" color="white" size={20} />
-                        <Text style={styles.settingsLabel}>Name</Text>
-                    </View>
-                    <View style={styles.settingsRightField}>
-                        <Text style={styles.valueText}>{name}</Text>
-                        <TouchableOpacity onPress={openEditModal}>
-                            <FontAwesome6 name="edit" color="white" size={20} />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                <View style={styles.settingsField}>
-                    <View style={styles.settingsLeftField}>
-                        <FontAwesome6 name="graduation-cap" color="white" size={20} />
-                        <Text style={styles.settingsLabel}>Courses Completed</Text>
-                    </View>
-                    <Text style={styles.valueText}>{coursesCompleted}</Text>
-                </View>
-
-                {/* Gamification Section
-                <View style={styles.gamificationContainer}>
-                  <Text style={styles.gamificationText}>Level: {gamification.level}</Text>
-                  <Text style={styles.gamificationText}>XP: {gamification.xp}</Text>
-
-                  {gamification.badges.length > 0 && (
-                    <View style={styles.badgesContainer}>
-                      <Text style={styles.badgesHeader}>Badges</Text>
-                      <View style={styles.badgesGrid}>
-                        {gamification.badges.map((badge, index) => (
-                          <View key={index} style={styles.badgeItem}>
-                            <Text>{badge}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    </View>
-                  )}
-                </View> */}
-
-                {currentUser && (
-                  <TouchableOpacity 
-                  style={styles.googleMapsButton} 
-                  onPress={handleSignOut} 
-                  disabled={!currentUser}
-                  >
-                    <Text style={styles.googleMapsButtonText}>Sign Out</Text>
-                  </TouchableOpacity>
-                )}
-
-                {currentUser && (
-                  <TouchableOpacity 
-                  style={[styles.googleMapsButton, { backgroundColor: '#FF6961' }]}
-                  disabled={!currentUser} 
-                  onPress={handleDeleteAccount}
-                  >
-                    <Text style={styles.googleMapsButtonText}>Delete Account</Text>
-                  </TouchableOpacity>
-                )}
-
-                {!currentUser && (
-                  <TouchableOpacity 
-                  style={styles.googleMapsButton} 
-                  onPress={openSignInModal} 
-                  >
-                    <Text style={styles.googleMapsButtonText}>Sign Up</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-
-            <Modal isVisible={isModalVisible} onBackdropPress={() => setModalVisible(false)}>
-                <View style={styles.modalContent}>
-                    <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                        <FontAwesome6 name="xmark" color="white" size={18} solid />
-                    </TouchableOpacity>
-                    <Text style={styles.modalTitle}>Edit Name</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={newName}
-                        onChangeText={setNewName}
-                        placeholder="Enter new name"
-                        placeholderTextColor="#999"
-                    />
-                    <TouchableOpacity onPress={handleSaveName} style={styles.saveButton}>
-                        <Text style={styles.saveButtonText}>Save</Text>
-                    </TouchableOpacity>
-                </View>
-            </Modal>
-
-            <SignInModal
-              isVisible={isSignUpModalVisible}
-              onClose={closeSignInModal}
-            />
-        </View>
+          },
+        },
+      ]
     );
+  };
+
+  const styles = createStyles(activeTheme);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.form}>
+        {/* Name Field */}
+        <View style={styles.settingsField}>
+          <View style={styles.settingsLeftField}>
+            <FontAwesome6 name="user" size={20} color={activeTheme.colors.text.primary} />
+            <Text style={styles.settingsLabel}>Name</Text>
+          </View>
+          <View style={styles.settingsRightField}>
+            <Text style={styles.valueText}>{name}</Text>
+            <FontAwesome6
+              name="edit"
+              size={20}
+              color={activeTheme.colors.text.primary}
+              onPress={() => setModalVisible(true)}
+            />
+          </View>
+        </View>
+
+        {/* Courses Completed Field */}
+        <View style={styles.settingsField}>
+          <View style={styles.settingsLeftField}>
+            <FontAwesome6
+              name="graduation-cap"
+              size={20}
+              color={activeTheme.colors.text.primary}
+            />
+            <Text style={styles.settingsLabel}>Courses Completed</Text>
+          </View>
+          <Text style={styles.valueText}>{coursesCompleted}</Text>
+        </View>
+
+        {/* Actions */}
+        {currentUser ? (
+          <>
+            <ThemedButton text="Sign Out" 
+              onPress={handleSignOut} 
+              style={{ backgroundColor: activeTheme.colors.text.error }}
+              textStyle={{ color: '#FFFFFF' }} 
+            />
+            <ThemedButton 
+              text="Delete Account" 
+              onPress={handleDeleteAccount} 
+              style={{ backgroundColor: activeTheme.colors.text.error }}
+              textStyle={{ color: '#FFFFFF' }} 
+            />
+          </>
+        ) : (
+          <ThemedButton text="Sign Up" onPress={() => setIsSignUpModalVisible(true)} />
+        )}
+      </View>
+
+      {/* Edit Name Modal */}
+      <Modal isVisible={isModalVisible} onBackdropPress={() => setModalVisible(false)}>
+        <View style={styles.modalContent}>
+          <FontAwesome6
+            name="xmark"
+            size={20}
+            color={activeTheme.colors.text.primary}
+            onPress={() => setModalVisible(false)}
+            style={styles.closeButton}
+          />
+          <Text style={styles.modalTitle}>Edit Name</Text>
+          <TextInput
+            style={styles.input}
+            value={newName}
+            onChangeText={setNewName}
+            placeholder="Enter new name"
+            placeholderTextColor={activeTheme.colors.text.muted}
+          />
+          <ThemedButton text="Save" onPress={handleSaveName} />
+        </View>
+      </Modal>
+
+      {/* Sign In Modal */}
+      <SignInModal isVisible={isSignUpModalVisible} onClose={() => setIsSignUpModalVisible(false)} />
+    </View>
+  );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#2E3D3A',
-    padding: 16,
-  },
-  form: {
-    marginTop: 20,
-    backgroundColor: '#3D4F4C',
-    borderRadius: 15,
-    padding: 16,
-    gap: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  settingsField: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#5A706C',
-  },
-  settingsLeftField: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'center',
-  },
-  settingsRightField: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  settingsLabel: {
-    fontFamily: 'Outfit_500Medium',
-    fontSize: 14,
-    color: '#ECDFCC',
-  },
-  valueText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 14,
-    color: '#ECDFCC',
-  },
-  modalContent: {
-    backgroundColor: '#3A504C',
-    padding: 20,
-    borderRadius: 10,
-  },
-  closeButton: {
-    height: 38, 
-    width: 38, 
-    borderRadius: 19, 
-    backgroundColor: '#5A706C', 
-    alignItems: 'center', 
-    justifyContent: 'center',
-    marginBottom: 10, 
-  },
-  modalTitle: {
-    fontSize: 18,
-    marginBottom: 15,
-    fontFamily: 'Outfit_600SemiBold',
-    color: '#ECDFCC',
-  },
-  input: {
-    backgroundColor: '#2E3D3A',
-    borderRadius: 5,
-    padding: 8,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#5A706C',
-    color: '#ECDFCC',
-  },
-  saveButton: {
-    alignItems: 'center',
-    width: '100%',
-    backgroundColor: '#A3C0BB',
-    paddingHorizontal: 8,
-    paddingVertical: 12,
-    borderRadius: 10
-  },
-  saveButtonText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 16,
-    color: '#FFFFFF'
-  },
-  googleMapsButton: {
-    alignItems: 'center',
-    marginTop: 5,
-    width: '100%',
-    backgroundColor: '#A3C0BB',
-    paddingHorizontal: 8,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  googleMapsButtonText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 16,
-    color: '#FFFFFF',
-  },
-  gamificationContainer: {
-    backgroundColor: '#3D4F4C',
-    borderRadius: 10,
-    marginBottom: 20
-  },
-  gamificationText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 16,
-    color: '#ECDFCC',
-    marginVertical: 4
-  },
-  badgesContainer: {
-    marginTop: 10
-  },
-  badgesHeader: {
-    fontFamily: 'Outfit_500Medium',
-    fontSize: 16,
-    color: '#ECDFCC',
-    marginBottom: 10
-  },
-  badgesGrid: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 15
-  },
-  badgeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 15
-  },
-  badgeText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 14,
-    color: '#FFD700',
-    marginLeft: 5   
-  }
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.primary,
+      padding: theme.spacing.medium,
+    },
+    form: {
+      marginTop: theme.spacing.medium,
+      gap: theme.spacing.medium,
+      backgroundColor: theme.colors.secondary,
+      borderRadius: theme.borderRadius.large,
+      padding: theme.spacing.medium,
+      ...theme.shadows.default,
+    },
+    settingsField: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: theme.spacing.small,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.text.muted,
+    },
+    settingsLeftField: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.small,
+    },
+    settingsRightField: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.small,
+    },
+    settingsLabel: {
+      fontSize: theme.fontSizes.medium,
+      color: theme.colors.text.secondary,
+      fontFamily: 'Outfit_500Medium',
+    },
+    valueText: {
+      fontSize: theme.fontSizes.medium,
+      color: theme.colors.text.secondary,
+      fontFamily: 'Outfit_400Regular',
+    },
+    modalContent: {
+      backgroundColor: theme.colors.secondary,
+      padding: theme.spacing.medium,
+      borderRadius: theme.borderRadius.medium,
+    },
+    closeButton: {
+      alignSelf: 'flex-end',
+    },
+    modalTitle: {
+      fontSize: theme.fontSizes.large,
+      marginBottom: theme.spacing.medium,
+      fontFamily: 'Outfit_600SemiBold',
+      color: theme.colors.text.secondary,
+    },
+    input: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: theme.borderRadius.small,
+      padding: theme.spacing.small,
+      borderWidth: 1,
+      borderColor: theme.colors.text.muted,
+      color: theme.colors.text.secondary,
+    },
+  });
 
 export default AccountSettings;

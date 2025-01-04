@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { addNewQuestion } from '../../../../../redux/slices/questionSlice';
@@ -11,13 +11,17 @@ import {
   englishRecommendedTransformers,
 } from 'obscenity';
 import { useRouter } from 'expo-router';
+import { ThemeContext } from '../../../../../context/ThemeContext';
 
 const NewQuestionScreen = () => {
   const [form, setForm] = useState({ title: '', body: '', tags: '' });
-  const [isAuthModalVisible, setIsAuthModalVisible] = useState(false); 
+  const [isAuthModalVisible, setIsAuthModalVisible] = useState(false);
   const { ids, entities } = useSelector((state: RootState) => state.questions);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
 
   const matcher = new RegExpMatcher({
     ...englishDataset.build(),
@@ -102,12 +106,14 @@ const NewQuestionScreen = () => {
     );
   };
 
+  const styles = createStyles(activeTheme);
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Title</Text>
       <TextInput
         style={styles.input}
-        placeholderTextColor="#ECDFCC"
+        placeholderTextColor={activeTheme.colors.text.muted}
         placeholder="Type a catchy title"
         value={form.title}
         onChangeText={(value) => handleChange('title', value)}
@@ -116,7 +122,7 @@ const NewQuestionScreen = () => {
       <Text style={styles.label}>Body</Text>
       <TextInput
         style={[styles.input, styles.textArea]}
-        placeholderTextColor="#ECDFCC"
+        placeholderTextColor={activeTheme.colors.text.muted}
         placeholder="Type your question"
         value={form.body}
         onChangeText={(value) => handleChange('body', value)}
@@ -126,7 +132,7 @@ const NewQuestionScreen = () => {
       <Text style={styles.label}>Tags (comma separated)</Text>
       <TextInput
         style={styles.input}
-        placeholderTextColor="#ECDFCC"
+        placeholderTextColor={activeTheme.colors.text.muted}
         placeholder="e.g., islam, fiqh, prayer"
         value={form.tags}
         onChangeText={(value) => handleChange('tags', value)}
@@ -145,44 +151,45 @@ const NewQuestionScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#2E3D3A',
-  },
-  label: {
-    fontSize: 16,
-    fontFamily: 'Outfit_600SemiBold',
-    color: '#ECDFCC',
-    marginBottom: 5,
-  },
-  input: {
-    height: 50,
-    backgroundColor: '#3A504C',
-    borderRadius: 10,
-    marginBottom: 15,
-    paddingHorizontal: 12,
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 16,
-    color: '#FFFFFF',
-  },
-  textArea: {
-    height: 120,
-    textAlignVertical: 'top',
-  },
-  button: {
-    backgroundColor: '#A3C0BB',
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  buttonText: {
-    fontFamily: 'Outfit_600SemiBold',
-    color: '#FFFFFF',
-    fontSize: 16,
-  },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 16,
+      backgroundColor: theme.colors.primary,
+    },
+    label: {
+      fontSize: 16,
+      fontFamily: 'Outfit_600SemiBold',
+      color: theme.colors.text.primary,
+      marginBottom: 5,
+    },
+    input: {
+      height: 50,
+      backgroundColor: theme.colors.secondary,
+      borderRadius: 10,
+      marginBottom: 15,
+      paddingHorizontal: 12,
+      fontFamily: 'Outfit_400Regular',
+      fontSize: 16,
+      color: theme.colors.text.primary,
+    },
+    textArea: {
+      height: 120,
+      textAlignVertical: 'top',
+    },
+    button: {
+      backgroundColor: theme.colors.accent,
+      paddingVertical: 15,
+      borderRadius: 10,
+      alignItems: 'center',
+      marginTop: 20,
+    },
+    buttonText: {
+      fontFamily: 'Outfit_600SemiBold',
+      color: theme.colors.text.onAccent,
+      fontSize: 16,
+    },
+  });
 
 export default NewQuestionScreen;

@@ -1,8 +1,9 @@
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
-import React from 'react';
-import { BidetLocation } from './Map';
+import React, { useContext } from 'react';
 import Modal from 'react-native-modal';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { BidetLocation } from './Map';
+import { ThemeContext } from '../context/ThemeContext';
 
 interface BidetModalProps {
   isVisible: boolean;
@@ -10,40 +11,33 @@ interface BidetModalProps {
   onClose: () => void;
 }
 
-const InfoRow = ({ label, value }: { label: string, value: string }) => {
-  let iconName;
-  let iconColor;
+const InfoRow = ({ label, value }: { label: string; value: string }) => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
 
-  switch (value.toLowerCase()) {
-    case 'yes':
-      iconName = 'check';
-      iconColor = 'green';
-      break;
-    case 'no':
-      iconName = 'xmark';
-      iconColor = 'red';
-      break;
-    case 'unknown':
-      iconName = 'question';
-      iconColor = 'black';
-      break;
-    default:
-      iconName = null;
-  }
+  const { iconName, iconColor } =
+    value.toLowerCase() === 'yes'
+      ? { iconName: 'check', iconColor: 'green' }
+      : value.toLowerCase() === 'no'
+      ? { iconName: 'xmark', iconColor: 'red' }
+      : { iconName: 'question', iconColor: 'gray' };
 
   return (
     <View style={styles.infoColumn}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: activeTheme.colors.text.primary }]}>{label}</Text>
       {iconName ? (
         <FontAwesome6 name={iconName} size={20} color={iconColor} />
       ) : (
-        <Text style={styles.valueText}>{value}</Text>
+        <Text style={[styles.valueText, { color: activeTheme.colors.text.secondary }]}>{value}</Text>
       )}
     </View>
   );
 };
 
 const BidetModal = ({ isVisible, location, onClose }: BidetModalProps) => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
   const openMaps = () => {
     const url = `https://www.google.com/maps/search/?api=1&query=${location?.building}, ${location?.address}`;
     Linking.openURL(url);
@@ -59,28 +53,44 @@ const BidetModal = ({ isVisible, location, onClose }: BidetModalProps) => {
       useNativeDriver
       style={styles.modal}
     >
-      <View style={styles.contentContainer}>
-        <View style={{ marginBottom: 16, alignSelf: 'flex-start' }}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <FontAwesome6 name="xmark" size={18} color="white" solid />
+      <View style={[styles.contentContainer, { backgroundColor: activeTheme.colors.primary }]}>
+        {/* Close Button */}
+        <View style={{ width: '100%' }}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={[styles.closeButton, { backgroundColor: activeTheme.colors.accent }]}
+            accessibilityLabel="Close Modal"
+            >
+            <FontAwesome6 name="xmark" size={18} color={activeTheme.colors.text.primary} solid />
           </TouchableOpacity>
         </View>
 
+        {/* Location Info */}
         <View style={styles.textContainer}>
-          <Text style={styles.locationText}>{location?.building}</Text>
-          <Text style={styles.distanceText}>
+          <Text style={[styles.locationText, { color: activeTheme.colors.text.primary }]}>
+            {location?.building}
+          </Text>
+          <Text style={[styles.distanceText, { color: activeTheme.colors.text.secondary }]}>
             {location?.address}, Singapore {location?.postal}
           </Text>
         </View>
 
+        {/* Facility Info */}
         <View style={styles.infoContainer}>
           <InfoRow label="Male" value={location?.male || 'No'} />
           <InfoRow label="Female" value={location?.female || 'No'} />
           <InfoRow label="Handicap" value={location?.handicap || 'No'} />
         </View>
 
-        <TouchableOpacity onPress={openMaps} style={styles.googleMapsButton}>
-          <Text style={styles.googleMapsButtonText}>Open in Maps</Text>
+        {/* Open in Maps Button */}
+        <TouchableOpacity
+          onPress={openMaps}
+          style={[styles.googleMapsButton, { backgroundColor: activeTheme.colors.accent }]}
+          accessibilityLabel="Open Location in Google Maps"
+        >
+          <Text style={[styles.googleMapsButtonText, { color: activeTheme.colors.text.primary }]}>
+            Open in Maps
+          </Text>
         </TouchableOpacity>
       </View>
     </Modal>
@@ -95,74 +105,59 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     width: '80%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 15,
+    padding: 20,
     borderRadius: 10,
+    alignItems: 'center',
   },
-  // Close button positioning
-  closeButton: {           // Distance from the left
+  closeButton: {
     height: 38,
     width: 38,
     borderRadius: 19,
-    backgroundColor: '#A3C0BB',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 10,
   },
   textContainer: {
-    width: '100%',
+    marginVertical: 10,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
   },
   locationText: {
-    fontFamily: 'Outfit_500Medium',
+    fontFamily: 'Outfit_600SemiBold',
     fontSize: 20,
-    lineHeight: 21,
+    textAlign: 'center',
   },
   distanceText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 16,
-    lineHeight: 21,
     textAlign: 'center',
   },
   infoContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    marginTop: 20,
+    justifyContent: 'space-around',
+    marginVertical: 20,
     width: '100%',
   },
   infoColumn: {
     alignItems: 'center',
   },
   label: {
-    marginBottom: 5,
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
-    lineHeight: 20,
-    textAlign: 'center',
+    marginBottom: 5,
   },
   valueText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
-    lineHeight: 20,
-    textAlign: 'center',
-    color: 'black',
   },
   googleMapsButton: {
-    alignItems: 'center',
-    marginTop: 20,
     width: '100%',
-    backgroundColor: '#A3C0BB',
-    paddingHorizontal: 8,
     paddingVertical: 12,
     borderRadius: 10,
+    alignItems: 'center',
   },
   googleMapsButtonText: {
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'Outfit_500Regular',
     fontSize: 16,
-    color: '#FFFFFF',
   },
 });
 

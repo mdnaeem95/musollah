@@ -1,13 +1,15 @@
 import { View, Text, Image, StyleSheet, Dimensions, Vibration, Animated, ActivityIndicator, Alert } from 'react-native';
-import React, { useEffect, useState } from 'react';
-import * as Location from 'expo-location';
+import React, { useEffect, useState, useContext } from 'react';
 import useCompass from '../hooks/useCompass';
+import { ThemeContext } from '../context/ThemeContext';
 
 const screenWidth = Dimensions.get('window').width;
 const compassSize = screenWidth * 0.8;
 const vibrationDebounce = 1000;
 
 const Compass = () => {
+    const { theme, isDarkMode } = useContext(ThemeContext);
+    const activeTheme = isDarkMode ? theme.dark : theme.light;
     const { userHeading, qiblaAzimuth, loading, error } = useCompass();
     const [bgColor] = useState(new Animated.Value(0));
 
@@ -32,7 +34,7 @@ const Compass = () => {
 
     const interpolateColor = bgColor.interpolate({
         inputRange: [0, 1],
-        outputRange: ['#3A504C', '#A3C0BB']
+        outputRange: [activeTheme.colors.secondary, activeTheme.colors.accent],
     });
 
     if (error) {
@@ -40,18 +42,24 @@ const Compass = () => {
     }
 
     return (
-        <View style={styles.mainContainer}>
+        <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#CCC" />
-                    <Text style={styles.loadingText}>Calibrating Compass...</Text>
+                    <ActivityIndicator size="large" color={activeTheme.colors.text.muted} />
+                    <Text style={[styles.loadingText, { color: activeTheme.colors.text.muted }]}>Calibrating Compass...</Text>
                 </View>
             ) : (
                 <>
                     <View style={styles.textContainer}>
-                        <Text style={styles.qiblatText}>Your heading: {Math.round(userHeading!)}°</Text>
-                        <Text style={styles.qiblatText}>Qibla heading: {Math.round(qiblaAzimuth!)}°</Text>
-                        <Text style={styles.qiblatText}>When your heading matches the Kaaba's, you are facing the right direction.</Text>
+                        <Text style={[styles.qiblatText, { color: activeTheme.colors.text.primary }]}>
+                            Your heading: {Math.round(userHeading!)}°
+                        </Text>
+                        <Text style={[styles.qiblatText, { color: activeTheme.colors.text.primary }]}>
+                            Qibla heading: {Math.round(qiblaAzimuth!)}°
+                        </Text>
+                        <Text style={[styles.qiblatText, { color: activeTheme.colors.text.secondary }]}>
+                            When your heading matches the Kaaba's, you are facing the right direction.
+                        </Text>
                     </View>
 
                     <View style={styles.compassContainer}>
@@ -76,17 +84,16 @@ const styles = StyleSheet.create({
     mainContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        flex: 1
+        flex: 1,
     },
     loadingContainer: {
         alignItems: 'center',
         justifyContent: 'center',
         flex: 1,
     },
-      loadingText: {
+    loadingText: {
         marginTop: 10,
         fontSize: 16,
-        color: '#A3C0BB',
         fontFamily: 'Outfit_400Regular',
     },
     textContainer: {
@@ -97,37 +104,35 @@ const styles = StyleSheet.create({
         fontFamily: 'Outfit_400Regular',
         fontSize: 18,
         lineHeight: 21,
-        color: '#ECDFCC',
-        textAlign: 'center'
+        textAlign: 'center',
     },
     compassContainer: {
         top: 150,
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     compassCircle: {
         width: compassSize, 
         height: compassSize, 
-        borderRadius: compassSize /2,
+        borderRadius: compassSize / 2,
         borderWidth: 2,
-        borderColor: '#ECDFCC',
         justifyContent: 'center',
         alignItems: 'center',
-        position: 'relative'
+        position: 'relative',
     },
     kaabahIcon: {
         position: 'absolute',
         top: -120,
-        left: 125, 
+        left: 115, 
         height: 90,
         width: 90,
-        resizeMode: 'contain'
+        resizeMode: 'contain',
     },
     compassArrow: {
         height: 80, 
         width: 80, 
-        resizeMode: 'contain'
-    }
-})
+        resizeMode: 'contain',
+    },
+});
 
-export default Compass
+export default Compass;

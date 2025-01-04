@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { ThemeContext } from '../../../../../context/ThemeContext';
 
 const FidyahCalculator = () => {
+    const { theme, isDarkMode } = useContext(ThemeContext);
+    const activeTheme = isDarkMode ? theme.dark : theme.light;
+
     const [daysHaidOther, setDaysHaidOther] = useState<string>(''); // Category 1: Haid or Other Reason
     const [daysIllnessOldAge, setDaysIllnessOldAge] = useState<string>(''); // Category 2: Illness or Old-age
     const [daysPregnancyFeeding, setDaysPregnancyFeeding] = useState<string>(''); // Category 3: Pregnancy or Feeding
@@ -17,6 +21,8 @@ const FidyahCalculator = () => {
     // Calculate the grand total for all categories
     const grandTotal = totalHaidOther + totalIllnessOldAge + totalPregnancyFeeding;
 
+    const styles = createStyles(activeTheme);
+
     return (
         <View style={styles.mainContainer}>
             <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -28,13 +34,13 @@ const FidyahCalculator = () => {
                 {/* Category 1: Haid or Other Reason */}
                 <View style={styles.card}>
                     <View style={styles.iconContainer}>
-                        <FontAwesome6 name="droplet" size={24} color="#ECDFCC" />
+                        <FontAwesome6 name="droplet" size={24} color={activeTheme.colors.text.secondary} />
                         <Text style={styles.cardTitle}>Haid or Other Reason</Text>
                     </View>
                     <TextInput
                         style={styles.input}
                         placeholder="Enter number of days"
-                        placeholderTextColor="#ECDFCC"
+                        placeholderTextColor={activeTheme.colors.text.muted}
                         value={daysHaidOther}
                         onChangeText={setDaysHaidOther}
                         keyboardType="numeric"
@@ -45,13 +51,13 @@ const FidyahCalculator = () => {
                 {/* Category 2: Illness or Old-age */}
                 <View style={styles.card}>
                     <View style={styles.iconContainer}>
-                        <FontAwesome6 name="heart-pulse" size={24} color="#ECDFCC" />
+                        <FontAwesome6 name="heart-pulse" size={24} color={activeTheme.colors.text.secondary} />
                         <Text style={styles.cardTitle}>Illness or Old-age</Text>
                     </View>
                     <TextInput
                         style={styles.input}
                         placeholder="Enter number of days"
-                        placeholderTextColor="#ECDFCC"
+                        placeholderTextColor={activeTheme.colors.text.muted}
                         value={daysIllnessOldAge}
                         onChangeText={setDaysIllnessOldAge}
                         keyboardType="numeric"
@@ -62,13 +68,13 @@ const FidyahCalculator = () => {
                 {/* Category 3: Pregnancy or Feeding */}
                 <View style={styles.card}>
                     <View style={styles.iconContainer}>
-                        <FontAwesome6 name="person-pregnant" size={24} color="#ECDFCC" />
+                        <FontAwesome6 name="person-pregnant" size={24} color={activeTheme.colors.text.secondary} />
                         <Text style={styles.cardTitle}>Pregnancy or Feeding</Text>
                     </View>
                     <TextInput
                         style={styles.input}
                         placeholder="Enter number of days"
-                        placeholderTextColor="#ECDFCC"
+                        placeholderTextColor={activeTheme.colors.text.muted}
                         value={daysPregnancyFeeding}
                         onChangeText={setDaysPregnancyFeeding}
                         keyboardType="numeric"
@@ -86,80 +92,78 @@ const FidyahCalculator = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    mainContainer: {
-        flex: 1,
-        backgroundColor: '#2E3D3A',
-        padding: 16,
-    },
-    scrollContainer: {
-        paddingBottom: 20,
-    },
-    card: {
-        backgroundColor: '#3D4F4C',
-        borderRadius: 15,
-        padding: 20,
-        marginBottom: 20,
-        shadowColor: '#000',
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 5,
-    },
-    iconContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    cardTitle: {
-        fontSize: 18,
-        fontFamily: 'Outfit_600SemiBold',
-        color: '#ECDFCC',
-        marginLeft: 10,
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#4D6561',
-        padding: 10,
-        textAlign: 'left',
-        borderRadius: 5,
-        color: '#ECDFCC',
-        backgroundColor: '#3A504C',
-        marginVertical: 10
-    },
-    resultText: {
-        fontSize: 16,
-        fontFamily: 'Outfit_500Medium',
-        color: '#ECDFCC',
-    },
-    rateContainer: {
-        marginBottom: 20,
-        alignItems: 'center',
-        padding: 10,
-        backgroundColor: '#3D4F4C',
-        borderRadius: 15,
-    },
-    rateText: {
-        fontSize: 16,
-        fontFamily: 'Outfit_500Medium',
-        color: '#ECDFCC',
-    },
-    totalContainer: {
-        padding: 15,
-        backgroundColor: '#3D4F4C',
-        borderRadius: 15,
-        alignItems: 'center',
-    },
-    totalText: {
-        fontSize: 18,
-        fontFamily: 'Outfit_600SemiBold',
-        color: '#ECDFCC',
-        marginBottom: 5,
-    },
-    totalAmount: {
-        fontSize: 20,
-        fontFamily: 'Outfit_600SemiBold',
-        color: '#ECDFCC',
-    },
-});
+const createStyles = (theme: any) =>
+    StyleSheet.create({
+        mainContainer: {
+            flex: 1,
+            backgroundColor: theme.colors.primary,
+            padding: 16,
+        },
+        scrollContainer: {
+            paddingBottom: 20,
+        },
+        card: {
+            backgroundColor: theme.colors.secondary,
+            borderRadius: theme.borderRadius.medium,
+            padding: theme.spacing.large,
+            marginBottom: theme.spacing.medium,
+            ...theme.shadows.default,
+        },
+        iconContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: theme.spacing.small,
+        },
+        cardTitle: {
+            fontSize: theme.fontSizes.large,
+            fontFamily: 'Outfit_600SemiBold',
+            color: theme.colors.text.secondary,
+            marginLeft: theme.spacing.small,
+        },
+        input: {
+            borderWidth: 1,
+            borderColor: theme.colors.secondary,
+            padding: theme.spacing.small,
+            textAlign: 'left',
+            borderRadius: theme.borderRadius.small,
+            color: theme.colors.text.primary,
+            backgroundColor: theme.colors.primary,
+            marginVertical: theme.spacing.small,
+        },
+        resultText: {
+            fontSize: theme.fontSizes.medium,
+            fontFamily: 'Outfit_500Medium',
+            color: theme.colors.text.secondary,
+        },
+        rateContainer: {
+            marginBottom: theme.spacing.medium,
+            alignItems: 'center',
+            padding: theme.spacing.small,
+            backgroundColor: theme.colors.secondary,
+            borderRadius: theme.borderRadius.medium,
+        },
+        rateText: {
+            fontSize: theme.fontSizes.medium,
+            fontFamily: 'Outfit_500Medium',
+            color: theme.colors.text.secondary,
+        },
+        totalContainer: {
+            padding: theme.spacing.medium,
+            backgroundColor: theme.colors.secondary,
+            borderRadius: theme.borderRadius.medium,
+            alignItems: 'center',
+        },
+        totalText: {
+            fontSize: theme.fontSizes.large,
+            fontFamily: 'Outfit_600SemiBold',
+            color: theme.colors.text.secondary,
+            marginBottom: theme.spacing.small,
+        },
+        totalAmount: {
+            fontSize: theme.fontSizes.xLarge,
+            fontFamily: 'Outfit_600SemiBold',
+            color: theme.colors.text.secondary,
+        },
+    });
 
 export default FidyahCalculator;

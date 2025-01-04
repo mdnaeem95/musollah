@@ -18,8 +18,6 @@ import { FloatingPlayer } from '../../../../components/FloatingPlayer';
 import { reciterOptions } from '../../../../utils/constants';
 import BookmarkIcon from '../../../../components/BookmarkIcon';
 
-const DAILY_PROGRESS_KEY = 'dailyProgress';
-
 // Utility functions for bookmarking and marking read Ayahs
 const toggleItemInArray = (arr: number[], item: number) => (
     arr.includes(item) ? arr.filter(num => num !== item) : [...arr, item]
@@ -33,7 +31,6 @@ const SurahTextScreen = () => {
     const { ayahIndex } = useLocalSearchParams();
     const { id } = useLocalSearchParams<{ id: string, ayahIndex?: string }>();
     const { surahs, isLoading, bookmarks } = useSelector((state: RootState) => state.quran);
-    const { isDarkMode, textSize, reciter } = useContext(ThemeContext);
 
     const surahNum = id ? parseInt(id as string, 10) : 1;
     const surah: Surah | undefined = surahs.find((surah: Surah) => surah.number === surahNum);
@@ -47,6 +44,9 @@ const SurahTextScreen = () => {
     const [selectedSurah, setSelectedSurah] = useState<number>(surahNum);
     const [isPickerVisible, setPickerVisible] = useState<boolean>(false);
     const [audioLinks, setAudioLinks] = useState<string[]>(initialLinks);
+
+    const { theme, isDarkMode, textSize, reciter } = useContext(ThemeContext);
+    const activeTheme = isDarkMode ? theme.dark : theme.light;
     
     const generateTracks = (surah: Surah, reciter: string) => {
         return surah.arabicText.split('|').map((ayah, index) => {
@@ -141,18 +141,24 @@ const SurahTextScreen = () => {
     // Set the dynamic title in the header
     useLayoutEffect(() => {
         if (surah) {
-        navigation.setOptions({
-            headerTitle: () => (
-                <View style={styles.headerContainer}>
-                    <Text style={[styles.headerText, { color: '#ECDFCC' }]}>{surah.englishName}</Text>
-                    <TouchableOpacity onPress={togglePickerVisibility}>
-                        <FontAwesome6 name={isPickerVisible ? "chevron-up" : "chevron-down"} size={20} color={'#ECDFCC'} />
-                    </TouchableOpacity>
-                </View>
-            ),
-        });
+            navigation.setOptions({
+                headerTitle: () => (
+                    <View style={styles.headerContainer}>
+                        <Text style={[styles.headerText, { color: activeTheme.colors.text.primary }]}>
+                            {surah.englishName}
+                        </Text>
+                        <TouchableOpacity onPress={togglePickerVisibility}>
+                            <FontAwesome6
+                                name={isPickerVisible ? "chevron-up" : "chevron-down"}
+                                size={20}
+                                color={activeTheme.colors.text.primary}
+                            />
+                        </TouchableOpacity>
+                    </View>
+                ),
+            });
         }
-    }, [navigation, surah, isPickerVisible]);
+    }, [navigation, surah, isPickerVisible, activeTheme]);
 
     const togglePickerVisibility = () => {
         setPickerVisible(prev => !prev);
@@ -247,71 +253,119 @@ const SurahTextScreen = () => {
         });
     }, [arabicAyahs.length, surahNum]);       
 
-    const renderAyah = useCallback(({ item, index }: { item: string, index: number }) => {
-        const ayahNumber = index + 1; // Adjust Ayah number for display
-        const isActiveAyah = index === currentAyahIndex;
-
-        const isBookmarked = bookmarks.some(
-            (bookmark) => bookmark.surahNumber === surahNum && bookmark.ayahNumber === ayahNumber
-        )
-        const isRead = readAyahs.includes(ayahNumber);
-        
-        // Determine the text color based on the theme and whether the Ayah is active
-        const ayahTextColor = isActiveAyah
-        ? (isDarkMode ? '#F0DBA0' : '#F4E2C1')  // Highlighted text color
-        : (isDarkMode ? '#ECDFCC' : '#FFFFFF');  // Regular text color
-
-        return (
-            <View key={index} style={[styles.ayahContainer, { height: '100%' }]}>
-                <View style={{ flexGrow: 1 }}>
-                {/* Top Row with Ayah Number, Share, Play, and Bookmark Icons */}
-                <View style={[styles.topRow, { backgroundColor: isDarkMode? "#263837" : "#3A504C"}]}>
-                    <View style={styles.ayahNumber}>
-                        <Text style={[styles.ayahNumberText, { color: ayahTextColor }]}>{ayahNumber}</Text>
-                    </View>
-
-                    <View style={styles.iconGroup}>
-                        <PlayPauseButton 
-                            color={ayahTextColor}
-                            isActiveAyah={isActiveAyah}
-                            trackIndex={index}
-                            currentAyahIndex={currentAyahIndex} 
-                        />
-                        <BookmarkIcon
-                            isBookmarked={isBookmarked}
-                            onToggle={() => toggleBookmark(ayahNumber)}
-                            size={45} // Adjust size as needed
-                        />
-                        <TouchableOpacity
-                            onPress={() => toggleReadAyah(ayahNumber)}
-                            style={styles.iconButton}
-                            >
-                            <FontAwesome6
-                                name="check"
-                                size={20}
-                                solid={isRead}
-                                color={isRead ? 'white' : 'gray'}
+    const renderAyah = useCallback(
+        ({ item, index }: { item: string, index: number }) => {
+            const ayahNumber = index + 1; // Adjust Ayah number for display
+            const isActiveAyah = index === currentAyahIndex;
+    
+            const isBookmarked = bookmarks.some(
+                (bookmark) => bookmark.surahNumber === surahNum && bookmark.ayahNumber === ayahNumber
+            );
+            const isRead = readAyahs.includes(ayahNumber);
+    
+            // Determine the text color based on the theme and whether the Ayah is active
+            const ayahTextColor = isActiveAyah
+                ? activeTheme.colors.accent // Highlighted text color
+                : activeTheme.colors.text.primary; // Regular text color
+    
+            return (
+                <View key={index} style={[styles.ayahContainer, { height: '100%' }]}>
+                    <View style={{ flexGrow: 1 }}>
+                        {/* Top Row with Ayah Number, Share, Play, and Bookmark Icons */}
+                        <View
+                            style={[
+                                styles.topRow,
+                                { backgroundColor: activeTheme.colors.secondary },
+                            ]}
+                        >
+                            <View style={styles.ayahNumber}>
+                                <Text
+                                    style={[
+                                        styles.ayahNumberText,
+                                        { color: ayahTextColor },
+                                    ]}
+                                >
+                                    {ayahNumber}
+                                </Text>
+                            </View>
+    
+                            <View style={styles.iconGroup}>
+                                <PlayPauseButton
+                                    color={ayahTextColor}
+                                    isActiveAyah={isActiveAyah}
+                                    trackIndex={index}
+                                    currentAyahIndex={currentAyahIndex}
                                 />
-                        </TouchableOpacity>
+                                <BookmarkIcon
+                                    isBookmarked={isBookmarked}
+                                    onToggle={() => toggleBookmark(ayahNumber)}
+                                    size={45} // Adjust size as needed
+                                />
+                                <TouchableOpacity
+                                    onPress={() => toggleReadAyah(ayahNumber)}
+                                    style={styles.iconButton}
+                                >
+                                    <FontAwesome6
+                                        name="check"
+                                        size={20}
+                                        solid={isRead}
+                                        color={
+                                            isRead
+                                                ? activeTheme.colors.text.primary
+                                                : activeTheme.colors.text.muted
+                                        }
+                                    />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+    
+                        <View>
+                            <Text
+                                style={[
+                                    styles.quranText,
+                                    {
+                                        color: ayahTextColor,
+                                        fontSize: textSize,
+                                        lineHeight: textSize * 2.5,
+                                    },
+                                ]}
+                            >
+                                {item}
+                            </Text>
+                            {surah?.englishTranslation && (
+                                <View style={styles.translationContainer}>
+                                    <Text
+                                        style={[
+                                            styles.translationText,
+                                            { color: activeTheme.colors.text.secondary },
+                                        ]}
+                                    >
+                                        {englishTranslations[index]}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+    
+                        <View
+                            style={[
+                                styles.separator,
+                                { backgroundColor: activeTheme.colors.text.secondary },
+                            ]}
+                        />
                     </View>
                 </View>
-
-                <View >
-                    <Text style={[styles.quranText, { color: ayahTextColor, fontSize: textSize, lineHeight: textSize * 2.5 }]}>{item}</Text>
-                    {surah?.englishTranslation && (
-                        <View style={styles.translationContainer}>
-                            <Text style={[styles.translationText, { color: ayahTextColor }]}>
-                                {englishTranslations[index]}
-                            </Text>
-                        </View>
-                    )}
-                </View>
-
-                <View style={[styles.separator, { backgroundColor: isDarkMode ? '#ECDFCC' :'#FFFFFF' }]} />
-                </View>
-            </View>
-        )
-    }, [arabicAyahs.length, bookmarks, currentAyahIndex, isDarkMode, readAyahs, surah?.englishTranslation, textSize]);
+            );
+        },
+        [
+            arabicAyahs.length,
+            bookmarks,
+            currentAyahIndex,
+            readAyahs,
+            surah?.englishTranslation,
+            textSize,
+            activeTheme,
+        ]
+    );
 
     useEffect(() => {
         const scrollToAyah = () => {
@@ -340,19 +394,34 @@ const SurahTextScreen = () => {
     // Render the progress tracker
     const renderProgressTracker = () => {
         return (
-            <View style={[styles.progressContainer, { backgroundColor: isDarkMode? "#263837" : "#3A504C"}]}>
-                <Text style={styles.progressText}>
+            <View
+                style={[
+                    styles.progressContainer,
+                    { backgroundColor: activeTheme.colors.secondary },
+                ]}
+            >
+                <Text
+                    style={[
+                        styles.progressText,
+                        { color: activeTheme.colors.text.primary },
+                    ]}
+                >
                     {`${surahNum}. ${surah?.englishName}`}
                 </Text>
-                <Text style={styles.progressText}>
+                <Text
+                    style={[
+                        styles.progressText,
+                        { color: activeTheme.colors.text.primary },
+                    ]}
+                >
                     Progress: {`${readAyahs.length}/${audioLinks.length}`}
                 </Text>
             </View>
         );
     };
-
+    
     return (
-        <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? '#2E3D3A' : '#4D6561' }]}>
+        <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
             {/* Progress Tracker */}
             {renderProgressTracker()}
 
@@ -375,7 +444,7 @@ const SurahTextScreen = () => {
 
             {/* Surah Picker */}
             {isPickerVisible && (
-                <View style={[styles.pickerContainer, { backgroundColor: isDarkMode ? "#1E1E1E" : "#4D6561" }]}>
+                <View style={[styles.pickerContainer, { backgroundColor: activeTheme.colors.modalBackground }]}>
                     <Picker
                         selectedValue={selectedSurah}
                         onValueChange={handleSurahChange}
@@ -385,7 +454,7 @@ const SurahTextScreen = () => {
                             <Picker.Item 
                                 key={surah.number} 
                                 label={`${surah.number}. ${surah.englishName}`} value={surah.number}
-                                color={isDarkMode ? '#ECDFCC' : '#FFFFFF' } 
+                                color={activeTheme.colors.text.primary} 
                             />
                         ))}
                     </Picker>

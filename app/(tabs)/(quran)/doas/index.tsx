@@ -11,7 +11,9 @@ import { FlashList } from '@shopify/flash-list';
 import { fetchDailyDoasData } from '../../../../redux/slices/doasSlice';
 
 const Doas = () => {
-  const { isDarkMode } = useContext(ThemeContext);
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
   const { doas, loading } = useSelector((state: RootState) => state.doas);
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -28,9 +30,12 @@ const Doas = () => {
     }
   };
 
-  const handleDoaPress = useCallback((doa: Doa) => {
-    router.push(`/doas/${doa.number}`);
-  }, [router]);
+  const handleDoaPress = useCallback(
+    (doa: Doa) => {
+      router.push(`/doas/${doa.number}`);
+    },
+    [router]
+  );
 
   const renderDoaItem = useCallback(
     ({ item }: { item: Doa }) => <DoaItem key={item.number} doa={item} onPress={handleDoaPress} />,
@@ -40,7 +45,8 @@ const Doas = () => {
   const filteredDoas = useMemo(() => {
     return doas.filter(
       (doa) =>
-        doa.title.toLowerCase().includes(debounceQuery.toLowerCase()) || (doa.number && doa.number.toString().includes(debounceQuery))
+        doa.title.toLowerCase().includes(debounceQuery.toLowerCase()) ||
+        (doa.number && doa.number.toString().includes(debounceQuery))
     );
   }, [doas, debounceQuery]);
 
@@ -58,31 +64,54 @@ const Doas = () => {
   };
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? '#2E3D3A' : '#4D6561' }]}>
+    <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FFFFFF" />
+          <ActivityIndicator size="large" color={activeTheme.colors.text.primary} />
         </View>
       ) : (
         <>
           <View style={styles.headerContainer}>
             {isSearchExpanded && (
-              <View style={styles.searchBarContainer}>
+              <View
+                style={[
+                  styles.searchBarContainer,
+                  { backgroundColor: activeTheme.colors.secondary },
+                ]}
+              >
                 <TextInput
                   placeholder="Search Dua"
-                  placeholderTextColor="#B0B0B0"
-                  style={styles.searchInput}
+                  placeholderTextColor={activeTheme.colors.text.muted}
+                  style={[
+                    styles.searchInput,
+                    { color: activeTheme.colors.text.primary },
+                  ]}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                 />
               </View>
             )}
-            <TouchableOpacity onPress={toggleSearch} style={styles.searchIconContainer}>
-              <FontAwesome6 name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} size={24} color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
+            <TouchableOpacity
+              onPress={toggleSearch}
+              style={styles.searchIconContainer}
+            >
+              <FontAwesome6
+                name={isSearchExpanded ? 'xmark' : 'magnifying-glass'}
+                size={24}
+                color={activeTheme.colors.text.primary}
+              />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.bookmarkIconContainer} onPress={() => router.push('/bookmarks')}>
-              <FontAwesome6 name="bookmark" size={24} solid color={isDarkMode ? '#ECDFCC' : '#FFFFFF'} />
+            <TouchableOpacity
+              style={styles.bookmarkIconContainer}
+              onPress={() => router.push('/bookmarks')}
+            >
+              <FontAwesome6
+                name="bookmark"
+                size={24}
+                solid
+                color={activeTheme.colors.text.primary}
+              />
             </TouchableOpacity>
           </View>
 
@@ -95,10 +124,9 @@ const Doas = () => {
             showsVerticalScrollIndicator={false}
             refreshing={refreshing}
             onRefresh={handleRefresh}
-          />   
+          />
         </>
       )}
-      {/* Header with searchbar and bookmark */}
     </View>
   );
 };
@@ -106,12 +134,11 @@ const Doas = () => {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#4D6561',
     paddingHorizontal: 16,
   },
   loadingContainer: {
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   headerContainer: {
     flexDirection: 'row',
@@ -121,7 +148,6 @@ const styles = StyleSheet.create({
   },
   searchBarContainer: {
     flex: 1,
-    backgroundColor: '#3A504C',
     borderRadius: 15,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -132,7 +158,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   searchInput: {
-    color: '#FFFFFF',
     fontFamily: 'Outfit_400Regular',
     fontSize: 16,
   },
@@ -142,6 +167,6 @@ const styles = StyleSheet.create({
   bookmarkIconContainer: {
     padding: 8,
   },
-})
+});
 
 export default Doas;

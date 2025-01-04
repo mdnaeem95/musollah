@@ -4,21 +4,36 @@ import { Doa } from '../utils/types';
 import { ThemeContext } from '../context/ThemeContext';
 
 interface DoaProps {
-    doa: Doa,
-    onPress: (doa: Doa) => void,
+  doa: Doa;
+  onPress: (doa: Doa) => void;
 }
 
 const DoaItem = ({ doa, onPress }: DoaProps) => {
-  const { isDarkMode } = useContext(ThemeContext);
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
 
   return (
     <TouchableOpacity onPress={() => onPress(doa)}>
       <View style={styles.container}>
         <View style={styles.contentContainer}>
           <View style={styles.textContainer}>
-            <Text style={[styles.doaNumber, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF'}]}>{doa.number}</Text>
+            <Text
+              style={[
+                styles.doaNumber,
+                { color: activeTheme.colors.text.primary },
+              ]}
+            >
+              {doa.number}
+            </Text>
             <View>
-                <Text style={[styles.doaTitle, { color: isDarkMode ? '#ECDFCC' : '#FFFFFF'}]}>{doa.title}</Text>
+              <Text
+                style={[
+                  styles.doaTitle,
+                  { color: activeTheme.colors.text.primary },
+                ]}
+              >
+                {doa.title}
+              </Text>
             </View>
           </View>
         </View>
@@ -33,17 +48,17 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   contentContainer: {
-    height: 55, 
-    gap: 10, 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    flexDirection: 'row', 
+    height: 55,
+    gap: 10,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexDirection: 'row',
   },
   textContainer: {
-    flexDirection: 'row', 
-    gap: 10, 
-    alignItems: 'center', 
-    justifyContent: 'center'
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   doaNumber: {
     fontFamily: 'Outfit_600SemiBold',

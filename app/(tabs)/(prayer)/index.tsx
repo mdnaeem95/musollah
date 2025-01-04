@@ -1,24 +1,23 @@
-import { View, Text, StyleSheet, ImageBackground, Dimensions } from 'react-native'
+import { View, Text, StyleSheet, ImageBackground } from 'react-native'
 import React, { useEffect, useMemo, useState } from 'react'
 import Clock from 'react-live-clock';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
 
-import PrayerTimeItem from '../../../components/PrayerTimeItem';
 import ExpandableButton from '../../../components/ExpandableButton';
 import PrayerLocationModal from '../../../components/PrayerLocationModal';
 
 import { RootState } from '../../../redux/store/store';
-import { PrayerTimes } from '../../../utils/types';
 import { getFormattedDate, scaleSize } from '../../../utils';
 import { usePrayerTimes } from '../../../hooks/usePrayerTimes'
+import CurrentPrayerInfo from '../../../components/CurrentPrayerInfo';
+import PrayerTimesList from '../../../components/PrayerTimesList';
 
 const PrayerTab = () => {
   const router = useRouter();
   const { prayerTimes, islamicDate, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
   const { reminderInterval } = useSelector((state: RootState) => state.userPreferences);
   const { currentPrayer, nextPrayerInfo, fetchAndScheduleNotifications, backgroundImage } = usePrayerTimes(prayerTimes, reminderInterval)
-  const desiredPrayers: (keyof PrayerTimes)[] = ['Subuh', 'Syuruk', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
 
   const [isPrayerLocationModalVisible, setIsPrayerLocationModalVisible] = useState<boolean>(false);
 
@@ -50,29 +49,12 @@ const PrayerTab = () => {
           <Text style={styles.islamicDateText}>{islamicDate}</Text>
         </View>
 
-        <View style={styles.bottomView}>
-          {prayerTimes && (
-            <>
-              <Text style={styles.currentPrayerText}>{currentPrayer}</Text>
-              <Text style={styles.timeUntilNextPrayerText}>
-                {nextPrayerInfo?.timeUntilNextPrayer} until {nextPrayerInfo?.nextPrayer}
-              </Text>
-            </>
-          )}
-        </View>
+        <CurrentPrayerInfo
+          currentPrayer={currentPrayer}
+          nextPrayerInfo={nextPrayerInfo}
+        />
 
-        <View style={styles.prayerTimesContainer}>
-          {prayerTimes ? (
-
-            <>
-              {desiredPrayers.map((prayer) => (
-                <PrayerTimeItem key={prayer} name={prayer as string} time={prayerTimes[prayer]} />
-              ))}
-            </>
-          ) : (
-            <Text>Loading...</Text>
-          )}
-        </View>
+        <PrayerTimesList prayerTimes={prayerTimes} />
       </View>
 
       {/* Include the City Selection Modal */}
@@ -103,10 +85,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  bottomView: {
-    alignItems: 'center',
-    marginVertical: 10
-  },
   dateText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: scaleSize(18),
@@ -125,24 +103,6 @@ const styles = StyleSheet.create({
     fontSize: scaleSize(60),
     color: '#000000',
     textAlign: 'center',
-  },
-  currentPrayerText: {
-    fontFamily: 'Outfit_500Medium',
-    fontSize: scaleSize(24),
-    color: '#000000',
-    textAlign: 'center',
-  },
-  timeUntilNextPrayerText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: scaleSize(14),
-    color: '#000000',
-    textAlign: 'center',
-    marginTop: 5,
-  },
-  prayerTimesContainer: {
-    marginTop: 20,
-    marginBottom: 20,
-    gap: 15,
   },
 });
 
