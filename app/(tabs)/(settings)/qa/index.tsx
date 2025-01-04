@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import QuestionList from '../../../../components/QaQuestionList';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { ThemeContext } from '../../../../context/ThemeContext';
 
 const LandingPage = () => {
   const router = useRouter();
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
   const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
@@ -24,6 +28,8 @@ const LandingPage = () => {
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
+  const styles = createStyles(activeTheme);
+
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollContainer}>
@@ -33,7 +39,7 @@ const LandingPage = () => {
             <View style={styles.searchBarContainer}>
               <TextInput
                 placeholder="Search questions or content"
-                placeholderTextColor="#B0B0B0"
+                placeholderTextColor={activeTheme.colors.text.muted}
                 style={styles.searchInput}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -42,10 +48,10 @@ const LandingPage = () => {
           )}
 
           <TouchableOpacity onPress={toggleSearch} style={styles.searchIconContainer}>
-            <FontAwesome6 
-              name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} 
-              size={24} 
-              color="#ECDFCC" 
+            <FontAwesome6
+              name={isSearchExpanded ? 'xmark' : 'magnifying-glass'}
+              size={24}
+              color={activeTheme.colors.text.secondary}
             />
           </TouchableOpacity>
         </View>
@@ -56,9 +62,14 @@ const LandingPage = () => {
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.askButton}
-          onPress={() => router.push("/qa/newQuestion")}
+          onPress={() => router.push('/qa/newQuestion')}
         >
-          <FontAwesome6 name="question-circle" size={18} color="#FFF" style={styles.icon} />
+          <FontAwesome6
+            name="question-circle"
+            size={18}
+            color={activeTheme.colors.text.primary}
+            style={styles.icon}
+          />
           <Text style={styles.askButtonText}>Ask a Question</Text>
         </TouchableOpacity>
       </View>
@@ -66,67 +77,69 @@ const LandingPage = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#2E3D3A',
-  },
-  scrollContainer: {
-    flex: 1,
-    paddingVertical: 16,
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-  },
-  searchBarContainer: {
-    flex: 1,
-    backgroundColor: '#3A504C',
-    borderRadius: 15,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    marginRight: 10,
-  },
-  searchInput: {
-    color: '#FFFFFF',
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 16,
-  },
-  searchIconContainer: {
-    padding: 8,
-  },
-  buttonContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 16,
-    right: 16,
-    alignItems: 'center',
-  },
-  askButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#A3C0BB',
-    padding: 15,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  icon: {
-    marginRight: 8,
-  },
-  askButtonText: {
-    fontFamily: 'Outfit_600SemiBold',
-    color: '#FFF',
-    fontSize: 16,
-  },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.primary,
+    },
+    scrollContainer: {
+      flex: 1,
+      paddingVertical: 16,
+    },
+    headerContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+    },
+    searchBarContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.secondary,
+      borderRadius: 15,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      shadowColor: theme.colors.text.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      marginRight: 10,
+    },
+    searchInput: {
+      color: theme.colors.text.primary,
+      fontFamily: 'Outfit_400Regular',
+      fontSize: 16,
+    },
+    searchIconContainer: {
+      padding: 8,
+    },
+    buttonContainer: {
+      position: 'absolute',
+      bottom: 20,
+      left: 16,
+      right: 16,
+      alignItems: 'center',
+    },
+    askButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.accent,
+      padding: 15,
+      borderRadius: 10,
+      shadowColor: theme.colors.text.primary,
+      shadowOpacity: 0.3,
+      shadowRadius: 5,
+      elevation: 5,
+    },
+    icon: {
+      marginRight: 8,
+      color: '#000'
+    },
+    askButtonText: {
+      fontFamily: 'Outfit_600SemiBold',
+      color: '#000',
+      fontSize: 16,
+    },
+  });
 
 export default LandingPage;

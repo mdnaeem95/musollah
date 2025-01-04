@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -19,32 +19,36 @@ import { fetchUserLocation } from '../../../redux/slices/userLocationSlice';
 import { Region } from '../../../components/Map';
 import { haversineDistance } from '../../../utils/distance';
 import { AirbnbRating } from 'react-native-ratings';
+import { ThemeContext } from '../../../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
 const RestaurantLocator = () => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [region, setRegion] = useState<Region | undefined>(undefined);
   const [categories, setCategories] = useState<string[]>([]);
   const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [userLocationCoords, setUserLocationCoords] = useState<{ latitude: number, longitude: number }>({
+  const [userLocationCoords, setUserLocationCoords] = useState<{ latitude: number; longitude: number }>({
     latitude: 1.3521,
-    longitude: 103.8198
+    longitude: 103.8198,
   });
   const [loading, setLoading] = useState(true);
+
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { userLocation } = useSelector((state: RootState) => state.location)
+  const { userLocation } = useSelector((state: RootState) => state.location);
 
   useEffect(() => {
     dispatch(fetchUserLocation());
     setUserLocationCoords({
       latitude: userLocation?.coords.latitude || 1.3521,
-      longitude: userLocation?.coords.longitude || 103.8198
-    })
-    console.log('UserLocation coords:', userLocation?.coords)
-  }, [dispatch])
+      longitude: userLocation?.coords.longitude || 103.8198,
+    });
+  }, [dispatch]);
 
   useEffect(() => {
     if (userLocation) {
@@ -52,10 +56,10 @@ const RestaurantLocator = () => {
         latitude: userLocation.coords.latitude,
         longitude: userLocation.coords.longitude,
         latitudeDelta: 0.005,
-        longitudeDelta: 0.005
-      })
+        longitudeDelta: 0.005,
+      });
     }
-  }, [userLocation])
+  }, [userLocation]);
 
   useEffect(() => {
     const loadRestaurants = async () => {
@@ -82,10 +86,8 @@ const RestaurantLocator = () => {
 
   useEffect(() => {
     if (selectedCategories.length === 0) {
-      // If no categories are selected, show all restaurants
       setFilteredRestaurants(restaurants);
     } else {
-      // Filter restaurants matching any of the selected categories
       const filtered = restaurants.filter((restaurant) =>
         restaurant.categories.some((cat) => selectedCategories.includes(cat))
       );
@@ -94,29 +96,27 @@ const RestaurantLocator = () => {
   }, [selectedCategories, restaurants]);
 
   const handleCategorySelect = (category: string) => {
-    setSelectedCategories((prevCategories) => {
-      if (prevCategories.includes(category)) {
-        // If already selected, remove it
-        return prevCategories.filter((cat) => cat !== category);
-      } else {
-        // Otherwise, add it to the selection
-        return [...prevCategories, category];
-      }
-    });
+    setSelectedCategories((prevCategories) =>
+      prevCategories.includes(category)
+        ? prevCategories.filter((cat) => cat !== category)
+        : [...prevCategories, category]
+    );
   };
 
   const renderCategoryItem = ({ item }: { item: string }) => (
     <TouchableOpacity
       style={[
         styles.categoryPill,
-        selectedCategories.includes(item) && styles.categoryPillActive,
+        { backgroundColor: activeTheme.colors.secondary },
+        selectedCategories.includes(item) && { backgroundColor: activeTheme.colors.accent },
       ]}
       onPress={() => handleCategorySelect(item)}
     >
       <Text
         style={[
           styles.categoryText,
-          selectedCategories.includes(item) && styles.categoryTextActive,
+          { color: activeTheme.colors.text.primary },
+          selectedCategories.includes(item) && { color: activeTheme.colors.primary },
         ]}
       >
         {item}
@@ -129,59 +129,59 @@ const RestaurantLocator = () => {
     const hasReviews = item.averageRating !== 0 && item.totalReviews !== 0;
 
     return (
-    <TouchableOpacity 
-      style={styles.recommendationCard}
-      onPress={() => router.push(`${item.id}`)}
-    >
-      <Image
-        source={{ uri: item.image }}
-        style={styles.recommendationImage}
-      />
-      <View style={styles.recommendationDetails}>
-        <Text style={styles.recommendationTitle}>{item.name}</Text>
+      <TouchableOpacity
+        style={[styles.recommendationCard, { backgroundColor: activeTheme.colors.secondary }]}
+        onPress={() => router.push(`${item.id}`)}
+      >
+        <Image source={{ uri: item.image }} style={styles.recommendationImage} />
+        <View style={styles.recommendationDetails}>
+          <Text style={[styles.recommendationTitle, { color: activeTheme.colors.text.primary }]}>
+            {item.name}
+          </Text>
           {hasReviews ? (
             <>
-              <View style={{ flexDirection: 'row', alignItems: "center", justifyContent: 'center' }}>
-                <AirbnbRating 
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <AirbnbRating
                   isDisabled
                   showRating={false}
                   defaultRating={item.averageRating}
                   size={14}
-                  />
-                <Text style={styles.recommendationSubtitle}>
-                  {item.averageRating ? `${item.averageRating}` : "No ratings"} {item.totalReviews ? `(${item.totalReviews})` : "0"}
+                />
+                <Text style={[styles.recommendationSubtitle, { color: activeTheme.colors.text.secondary }]}>
+                  {`${item.averageRating} (${item.totalReviews})`}
                 </Text>
               </View>
-              <Text style={styles.recommendationSubtitle}>
-              {distance} km
+              <Text style={[styles.recommendationSubtitle, { color: activeTheme.colors.text.secondary }]}>
+                {distance} km
               </Text>
             </>
           ) : (
             <>
-              <View>
-                <Text style={[styles.recommendationSubtitle]}>No reviews yet.</Text>
-              </View>
-              <Text style={styles.recommendationSubtitle}>
-              {distance} km
+              <Text style={[styles.recommendationSubtitle, { color: activeTheme.colors.text.muted }]}>
+                No reviews yet.
+              </Text>
+              <Text style={[styles.recommendationSubtitle, { color: activeTheme.colors.text.secondary }]}>
+                {distance} km
               </Text>
             </>
           )}
-      </View>
-    </TouchableOpacity>
-  )};
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <ScrollView style={styles.mainContainer}>
-      {/* Search Bar */}
+    <ScrollView style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
       <TouchableOpacity
-        style={styles.searchBar}
+        style={[styles.searchBar, { backgroundColor: activeTheme.colors.secondary }]}
         onPress={() => router.push('/search')}
       >
-        <Text style={styles.searchPlaceholder}>Find Halal food near you...</Text>
+        <Text style={[styles.searchPlaceholder, { color: activeTheme.colors.text.muted }]}>
+          Find Halal food near you...
+        </Text>
       </TouchableOpacity>
 
-      {/* Map Section */}
-      <View style={styles.mapContainer}>
+      <View style={[styles.mapContainer, { backgroundColor: activeTheme.colors.secondary }]}>
         <MapView
           style={styles.map}
           region={region}
@@ -210,9 +210,8 @@ const RestaurantLocator = () => {
         </MapView>
       </View>
 
-      {/* Categories Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Categories</Text>
+        <Text style={[styles.sectionTitle, { color: activeTheme.colors.text.primary }]}>Categories</Text>
         <FlatList
           data={categories}
           renderItem={renderCategoryItem}
@@ -222,9 +221,10 @@ const RestaurantLocator = () => {
         />
       </View>
 
-      {/* Recommendations Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Recommended for You</Text>
+        <Text style={[styles.sectionTitle, { color: activeTheme.colors.text.primary }]}>
+          Recommended for You
+        </Text>
         <FlatList
           data={filteredRestaurants.slice(0, 5)}
           renderItem={renderRecommendation}
@@ -238,87 +238,20 @@ const RestaurantLocator = () => {
 };
 
 const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#2E3D3A',
-  },
-  searchBar: {
-    height: 50,
-    backgroundColor: '#3D4F4C',
-    borderRadius: 25,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  searchPlaceholder: {
-    color: '#999',
-    fontSize: 16,
-  },
-  mapContainer: {
-    width: width - 32,
-    height: height * 0.3,
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginBottom: 16,
-  },
-  map: {
-    flex: 1,
-  },
-  section: {
-    marginTop: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    color: '#F4E2C1',
-    fontFamily: 'Outfit_600SemiBold',
-    marginBottom: 10,
-  },
-  categoryPill: {
-    backgroundColor: '#3D4F4C',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  categoryPillActive: {
-    backgroundColor: '#F4E2C1',
-  },
-  categoryText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 14,
-    color: '#ECDFCC',
-  },
-  categoryTextActive: {
-    color: '#2E3D3A',
-  },
-  recommendationCard: {
-    width: 150,
-    backgroundColor: '#3D4F4C',
-    borderRadius: 12,
-    marginRight: 16,
-  },
-  recommendationImage: {
-    width: '100%',
-    height: 100,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    objectFit: "cover"
-  },
-  recommendationDetails: {
-    padding: 10,
-    gap: 6
-  },
-  recommendationTitle: {
-    fontSize: 14,
-    fontFamily: "Outfit_500Medium",
-    color: '#ECDFCC',
-  },
-  recommendationSubtitle: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 12,
-    color: '#ECDFCC',
-  },
+  mainContainer: { flex: 1, padding: 16 },
+  searchBar: { height: 50, borderRadius: 25, paddingHorizontal: 16, justifyContent: 'center', marginBottom: 16 },
+  searchPlaceholder: { fontSize: 16 },
+  mapContainer: { width: width - 32, height: height * 0.3, borderRadius: 20, overflow: 'hidden', marginBottom: 16 },
+  map: { flex: 1 },
+  section: { marginTop: 16 },
+  sectionTitle: { fontSize: 18, fontFamily: 'Outfit_600SemiBold', marginBottom: 10 },
+  categoryPill: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 25, marginRight: 10 },
+  categoryText: { fontFamily: 'Outfit_400Regular', fontSize: 14 },
+  recommendationCard: { width: 150, borderRadius: 12, marginRight: 16 },
+  recommendationImage: { width: '100%', height: 100, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
+  recommendationDetails: { padding: 10, gap: 6 },
+  recommendationTitle: { fontSize: 14, fontFamily: 'Outfit_500Medium' },
+  recommendationSubtitle: { fontSize: 12, fontFamily: 'Outfit_400Regular' },
 });
 
 export default RestaurantLocator;

@@ -320,3 +320,45 @@ export interface RestaurantReview {
     timestamp: string;
     images?: string[];
 }
+
+export interface ZakatType {
+    id: string;
+    label: string;
+    icon: string;
+    amount: string;
+  }
+  
+export interface ZakatEligibilityInputs {
+    savings: string;
+    goldWearing: string;
+    goldNotWearing: string;
+    insurance: string;
+    shares: string;
+}
+  
+export interface ZakatSwitches {
+    savings: boolean;
+    goldWearing: boolean;
+    goldNotWearing: boolean;
+}
+  
+export interface Modals {
+    eligibility: boolean;
+}
+  
+export interface ZakatState {
+    nisabAmount: number;
+    zakatTypes: ZakatType[];
+    eligibility: Record<string, boolean>;
+    eligibilityInputs: ZakatEligibilityInputs;
+    switches: ZakatSwitches;
+    modals: Modals;
+}
+  
+export type ZakatAction =
+    | { type: 'TOGGLE_MODAL'; payload: string }
+    | { type: 'SHOW_MODAL'; payload: string }
+    | { type: 'UPDATE_AMOUNT'; payload: { id: string; amount: string } }
+    | { type: 'UPDATE_ELIGIBILITY_INPUT'; payload: { id: string; value: string } }
+    | { type: 'UPDATE_SWITCH'; payload: { id: string; value: boolean } }
+    | { type: 'ASSESS_ELIGIBILITY' };

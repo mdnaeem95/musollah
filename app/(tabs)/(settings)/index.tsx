@@ -1,10 +1,15 @@
+import React, { useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import React from 'react';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { ThemeContext } from '../../../context/ThemeContext';
 
 const SettingsTab = () => {
   const router = useRouter();
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light; // Use active theme dynamically
+
+  const styles = createStyles(activeTheme);
 
   return (
     <View style={styles.mainContainer}>
@@ -16,28 +21,37 @@ const SettingsTab = () => {
           {/* ACCOUNT */}
           <TouchableOpacity style={styles.settingsField} onPress={() => router.push(`/account`)}>
             <View style={styles.settingsLeftField}>
-              <FontAwesome6 name='user' color='white' size={20} />
+              <FontAwesome6 name="user" color={activeTheme.colors.text.primary} size={20} />
               <Text style={styles.settingsName}>Account</Text>
             </View>
-            <FontAwesome6 name='chevron-right' color='white' size={20} />
+            <FontAwesome6 name="chevron-right" color={activeTheme.colors.text.primary} size={20} />
           </TouchableOpacity>
 
           {/* PRAYERS SETTINGS */}
           <TouchableOpacity style={styles.settingsField} onPress={() => router.push('/prayers')}>
             <View style={styles.settingsLeftField}>
-              <FontAwesome6 name='person-praying' color='white' size={20} />
+              <FontAwesome6 name="person-praying" color={activeTheme.colors.text.primary} size={20} />
               <Text style={styles.settingsName}>Prayers</Text>
             </View>
-            <FontAwesome6 name='chevron-right' color='white' size={20} />
+            <FontAwesome6 name="chevron-right" color={activeTheme.colors.text.primary} size={20} />
+          </TouchableOpacity>
+
+          {/* APPEARANCE */}
+          <TouchableOpacity style={styles.settingsField} onPress={() => router.push('/appearance')}>
+            <View style={styles.settingsLeftField}>
+              <FontAwesome6 name="palette" color={activeTheme.colors.text.primary} size={20} />
+              <Text style={styles.settingsName}>Appearance</Text>
+            </View>
+            <FontAwesome6 name="chevron-right" color={activeTheme.colors.text.primary} size={20} />
           </TouchableOpacity>
 
           {/* SUPPORT */}
           <TouchableOpacity style={styles.settingsField} onPress={() => router.push('/support')}>
             <View style={styles.settingsLeftField}>
-              <FontAwesome6 name='envelope' color='white' size={20} />
+              <FontAwesome6 name="envelope" color={activeTheme.colors.text.primary} size={20} />
               <Text style={styles.settingsName}>Support</Text>
             </View>
-            <FontAwesome6 name='chevron-right' color='white' size={20} />
+            <FontAwesome6 name="chevron-right" color={activeTheme.colors.text.primary} size={20} />
           </TouchableOpacity>
         </View>
 
@@ -46,95 +60,82 @@ const SettingsTab = () => {
 
         <View style={styles.gridContainer}>
           <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/food-additives')}>
-            <FontAwesome6 name="flask" size={30} color="#FFF" />
+            <FontAwesome6 name="flask" size={30} color={activeTheme.colors.text.primary} />
             <Text style={styles.iconLabel}>Food Additives</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/zakat')}>
-            <FontAwesome6 name="hand-holding-dollar" size={30} color="#FFF" />
+            <FontAwesome6 name="hand-holding-dollar" size={30} color={activeTheme.colors.text.primary} />
             <Text style={styles.iconLabel}>Zakat Calculator</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/qa')}>
-            <FontAwesome6 name="message" size={30} color="#FFF" />
+            <FontAwesome6 name="message" size={30} color={activeTheme.colors.text.primary} />
             <Text style={styles.iconLabel}>Ask Anything</Text>
           </TouchableOpacity>
-
-          {/* <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/localbusinesses')}>
-            <FontAwesome6 name="" size={30} color="#FFF" />
-            <Text style={styles.iconLabel}>Local Businesses</Text>
-          </TouchableOpacity> */}
         </View>
       </ScrollView>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#2E3D3A',
+    backgroundColor: theme.colors.primary,
   },
   sectionHeader: {
     fontFamily: 'Outfit_500Medium',
-    fontSize: 16,
-    color: '#ECDFCC',
-    marginBottom: 16,
+    fontSize: theme.fontSizes.large,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.medium,
   },
   generalSettingsContainer: {
-    backgroundColor: '#3D4F4C',
-    borderRadius: 15,
-    padding: 10,
-    marginBottom: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2, // For Android shadow
+    backgroundColor: theme.colors.secondary,
+    borderRadius: theme.borderRadius.large,
+    padding: theme.spacing.medium,
+    marginBottom: theme.spacing.large,
+    ...theme.shadows.default,
   },
   settingsField: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 15,
+    paddingVertical: theme.spacing.medium,
   },
   settingsLeftField: {
     flexDirection: 'row',
-    gap: 10,
+    gap: theme.spacing.small,
   },
   settingsName: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 14,
-    color: '#ECDFCC',
+    fontSize: theme.fontSizes.medium,
+    color: theme.colors.text.secondary,
   },
   /* Grid styling */
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    marginBottom: theme.spacing.large,
   },
   gridItem: {
-    backgroundColor: '#3D4F4C',
+    backgroundColor: theme.colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     width: '30%',
     height: 100,
-    borderRadius: 15,
-    marginBottom: 20,
-    padding: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2, // For Android shadow
+    borderRadius: theme.borderRadius.large,
+    marginBottom: theme.spacing.medium,
+    padding: theme.spacing.medium,
+    ...theme.shadows.default,
   },
   iconLabel: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 14,
-    marginTop: 8,
+    fontSize: theme.fontSizes.small,
+    marginTop: theme.spacing.small,
     textAlign: 'center',
-    color: '#ECDFCC',
+    color: theme.colors.text.secondary,
   },
 });
 

@@ -1,29 +1,30 @@
-import { View, Text, TextInput, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { FoodAdditive } from '../../../../utils/types';
-import { fetchFoodAdditives } from '../../../../api/firebase';
 import { FlashList } from '@shopify/flash-list';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fetchFoodAdditives } from '../../../../api/firebase';
+import { FoodAdditive } from '../../../../utils/types';
+import { ThemeContext } from '../../../../context/ThemeContext';
+
 const CACHE_KEY = 'foodAdditivesCache';
 const CACHE_TTL = 24 * 60 * 60 * 1000; // Cache TTL set to 24 hours (in milliseconds)
 
 const FoodAdditivesPage = () => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [foodAdditives, setFoodAdditives] = useState<FoodAdditive[]>([]);
   const [filteredAdditives, setFilteredAdditives] = useState<FoodAdditive[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
- // Function to fetch food additives with caching
- const fetchFoodAdditivesWithCache = async () => {
+  const fetchFoodAdditivesWithCache = async () => {
     try {
-      // Get cached data
       const cachedData = await AsyncStorage.getItem(CACHE_KEY);
       if (cachedData) {
         const parsedData = JSON.parse(cachedData);
         const { timestamp, additives } = parsedData;
-
-        // Check if cache is still valid (within TTL)
         const now = new Date().getTime();
         if (now - timestamp < CACHE_TTL) {
           setFoodAdditives(additives);
@@ -33,18 +34,15 @@ const FoodAdditivesPage = () => {
         }
       }
 
-      // If no cache or cache expired, fetch from Firestore
       const additives = await fetchFoodAdditives();
       setFoodAdditives(additives);
       setFilteredAdditives(additives);
 
-      // Cache the fetched data with a timestamp
       const cacheData = {
         timestamp: new Date().getTime(),
         additives,
       };
       await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-
     } catch (error) {
       console.error('Failed to fetch food additives:', error);
     } finally {
@@ -53,11 +51,9 @@ const FoodAdditivesPage = () => {
   };
 
   useEffect(() => {
-    // Fetch the food additives when the component mounts with cache logic
     fetchFoodAdditivesWithCache();
   }, []);
 
-  // Filter food additives by search query (either eCode or chemicalName)
   useEffect(() => {
     const filtered = foodAdditives.filter((additive) =>
       additive.chemicalName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -66,33 +62,43 @@ const FoodAdditivesPage = () => {
   }, [searchQuery, foodAdditives]);
 
   const getStatusColor = (status: string) => {
-    return status.toLowerCase() === 'ok' ? '#78A678' : '#A83A3A'; // Green for 'Ok', red for others
+    return status.toLowerCase() === 'ok'
+      ? activeTheme.colors.text.success
+      : activeTheme.colors.text.error;
   };
 
   const renderFoodAdditive = ({ item }: { item: FoodAdditive }) => (
-    <View style={styles.additiveContainer}>
-      <Text style={styles.eCode}>{item.eCode}</Text>
-      <Text style={styles.chemicalName}>{item.chemicalName}</Text>
-      <Text style={[styles.status, { color: getStatusColor(item.status) }]}>Status: {item.status}</Text>
-      <Text style={styles.description}>{item.description}</Text>
+    <View style={[styles.additiveContainer, { backgroundColor: activeTheme.colors.secondary }]}>
+      <Text style={[styles.eCode, { color: activeTheme.colors.accent }]}>{item.eCode}</Text>
+      <Text style={[styles.chemicalName, { color: activeTheme.colors.text.secondary }]}>
+        {item.chemicalName}
+      </Text>
+      <Text style={[styles.status, { color: getStatusColor(item.status) }]}>
+        Status: {item.status}
+      </Text>
+      <Text style={[styles.description, { color: activeTheme.colors.text.secondary }]}>
+        {item.description}
+      </Text>
     </View>
   );
+
+  const styles = createStyles(activeTheme);
 
   return (
     <View style={styles.mainContainer}>
       <View style={styles.searchContainer}>
-        <FontAwesome6 name="magnifying-glass" size={20} color="#ECDFCC" />
+        <FontAwesome6 name="magnifying-glass" size={20} color={activeTheme.colors.text.secondary} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by chemical name"
-          placeholderTextColor="#ECDFCC"
+          placeholderTextColor={activeTheme.colors.text.muted}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
       </View>
 
       {isLoading ? (
-        <ActivityIndicator size="large" color="#314441" />
+        <ActivityIndicator size="large" color={activeTheme.colors.text.primary} />
       ) : filteredAdditives.length > 0 ? (
         <FlashList
           estimatedItemSize={150}
@@ -102,82 +108,71 @@ const FoodAdditivesPage = () => {
         />
       ) : (
         <View style={styles.noResultsContainer}>
-          <Text style={styles.noResultsText}>No results found for "{searchQuery}"</Text>
+          <Text style={styles.noResultsText}>
+            No results found for "{searchQuery}"
+          </Text>
         </View>
       )}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#2E3D3A',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3A504C',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    color: '#ECDFCC',
-  },
-  listContainer: {
-    flex: 1,
-  },
-  additiveContainer: {
-    backgroundColor: '#3A504C',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  eCode: {
-    fontSize: 18,
-    fontFamily: 'Outfit_600SemiBold',
-    color: '#A3C0BB',
-  },
-  chemicalName: {
-    fontSize: 16,
-    fontFamily: 'Outfit_400Regular',
-    color: '#ECDFCC',
-  },
-  status: {
-    fontSize: 14,
-    fontFamily: 'Outfit_500Medium',
-    color: '#A83A3A', // Red for status (like "Haram")
-  },
-  description: {
-    fontSize: 12,
-    fontFamily: 'Outfit_400Regular',
-    color: '#ECDFCC',
-    marginTop: 4,
-  },
-  noResultsContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  noResultsText: {
-    fontSize: 18,
-    fontFamily: 'Outfit_500Medium',
-    color: '#ECDFCC',
-  },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    mainContainer: {
+      flex: 1,
+      padding: theme.spacing.medium,
+      backgroundColor: theme.colors.primary,
+    },
+    searchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.secondary,
+      borderRadius: theme.borderRadius.medium,
+      paddingHorizontal: theme.spacing.small,
+      marginBottom: theme.spacing.medium,
+      ...theme.shadows.default,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: theme.fontSizes.medium,
+      paddingVertical: theme.spacing.small,
+      paddingHorizontal: theme.spacing.small,
+      color: theme.colors.text.primary,
+    },
+    additiveContainer: {
+      padding: theme.spacing.medium,
+      borderRadius: theme.borderRadius.medium,
+      marginBottom: theme.spacing.small,
+      ...theme.shadows.default,
+    },
+    eCode: {
+      fontSize: theme.fontSizes.xLarge,
+      fontFamily: 'Outfit_600SemiBold',
+    },
+    chemicalName: {
+      fontSize: theme.fontSizes.large,
+      fontFamily: 'Outfit_400Regular',
+    },
+    status: {
+      fontSize: theme.fontSizes.medium,
+      fontFamily: 'Outfit_500Medium',
+    },
+    description: {
+      fontSize: theme.fontSizes.small,
+      fontFamily: 'Outfit_400Regular',
+      marginTop: theme.spacing.small,
+    },
+    noResultsContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    noResultsText: {
+      fontSize: theme.fontSizes.large,
+      fontFamily: 'Outfit_500Medium',
+      color: theme.colors.text.secondary,
+    },
+  });
 
 export default FoodAdditivesPage;

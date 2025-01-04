@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useContext } from 'react';
 import {
   View,
   TextInput,
@@ -11,17 +11,21 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Restaurant } from '../../../utils/types';
-import useAutoFocus from '../../../hooks/useAutoFocus'
+import useAutoFocus from '../../../hooks/useAutoFocus';
 import { FontAwesome6 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchRestaurants } from '../../../api/firebase';
 import { FlashList } from '@shopify/flash-list';
+import { ThemeContext } from '../../../context/ThemeContext';
 
 const SearchPage = () => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
   const [searchQuery, setSearchQuery] = useState('');
   const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]); 
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
   const router = useRouter();
   const inputRef = useAutoFocus();
@@ -29,7 +33,6 @@ const SearchPage = () => {
   const RECENT_SEARCHES_KEY = 'recentSearches';
 
   useEffect(() => {
-    // Load recent searches from AsyncStorage on component mount
     const loadData = async () => {
       try {
         const savedSearches = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
@@ -66,30 +69,28 @@ const SearchPage = () => {
     (query: string) => {
       const lowerCaseQuery = query.toLowerCase();
       const filtered = restaurants.filter((restaurant) => {
-        const name = restaurant.name?.toLowerCase() || ''; // Safely handle undefined
-        const address = restaurant.address?.toLowerCase() || ''; // Safely handle undefined
-        const categories = restaurant.categories || []; // Ensure categories is an array
-  
+        const name = restaurant.name?.toLowerCase() || '';
+        const address = restaurant.address?.toLowerCase() || '';
+        const categories = restaurant.categories || [];
+
         return (
           name.includes(lowerCaseQuery) ||
           address.includes(lowerCaseQuery) ||
-          categories.some((cat) => cat?.toLowerCase().includes(lowerCaseQuery)) // Safely handle category case
+          categories.some((cat) => cat?.toLowerCase().includes(lowerCaseQuery))
         );
       });
       setFilteredRestaurants(filtered);
     },
     [restaurants]
-  );  
+  );
 
   const handleSubmit = async () => {
-    // Save the search query to recent searches only if it's non-empty and unique
     if (searchQuery.trim() && !recentSearches.includes(searchQuery)) {
-      const updatedSearches = [searchQuery, ...recentSearches].slice(0, 3); // Keep only the last 5 searches
+      const updatedSearches = [searchQuery, ...recentSearches].slice(0, 3);
       setRecentSearches(updatedSearches);
-      await saveRecentSearches(updatedSearches); // Save updated list to AsyncStorage
+      await saveRecentSearches(updatedSearches);
     }
 
-    // Trigger the search logic
     handleSearch(debounceQuery);
   };
 
@@ -101,19 +102,25 @@ const SearchPage = () => {
   const handleRemoveSearch = async (searchToRemove: string) => {
     const updatedSearches = recentSearches.filter((search) => search !== searchToRemove);
     setRecentSearches(updatedSearches);
-    await saveRecentSearches(updatedSearches); // Save updated list to AsyncStorage
+    await saveRecentSearches(updatedSearches);
   };
 
   return (
     <KeyboardAvoidingView
-        style={styles.mainContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <TextInput
         ref={inputRef}
-        style={styles.searchInput}
+        style={[
+          styles.searchInput,
+          {
+            backgroundColor: activeTheme.colors.secondary,
+            color: activeTheme.colors.text.primary,
+          },
+        ]}
         placeholder="Search restaurants or categories..."
-        placeholderTextColor="#999"
+        placeholderTextColor={activeTheme.colors.text.muted}
         value={searchQuery}
         onChangeText={(text) => {
           setSearchQuery(text);
@@ -122,34 +129,43 @@ const SearchPage = () => {
         onSubmitEditing={handleSubmit}
       />
 
-      {/* Recent Searches */}
       {recentSearches.length > 0 && (
         <View style={styles.recencyContainer}>
-          <Text style={styles.recencyTitle}>Recent Searches</Text>
+          <Text style={[styles.recencyTitle, { color: activeTheme.colors.text.primary }]}>
+            Recent Searches
+          </Text>
           {recentSearches.map((recentSearch, index) => (
-            <View 
-                style={styles.recentSearchItem}
-                key={index}
-            >
-                <FontAwesome6 name="clock" color="#F4E2C1" size={16} style={styles.iconLeft} />
+            <View style={styles.recentSearchItem} key={index}>
+              <FontAwesome6
+                name="clock"
+                color={activeTheme.colors.accent}
+                size={16}
+                style={styles.iconLeft}
+              />
 
-                <TouchableOpacity
-                    style={styles.searchTextContainer}
-                    onPress={() => handleRecentSearchTap(recentSearch)}
-                >
-                    <Text style={styles.recentSearchText}>{recentSearch}</Text>
-                </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.searchTextContainer}
+                onPress={() => handleRecentSearchTap(recentSearch)}
+              >
+                <Text style={[styles.recentSearchText, { color: activeTheme.colors.text.primary }]}>
+                  {recentSearch}
+                </Text>
+              </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => handleRemoveSearch(recentSearch)}>
-                    <FontAwesome6 name="circle-xmark" color="#F4E2C1" size={16} style={styles.iconLeft} />
-                </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleRemoveSearch(recentSearch)}>
+                <FontAwesome6
+                  name="circle-xmark"
+                  color={activeTheme.colors.accent}
+                  size={16}
+                  style={styles.iconLeft}
+                />
+              </TouchableOpacity>
             </View>
           ))}
         </View>
       )}
 
-      {/* Spacer */}
-      {recentSearches.length > 0 && filteredRestaurants.length > 0 &&(
+      {recentSearches.length > 0 && filteredRestaurants.length > 0 && (
         <View style={styles.spacer} />
       )}
 
@@ -159,11 +175,20 @@ const SearchPage = () => {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.restaurantItem}
+            style={[
+              styles.restaurantItem,
+              {
+                borderBottomColor: activeTheme.colors.text.muted,
+              },
+            ]}
             onPress={() => router.replace(`/${item.id}`)}
           >
-            <Text style={styles.restaurantName}>{item.name}</Text>
-            <Text style={styles.restaurantAddress}>{item.address}</Text>
+            <Text style={[styles.restaurantName, { color: activeTheme.colors.text.primary }]}>
+              {item.name}
+            </Text>
+            <Text style={[styles.restaurantAddress, { color: activeTheme.colors.text.secondary }]}>
+              {item.address}
+            </Text>
           </TouchableOpacity>
         )}
       />
@@ -172,60 +197,24 @@ const SearchPage = () => {
 };
 
 const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#2E3D3A',
-  },
+  mainContainer: { flex: 1, padding: 16 },
   searchInput: {
     height: 50,
-    backgroundColor: '#3D4F4C',
     borderRadius: 10,
     paddingHorizontal: 16,
     marginBottom: 16,
-    color: '#F4E2C1',
     fontSize: 16,
   },
-  recencyContainer: {
-    marginBottom: 20,
-  },
-  recencyTitle: {
-    fontSize: 16,
-    color: '#F4E2C1',
-    marginBottom: 8,
-    fontFamily: 'Outfit_600SemiBold',
-  },
-  recentSearchItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  recentSearchText: {
-    fontSize: 14,
-    color: '#F4E2C1',
-  },
-  iconLeft: {
-    marginRight: 10, // Space between the icon and the text
-  },
-  spacer: {
-    height: 10,
-  },
-  searchTextContainer: {
-    flex: 1, // Ensures the text takes up available space
-  },
-  restaurantItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F4E2C1',
-  },
-  restaurantName: {
-    fontSize: 16,
-    color: '#F4E2C1',
-  },
-  restaurantAddress: {
-    fontSize: 14,
-    color: '#FFFFFF',
-  },
+  recencyContainer: { marginBottom: 20 },
+  recencyTitle: { fontSize: 16, marginBottom: 8, fontFamily: 'Outfit_600SemiBold' },
+  recentSearchItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
+  recentSearchText: { fontSize: 14, flex: 1 },
+  iconLeft: { marginRight: 10 },
+  spacer: { height: 10 },
+  searchTextContainer: { flex: 1 },
+  restaurantItem: { paddingVertical: 10, borderBottomWidth: 1 },
+  restaurantName: { fontSize: 16, fontFamily: 'Outfit_600SemiBold' },
+  restaurantAddress: { fontSize: 14, fontFamily: 'Outfit_400Regular' },
 });
 
 export default SearchPage;

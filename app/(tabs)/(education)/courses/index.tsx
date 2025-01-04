@@ -1,5 +1,5 @@
+import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput } from 'react-native';
-import React, { useEffect, useState } from 'react';
 import { Divider } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../../redux/store/store';
@@ -8,6 +8,7 @@ import { CourseData } from '../../../../utils/types';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { CheckBox } from '@rneui/base';
 import { FlashList } from '@shopify/flash-list';
+import { ThemeContext } from '../../../../context/ThemeContext';
 
 const categories = [
   { title: 'All Courses' },
@@ -19,6 +20,9 @@ const categories = [
 ];
 
 const Courses = () => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
   const { courses } = useSelector((state: RootState) => state.dashboard);
   const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState<boolean>(false);
@@ -28,7 +32,6 @@ const Courses = () => {
     'Online': true,
     'Physical': false,
   });
-  
   const [selectedCategories, setSelectedCategories] = useState({
     'All Courses': true,
     'Prayers': false,
@@ -38,7 +41,6 @@ const Courses = () => {
     'Modern Challenges': false,
   });
 
-  // Handle course type selection
   const handleTypeSelection = (type: string) => {
     setSelectedTypes((prev: any) => ({
       ...prev,
@@ -46,7 +48,6 @@ const Courses = () => {
     }));
   };
 
-  // Handle category selection
   const handleCategorySelection = (category: string) => {
     setSelectedCategories((prev: any) => ({
       ...prev,
@@ -54,133 +55,156 @@ const Courses = () => {
     }));
   };
 
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-}
+  const handleSearchChange = (query: string) => setSearchQuery(query);
 
   const toggleSearch = () => {
     setIsSearchExpanded(!isSearchExpanded);
-    if (isSearchExpanded) {
-      setSearchQuery('');
-    }
+    if (isSearchExpanded) setSearchQuery('');
   };
 
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebounceQuery(searchQuery);
-    }, 300);
+    const handler = setTimeout(() => setDebounceQuery(searchQuery), 300);
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
   const toggleFilterModal = () => setIsFilterModalVisible(!isFilterModalVisible);
 
   const filteredCourses = courses.filter((course) => {
-    // Check if the category is selected
-    const matchesCategory =
-      // @ts-ignore
-      selectedCategories['All Courses'] || selectedCategories[course.category];
-  
-    // Check if the course type (online/physical) is selected
+    //@ts-ignore
+    const matchesCategory = selectedCategories['All Courses'] || selectedCategories[course.category];
     const matchesType = selectedTypes[course.type === 'online' ? 'Online' : 'Physical'];
-  
-    // Check if the search query matches either the title or the description
     const matchesSearchQuery =
       course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.description.toLowerCase().includes(searchQuery.toLowerCase());
-  
-    // Return true if all conditions are met
+
     return matchesCategory && matchesType && matchesSearchQuery;
   });
-  
+
   return (
-    <View style={styles.mainContainer}>
-      {/* Search Bar */}
-      {/* Header with expandable search bar */}
+    <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
       <View style={styles.headerContainer}>
-          {isSearchExpanded && (
-              <View style={styles.searchBarContainer}>
-                  <TextInput
-                      placeholder="Search Course"
-                      placeholderTextColor="#ECDFCC"
-                      style={styles.searchInput}
-                      value={searchQuery}
-                      onChangeText={handleSearchChange}
-                  />
-              </View>
-          )}
-          <TouchableOpacity onPress={toggleSearch} style={styles.searchIconContainer}>
-              <FontAwesome6 
-                  name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} 
-                  size={24} 
-                  color="#ECDFCC" 
-              />
-          </TouchableOpacity>
+        {isSearchExpanded && (
+          <View
+            style={[
+              styles.searchBarContainer,
+              { backgroundColor: activeTheme.colors.secondary },
+            ]}
+          >
+            <TextInput
+              placeholder="Search Course"
+              placeholderTextColor={activeTheme.colors.text.secondary}
+              style={[
+                styles.searchInput,
+                { color: activeTheme.colors.text.primary },
+              ]}
+              value={searchQuery}
+              onChangeText={handleSearchChange}
+            />
+          </View>
+        )}
+        <TouchableOpacity onPress={toggleSearch} style={styles.searchIconContainer}>
+          <FontAwesome6
+            name={isSearchExpanded ? 'xmark' : 'magnifying-glass'}
+            size={24}
+            color={activeTheme.colors.text.primary}
+          />
+        </TouchableOpacity>
       </View>
 
-      {/* Filter Button */}
-      <TouchableOpacity style={styles.filterButton} onPress={toggleFilterModal}>
-        <Text style={styles.filterButtonText}>Filter Courses</Text>
+      <TouchableOpacity
+        style={[styles.filterButton, { backgroundColor: activeTheme.colors.accent }]}
+        onPress={toggleFilterModal}
+      >
+        <Text
+          style={[
+            styles.filterButtonText,
+            { color: activeTheme.colors.text.primary },
+          ]}
+        >
+          Filter Courses
+        </Text>
       </TouchableOpacity>
 
-      {/* Modal for filters */}
       <Modal visible={isFilterModalVisible} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly', width: '100%' }}>
-              <TouchableOpacity onPress={() => setIsFilterModalVisible(false)} style={{ left: -30 }}>
-                <FontAwesome6 name="xmark" size={20} color="#FFFFFF" />
+        <View
+          style={[
+            styles.modalContainer,
+            { backgroundColor: activeTheme.colors.modalBackground },
+          ]}
+        >
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: activeTheme.colors.secondary },
+            ]}
+          >
+            <View style={styles.modalHeaderContainer}>
+              <TouchableOpacity onPress={toggleFilterModal}>
+                <FontAwesome6 name="xmark" size={20} color={activeTheme.colors.text.primary} />
               </TouchableOpacity>
-              <Text style={styles.modalHeader}>Filter Courses</Text>
+              <Text
+                style={[
+                  styles.modalHeader,
+                  { color: activeTheme.colors.text.primary },
+                ]}
+              >
+                Filter Courses
+              </Text>
               <View style={{ width: 20, height: 20 }} />
             </View>
 
-            {/* Course Type Filter */}
-            <Text style={styles.filterLabel}>Course Type</Text>
+            <Text style={[styles.filterLabel, { color: activeTheme.colors.text.primary }]}>
+              Course Type
+            </Text>
             <View style={styles.optionContainer}>
               <CheckBox
                 title="Online"
                 checked={selectedTypes.Online}
-                containerStyle={{ backgroundColor: '#3A504C' }}
-                fontFamily='Outfit_400Regular'
-                textStyle={{ color: '#ECDFCC' }}
+                containerStyle={{ backgroundColor: activeTheme.colors.secondary }}
+                textStyle={{ color: activeTheme.colors.text.primary }}
                 onPress={() => handleTypeSelection('Online')}
               />
               <CheckBox
                 title="Physical"
-                containerStyle={{ backgroundColor: '#3A504C' }}
-                fontFamily='Outfit_400Regular'
-                textStyle={{ color: '#ECDFCC' }}
                 checked={selectedTypes.Physical}
+                containerStyle={{ backgroundColor: activeTheme.colors.secondary }}
+                textStyle={{ color: activeTheme.colors.text.primary }}
                 onPress={() => handleTypeSelection('Physical')}
               />
             </View>
 
-            {/* Course Category Filter */}
-            <Text style={styles.filterLabel}>Category</Text>
+            <Text style={[styles.filterLabel, { color: activeTheme.colors.text.primary }]}>
+              Category
+            </Text>
             <View style={styles.optionContainer}>
-              {categories.map((category) => (
+              {categories.map((category: any) => (
                 <CheckBox
                   key={category.title}
                   title={category.title}
-                  // @ts-ignore
+                  //@ts-ignore
                   checked={selectedCategories[category.title]}
-                  containerStyle={{ backgroundColor: '#3A504C' }}
-                  fontFamily='Outfit_400Regular'
-                  textStyle={{ color: '#ECDFCC' }}
+                  containerStyle={{ backgroundColor: activeTheme.colors.secondary }}
+                  textStyle={{ color: activeTheme.colors.text.primary }}
                   onPress={() => handleCategorySelection(category.title)}
                 />
               ))}
             </View>
 
-            {/* Apply Filters Button */}
             <TouchableOpacity
-              style={styles.applyButton}
-              onPress={() => {
-                setIsFilterModalVisible(false);
-                // Logic for applying the filters can be handled here
-              }}
+              style={[
+                styles.applyButton,
+                { backgroundColor: activeTheme.colors.accent },
+              ]}
+              onPress={() => setIsFilterModalVisible(false)}
             >
-              <Text style={styles.applyButtonText}>Apply Filters</Text>
+              <Text
+                style={[
+                  styles.applyButtonText,
+                  { color: activeTheme.colors.text.primary },
+                ]}
+              >
+                Apply Filters
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -188,7 +212,6 @@ const Courses = () => {
 
       <Divider style={{ marginVertical: 10 }} />
 
-      {/* Courses */}
       <FlashList
         estimatedItemSize={108}
         data={filteredCourses}
@@ -213,40 +236,32 @@ const Courses = () => {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#2E3D3A',
     paddingHorizontal: 16,
   },
   headerContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: 10
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
   },
   searchBarContainer: {
-      flex: 1,
-      backgroundColor: '#3A504C',
-      borderRadius: 15,
-      paddingHorizontal: 10,
-      paddingVertical: 10,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      marginRight: 10,
+    flex: 1,
+    borderRadius: 15,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    marginRight: 10,
   },
   searchInput: {
-      color: '#ECDFCC',
-      fontFamily: 'Outfit_400Regular',
-      fontSize: 16,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 16,
   },
   searchIconContainer: {
-      padding: 8,
+    padding: 8,
   },
   coursesContainer: {
     paddingBottom: 100,
   },
   filterButton: {
-    backgroundColor: '#A3C0BB', 
     padding: 12,
     borderRadius: 10,
     alignItems: 'center',
@@ -254,31 +269,33 @@ const styles = StyleSheet.create({
   },
   filterButtonText: {
     fontSize: 16,
-    color: '#FFFFFF', // Light color for the text
     fontFamily: 'Outfit_500Medium',
   },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalContent: {
-    backgroundColor: '#3A504C',
     padding: 20,
     borderRadius: 10,
     width: '85%',
     alignItems: 'center',
   },
+  modalHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 10,
+  },
   modalHeader: {
     fontSize: 20,
     fontFamily: 'Outfit_600SemiBold',
-    color: '#ECDFCC',
   },
   filterLabel: {
     fontSize: 16,
     fontFamily: 'Outfit_500Medium',
-    color: '#ECDFCC',
     marginVertical: 10,
   },
   optionContainer: {
@@ -286,7 +303,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   applyButton: {
-    backgroundColor: '#A3C0BB',
     padding: 10,
     borderRadius: 10,
     marginTop: 20,
@@ -294,10 +310,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   applyButtonText: {
-    color: '#FFF',
     fontSize: 16,
-    fontFamily: 'Outfit_400Regular'
+    fontFamily: 'Outfit_400Regular',
   },
 });
+
 
 export default Courses;

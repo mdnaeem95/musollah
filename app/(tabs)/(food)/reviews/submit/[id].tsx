@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import { submitReview } from '../../../../../api/firebase';
 import { getAuth } from '@react-native-firebase/auth';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImageToFirebase } from '../../../../../api/storage/uploadImage';
+import { ThemeContext } from '../../../../../context/ThemeContext';
 
 const MAX_REVIEW_LENGTH = 500;
 
@@ -25,26 +26,29 @@ const SubmitReview = () => {
   const [rating, setRating] = useState<number>(5);
   const [reviewText, setReviewText] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedImages, setSelectedImages] = useState<string[]>([])
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const user = getAuth();
   const currentUser = user.currentUser;
 
   const { id } = useLocalSearchParams(); // Restaurant ID from the URL
   const router = useRouter();
 
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
   const handleImagePicker = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1
+      quality: 1,
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const selectedUri = result.assets[0].uri;
       setSelectedImages((prev) => [...prev, selectedUri]);
     }
-  }
+  };
 
   const handleSubmit = async () => {
     if (!currentUser) {
@@ -62,8 +66,10 @@ const SubmitReview = () => {
 
       // upload images to storage
       const uploadedImageUrls = await Promise.all(
-        selectedImages.map((image, index) => uploadImageToFirebase(image, `reviews/${id}/image_${index}.jpg`)
-      ));
+        selectedImages.map((image, index) =>
+          uploadImageToFirebase(image, `reviews/${id}/image_${index}.jpg`)
+        )
+      );
 
       await submitReview(id as string, currentUser.uid, rating, reviewText, uploadedImageUrls);
       Alert.alert('Success', 'Review submitted successfully!');
@@ -77,65 +83,95 @@ const SubmitReview = () => {
   };
 
   const handleRatingCompleted = (selectedRating: number) => {
-    setRating(selectedRating)
-  }
+    setRating(selectedRating);
+  };
 
   const removeImage = (uri: string) => {
-    setSelectedImages((prev) => prev.filter((image) => image!== uri));
-  }
+    setSelectedImages((prev) => prev.filter((image) => image !== uri));
+  };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <ScrollView style={styles.container}>
-        <Text style={styles.label}>Rating (1-5):</Text>
+      <ScrollView style={[styles.container, { backgroundColor: activeTheme.colors.primary }]}>
+        <Text style={[styles.label, { color: activeTheme.colors.text.primary }]}>Rating (1-5):</Text>
 
-        <AirbnbRating 
+        <AirbnbRating
           count={5}
-          defaultRating={0}
+          defaultRating={5}
           size={30}
           onFinishRating={handleRatingCompleted}
           showRating={false}
           starContainerStyle={{ gap: 5 }}
         />
 
-        <Text style={styles.label}>Your Review:</Text>
+        <Text style={[styles.label, { color: activeTheme.colors.text.primary }]}>Your Review:</Text>
         <TextInput
-          style={[styles.input, styles.textArea]}
+          style={[
+            styles.input,
+            styles.textArea,
+            {
+              backgroundColor: activeTheme.colors.secondary,
+              color: activeTheme.colors.text.primary,
+            },
+          ]}
           value={reviewText}
           onChangeText={(text) => {
             if (text.length <= MAX_REVIEW_LENGTH) setReviewText(text);
           }}
           multiline
           placeholder="Write your review here..."
+          placeholderTextColor={activeTheme.colors.text.muted}
         />
-        <Text style={styles.characterCount}>{`${reviewText.length}/${MAX_REVIEW_LENGTH}`}</Text>
+        <Text
+          style={[
+            styles.characterCount,
+            { color: activeTheme.colors.text.secondary },
+          ]}
+        >{`${reviewText.length}/${MAX_REVIEW_LENGTH}`}</Text>
 
-        <Text style={styles.label}>Images: </Text>
+        <Text style={[styles.label, { color: activeTheme.colors.text.primary }]}>Images: </Text>
         <View style={styles.imageContainer}>
           {selectedImages.map((uri) => (
             <View key={uri} style={styles.imageWrapper}>
               <Image source={{ uri }} style={styles.imagePreview} />
-              <TouchableOpacity style={styles.removeImage} onPress={() => removeImage(uri)}>
-                <Text style={styles.removeText}>X</Text>
+              <TouchableOpacity
+                style={[styles.removeImage, { backgroundColor: activeTheme.colors.text.error }]}
+                onPress={() => removeImage(uri)}
+              >
+                <Text style={[styles.removeText, { color: activeTheme.colors.text.primary }]}>
+                  X
+                </Text>
               </TouchableOpacity>
             </View>
           ))}
-          <TouchableOpacity style={styles.addImage} onPress={handleImagePicker}>
-            <Text style={styles.addText}>+ Add Image</Text>
+          <TouchableOpacity
+            style={[
+              styles.addImage,
+              { backgroundColor: activeTheme.colors.secondary },
+            ]}
+            onPress={handleImagePicker}
+          >
+            <Text style={[styles.addText, { color: activeTheme.colors.text.primary }]}>
+              + Add Image
+            </Text>
           </TouchableOpacity>
         </View>
 
-
         <TouchableOpacity
           onPress={handleSubmit}
-          //@ts-ignore
-          style={[styles.button, (reviewText.trim() === '' || rating === 0) && styles.disabled]}
+          style={[
+            styles.button,
+            (reviewText.trim() === '' || rating === 0) && styles.disabled,
+            { backgroundColor: activeTheme.colors.accent },
+          ]}
           disabled={loading || reviewText.trim() === '' || rating === 0}
         >
           {loading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color={activeTheme.colors.text.primary} />
           ) : (
-            <Text style={styles.buttonText}>Submit Review</Text>
+            <Text style={[styles.buttonText, { color: activeTheme.colors.text.primary }]}>
+              Submit Review
+            </Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -146,20 +182,19 @@ const SubmitReview = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2E3D3A',
     padding: 16,
   },
   label: {
     fontSize: 16,
-    color: '#F4E2C1',
     marginBottom: 8,
+    fontFamily: 'Outfit_600SemiBold',
   },
   input: {
-    backgroundColor: '#FFFFFF',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
     fontSize: 16,
+    fontFamily: 'Outfit_400Regular',
   },
   textArea: {
     height: 100,
@@ -168,30 +203,27 @@ const styles = StyleSheet.create({
   characterCount: {
     alignSelf: 'flex-end',
     fontSize: 12,
-    color: '#F4E2C1',
     marginBottom: 16,
-    fontFamily: 'Outfit_400Regular'
+    fontFamily: 'Outfit_400Regular',
   },
   button: {
-    backgroundColor: '#F4E2C1',
     padding: 14,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 8
+    marginTop: 8,
   },
   disabled: {
-    color: '#CCC',
+    opacity: 0.6,
   },
   buttonText: {
-    color: '#2E3D3A',
     fontSize: 16,
-    fontFamily: 'Outfit_600SemiBold'
+    fontFamily: 'Outfit_600SemiBold',
   },
   imageContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginBottom: 16
+    marginBottom: 16,
   },
   imageWrapper: {
     position: 'relative',
@@ -201,34 +233,30 @@ const styles = StyleSheet.create({
   imagePreview: {
     width: '100%',
     height: '100%',
-    borderRadius: 8
+    borderRadius: 8,
   },
   removeImage: {
     position: 'absolute',
     top: 5,
     right: 5,
-    backgroundColor: '#F44336',
     borderRadius: 10,
-    padding: 5
+    padding: 5,
   },
   removeText: {
-    color: '#FFFFFF',
     fontFamily: 'Outfit_600SemiBold',
-    fontSize: 12
+    fontSize: 12,
   },
   addImage: {
-    backgroundColor: '#3D4F4C',
     width: 100,
     height: 100,
     borderRadius: 8,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   addText: {
-    color: '#F4E2C1',
     fontSize: 14,
-    fontFamily: 'Outfit_400Regular'
-  }
+    fontFamily: 'Outfit_400Regular',
+  },
 });
 
 export default SubmitReview;

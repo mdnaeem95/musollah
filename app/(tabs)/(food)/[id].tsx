@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   Linking,
   Alert,
   Animated,
-  FlatList,
   StatusBar
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -21,10 +20,11 @@ import { getAuth } from '@react-native-firebase/auth';
 import SignInModal from '../../../components/SignInModal';
 import { AirbnbRating } from 'react-native-ratings';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { CircleButton } from './_layout';
 import * as WebBrowser from 'expo-web-browser';
 import { useActionSheet } from '@expo/react-native-action-sheet';
 import { FlashList } from '@shopify/flash-list';
+import { CircleButton } from './_layout';
+import { ThemeContext } from '../../../context/ThemeContext';
 
 const HERO_IMAGE_HEIGHT = 250;
 const HEADER_HEIGHT = 60
@@ -45,6 +45,9 @@ const RestaurantDetails = () => {
   const [isAuthModalVisible, setIsAuthModalVisible] = useState<boolean>(false);
   const scrollY = useRef(new Animated.Value(0)).current;
 
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
   const user = getAuth();
   const currentUser = user.currentUser;
   const currentUserId = user.currentUser?.uid;
@@ -63,7 +66,7 @@ const RestaurantDetails = () => {
 
   const headerBackground = scrollY.interpolate({
     inputRange: [0, HERO_IMAGE_HEIGHT - HEADER_HEIGHT],
-    outputRange: ['transparent', '#3D4F4C'],
+    outputRange: ['transparent', activeTheme.colors.secondary],
     extrapolate: 'clamp',
   });
 
@@ -205,11 +208,7 @@ const RestaurantDetails = () => {
     }
 
     return (
-      <TouchableOpacity
-        key={platform}
-        onPress={handlePress}
-        style={styles.socialIconContainer}
-      >
+      <TouchableOpacity key={platform} onPress={handlePress} style={styles.socialIconContainer}>
         <FontAwesome6 name={icons[platform]} size={24} color="#ECDFCC" />
       </TouchableOpacity>
     )
@@ -225,188 +224,212 @@ const RestaurantDetails = () => {
   };
 
   return (
-    <View style={styles.container}>
-        <Animated.View 
-            style={[
-                styles.header,
-                { backgroundColor: headerBackground, paddingTop: statusBarHeight }
-            ]}
-        >
-            <CircleButton onPress={() => router.back()} />
-        </Animated.View>
-        <Animated.ScrollView 
-            style={{ flex: 1 }} 
-            showsVerticalScrollIndicator={false}
-            scrollEventThrottle={16}
-            onScroll={Animated.event(
-                [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-                { useNativeDriver: false }
-            )}
-        >        
+    <View style={[styles.container, { backgroundColor: activeTheme.colors.primary }]}>
+      <Animated.View
+        style={[
+          styles.header,
+          { backgroundColor: headerBackground, paddingTop: statusBarHeight },
+        ]}
+      >
+        <CircleButton onPress={() => router.back()} />
+      </Animated.View>
+      <Animated.ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+      >
+
         {/* Hero Image */}
         <Animated.View
-            style={[
+          style={[
             styles.heroImageContainer,
             { height: heroImageHeight, transform: [{ translateY: heroImageTranslate }] },
-            ]}
+          ]}
         >
-            {restaurant.image && (
-                <>
-                    <Image source={{ uri: restaurant.image }} style={styles.heroImage} />
-                    <View style={styles.heroImageOverlay} />
-                </>
-            )}
+          {restaurant.image && (
+            <>
+              <Image source={{ uri: restaurant.image }} style={styles.heroImage} />
+              <View style={styles.heroImageOverlay} />
+            </>
+          )}
         </Animated.View>
-    
+  
         {/* Details Section */}
-        <View style={styles.detailsSection}>
-            {/* Restaurant Name */}
-            <Text style={styles.restaurantName}>{restaurant.name}</Text>
-    
-            {/* Categories */}
-            <Text style={styles.categories}>
+        <View style={[styles.detailsSection, { backgroundColor: activeTheme.colors.secondary }]}>
+          <Text style={[styles.restaurantName, { color: activeTheme.colors.text.primary }]}>
+            {restaurant.name}
+          </Text>
+          <Text style={[styles.categories, { color: activeTheme.colors.text.secondary }]}>
             {restaurant.categories.join(' • ')}
-            </Text>
-    
-            {/* Ratings */}
-            <View style={[styles.ratingRow, { justifyContent: 'space-between' }]}>
-                <View style={styles.ratingRowLeft}>
-                    <AirbnbRating 
-                        isDisabled
-                        showRating={false}
-                        defaultRating={averageRating}
-                        size={20}
-                        />
-                    <Text style={styles.ratingText}>
-                    {averageRating} ({totalReviews} Reviews)
-                    </Text>
-                </View>
-                <FavoriteButton isFavorited={isFavorited} onToggle={toggleFavorite} />
+          </Text>
+          <View style={[styles.ratingRow, { justifyContent: 'space-between' }]}>
+            <View style={styles.ratingRowLeft}>
+              <AirbnbRating
+                isDisabled
+                showRating={false}
+                defaultRating={averageRating}
+                size={20}
+              />
+              <Text style={[styles.ratingText, { color: activeTheme.colors.text.muted }]}>
+                {averageRating} ({totalReviews} Reviews)
+              </Text>
             </View>
+            <FavoriteButton isFavorited={isFavorited} onToggle={toggleFavorite} />
+          </View>
         </View>
-
-        {/* Menu */}
+  
+        {/* Menu Section */}
         <View style={styles.section}>
-          <TouchableOpacity style={styles.menuButton} onPress={openMenu}>
-            <Text style={styles.menuButtonText}>View Menu</Text>
-            <FontAwesome6 name="sheet-plastic" size={16} color="#FFFFFF" />
+          <TouchableOpacity
+            style={[styles.menuButton, { backgroundColor: activeTheme.colors.accent }]}
+            onPress={openMenu}
+          >
+            <Text style={[styles.menuButtonText, { color: activeTheme.colors.text.primary }]}>
+              View Menu
+            </Text>
+            <FontAwesome6 name="sheet-plastic" size={16} color={activeTheme.colors.text.primary} />
           </TouchableOpacity>
         </View>
-
-        
+  
         {/* Reviews Section */}
         <View style={styles.reviewsSection}>
-            <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>User Reviews</Text>
-                <TouchableOpacity onPress={() => router.push(`/reviews/${restaurant.id}`)}>
-                <Text style={styles.seeAllText}>See All →</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Reviews Carousel */}
-            {reviews.length > 0 ? (
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: activeTheme.colors.text.primary }]}>
+              User Reviews
+            </Text>
+            <TouchableOpacity onPress={() => router.push(`/reviews/${restaurant.id}`)}>
+              <Text style={[styles.seeAllText, { color: activeTheme.colors.accent }]}>
+                See All →
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {reviews.length > 0 ? (
             <View style={styles.reviewListContainer}>
               <FlashList
-                  estimatedItemSize={174}
-                  data={reviews.slice(0, 3)} // Show top 3 reviews
-                  contentContainerStyle={styles.carouselContainer}
-                  renderItem={({ item }) => (
-                      <View style={styles.reviewCard}>
-                        <View style={styles.reviewHeader}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <FontAwesome6 name="user-circle" size={20} color="#F4E2C1" />
-                            <Text style={styles.reviewerName}>Anonymous</Text>
-                          </View>
-                          <Text style={styles.reviewTimestamp}>
-                            {new Date(item.timestamp).toLocaleDateString()}
-                          </Text>
-                        </View>
-                        <Text style={styles.reviewText} numberOfLines={2} ellipsizeMode='tail'>{item.review}</Text>
-                        {item.images && item.images.length > 0 && (
-                          <View style={styles.imageTagContainer}>
-                            <Text style={styles.imageTag}>Contains Images</Text>
-                          </View>
-                        )}
-                        <View style={styles.ratingRow}>
-                            <FontAwesome6 name="star" solid size={16} style={styles.icon} />
-                            <Text style={styles.ratingText}>
-                                {item.rating > 1 ? `${item.rating} Stars` : `${item.rating} Star`}
-                            </Text>
-                        </View>
+                estimatedItemSize={174}
+                data={reviews.slice(0, 3)}
+                contentContainerStyle={styles.carouselContainer}
+                renderItem={({ item }) => (
+                  <View style={[styles.reviewCard, { backgroundColor: activeTheme.colors.secondary }]}>
+                    <View style={styles.reviewHeader}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <FontAwesome6 name="user-circle" size={20} color={activeTheme.colors.text.primary} />
+                        <Text style={[styles.reviewerName, { color: activeTheme.colors.text.primary }]}>
+                          Anonymous
+                        </Text>
                       </View>
-                  )}
-                  keyExtractor={(item) => item.id}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
+                      <Text style={[styles.reviewTimestamp, { color: activeTheme.colors.text.muted }]}>
+                        {new Date(item.timestamp).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <Text style={[styles.reviewText, { color: activeTheme.colors.text.secondary }]} numberOfLines={2} ellipsizeMode="tail">
+                      {item.review}
+                    </Text>
+                    {item.images && item.images.length > 0 && (
+                      <View style={styles.imageTagContainer}>
+                        <Text style={[styles.imageTag, { color: activeTheme.colors.text.muted }]}>
+                          Contains Images
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+                keyExtractor={(item) => item.id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
               />
             </View>
-            ) : (
-                <Text style={styles.emptyText}>No reviews yet. Be the first to write one!</Text>
-            )}
+          ) : (
+            <Text style={[styles.emptyText, { color: activeTheme.colors.text.muted }]}>
+              No reviews yet. Be the first to write one!
+            </Text>
+          )}
         </View>
-    
+
         {/* Operating Hours */}
         <View style={styles.section}>
-            <TouchableOpacity
-              style={styles.expandableHeader}
-              onPress={() => setShowOperatingHours(!showOperatingHours)}
-            >
-              <Text style={styles.sectionTitle}>Operating Hours</Text>
-              <FontAwesome6 
-                name={showOperatingHours ? 'chevron-up': 'chevron-down'}
-                size={16}
-                color="#ECDFCC" 
-              />
-            </TouchableOpacity>
-            {showOperatingHours && (
-              <OperatingHours hoursString={restaurant.hours} />
-            )}
+          <TouchableOpacity
+            style={styles.expandableHeader}
+            onPress={() => setShowOperatingHours(!showOperatingHours)}
+          >
+            <Text style={[styles.sectionTitle, { color: activeTheme.colors.text.primary }]}>
+              Operating Hours
+            </Text>
+            <FontAwesome6
+              name={showOperatingHours ? 'chevron-up' : 'chevron-down'}
+              size={16}
+              color={activeTheme.colors.text.primary}
+            />
+          </TouchableOpacity>
+          {showOperatingHours && (
+            <OperatingHours hoursString={restaurant.hours} />
+          )}
         </View>
 
         {/* Socials */}
         <View style={styles.section}>
-        <TouchableOpacity
-              style={styles.expandableHeader}
-              onPress={() => setShowSocials(!showSocials)}
-            >
-              <Text style={styles.sectionTitle}>Socials</Text>
-              <FontAwesome6 
-                name={showOperatingHours ? 'chevron-up': 'chevron-down'}
-                size={16}
-                color="#ECDFCC" 
-              />
-            </TouchableOpacity>
-            {showSocials && restaurant.socials && (
-              <View style={styles.socialsContainer}>
-                {Object.entries(restaurant.socials).map(([platform, link]) =>
-                  renderSocialIcon(platform, link)
-                )}
-              </View>
-            )}     
+          <TouchableOpacity
+            style={styles.expandableHeader}
+            onPress={() => setShowSocials(!showSocials)}
+          >
+            <Text style={[styles.sectionTitle, { color: activeTheme.colors.text.primary }]}>
+              Socials
+            </Text>
+            <FontAwesome6
+              name={showSocials ? 'chevron-up' : 'chevron-down'}
+              size={16}
+              color={activeTheme.colors.text.primary}
+            />
+          </TouchableOpacity>
+          {showSocials && restaurant.socials && (
+            <View style={styles.socialsContainer}>
+              {Object.entries(restaurant.socials).map(([platform, link]) =>
+                renderSocialIcon(platform, link)
+              )}
+            </View>
+          )}
         </View>
-    
+
         {/* Call to Action */}
         <View style={styles.section}>
-            <TouchableOpacity style={styles.button} onPress={openGoogleMaps}>
-              <Text style={styles.buttonText}>Get Directions</Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: activeTheme.colors.accent }]}
+            onPress={openGoogleMaps}
+          >
+            <Text style={[styles.buttonText, { color: activeTheme.colors.text.primary }]}>
+              Get Directions
+            </Text>
+          </TouchableOpacity>
 
-            {restaurant?.website && (
-              <TouchableOpacity style={styles.button} onPress={() => Linking.openURL(restaurant.website)}>
-                <Text style={styles.buttonText}>Make a Reservation</Text>
-              </TouchableOpacity>
-            )}
-
+          {restaurant?.website && (
             <TouchableOpacity
-              style={[styles.button, styles.writeReviewButton]}
-              onPress={() => router.push(`/reviews/submit/${restaurant.id}`)}
+              style={[styles.button, { backgroundColor: activeTheme.colors.accent }]}
+              onPress={() => Linking.openURL(restaurant.website)}
             >
-              <Text style={styles.buttonText}>Write a Review</Text>
+              <Text style={[styles.buttonText, { color: activeTheme.colors.text.primary }]}>
+                Make a Reservation
+              </Text>
             </TouchableOpacity>
-        </View>
+          )}
 
-        <SignInModal isVisible={isAuthModalVisible} onClose={() => setIsAuthModalVisible(false)} />
-        </Animated.ScrollView>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.writeReviewButton,
+              { backgroundColor: activeTheme.colors.accent },
+            ]}
+            onPress={() => router.push(`/reviews/submit/${restaurant.id}`)}
+          >
+            <Text style={[styles.buttonText, { color: activeTheme.colors.text.primary }]}>
+              Write a Review
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.ScrollView>
     </View>
   );
 };

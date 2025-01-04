@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { ThemeContext } from '../context/ThemeContext';
 
 interface CourseCardProps {
   id: string;
@@ -13,8 +14,11 @@ interface CourseCardProps {
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, category, icon, backgroundColour }) => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
   return (
-    <TouchableOpacity style={styles.cardContainer}>
+    <TouchableOpacity style={[styles.cardContainer, { backgroundColor: activeTheme.colors.secondary, shadowColor: activeTheme.colors.text.muted }]}>
       <Link href={`/courses/${id}`}>
         {/* Card Content */}
         <View style={styles.cardContent}>
@@ -25,12 +29,14 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, categor
           
           {/* Course Details Section */}
           <View style={styles.textDetailsContainer}>
-            <View style={styles.courseCategory}>
-              <Text style={styles.courseCategoryText}>{category}</Text>
+            <View style={[styles.courseCategory, { borderColor: activeTheme.colors.accent }]}>
+              <Text style={[styles.courseCategoryText, { color: activeTheme.colors.accent }]}>{category}</Text>
             </View>
             <View style={styles.courseDescription}>
-              <Text style={styles.courseHeader}>{title}</Text>
-              <Text style={styles.courseDescriptionText} numberOfLines={2} ellipsizeMode="tail">{description}</Text>
+              <Text style={[styles.courseHeader, { color: activeTheme.colors.text.primary }]}>{title}</Text>
+              <Text style={[styles.courseDescriptionText, { color: activeTheme.colors.text.muted }]} numberOfLines={2} ellipsizeMode="tail">
+                {description}
+              </Text>
             </View>
           </View>
         </View>
@@ -41,13 +47,11 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, categor
 
 const styles = StyleSheet.create({
   cardContainer: {
-    backgroundColor: '#3A504C',
     borderRadius: 10,
     marginVertical: 8,
     paddingVertical: 10,
     paddingHorizontal: 14,
     alignItems: 'center',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
@@ -57,22 +61,20 @@ const styles = StyleSheet.create({
   cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8
+    gap: 8,
   },
   courseIcon: {
     width: 70,
     height: 70,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#A3C0BB',
-    borderRadius: 8
+    borderRadius: 8,
   },
   textDetailsContainer: {
-    width: '80%'
+    width: '80%',
   },
   courseCategory: {
     borderWidth: 0.5,
-    borderColor: '#ECDFCC',
     borderRadius: 50,
     paddingVertical: 2,
     paddingHorizontal: 10,
@@ -82,7 +84,6 @@ const styles = StyleSheet.create({
   courseCategoryText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 12,
-    color: '#ECDFCC',
   },
   courseDescription: {
     justifyContent: 'center',
@@ -90,14 +91,12 @@ const styles = StyleSheet.create({
   courseHeader: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 16,
-    color: '#ECDFCC',
     marginBottom: 4,
   },
   courseDescriptionText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 12,
-    color: '#D1D5DB'
-  }
+  },
 });
 
 export default CourseCard;

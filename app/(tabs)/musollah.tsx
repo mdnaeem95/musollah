@@ -1,21 +1,35 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native'
-import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react'
-import Map, { Region, BidetLocation, MosqueLocation, MusollahLocation } from '../../components/Map'
-import { SearchBar } from '@rneui/themed'
-import SegmentedControl from '@react-native-segmented-control/segmented-control'
-import BidetModal from '../../components/BidetModal'
-import MosqueModal from '../../components/MosqueModal'
-import MusollahModal from '../../components/MusollahModal'
-import { useDispatch, useSelector } from 'react-redux'
-import { AppDispatch, RootState } from '../../redux/store/store'
-import { fetchMusollahData } from '../../redux/slices/musollahSlice'  // Adjust the path as needed
-import { fetchUserLocation } from '../../redux/slices/userLocationSlice'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { FlashList } from '@shopify/flash-list'
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  useContext,
+} from 'react';
+import Map, { Region, BidetLocation, MosqueLocation, MusollahLocation } from '../../components/Map';
+import { SearchBar } from '@rneui/themed';
+import SegmentedControl from '@react-native-segmented-control/segmented-control';
+import BidetModal from '../../components/BidetModal';
+import MosqueModal from '../../components/MosqueModal';
+import MusollahModal from '../../components/MusollahModal';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../redux/store/store';
+import { fetchMusollahData } from '../../redux/slices/musollahSlice';
+import { fetchUserLocation } from '../../redux/slices/userLocationSlice';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlashList } from '@shopify/flash-list';
+import { ThemeContext } from '../../context/ThemeContext';
 
-const locationTypes = ['Bidets', 'Musollahs', 'Mosques']
-
-const LOCATION_UPDATE_THRESHOLD = 0.005;
+const locationTypes = ['Bidets', 'Musollahs', 'Mosques'];
 
 interface ItemProps {
   item: BidetLocation | MosqueLocation | MusollahLocation;
@@ -23,28 +37,30 @@ interface ItemProps {
 }
 
 const MusollahTab = () => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
+
   const dispatch = useDispatch<AppDispatch>();
-  const { bidetLocations, mosqueLocations, musollahLocations, isLoading } = useSelector((state: RootState) => state.musollah);
+  const { bidetLocations, mosqueLocations, musollahLocations, isLoading } = useSelector(
+    (state: RootState) => state.musollah
+  );
   const { userLocation } = useSelector((state: RootState) => state.location);
 
-  const [hasFetchedData, setHasFetchedData] = useState(false);
   const [region, setRegion] = useState<Region | undefined>(undefined);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
-  const [selectedLocation, setSelectedLocation] = useState<BidetLocation | MosqueLocation | MusollahLocation | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<
+    BidetLocation | MosqueLocation | MusollahLocation | null
+  >(null);
   const [shouldFollowUserLocation, setShouldFollowUserLocation] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [filteredLocations, setFilteredLocations] = useState<(BidetLocation | MosqueLocation | MusollahLocation)[]>([]);
+  const [filteredLocations, setFilteredLocations] = useState<
+    (BidetLocation | MosqueLocation | MusollahLocation)[]
+  >([]);
 
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
-  const lastLocation = useRef<{ latitude: number; longitude: number } | null>(null);
 
   const handleMarkerPress = useCallback((location: BidetLocation | MosqueLocation | MusollahLocation) => {
-    setSelectedLocation(location);
-    setIsModalVisible(true);
-  }, []);
-
-  const handleListItemPress = useCallback((location: BidetLocation | MosqueLocation | MusollahLocation) => {
     setSelectedLocation(location);
     setIsModalVisible(true);
   }, []);
@@ -54,25 +70,13 @@ const MusollahTab = () => {
     setIsModalVisible(false);
   }, []);
 
-  const handleRegionChangeComplete = useCallback(() => {
-    setShouldFollowUserLocation(false);
-  }, []);
-
-  const handleRefocusPress = useCallback(() => {
-    if (userLocation) {
-      const newRegion: Region = {
-        latitude: userLocation.coords.latitude,
-        longitude: userLocation.coords.longitude,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05
-      };
-      setRegion(newRegion);
-      setShouldFollowUserLocation(true);
-    }
-  }, [userLocation]);
-
   const handleSearch = useCallback(() => {
-    const currentLocations = selectedIndex === 0 ? bidetLocations : selectedIndex === 1 ? musollahLocations : mosqueLocations;
+    const currentLocations =
+      selectedIndex === 0
+        ? bidetLocations
+        : selectedIndex === 1
+        ? musollahLocations
+        : mosqueLocations;
     const results = currentLocations.filter((location) =>
       location.building.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -84,46 +88,22 @@ const MusollahTab = () => {
     debounceTimer.current = setTimeout(handleSearch, 300);
   }, [handleSearch]);
 
-  const renderItem = useCallback(({ item }: { item: BidetLocation | MosqueLocation | MusollahLocation }) => (
-    <Item item={item} onPress={handleListItemPress} />
-  ), [handleListItemPress]);
-
-  const Item = React.memo(({ item, onPress }: ItemProps) => (
-    <TouchableOpacity style={{ padding: 20, borderBottomColor: 'black', borderBottomWidth: 1 }} onPress={() => onPress(item)}>
-      <Text style={styles.locationText}>{item.building} </Text>
-      <Text style={styles.distanceText}>Distance: {item.distance?.toFixed(2)}km</Text>
-    </TouchableOpacity>  
-  ));
-
-  const keyExtractor = useCallback((item: BidetLocation | MosqueLocation | MusollahLocation) => item.id, []);
-
-  // Initial fetch for user location on component mount
-  useEffect(() => {
-    dispatch(fetchUserLocation());
-  }, [dispatch]);
-
-  // Trigger fetching of musollah data whenever user location changes
-  useEffect(() => {
-    if (userLocation) {
-      dispatch(fetchMusollahData(userLocation)); // Fetch data with updated user location
-    }
-  }, [userLocation, dispatch]);
-
-  useEffect(() => {
-    debouncedSearch();
-  }, [searchQuery, debouncedSearch]);
-
-  // Set map region based on user location when available
-  useEffect(() => {
-    if (userLocation) {
-      setRegion({
-        latitude: userLocation.coords.latitude,
-        longitude: userLocation.coords.longitude,
-        latitudeDelta: 0.005,  // Smaller values for a zoomed-in view
-        longitudeDelta: 0.005,
-      });
-    }
-  }, [userLocation]);
+  const renderItem = useCallback(
+    ({ item }: { item: BidetLocation | MosqueLocation | MusollahLocation }) => (
+      <TouchableOpacity
+        style={[styles.itemContainer, { backgroundColor: activeTheme.colors.primary }]}
+        onPress={() => handleMarkerPress(item)}
+      >
+        <Text style={[styles.locationText, { color: activeTheme.colors.text.primary }]}>
+          {item.building}
+        </Text>
+        <Text style={[styles.distanceText, { color: activeTheme.colors.text.secondary }]}>
+          Distance: {item.distance?.toFixed(2)}km
+        </Text>
+      </TouchableOpacity>
+    ),
+    [handleMarkerPress, activeTheme]
+  );
 
   const currentLocations = useMemo(() => {
     switch (selectedIndex) {
@@ -138,78 +118,101 @@ const MusollahTab = () => {
     }
   }, [selectedIndex, bidetLocations, musollahLocations, mosqueLocations]);
 
-  const searchBarIOSStyle={
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    zIndex: 12,
-    width: '80%'
-  }
+  useEffect(() => {
+    dispatch(fetchUserLocation());
+  }, [dispatch]);
 
-  const searchBarAndroidStyle={
-    position: 'absolute',
-    top: 8,
-    left: 10,
-    zIndex: 12,
-    width: '80%'
-  }
+  useEffect(() => {
+    if (userLocation) {
+      dispatch(fetchMusollahData(userLocation));
+    }
+  }, [userLocation, dispatch]);
+
+  useEffect(() => {
+    debouncedSearch();
+  }, [searchQuery, debouncedSearch]);
+
+  useEffect(() => {
+    if (userLocation) {
+      setRegion({
+        latitude: userLocation.coords.latitude,
+        longitude: userLocation.coords.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      });
+    }
+  }, [userLocation]);
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: activeTheme.colors.primary }}>
       <View style={{ flex: 1 }}>
-        <View style={Platform.OS === 'ios' ? searchBarIOSStyle : searchBarAndroidStyle}>
-          <SearchBar 
-            placeholder='Search for a location...'
+        <View style={Platform.OS === 'ios' ? styles.searchBarIOS : styles.searchBarAndroid}>
+          <SearchBar
+            placeholder="Search for a location..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            platform='default'
+            platform="default"
             round
-            lightTheme
+            lightTheme={!isDarkMode}
             containerStyle={{ margin: 0, padding: 0, borderRadius: 20 }}
-            inputContainerStyle={{ backgroundColor: 'rgba(255,255,255,0.5)' }}
+            inputContainerStyle={{ backgroundColor: activeTheme.colors.secondary }}
           />
         </View>
-        <Map 
-          region={region} 
-          markerLocations={filteredLocations.length ? filteredLocations : currentLocations} 
-          onMarkerPress={handleMarkerPress} 
-          onRegionChangeComplete={handleRegionChangeComplete}
+        <Map
+          region={region}
+          markerLocations={filteredLocations.length ? filteredLocations : currentLocations}
+          onMarkerPress={handleMarkerPress}
+          onRegionChangeComplete={() => {}}
+          onRefocusPress={() => {}}
           shouldFollowUserLocation={shouldFollowUserLocation}
-          onRefocusPress={handleRefocusPress}
           locationType={locationTypes[selectedIndex]}
         />
       </View>
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} >
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <SegmentedControl
           style={{ margin: 10 }}
-          backgroundColor='#A3C0BB'
+          backgroundColor={activeTheme.colors.accent}
           values={locationTypes}
           selectedIndex={selectedIndex}
           onChange={(event) => setSelectedIndex(event.nativeEvent.selectedSegmentIndex)}
         />
         {isLoading ? (
-          <ActivityIndicator size="large" color="#0000FF" />
-        ) :(
-          <FlashList
-            estimatedItemSize={83}
-            data={filteredLocations.length ? filteredLocations : currentLocations}
-            renderItem={renderItem}
-            keyExtractor={keyExtractor}
-            removeClippedSubviews={true}
-          />
+          <ActivityIndicator size="large" color={activeTheme.colors.text.primary} />
+        ) : (
+          <View style={styles.flashListContent}>
+            <FlashList
+              estimatedItemSize={83}
+              data={filteredLocations.length ? filteredLocations : currentLocations}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.id}
+            />
+          </View>
         )}
       </KeyboardAvoidingView>
 
       {selectedLocation && (
         selectedIndex === 1 ? (
-          <MusollahModal isVisible={isModalVisible} location={selectedLocation as MusollahLocation} onClose={closeModal} />
+          <MusollahModal
+            isVisible={isModalVisible}
+            location={selectedLocation as MusollahLocation}
+            onClose={closeModal}
+          />
         ) : selectedIndex === 2 ? (
-          <MosqueModal isVisible={isModalVisible} location={selectedLocation as MosqueLocation} onClose={closeModal} />
+          <MosqueModal
+            isVisible={isModalVisible}
+            location={selectedLocation as MosqueLocation}
+            onClose={closeModal}
+          />
         ) : (
-          <BidetModal isVisible={isModalVisible} location={selectedLocation as BidetLocation} onClose={closeModal}/>
+          <BidetModal
+            isVisible={isModalVisible}
+            location={selectedLocation as BidetLocation}
+            onClose={closeModal}
+          />
         )
       )}
     </SafeAreaView>
@@ -228,7 +231,29 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     fontSize: 14,
     lineHeight: 21,
-  }
+  },
+  itemContainer: {
+    padding: 20,
+    borderBottomWidth: 1,
+  },
+  searchBarIOS: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 12,
+    width: '80%',
+  },
+  searchBarAndroid: {
+    position: 'absolute',
+    top: 8,
+    left: 10,
+    zIndex: 12,
+    width: '80%',
+  },
+  flashListContent: {
+    flexGrow: 1,
+    zIndex: 100
+  },
 });
 
 export default MusollahTab;

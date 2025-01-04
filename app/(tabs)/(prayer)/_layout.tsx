@@ -1,8 +1,12 @@
 import { FontAwesome6 } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
 import { TouchableOpacity } from "react-native";
+import { useContext } from "react";
+import { ThemeContext } from "../../../context/ThemeContext";
 
 const PrayerLayout = () => {
+  const { theme, isDarkMode } = useContext(ThemeContext);
+  const activeTheme = isDarkMode ? theme.dark : theme.light;
 
   const router = useRouter();
   const date = new Date();
@@ -26,22 +30,22 @@ const PrayerLayout = () => {
           headerShown: true,
           headerTitle: 'Qiblat',
           headerStyle: {
-            backgroundColor: '#2E3D3A',
+            backgroundColor: activeTheme.colors.primary,
           },
-          headerTintColor: '#FFFFFF',
+          headerTintColor: activeTheme.colors.text.primary,
           headerTitleStyle: {
             fontFamily: 'Outfit_700Bold',
             fontSize: 20,
-            color:'#ECDFCC'
+            color: activeTheme.colors.text.primary,
           },
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
               <FontAwesome6
                 name="arrow-left"
                 size={24}
-                color='#ECDFCC'
+                color={activeTheme.colors.text.primary}
                 style={{ padding: 10 }}
-                />
+              />
             </TouchableOpacity>
           )
         }}
@@ -52,22 +56,22 @@ const PrayerLayout = () => {
           headerShown: true,
           headerTitle: 'Post-Prayer Doa',
           headerStyle: {
-            backgroundColor: '#2E3D3A',
+            backgroundColor: activeTheme.colors.primary,
           },
-          headerTintColor: '#FFFFFF',
+          headerTintColor: activeTheme.colors.text.primary,
           headerTitleStyle: {
             fontFamily: 'Outfit_700Bold',
             fontSize: 20,
-            color:'#ECDFCC'
+            color: activeTheme.colors.text.primary,
           },
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
               <FontAwesome6
                 name="arrow-left"
                 size={24}
-                color='#ECDFCC'
+                color={activeTheme.colors.text.primary}
                 style={{ padding: 10 }}
-                />
+              />
             </TouchableOpacity>
           )
         }}
@@ -78,22 +82,22 @@ const PrayerLayout = () => {
           headerShown: true,
           headerTitle: formattedMonth,
           headerStyle: {
-            backgroundColor: '#2E3D3A',
+            backgroundColor: activeTheme.colors.primary,
           },
-          headerTintColor: '#FFFFFF',
+          headerTintColor: activeTheme.colors.text.primary,
           headerTitleStyle: {
             fontFamily: 'Outfit_700Bold',
             fontSize: 20,
-            color:'#ECDFCC'
+            color: activeTheme.colors.text.primary,
           },
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
               <FontAwesome6
                 name="arrow-left"
                 size={24}
-                color='#ECDFCC'
+                color={activeTheme.colors.text.primary}
                 style={{ padding: 10 }}
-                />
+              />
             </TouchableOpacity>
           )
         }}
@@ -104,28 +108,28 @@ const PrayerLayout = () => {
           headerShown: true,
           headerTitle: 'Prayer Dashboard',
           headerStyle: {
-            backgroundColor: '#2E3D3A',
+            backgroundColor: activeTheme.colors.primary,
           },
-          headerTintColor: '#FFFFFF',
+          headerTintColor: activeTheme.colors.text.primary,
           headerTitleStyle: {
             fontFamily: 'Outfit_700Bold',
             fontSize: 20,
-            color:'#ECDFCC'
+            color: activeTheme.colors.text.primary,
           },
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
               <FontAwesome6
                 name="arrow-left"
                 size={24}
-                color='#ECDFCC'
+                color={activeTheme.colors.text.primary}
                 style={{ padding: 10 }}
-                />
+              />
             </TouchableOpacity>
           )
         }}
       />
     </Stack>
-  )
-}
+  );
+};
 
-export default PrayerLayout
+export default PrayerLayout;
