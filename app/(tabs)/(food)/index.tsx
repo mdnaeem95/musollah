@@ -16,16 +16,15 @@ import { fetchRestaurants } from '../../../api/firebase';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../redux/store/store';
 import { fetchUserLocation } from '../../../redux/slices/userLocationSlice';
-import { Region } from '../../../components/Map';
+import { Region } from '../../../components/musollah/Map';
 import { haversineDistance } from '../../../utils/distance';
 import { AirbnbRating } from 'react-native-ratings';
-import { ThemeContext } from '../../../context/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
 const RestaurantLocator = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme()
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [region, setRegion] = useState<Region | undefined>(undefined);
@@ -107,16 +106,16 @@ const RestaurantLocator = () => {
     <TouchableOpacity
       style={[
         styles.categoryPill,
-        { backgroundColor: activeTheme.colors.secondary },
-        selectedCategories.includes(item) && { backgroundColor: activeTheme.colors.accent },
+        { backgroundColor: theme.colors.secondary },
+        selectedCategories.includes(item) && { backgroundColor: theme.colors.accent },
       ]}
       onPress={() => handleCategorySelect(item)}
     >
       <Text
         style={[
           styles.categoryText,
-          { color: activeTheme.colors.text.primary },
-          selectedCategories.includes(item) && { color: activeTheme.colors.primary },
+          { color: theme.colors.text.primary },
+          selectedCategories.includes(item) && { color: theme.colors.primary },
         ]}
       >
         {item}
@@ -130,12 +129,12 @@ const RestaurantLocator = () => {
 
     return (
       <TouchableOpacity
-        style={[styles.recommendationCard, { backgroundColor: activeTheme.colors.secondary }]}
+        style={[styles.recommendationCard, { backgroundColor: theme.colors.secondary }]}
         onPress={() => router.push(`${item.id}`)}
       >
         <Image source={{ uri: item.image }} style={styles.recommendationImage} />
         <View style={styles.recommendationDetails}>
-          <Text style={[styles.recommendationTitle, { color: activeTheme.colors.text.primary }]}>
+          <Text style={[styles.recommendationTitle, { color: theme.colors.text.primary }]}>
             {item.name}
           </Text>
           {hasReviews ? (
@@ -147,20 +146,20 @@ const RestaurantLocator = () => {
                   defaultRating={item.averageRating}
                   size={14}
                 />
-                <Text style={[styles.recommendationSubtitle, { color: activeTheme.colors.text.secondary }]}>
+                <Text style={[styles.recommendationSubtitle, { color: theme.colors.text.secondary }]}>
                   {`${item.averageRating} (${item.totalReviews})`}
                 </Text>
               </View>
-              <Text style={[styles.recommendationSubtitle, { color: activeTheme.colors.text.secondary }]}>
+              <Text style={[styles.recommendationSubtitle, { color: theme.colors.text.secondary }]}>
                 {distance} km
               </Text>
             </>
           ) : (
             <>
-              <Text style={[styles.recommendationSubtitle, { color: activeTheme.colors.text.muted }]}>
+              <Text style={[styles.recommendationSubtitle, { color: theme.colors.text.muted }]}>
                 No reviews yet.
               </Text>
-              <Text style={[styles.recommendationSubtitle, { color: activeTheme.colors.text.secondary }]}>
+              <Text style={[styles.recommendationSubtitle, { color: theme.colors.text.secondary }]}>
                 {distance} km
               </Text>
             </>
@@ -171,17 +170,17 @@ const RestaurantLocator = () => {
   };
 
   return (
-    <ScrollView style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
+    <ScrollView style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
       <TouchableOpacity
-        style={[styles.searchBar, { backgroundColor: activeTheme.colors.secondary }]}
+        style={[styles.searchBar, { backgroundColor: theme.colors.secondary }]}
         onPress={() => router.push('/search')}
       >
-        <Text style={[styles.searchPlaceholder, { color: activeTheme.colors.text.muted }]}>
+        <Text style={[styles.searchPlaceholder, { color: theme.colors.text.muted }]}>
           Find Halal food near you...
         </Text>
       </TouchableOpacity>
 
-      <View style={[styles.mapContainer, { backgroundColor: activeTheme.colors.secondary }]}>
+      <View style={[styles.mapContainer, { backgroundColor: theme.colors.secondary }]}>
         <MapView
           style={styles.map}
           region={region}
@@ -211,7 +210,7 @@ const RestaurantLocator = () => {
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: activeTheme.colors.text.primary }]}>Categories</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Categories</Text>
         <FlatList
           data={categories}
           renderItem={renderCategoryItem}
@@ -222,7 +221,7 @@ const RestaurantLocator = () => {
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: activeTheme.colors.text.primary }]}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
           Recommended for You
         </Text>
         <FlatList

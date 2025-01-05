@@ -1,13 +1,13 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, Alert, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Alert, StyleSheet } from 'react-native';
 import { getFirestore, collection, addDoc } from '@react-native-firebase/firestore';
 import { Switch } from '@rneui/themed';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 import ThemedButton from '../../../../components/ThemedButton';
 
 const SupportPage = () => {
-  const { theme, currentTheme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [feedback, setFeedback] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [isAnonymous, setIsAnonymous] = useState<boolean>(true);
@@ -42,8 +42,6 @@ const SupportPage = () => {
     }
   };
 
-  const styles = createStyles(activeTheme);
-
   return (
     <View style={styles.container}>
       <View style={styles.form}>
@@ -55,7 +53,7 @@ const SupportPage = () => {
         <TextInput
           style={styles.feedbackInput}
           placeholder="Type your feedback here..."
-          placeholderTextColor={activeTheme.colors.text.muted}
+          placeholderTextColor={theme.colors.text.muted}
           multiline
           numberOfLines={6}
           value={feedback}
@@ -69,10 +67,10 @@ const SupportPage = () => {
             value={isAnonymous}
             onValueChange={setIsAnonymous}
             trackColor={{
-              false: activeTheme.colors.text.muted,
-              true: activeTheme.colors.accent,
+              false: theme.colors.text.muted,
+              true: theme.colors.accent,
             }}
-            thumbColor={isAnonymous ? activeTheme.colors.primary : activeTheme.colors.secondary}
+            thumbColor={isAnonymous ? theme.colors.primary : theme.colors.secondary}
           />
         </View>
 
@@ -81,7 +79,7 @@ const SupportPage = () => {
           <TextInput
             style={styles.emailInput}
             placeholder="Enter your email (optional)"
-            placeholderTextColor={activeTheme.colors.text.muted}
+            placeholderTextColor={theme.colors.text.muted}
             keyboardType="email-address"
             value={email}
             onChangeText={setEmail}

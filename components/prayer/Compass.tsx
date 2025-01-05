@@ -1,15 +1,14 @@
 import { View, Text, Image, StyleSheet, Dimensions, Vibration, Animated, ActivityIndicator, Alert } from 'react-native';
-import React, { useEffect, useState, useContext } from 'react';
-import useCompass from '../hooks/useCompass';
-import { ThemeContext } from '../context/ThemeContext';
+import React, { useEffect, useState } from 'react';
+import useCompass from '../../hooks/useCompass';
+import { useTheme } from '../../context/ThemeContext';
 
 const screenWidth = Dimensions.get('window').width;
 const compassSize = screenWidth * 0.8;
 const vibrationDebounce = 1000;
 
 const Compass = () => {
-    const { theme, isDarkMode } = useContext(ThemeContext);
-    const activeTheme = isDarkMode ? theme.dark : theme.light;
+    const { theme } = useTheme();
     const { userHeading, qiblaAzimuth, loading, error } = useCompass();
     const [bgColor] = useState(new Animated.Value(0));
 
@@ -34,7 +33,7 @@ const Compass = () => {
 
     const interpolateColor = bgColor.interpolate({
         inputRange: [0, 1],
-        outputRange: [activeTheme.colors.secondary, activeTheme.colors.accent],
+        outputRange: [theme.colors.secondary, theme.colors.accent],
     });
 
     if (error) {
@@ -42,31 +41,31 @@ const Compass = () => {
     }
 
     return (
-        <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
+        <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={activeTheme.colors.text.muted} />
-                    <Text style={[styles.loadingText, { color: activeTheme.colors.text.muted }]}>Calibrating Compass...</Text>
+                    <ActivityIndicator size="large" color={theme.colors.text.muted} />
+                    <Text style={[styles.loadingText, { color: theme.colors.text.muted }]}>Calibrating Compass...</Text>
                 </View>
             ) : (
                 <>
                     <View style={styles.textContainer}>
-                        <Text style={[styles.qiblatText, { color: activeTheme.colors.text.primary }]}>
+                        <Text style={[styles.qiblatText, { color: theme.colors.text.primary }]}>
                             Your heading: {Math.round(userHeading!)}°
                         </Text>
-                        <Text style={[styles.qiblatText, { color: activeTheme.colors.text.primary }]}>
+                        <Text style={[styles.qiblatText, { color: theme.colors.text.primary }]}>
                             Qibla heading: {Math.round(qiblaAzimuth!)}°
                         </Text>
-                        <Text style={[styles.qiblatText, { color: activeTheme.colors.text.secondary }]}>
+                        <Text style={[styles.qiblatText, { color: theme.colors.text.secondary }]}>
                             When your heading matches the Kaaba's, you are facing the right direction.
                         </Text>
                     </View>
 
                     <View style={styles.compassContainer}>
                         <Animated.View style={[styles.compassCircle, { backgroundColor: interpolateColor }]}>
-                            <Image source={require('../assets/kaabah.png')} style={styles.kaabahIcon} />
+                            <Image source={require('../../assets/kaabah.png')} style={styles.kaabahIcon} />
                             <Image 
-                                source={require('../assets/arrow-up.png')} 
+                                source={require('../../assets/arrow-up.png')} 
                                 style={[
                                     styles.compassArrow, 
                                     { transform: [{ rotate: `${qiblaAzimuth! - userHeading!}deg` }] } 

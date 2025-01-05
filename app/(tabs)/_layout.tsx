@@ -1,26 +1,25 @@
-import React, { useContext } from "react";
-import { Tabs } from "expo-router";
-import { FontAwesome6 } from "@expo/vector-icons";
-import { ThemeContext } from "../../context/ThemeContext";
+import React from 'react';
+import { Tabs } from 'expo-router';
+import { FontAwesome6 } from '@expo/vector-icons';
+import { useTheme } from '../../context/ThemeContext';
 
 const TabLayout = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light; // Access light or dark theme
+  const { theme } = useTheme();
 
   return (
     <Tabs
       initialRouteName="(prayer)"
       screenOptions={({ route }) => ({
-        tabBarActiveTintColor: activeTheme.colors.tabBar.activeTintColor,
-        tabBarInactiveTintColor: activeTheme.colors.tabBar.inactiveTintColor,
+        tabBarActiveTintColor: theme.colors.tabBar.activeTintColor,
+        tabBarInactiveTintColor: theme.colors.tabBar.inactiveTintColor,
         tabBarStyle: {
           height: 70,
-          backgroundColor: activeTheme.colors.tabBar.backgroundColor,
-          borderTopColor: activeTheme.colors.tabBar.borderColor,
+          backgroundColor: theme.colors.tabBar.backgroundColor,
+          borderTopColor: theme.colors.tabBar.borderColor,
           paddingBottom: 25,
           paddingTop: 10,
           borderTopWidth: 1,
-          shadowColor: activeTheme.colors.text.muted,
+          shadowColor: theme.colors.text.muted,
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.2,
           shadowRadius: 3,

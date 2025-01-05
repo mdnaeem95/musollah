@@ -1,10 +1,10 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import Modal from 'react-native-modal';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { ListItem } from '@rneui/themed';
 import { MusollahLocation } from './Map';
-import { ThemeContext } from '../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface MosqueModalProps {
   isVisible: boolean;
@@ -13,24 +13,22 @@ interface MosqueModalProps {
 }
 
 const InfoRow = ({ label, value }: { label: string; value: string }) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   return (
     <View style={styles.infoRow}>
-      <Text style={[styles.label, { color: activeTheme.colors.text.primary }]}>{label}</Text>
+      <Text style={[styles.label, { color: theme.colors.text.primary }]}>{label}</Text>
       <FontAwesome6
         name={value.toLowerCase() === 'yes' ? 'check' : 'xmark'}
         size={20}
-        color={value.toLowerCase() === 'yes' ? activeTheme.colors.text.success : activeTheme.colors.text.error}
+        color={value.toLowerCase() === 'yes' ? theme.colors.text.success : theme.colors.text.error}
       />
     </View>
   );
 };
 
 const MusollahModal = ({ isVisible, location, onClose }: MosqueModalProps) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const directions = location?.directions
     ?.split('. ')
@@ -52,24 +50,24 @@ const MusollahModal = ({ isVisible, location, onClose }: MosqueModalProps) => {
       useNativeDriver
       style={styles.modal}
     >
-      <View style={[styles.contentContainer, { backgroundColor: activeTheme.colors.primary }]}>
+      <View style={[styles.contentContainer, { backgroundColor: theme.colors.primary }]}>
         <View style={{ width: '100%' }}>
           <TouchableOpacity
             onPress={onClose}
             style={[
               styles.closeButton,
-              { backgroundColor: activeTheme.colors.accent },
+              { backgroundColor: theme.colors.accent },
             ]}
           >
-            <FontAwesome6 name="xmark" size={18} color={activeTheme.colors.text.primary} solid />
+            <FontAwesome6 name="xmark" size={18} color={theme.colors.text.primary} solid />
           </TouchableOpacity>
         </View>
 
         <View style={styles.textContainer}>
-          <Text style={[styles.locationText, { color: activeTheme.colors.text.primary }]}>
+          <Text style={[styles.locationText, { color: theme.colors.text.primary }]}>
             {location?.building}
           </Text>
-          <Text style={[styles.distanceText, { color: activeTheme.colors.text.secondary }]}>
+          <Text style={[styles.distanceText, { color: theme.colors.text.secondary }]}>
             {location?.address}
           </Text>
         </View>
@@ -86,11 +84,11 @@ const MusollahModal = ({ isVisible, location, onClose }: MosqueModalProps) => {
         <ListItem.Accordion
           content={
             <>
-              <ListItem.Content style={{ backgroundColor: activeTheme.colors.primary }}>
+              <ListItem.Content style={{ backgroundColor: theme.colors.primary }}>
                 <ListItem.Title
                   style={[
                     styles.directionsTitle,
-                    { color: activeTheme.colors.text.primary, backgroundColor: activeTheme.colors.primary },
+                    { color: theme.colors.text.primary, backgroundColor: theme.colors.primary },
                   ]}
                 >
                   Directions
@@ -100,15 +98,15 @@ const MusollahModal = ({ isVisible, location, onClose }: MosqueModalProps) => {
           }
           isExpanded={expanded}
           onPress={() => setExpanded(!expanded)}
-          containerStyle={{ backgroundColor: activeTheme.colors.primary }}
+          containerStyle={{ backgroundColor: theme.colors.primary }}
         >
-          <View style={[styles.directionsContainer, { backgroundColor: activeTheme.colors.primary }]}>
+          <View style={[styles.directionsContainer, { backgroundColor: theme.colors.primary }]}>
             {directions?.map((step, index) => (
               <Text
                 key={index}
                 style={[
                   styles.directionStep,
-                  { color: activeTheme.colors.text.secondary },
+                  { color: theme.colors.text.secondary },
                 ]}
               >
                 {`${index + 1}. ${step}`}
@@ -121,10 +119,10 @@ const MusollahModal = ({ isVisible, location, onClose }: MosqueModalProps) => {
           onPress={openMaps}
           style={[
             styles.googleMapsButton,
-            { backgroundColor: activeTheme.colors.accent },
+            { backgroundColor: theme.colors.accent },
           ]}
         >
-          <Text style={[styles.googleMapsButtonText, { color: activeTheme.colors.text.primary }]}>
+          <Text style={[styles.googleMapsButtonText, { color: theme.colors.text.primary }]}>
             Open in Maps
           </Text>
         </TouchableOpacity>

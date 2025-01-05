@@ -1,24 +1,23 @@
 import { FontAwesome6 } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
-import React, { useContext } from 'react';
+import React from 'react';
 import { TouchableOpacity } from "react-native";
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const CoursesLayout = () => {
   const router = useRouter();
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const sharedScreenOptions = {
     headerShown: true,
     headerStyle: {
-      backgroundColor: activeTheme.colors.primary,
+      backgroundColor: theme.colors.primary,
     },
-    headerTintColor: activeTheme.colors.text.primary,
+    headerTintColor: theme.colors.text.primary,
     headerTitleStyle: {
       fontFamily: 'Outfit_700Bold',
       fontSize: 20,
-      color: activeTheme.colors.text.primary,
+      color: theme.colors.text.primary,
     },
     headerLeft: ({ canGoBack }: { canGoBack: boolean }) => (
       canGoBack && (
@@ -26,7 +25,7 @@ const CoursesLayout = () => {
           <FontAwesome6
             name="arrow-left"
             size={24}
-            color={activeTheme.colors.text.primary}
+            color={theme.colors.text.primary}
           />
         </TouchableOpacity>
       )
@@ -47,7 +46,7 @@ const CoursesLayout = () => {
               <FontAwesome6
                 name="arrow-left"
                 size={24}
-                color={activeTheme.colors.text.primary}
+                color={theme.colors.text.primary}
               />
             </TouchableOpacity>
           ),
@@ -63,7 +62,7 @@ const CoursesLayout = () => {
               <FontAwesome6
                 name="arrow-left"
                 size={24}
-                color={activeTheme.colors.text.primary}
+                color={theme.colors.text.primary}
               />
             </TouchableOpacity>
           ),

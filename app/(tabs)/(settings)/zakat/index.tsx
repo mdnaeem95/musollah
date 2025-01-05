@@ -1,16 +1,14 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const ZakatIndex = () => {
     const router = useRouter();
-    const { theme, isDarkMode } = useContext(ThemeContext); // Access theme context
-    const activeTheme = isDarkMode ? theme.dark : theme.light;
-
-    const styles = createStyles(activeTheme);
+    const { theme } = useTheme(); // Access theme context
+    const styles = createStyles(theme);
 
     return (
         <SafeAreaView style={styles.mainContainer}>
@@ -23,7 +21,7 @@ const ZakatIndex = () => {
                     <FontAwesome6 
                         name="money-bill" 
                         size={40} 
-                        color={activeTheme.colors.text.secondary} 
+                        color={theme.colors.text.secondary} 
                         style={styles.icon} 
                     />
                     <Text style={styles.cardTitle}>Zakat Harta</Text>
@@ -40,7 +38,7 @@ const ZakatIndex = () => {
                     <FontAwesome6 
                         name="heart-pulse" 
                         size={40} 
-                        color={activeTheme.colors.text.secondary} 
+                        color={theme.colors.text.secondary} 
                         style={styles.icon} 
                     />
                     <Text style={styles.cardTitle}>Zakat Fidyah</Text>

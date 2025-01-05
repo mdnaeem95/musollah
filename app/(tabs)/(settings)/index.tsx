@@ -1,15 +1,14 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ThemeContext } from '../../../context/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 
 const SettingsTab = () => {
   const router = useRouter();
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light; // Use active theme dynamically
+  const { theme } = useTheme();
 
-  const styles = createStyles(activeTheme);
+  const styles = createStyles(theme);
 
   return (
     <View style={styles.mainContainer}>
@@ -21,37 +20,37 @@ const SettingsTab = () => {
           {/* ACCOUNT */}
           <TouchableOpacity style={styles.settingsField} onPress={() => router.push(`/account`)}>
             <View style={styles.settingsLeftField}>
-              <FontAwesome6 name="user" color={activeTheme.colors.text.primary} size={20} />
+              <FontAwesome6 name="user" color={theme.colors.text.primary} size={20} />
               <Text style={styles.settingsName}>Account</Text>
             </View>
-            <FontAwesome6 name="chevron-right" color={activeTheme.colors.text.primary} size={20} />
+            <FontAwesome6 name="chevron-right" color={theme.colors.text.primary} size={20} />
           </TouchableOpacity>
 
           {/* PRAYERS SETTINGS */}
           <TouchableOpacity style={styles.settingsField} onPress={() => router.push('/prayers')}>
             <View style={styles.settingsLeftField}>
-              <FontAwesome6 name="person-praying" color={activeTheme.colors.text.primary} size={20} />
+              <FontAwesome6 name="person-praying" color={theme.colors.text.primary} size={20} />
               <Text style={styles.settingsName}>Prayers</Text>
             </View>
-            <FontAwesome6 name="chevron-right" color={activeTheme.colors.text.primary} size={20} />
+            <FontAwesome6 name="chevron-right" color={theme.colors.text.primary} size={20} />
           </TouchableOpacity>
 
           {/* APPEARANCE */}
           <TouchableOpacity style={styles.settingsField} onPress={() => router.push('/appearance')}>
             <View style={styles.settingsLeftField}>
-              <FontAwesome6 name="palette" color={activeTheme.colors.text.primary} size={20} />
+              <FontAwesome6 name="palette" color={theme.colors.text.primary} size={20} />
               <Text style={styles.settingsName}>Appearance</Text>
             </View>
-            <FontAwesome6 name="chevron-right" color={activeTheme.colors.text.primary} size={20} />
+            <FontAwesome6 name="chevron-right" color={theme.colors.text.primary} size={20} />
           </TouchableOpacity>
 
           {/* SUPPORT */}
           <TouchableOpacity style={styles.settingsField} onPress={() => router.push('/support')}>
             <View style={styles.settingsLeftField}>
-              <FontAwesome6 name="envelope" color={activeTheme.colors.text.primary} size={20} />
+              <FontAwesome6 name="envelope" color={theme.colors.text.primary} size={20} />
               <Text style={styles.settingsName}>Support</Text>
             </View>
-            <FontAwesome6 name="chevron-right" color={activeTheme.colors.text.primary} size={20} />
+            <FontAwesome6 name="chevron-right" color={theme.colors.text.primary} size={20} />
           </TouchableOpacity>
         </View>
 
@@ -60,17 +59,17 @@ const SettingsTab = () => {
 
         <View style={styles.gridContainer}>
           <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/food-additives')}>
-            <FontAwesome6 name="flask" size={30} color={activeTheme.colors.text.primary} />
+            <FontAwesome6 name="flask" size={30} color={theme.colors.text.primary} />
             <Text style={styles.iconLabel}>Food Additives</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/zakat')}>
-            <FontAwesome6 name="hand-holding-dollar" size={30} color={activeTheme.colors.text.primary} />
+            <FontAwesome6 name="hand-holding-dollar" size={30} color={theme.colors.text.primary} />
             <Text style={styles.iconLabel}>Zakat Calculator</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/qa')}>
-            <FontAwesome6 name="message" size={30} color={activeTheme.colors.text.primary} />
+            <FontAwesome6 name="message" size={30} color={theme.colors.text.primary} />
             <Text style={styles.iconLabel}>Ask Anything</Text>
           </TouchableOpacity>
         </View>

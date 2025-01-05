@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   View,
@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { ThemeContext } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface InsuranceModalProps {
   isVisible: boolean;
@@ -23,8 +23,8 @@ const InsuranceModal: React.FC<InsuranceModalProps> = ({
   initialInsuranceAmount,
   onSave,
 }) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const [insuranceAmount, setInsuranceAmount] = useState<string>(initialInsuranceAmount);
   const [isTooltipVisible, setIsTooltipVisible] = useState<boolean>(false);
@@ -33,8 +33,6 @@ const InsuranceModal: React.FC<InsuranceModalProps> = ({
     onSave(insuranceAmount);
     onClose();
   };
-
-  const styles = createStyles(activeTheme);
 
   return (
     <Modal
@@ -51,7 +49,7 @@ const InsuranceModal: React.FC<InsuranceModalProps> = ({
               onPress={() => setIsTooltipVisible(!isTooltipVisible)}
               style={styles.tooltipIcon}
             >
-              <FontAwesome6 name="circle-info" size={20} color={activeTheme.colors.text.muted} />
+              <FontAwesome6 name="circle-info" size={20} color={theme.colors.text.muted} />
             </TouchableOpacity>
           </View>
 
@@ -66,7 +64,7 @@ const InsuranceModal: React.FC<InsuranceModalProps> = ({
             style={styles.input}
             keyboardType="numeric"
             placeholder="$0"
-            placeholderTextColor={activeTheme.colors.text.muted}
+            placeholderTextColor={theme.colors.text.muted}
             value={insuranceAmount}
             onChangeText={setInsuranceAmount}
           />

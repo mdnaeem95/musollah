@@ -4,8 +4,8 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { ThemeContext } from '../../../../../context/ThemeContext';
 
 const FidyahCalculator = () => {
-    const { theme, isDarkMode } = useContext(ThemeContext);
-    const activeTheme = isDarkMode ? theme.dark : theme.light;
+    const { theme } = useContext(ThemeContext);
+    const styles = createStyles(theme);
 
     const [daysHaidOther, setDaysHaidOther] = useState<string>(''); // Category 1: Haid or Other Reason
     const [daysIllnessOldAge, setDaysIllnessOldAge] = useState<string>(''); // Category 2: Illness or Old-age
@@ -21,8 +21,6 @@ const FidyahCalculator = () => {
     // Calculate the grand total for all categories
     const grandTotal = totalHaidOther + totalIllnessOldAge + totalPregnancyFeeding;
 
-    const styles = createStyles(activeTheme);
-
     return (
         <View style={styles.mainContainer}>
             <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -34,13 +32,13 @@ const FidyahCalculator = () => {
                 {/* Category 1: Haid or Other Reason */}
                 <View style={styles.card}>
                     <View style={styles.iconContainer}>
-                        <FontAwesome6 name="droplet" size={24} color={activeTheme.colors.text.secondary} />
+                        <FontAwesome6 name="droplet" size={24} color={theme.colors.text.secondary} />
                         <Text style={styles.cardTitle}>Haid or Other Reason</Text>
                     </View>
                     <TextInput
                         style={styles.input}
                         placeholder="Enter number of days"
-                        placeholderTextColor={activeTheme.colors.text.muted}
+                        placeholderTextColor={theme.colors.text.muted}
                         value={daysHaidOther}
                         onChangeText={setDaysHaidOther}
                         keyboardType="numeric"
@@ -51,13 +49,13 @@ const FidyahCalculator = () => {
                 {/* Category 2: Illness or Old-age */}
                 <View style={styles.card}>
                     <View style={styles.iconContainer}>
-                        <FontAwesome6 name="heart-pulse" size={24} color={activeTheme.colors.text.secondary} />
+                        <FontAwesome6 name="heart-pulse" size={24} color={theme.colors.text.secondary} />
                         <Text style={styles.cardTitle}>Illness or Old-age</Text>
                     </View>
                     <TextInput
                         style={styles.input}
                         placeholder="Enter number of days"
-                        placeholderTextColor={activeTheme.colors.text.muted}
+                        placeholderTextColor={theme.colors.text.muted}
                         value={daysIllnessOldAge}
                         onChangeText={setDaysIllnessOldAge}
                         keyboardType="numeric"
@@ -68,13 +66,13 @@ const FidyahCalculator = () => {
                 {/* Category 3: Pregnancy or Feeding */}
                 <View style={styles.card}>
                     <View style={styles.iconContainer}>
-                        <FontAwesome6 name="person-pregnant" size={24} color={activeTheme.colors.text.secondary} />
+                        <FontAwesome6 name="person-pregnant" size={24} color={theme.colors.text.secondary} />
                         <Text style={styles.cardTitle}>Pregnancy or Feeding</Text>
                     </View>
                     <TextInput
                         style={styles.input}
                         placeholder="Enter number of days"
-                        placeholderTextColor={activeTheme.colors.text.muted}
+                        placeholderTextColor={theme.colors.text.muted}
                         value={daysPregnancyFeeding}
                         onChangeText={setDaysPregnancyFeeding}
                         keyboardType="numeric"

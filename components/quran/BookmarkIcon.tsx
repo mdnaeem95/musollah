@@ -28,7 +28,7 @@ const BookmarkIcon: React.FC<BookmarkIconProps> = ({ isBookmarked, onToggle, siz
         <TouchableOpacity onPress={onToggle} style={{ alignItems: 'center', justifyContent: 'center' }}>
             <LottieView
                 ref={animation}
-                source={require('../assets/animations/bookmark.json')} // Adjust the path
+                source={require('../../assets/animations/bookmark.json')} // Adjust the path
                 loop={false}
                 style={{ width: size, height: size }}
             />

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, ViewProps } from 'react-native';
 import { useActiveTrack } from 'react-native-track-player';
-import { useLastActiveTrack } from '../hooks/useLastActiveTrack';
-import { PlayPauseButton } from '../components/AyahPlayPauseButton';
+import { useLastActiveTrack } from '../../hooks/useLastActiveTrack';
+import { PlayPauseButton } from './AyahPlayPauseButton';
 import { MovingText } from './MovingText';
 import { SkipNextButton } from './SkipNextButton';
 import { SkipPreviousButton } from './SkipPreviousButton';

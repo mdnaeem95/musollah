@@ -1,5 +1,5 @@
 import firestore from "@react-native-firebase/firestore";
-import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/Map";
+import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/musollah/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
 import { ContentData, CourseData, Doa, DoaAfterPrayer, FoodAdditive, ModuleData, Restaurant, Surah, TeacherData, UserData, Question, Answer, Vote, Comment, RestaurantReview } from "../../utils/types";
 

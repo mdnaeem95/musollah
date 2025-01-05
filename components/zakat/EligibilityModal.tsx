@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   View,
@@ -9,7 +9,7 @@ import {
   Switch,
   ScrollView,
 } from 'react-native';
-import { ThemeContext } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface EligibilityModalProps {
   isVisible: boolean;
@@ -47,8 +47,7 @@ const EligibilityModal: React.FC<EligibilityModalProps> = ({
   nisabAmountNotWearing,
   urufAmountWearing,
 }) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme()
 
   const [eligibilitySavings, setEligibilitySavings] = useState(initialEligibility.savings);
   const [eligibilityGoldNotForUse, setEligibilityGoldNotForUse] = useState(initialEligibility.goldNotForUse);
@@ -78,7 +77,7 @@ const EligibilityModal: React.FC<EligibilityModalProps> = ({
     onClose();
   };
 
-  const styles = createStyles(activeTheme);
+  const styles = createStyles(theme);
 
   return (
     <Modal
@@ -130,7 +129,7 @@ const EligibilityModal: React.FC<EligibilityModalProps> = ({
                   style={styles.input}
                   keyboardType="numeric"
                   placeholder={item.title}
-                  placeholderTextColor={activeTheme.colors.text.muted}
+                  placeholderTextColor={theme.colors.text.muted}
                   value={item.value}
                   onChangeText={item.onChange}
                 />
@@ -141,10 +140,10 @@ const EligibilityModal: React.FC<EligibilityModalProps> = ({
                       value={item.haulValue}
                       onValueChange={item.setHaulValue}
                       trackColor={{
-                        false: activeTheme.colors.secondary,
-                        true: activeTheme.colors.text.success,
+                        false: theme.colors.secondary,
+                        true: theme.colors.text.success,
                       }}
-                      thumbColor={item.haulValue ? activeTheme.colors.text.primary : activeTheme.colors.text.muted}
+                      thumbColor={item.haulValue ? theme.colors.text.primary : theme.colors.text.muted}
                     />
                   </View>
                 )}

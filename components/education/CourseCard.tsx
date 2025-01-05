@@ -1,8 +1,8 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { ThemeContext } from '../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface CourseCardProps {
   id: string;
@@ -14,11 +14,10 @@ interface CourseCardProps {
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, category, icon, backgroundColour }) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   return (
-    <TouchableOpacity style={[styles.cardContainer, { backgroundColor: activeTheme.colors.secondary, shadowColor: activeTheme.colors.text.muted }]}>
+    <TouchableOpacity style={[styles.cardContainer, { backgroundColor: theme.colors.secondary, shadowColor: theme.colors.text.muted }]}>
       <Link href={`/courses/${id}`}>
         {/* Card Content */}
         <View style={styles.cardContent}>
@@ -29,12 +28,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, categor
           
           {/* Course Details Section */}
           <View style={styles.textDetailsContainer}>
-            <View style={[styles.courseCategory, { borderColor: activeTheme.colors.accent }]}>
-              <Text style={[styles.courseCategoryText, { color: activeTheme.colors.accent }]}>{category}</Text>
+            <View style={[styles.courseCategory, { borderColor: theme.colors.accent }]}>
+              <Text style={[styles.courseCategoryText, { color: theme.colors.accent }]}>{category}</Text>
             </View>
             <View style={styles.courseDescription}>
-              <Text style={[styles.courseHeader, { color: activeTheme.colors.text.primary }]}>{title}</Text>
-              <Text style={[styles.courseDescriptionText, { color: activeTheme.colors.text.muted }]} numberOfLines={2} ellipsizeMode="tail">
+              <Text style={[styles.courseHeader, { color: theme.colors.text.primary }]}>{title}</Text>
+              <Text style={[styles.courseDescriptionText, { color: theme.colors.text.muted }]} numberOfLines={2} ellipsizeMode="tail">
                 {description}
               </Text>
             </View>

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { addToFavourites, fetchFavourites, fetchRestaurantById, fetchReviews, removeFromFavourites } from '../../../api/firebase'; // Function to fetch restaurant details by ID
 import { Restaurant, RestaurantReview } from '../../../utils/types';
-import OperatingHours from '../../../components/OperatingHours';
+import OperatingHours from '../../../components/food/OperatingHours';
 import FavoriteButton from '../../../components/FavouriteButton'
 import { getAuth } from '@react-native-firebase/auth';
 import SignInModal from '../../../components/SignInModal';
@@ -24,7 +24,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useActionSheet } from '@expo/react-native-action-sheet';
 import { FlashList } from '@shopify/flash-list';
 import { CircleButton } from './_layout';
-import { ThemeContext } from '../../../context/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 
 const HERO_IMAGE_HEIGHT = 250;
 const HEADER_HEIGHT = 60
@@ -45,8 +45,7 @@ const RestaurantDetails = () => {
   const [isAuthModalVisible, setIsAuthModalVisible] = useState<boolean>(false);
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const user = getAuth();
   const currentUser = user.currentUser;
@@ -66,7 +65,7 @@ const RestaurantDetails = () => {
 
   const headerBackground = scrollY.interpolate({
     inputRange: [0, HERO_IMAGE_HEIGHT - HEADER_HEIGHT],
-    outputRange: ['transparent', activeTheme.colors.secondary],
+    outputRange: ['transparent', theme.colors.secondary],
     extrapolate: 'clamp',
   });
 
@@ -209,7 +208,10 @@ const RestaurantDetails = () => {
 
     return (
       <TouchableOpacity key={platform} onPress={handlePress} style={styles.socialIconContainer}>
-        <FontAwesome6 name={icons[platform]} size={24} color="#ECDFCC" />
+        <FontAwesome6
+          //@ts-ignore
+          name={icons[platform]} size={24} color="#ECDFCC" 
+        />
       </TouchableOpacity>
     )
   }
@@ -224,7 +226,7 @@ const RestaurantDetails = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: activeTheme.colors.primary }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
       <Animated.View
         style={[
           styles.header,
@@ -259,11 +261,11 @@ const RestaurantDetails = () => {
         </Animated.View>
   
         {/* Details Section */}
-        <View style={[styles.detailsSection, { backgroundColor: activeTheme.colors.secondary }]}>
-          <Text style={[styles.restaurantName, { color: activeTheme.colors.text.primary }]}>
+        <View style={[styles.detailsSection, { backgroundColor: theme.colors.secondary }]}>
+          <Text style={[styles.restaurantName, { color: theme.colors.text.primary }]}>
             {restaurant.name}
           </Text>
-          <Text style={[styles.categories, { color: activeTheme.colors.text.secondary }]}>
+          <Text style={[styles.categories, { color: theme.colors.text.secondary }]}>
             {restaurant.categories.join(' • ')}
           </Text>
           <View style={[styles.ratingRow, { justifyContent: 'space-between' }]}>
@@ -274,7 +276,7 @@ const RestaurantDetails = () => {
                 defaultRating={averageRating}
                 size={20}
               />
-              <Text style={[styles.ratingText, { color: activeTheme.colors.text.muted }]}>
+              <Text style={[styles.ratingText, { color: theme.colors.text.muted }]}>
                 {averageRating} ({totalReviews} Reviews)
               </Text>
             </View>
@@ -285,24 +287,24 @@ const RestaurantDetails = () => {
         {/* Menu Section */}
         <View style={styles.section}>
           <TouchableOpacity
-            style={[styles.menuButton, { backgroundColor: activeTheme.colors.accent }]}
+            style={[styles.menuButton, { backgroundColor: theme.colors.accent }]}
             onPress={openMenu}
           >
-            <Text style={[styles.menuButtonText, { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.menuButtonText, { color: theme.colors.text.primary }]}>
               View Menu
             </Text>
-            <FontAwesome6 name="sheet-plastic" size={16} color={activeTheme.colors.text.primary} />
+            <FontAwesome6 name="sheet-plastic" size={16} color={theme.colors.text.primary} />
           </TouchableOpacity>
         </View>
   
         {/* Reviews Section */}
         <View style={styles.reviewsSection}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
               User Reviews
             </Text>
             <TouchableOpacity onPress={() => router.push(`/reviews/${restaurant.id}`)}>
-              <Text style={[styles.seeAllText, { color: activeTheme.colors.accent }]}>
+              <Text style={[styles.seeAllText, { color: theme.colors.accent }]}>
                 See All →
               </Text>
             </TouchableOpacity>
@@ -314,24 +316,24 @@ const RestaurantDetails = () => {
                 data={reviews.slice(0, 3)}
                 contentContainerStyle={styles.carouselContainer}
                 renderItem={({ item }) => (
-                  <View style={[styles.reviewCard, { backgroundColor: activeTheme.colors.secondary }]}>
+                  <View style={[styles.reviewCard, { backgroundColor: theme.colors.secondary }]}>
                     <View style={styles.reviewHeader}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <FontAwesome6 name="user-circle" size={20} color={activeTheme.colors.text.primary} />
-                        <Text style={[styles.reviewerName, { color: activeTheme.colors.text.primary }]}>
+                        <FontAwesome6 name="user-circle" size={20} color={theme.colors.text.primary} />
+                        <Text style={[styles.reviewerName, { color: theme.colors.text.primary }]}>
                           Anonymous
                         </Text>
                       </View>
-                      <Text style={[styles.reviewTimestamp, { color: activeTheme.colors.text.muted }]}>
+                      <Text style={[styles.reviewTimestamp, { color: theme.colors.text.muted }]}>
                         {new Date(item.timestamp).toLocaleDateString()}
                       </Text>
                     </View>
-                    <Text style={[styles.reviewText, { color: activeTheme.colors.text.secondary }]} numberOfLines={2} ellipsizeMode="tail">
+                    <Text style={[styles.reviewText, { color: theme.colors.text.secondary }]} numberOfLines={2} ellipsizeMode="tail">
                       {item.review}
                     </Text>
                     {item.images && item.images.length > 0 && (
                       <View style={styles.imageTagContainer}>
-                        <Text style={[styles.imageTag, { color: activeTheme.colors.text.muted }]}>
+                        <Text style={[styles.imageTag, { color: theme.colors.text.muted }]}>
                           Contains Images
                         </Text>
                       </View>
@@ -344,7 +346,7 @@ const RestaurantDetails = () => {
               />
             </View>
           ) : (
-            <Text style={[styles.emptyText, { color: activeTheme.colors.text.muted }]}>
+            <Text style={[styles.emptyText, { color: theme.colors.text.muted }]}>
               No reviews yet. Be the first to write one!
             </Text>
           )}
@@ -356,13 +358,13 @@ const RestaurantDetails = () => {
             style={styles.expandableHeader}
             onPress={() => setShowOperatingHours(!showOperatingHours)}
           >
-            <Text style={[styles.sectionTitle, { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
               Operating Hours
             </Text>
             <FontAwesome6
               name={showOperatingHours ? 'chevron-up' : 'chevron-down'}
               size={16}
-              color={activeTheme.colors.text.primary}
+              color={theme.colors.text.primary}
             />
           </TouchableOpacity>
           {showOperatingHours && (
@@ -376,13 +378,13 @@ const RestaurantDetails = () => {
             style={styles.expandableHeader}
             onPress={() => setShowSocials(!showSocials)}
           >
-            <Text style={[styles.sectionTitle, { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
               Socials
             </Text>
             <FontAwesome6
               name={showSocials ? 'chevron-up' : 'chevron-down'}
               size={16}
-              color={activeTheme.colors.text.primary}
+              color={theme.colors.text.primary}
             />
           </TouchableOpacity>
           {showSocials && restaurant.socials && (
@@ -397,20 +399,20 @@ const RestaurantDetails = () => {
         {/* Call to Action */}
         <View style={styles.section}>
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: activeTheme.colors.accent }]}
+            style={[styles.button, { backgroundColor: theme.colors.accent }]}
             onPress={openGoogleMaps}
           >
-            <Text style={[styles.buttonText, { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.buttonText, { color: theme.colors.text.primary }]}>
               Get Directions
             </Text>
           </TouchableOpacity>
 
           {restaurant?.website && (
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: activeTheme.colors.accent }]}
+              style={[styles.button, { backgroundColor: theme.colors.accent }]}
               onPress={() => Linking.openURL(restaurant.website)}
             >
-              <Text style={[styles.buttonText, { color: activeTheme.colors.text.primary }]}>
+              <Text style={[styles.buttonText, { color: theme.colors.text.primary }]}>
                 Make a Reservation
               </Text>
             </TouchableOpacity>
@@ -420,11 +422,11 @@ const RestaurantDetails = () => {
             style={[
               styles.button,
               styles.writeReviewButton,
-              { backgroundColor: activeTheme.colors.accent },
+              { backgroundColor: theme.colors.accent },
             ]}
             onPress={() => router.push(`/reviews/submit/${restaurant.id}`)}
           >
-            <Text style={[styles.buttonText, { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.buttonText, { color: theme.colors.text.primary }]}>
               Write a Review
             </Text>
           </TouchableOpacity>

@@ -1,9 +1,9 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import Modal from 'react-native-modal';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { MosqueLocation } from './Map';
-import { ThemeContext } from '../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface MosqueModalProps {
   isVisible: boolean;
@@ -12,8 +12,7 @@ interface MosqueModalProps {
 }
 
 const MosqueModal = ({ isVisible, location, onClose }: MosqueModalProps) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const openMaps = () => {
     const url = `https://www.google.com/maps/search/?api=1&query=${location?.building}, ${location?.address}`;
@@ -30,24 +29,24 @@ const MosqueModal = ({ isVisible, location, onClose }: MosqueModalProps) => {
       useNativeDriver
       style={styles.modal}
     >
-      <View style={[styles.contentContainer, { backgroundColor: activeTheme.colors.primary }]}>
+      <View style={[styles.contentContainer, { backgroundColor: theme.colors.primary }]}>
         <View style={{ width: '100%' }}>
           <TouchableOpacity
             onPress={onClose}
             style={[
               styles.closeButton,
-              { backgroundColor: activeTheme.colors.accent },
+              { backgroundColor: theme.colors.accent },
             ]}
           >
-            <FontAwesome6 name="xmark" size={18} color={activeTheme.colors.text.primary} solid />
+            <FontAwesome6 name="xmark" size={18} color={theme.colors.text.primary} solid />
           </TouchableOpacity>
         </View>
 
         <View style={styles.textContainer}>
-          <Text style={[styles.locationText, { color: activeTheme.colors.text.primary }]}>
+          <Text style={[styles.locationText, { color: theme.colors.text.primary }]}>
             {location?.building}
           </Text>
-          <Text style={[styles.distanceText, { color: activeTheme.colors.text.secondary }]}>
+          <Text style={[styles.distanceText, { color: theme.colors.text.secondary }]}>
             {location?.address}
           </Text>
         </View>
@@ -56,7 +55,7 @@ const MosqueModal = ({ isVisible, location, onClose }: MosqueModalProps) => {
           <Text
             style={[
               styles.disclaimerText,
-              { color: activeTheme.colors.text.muted },
+              { color: theme.colors.text.muted },
             ]}
           >
             Note: This is a Shia mosque.
@@ -67,10 +66,10 @@ const MosqueModal = ({ isVisible, location, onClose }: MosqueModalProps) => {
           onPress={openMaps}
           style={[
             styles.googleMapsButton,
-            { backgroundColor: activeTheme.colors.accent },
+            { backgroundColor: theme.colors.accent },
           ]}
         >
-          <Text style={[styles.googleMapsButtonText, { color: activeTheme.colors.text.primary }]}>
+          <Text style={[styles.googleMapsButtonText, { color: theme.colors.text.primary }]}>
             Open in Maps
           </Text>
         </TouchableOpacity>

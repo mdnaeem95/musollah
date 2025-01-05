@@ -1,12 +1,12 @@
 import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput } from 'react-native';
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../../redux/store/store';
 import { useRouter } from 'expo-router';
 import { TeacherData } from '../../../../utils/types';
 import { FlashList } from '@shopify/flash-list';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const Teachers = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -14,21 +14,20 @@ const Teachers = () => {
   const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
   const { teachers, loading } = useSelector((state: RootState) => state.dashboard);
   const router = useRouter();
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const renderTeacher = ({ item }: { item: TeacherData }) => (
     <TouchableOpacity
-      style={[styles.teacherCard, { backgroundColor: activeTheme.colors.secondary, shadowColor: activeTheme.colors.text.primary }]}
+      style={[styles.teacherCard, { backgroundColor: theme.colors.secondary, shadowColor: theme.colors.text.primary }]}
       onPress={() => router.push(`/teachers/${item.id}`)}
     >
       <Image
         source={{ uri: item.imagePath }}
-        style={[styles.teacherImage, { borderColor: activeTheme.colors.accent }]}
+        style={[styles.teacherImage, { borderColor: theme.colors.accent }]}
       />
       <View style={styles.teacherInfo}>
-        <Text style={[styles.teacherName, { color: activeTheme.colors.text.primary }]}>{item.name}</Text>
-        <Text style={[styles.teacherExpertise, { color: activeTheme.colors.text.secondary }]}>{item.expertise}</Text>
+        <Text style={[styles.teacherName, { color: theme.colors.text.primary }]}>{item.name}</Text>
+        <Text style={[styles.teacherExpertise, { color: theme.colors.text.secondary }]}>{item.expertise}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -57,15 +56,15 @@ const Teachers = () => {
   });
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
       {/* Header with expandable search bar */}
       <View style={styles.headerContainer}>
         {isSearchExpanded && (
-          <View style={[styles.searchBarContainer, { backgroundColor: activeTheme.colors.secondary }]}>
+          <View style={[styles.searchBarContainer, { backgroundColor: theme.colors.secondary }]}>
             <TextInput
               placeholder="Search Teacher"
-              placeholderTextColor={activeTheme.colors.text.muted}
-              style={[styles.searchInput, { color: activeTheme.colors.text.primary }]}
+              placeholderTextColor={theme.colors.text.muted}
+              style={[styles.searchInput, { color: theme.colors.text.primary }]}
               value={searchQuery}
               onChangeText={handleSearchChange}
             />
@@ -75,7 +74,7 @@ const Teachers = () => {
           <FontAwesome6
             name={isSearchExpanded ? 'xmark' : 'magnifying-glass'}
             size={24}
-            color={activeTheme.colors.text.primary}
+            color={theme.colors.text.primary}
           />
         </TouchableOpacity>
       </View>

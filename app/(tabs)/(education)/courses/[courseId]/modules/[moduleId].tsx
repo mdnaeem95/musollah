@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../../../redux/store/store';
@@ -7,7 +7,7 @@ import { completeModule } from '../../../../../../redux/slices/courseSlice';
 import { getAuth } from '@react-native-firebase/auth';
 import { CourseAndModuleProgress, CourseData, ModuleData } from '../../../../../../utils/types';
 import PagerView from 'react-native-pager-view';
-import { ThemeContext } from '../../../../../../context/ThemeContext';
+import { useTheme } from '../../../../../../context/ThemeContext';
 
 type Params = {
   courseId: string;
@@ -27,8 +27,7 @@ const ModuleDetails = () => {
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
 
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const course: CourseData | undefined = useSelector((state: RootState) =>
     state.dashboard.courses.find((c) => c.id === courseId),
@@ -84,14 +83,14 @@ const ModuleDetails = () => {
 
   if (!moduleData) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: activeTheme.colors.primary }]}>
-        <Text style={{ color: activeTheme.colors.text.primary }}>Loading...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.primary }]}>
+        <Text style={{ color: theme.colors.text.primary }}>Loading...</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
       <PagerView
         style={styles.pagerView}
         initialPage={0}
@@ -102,13 +101,13 @@ const ModuleDetails = () => {
             key={index}
             style={[
               styles.page,
-              { backgroundColor: activeTheme.colors.primary },
+              { backgroundColor: theme.colors.primary },
             ]}
           >
-            <Text style={[styles.contentTitle, { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.contentTitle, { color: theme.colors.text.primary }]}>
               {contentItem.title}
             </Text>
-            <Text style={[styles.textContent, { color: activeTheme.colors.text.secondary }]}>
+            <Text style={[styles.textContent, { color: theme.colors.text.secondary }]}>
               {contentItem.data}
             </Text>
           </View>
@@ -121,7 +120,7 @@ const ModuleDetails = () => {
             key={index}
             style={[
               styles.paginationDot,
-              { backgroundColor: index === currentIndex ? activeTheme.colors.accent : activeTheme.colors.text.muted },
+              { backgroundColor: index === currentIndex ? theme.colors.accent : theme.colors.text.muted },
             ]}
           />
         ))}
@@ -130,11 +129,11 @@ const ModuleDetails = () => {
       <TouchableOpacity
         style={[
           styles.completeButton,
-          { backgroundColor: activeTheme.colors.text.success },
+          { backgroundColor: theme.colors.text.success },
         ]}
         onPress={handleCompleteModule}
       >
-        <Text style={[styles.completeButtonText, { color: activeTheme.colors.text.primary }]}>
+        <Text style={[styles.completeButtonText, { color: theme.colors.text.primary }]}>
           Complete Module
         </Text>
       </TouchableOpacity>

@@ -1,10 +1,10 @@
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
 import { RootState } from '../../../../redux/store/store';
 import { Bookmark } from '../../../../utils/types';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 import { FontAwesome6 } from '@expo/vector-icons';
 
 const BookmarkPage = () => {
@@ -13,8 +13,7 @@ const BookmarkPage = () => {
   const [isQuranExpanded, setIsQuranExpanded] = useState<boolean>(false);
   const [isDoasExpanded, setIsDoasExpanded] = useState<boolean>(false);
   const router = useRouter();
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const toggleQuranFolder = () => setIsQuranExpanded(!isQuranExpanded);
   const toggleDoasFolder = () => setIsDoasExpanded(!isDoasExpanded);
@@ -33,11 +32,11 @@ const BookmarkPage = () => {
   const renderQuranBookmarkItem = ({ item }: { item: Bookmark }) => (
     <TouchableOpacity
       onPress={() => handleBookmarkPress(item.surahNumber, item.ayahNumber)}
-      style={[styles.bookmarkItem, { backgroundColor: activeTheme.colors.secondary }]}
+      style={[styles.bookmarkItem, { backgroundColor: theme.colors.secondary }]}
     >
       <View>
-        <Text style={[styles.surahName, { color: activeTheme.colors.text.primary }]}>{item.surahName}</Text>
-        <Text style={[styles.ayahInfo, { color: activeTheme.colors.text.secondary }]}>Ayah {item.ayahNumber}</Text>
+        <Text style={[styles.surahName, { color: theme.colors.text.primary }]}>{item.surahName}</Text>
+        <Text style={[styles.ayahInfo, { color: theme.colors.text.secondary }]}>Ayah {item.ayahNumber}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -45,19 +44,19 @@ const BookmarkPage = () => {
   const renderDoaBookmarkItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       onPress={() => handleDoaBookmarkPress(item.doaId)}
-      style={[styles.bookmarkItem, { backgroundColor: activeTheme.colors.secondary }]}
+      style={[styles.bookmarkItem, { backgroundColor: theme.colors.secondary }]}
     >
-      <Text style={[styles.surahName, { color: activeTheme.colors.text.primary }]}>{item.doaTitle}</Text>
+      <Text style={[styles.surahName, { color: theme.colors.text.primary }]}>{item.doaTitle}</Text>
     </TouchableOpacity>
   );
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
       {/* Quran Folder */}
-      <TouchableOpacity onPress={toggleQuranFolder} style={[styles.folderHeader, { backgroundColor: activeTheme.colors.secondary }]}>
-        <FontAwesome6 name={isQuranExpanded ? "folder-open" : "folder"} size={20} color={activeTheme.colors.text.primary} />
-        <Text style={[styles.folderTitle, { color: activeTheme.colors.text.primary }]}>Quran ({quranBookmarks.length})</Text>
-        <FontAwesome6 name={isQuranExpanded ? "chevron-up" : "chevron-down"} size={20} color={activeTheme.colors.text.primary} />
+      <TouchableOpacity onPress={toggleQuranFolder} style={[styles.folderHeader, { backgroundColor: theme.colors.secondary }]}>
+        <FontAwesome6 name={isQuranExpanded ? "folder-open" : "folder"} size={20} color={theme.colors.text.primary} />
+        <Text style={[styles.folderTitle, { color: theme.colors.text.primary }]}>Quran ({quranBookmarks.length})</Text>
+        <FontAwesome6 name={isQuranExpanded ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.text.primary} />
       </TouchableOpacity>
 
       {isQuranExpanded && (
@@ -69,10 +68,10 @@ const BookmarkPage = () => {
       )}
 
       {/* Doas Folder */}
-      <TouchableOpacity onPress={toggleDoasFolder} style={[styles.folderHeader, { backgroundColor: activeTheme.colors.secondary }]}>
-        <FontAwesome6 name={isDoasExpanded ? "folder-open" : "folder"} size={20} color={activeTheme.colors.text.primary} />
-        <Text style={[styles.folderTitle, { color: activeTheme.colors.text.primary }]}>Doas ({doaBookmarks.length})</Text>
-        <FontAwesome6 name={isDoasExpanded ? "chevron-up" : "chevron-down"} size={20} color={activeTheme.colors.text.primary} />
+      <TouchableOpacity onPress={toggleDoasFolder} style={[styles.folderHeader, { backgroundColor: theme.colors.secondary }]}>
+        <FontAwesome6 name={isDoasExpanded ? "folder-open" : "folder"} size={20} color={theme.colors.text.primary} />
+        <Text style={[styles.folderTitle, { color: theme.colors.text.primary }]}>Doas ({doaBookmarks.length})</Text>
+        <FontAwesome6 name={isDoasExpanded ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.text.primary} />
       </TouchableOpacity>
 
       {isDoasExpanded && (

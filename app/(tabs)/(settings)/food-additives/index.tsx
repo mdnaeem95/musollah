@@ -1,18 +1,18 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchFoodAdditives } from '../../../../api/firebase';
 import { FoodAdditive } from '../../../../utils/types';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CACHE_KEY = 'foodAdditivesCache';
 const CACHE_TTL = 24 * 60 * 60 * 1000; // Cache TTL set to 24 hours (in milliseconds)
 
 const FoodAdditivesPage = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [foodAdditives, setFoodAdditives] = useState<FoodAdditive[]>([]);
@@ -63,42 +63,40 @@ const FoodAdditivesPage = () => {
 
   const getStatusColor = (status: string) => {
     return status.toLowerCase() === 'ok'
-      ? activeTheme.colors.text.success
-      : activeTheme.colors.text.error;
+      ? theme.colors.text.success
+      : theme.colors.text.error;
   };
 
   const renderFoodAdditive = ({ item }: { item: FoodAdditive }) => (
-    <View style={[styles.additiveContainer, { backgroundColor: activeTheme.colors.secondary }]}>
-      <Text style={[styles.eCode, { color: activeTheme.colors.accent }]}>{item.eCode}</Text>
-      <Text style={[styles.chemicalName, { color: activeTheme.colors.text.secondary }]}>
+    <View style={[styles.additiveContainer, { backgroundColor: theme.colors.secondary }]}>
+      <Text style={[styles.eCode, { color: theme.colors.accent }]}>{item.eCode}</Text>
+      <Text style={[styles.chemicalName, { color: theme.colors.text.secondary }]}>
         {item.chemicalName}
       </Text>
       <Text style={[styles.status, { color: getStatusColor(item.status) }]}>
         Status: {item.status}
       </Text>
-      <Text style={[styles.description, { color: activeTheme.colors.text.secondary }]}>
+      <Text style={[styles.description, { color: theme.colors.text.secondary }]}>
         {item.description}
       </Text>
     </View>
   );
 
-  const styles = createStyles(activeTheme);
-
   return (
     <View style={styles.mainContainer}>
       <View style={styles.searchContainer}>
-        <FontAwesome6 name="magnifying-glass" size={20} color={activeTheme.colors.text.secondary} />
+        <FontAwesome6 name="magnifying-glass" size={20} color={theme.colors.text.secondary} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by chemical name"
-          placeholderTextColor={activeTheme.colors.text.muted}
+          placeholderTextColor={theme.colors.text.muted}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
       </View>
 
       {isLoading ? (
-        <ActivityIndicator size="large" color={activeTheme.colors.text.primary} />
+        <ActivityIndicator size="large" color={theme.colors.text.primary} />
       ) : filteredAdditives.length > 0 ? (
         <FlashList
           estimatedItemSize={150}

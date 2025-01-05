@@ -1,13 +1,12 @@
 import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, ActivityIndicator } from 'react-native';
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getDoaAfterPrayer } from '../../../../api/firebase';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { DoaAfterPrayer } from '../../../../utils/types';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const Doa = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const [doas, setDoas] = useState<DoaAfterPrayer[]>([]);
   const [tooltipVisible, setTooltipVisible] = useState<boolean>(false);
@@ -29,23 +28,23 @@ const Doa = () => {
   }, []);
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
       {loading ? (
-        <ActivityIndicator size="large" color={activeTheme.colors.text.muted} style={{ marginTop: 20 }} />
+        <ActivityIndicator size="large" color={theme.colors.text.muted} style={{ marginTop: 20 }} />
       ) : (
         <FlatList
           data={doas}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={[styles.doaContainer, { borderBottomColor: activeTheme.colors.text.muted }]}>
+            <View style={[styles.doaContainer, { borderBottomColor: theme.colors.text.muted }]}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={[styles.doaHeaderText, { color: activeTheme.colors.text.primary }]}>
+                <Text style={[styles.doaHeaderText, { color: theme.colors.text.primary }]}>
                   {item.step}. {item.title}
                 </Text>
               </View>
-              <Text style={[styles.doaText, { color: activeTheme.colors.text.primary }]}>{item.arabicText}</Text>
-              <Text style={[styles.romanizedText, { color: activeTheme.colors.text.secondary }]}>{item.romanized}</Text>
-              <Text style={[styles.englishText, { color: activeTheme.colors.text.muted }]}>{item.englishTranslation}</Text>
+              <Text style={[styles.doaText, { color: theme.colors.text.primary }]}>{item.arabicText}</Text>
+              <Text style={[styles.romanizedText, { color: theme.colors.text.secondary }]}>{item.romanized}</Text>
+              <Text style={[styles.englishText, { color: theme.colors.text.muted }]}>{item.englishTranslation}</Text>
             </View>
           )}
           initialNumToRender={10}
@@ -54,7 +53,7 @@ const Doa = () => {
       )}
 
       <TouchableOpacity style={styles.tooltipIcon} onPress={() => setTooltipVisible(true)}>
-        <FontAwesome6 name="circle-info" size={15} color={activeTheme.colors.text.muted} />
+        <FontAwesome6 name="circle-info" size={15} color={theme.colors.text.muted} />
       </TouchableOpacity>
 
       {tooltipVisible && (
@@ -65,15 +64,15 @@ const Doa = () => {
           onRequestClose={() => setTooltipVisible(false)}
         >
           <View style={styles.tooltipContainer}>
-            <View style={[styles.tooltip, { backgroundColor: activeTheme.colors.secondary }]}>
+            <View style={[styles.tooltip, { backgroundColor: theme.colors.secondary }]}>
               <TouchableOpacity onPress={() => setTooltipVisible(false)} style={{ width: '100%', marginBottom: 10 }}>
-                <FontAwesome6 name="xmark" size={20} color={activeTheme.colors.text.primary} />
+                <FontAwesome6 name="xmark" size={20} color={theme.colors.text.primary} />
               </TouchableOpacity>
-              <Text style={[styles.tooltipText, { color: activeTheme.colors.text.primary }]}>
+              <Text style={[styles.tooltipText, { color: theme.colors.text.primary }]}>
                 There are many Duas/Zikirs that we can recite. We may recite any heartfelt Dua, in any language that we
                 know, either out loud or silently. This is just a guide for those who are unsure of what to ask for.
               </Text>
-              <Text style={[styles.tooltipText, { color: activeTheme.colors.text.primary }]}>
+              <Text style={[styles.tooltipText, { color: theme.colors.text.primary }]}>
                 May Allah s.w.t guide us to all that which pleases Him and accept all our prayers.
               </Text>
             </View>

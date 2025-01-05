@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { fetchMonthlyPrayerTimes } from '../../../../api/prayers';
-import MonthlyPrayerTimesTable, { PrayerTime } from '../../../../components/MonthlyPrayerTimesTable';
+import MonthlyPrayerTimesTable, { PrayerTime } from '../../../../components/prayer/MonthlyPrayerTimesTable';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 
 // Constants for year and month
 const currentYear = new Date().getFullYear();
@@ -31,8 +31,7 @@ const loadFromStorage = async (key: string) => {
 };
 
 const MonthlyPrayerTimesPage = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme()
 
   const [monthlyPrayerTimes, setMonthlyPrayerTimes] = useState<PrayerTime[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -67,15 +66,15 @@ const MonthlyPrayerTimesPage = () => {
   }, [currentYear, currentMonth]);
 
   return (
-    <View style={[styles.container, { backgroundColor: activeTheme.colors.primary }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
       {loading ? (
         <ActivityIndicator
           size="large"
-          color={activeTheme.colors.text.muted}
+          color={theme.colors.text.muted}
           style={{ justifyContent: 'center', alignItems: 'center' }}
         />
       ) : (
-        <View style={[styles.prayerTimesTable, { backgroundColor: activeTheme.colors.secondary }]}>
+        <View style={[styles.prayerTimesTable, { backgroundColor: theme.colors.secondary }]}>
           <MonthlyPrayerTimesTable monthlyPrayerTimes={monthlyPrayerTimes} />
         </View>
       )}

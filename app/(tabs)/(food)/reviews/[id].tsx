@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,13 +8,13 @@ import {
   Image,
   Modal,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { fetchReviews } from "../../../../api/firebase";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { RestaurantReview } from "../../../../utils/types";
 import { AirbnbRating } from "react-native-ratings";
 import { FlashList } from "@shopify/flash-list";
-import { ThemeContext } from "../../../../context/ThemeContext";
+import { useTheme } from "../../../../context/ThemeContext";
 
 const AllReviews = () => {
   const { id } = useLocalSearchParams(); // Restaurant ID
@@ -22,10 +22,8 @@ const AllReviews = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   useEffect(() => {
     const loadReviews = async () => {
@@ -67,16 +65,16 @@ const AllReviews = () => {
 
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: activeTheme.colors.primary }]}>
-        <ActivityIndicator size="large" color={activeTheme.colors.text.primary} />
+      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+        <ActivityIndicator size="large" color={theme.colors.text.primary} />
       </View>
     );
   }
 
   if (!reviews.length) {
     return (
-      <View style={[styles.container, { backgroundColor: activeTheme.colors.primary }]}>
-        <Text style={[styles.emptyText, { color: activeTheme.colors.text.primary }]}>
+      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+        <Text style={[styles.emptyText, { color: theme.colors.text.primary }]}>
           No reviews yet. Be the first to write one!
         </Text>
       </View>
@@ -84,14 +82,14 @@ const AllReviews = () => {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: activeTheme.colors.primary }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
       <FlashList
         estimatedItemSize={138}
         data={reviews}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={[styles.reviewCard, { backgroundColor: activeTheme.colors.secondary }]}>
-            <Text style={[styles.reviewText, { color: activeTheme.colors.text.primary }]}>
+          <View style={[styles.reviewCard, { backgroundColor: theme.colors.secondary }]}>
+            <Text style={[styles.reviewText, { color: theme.colors.text.primary }]}>
               {item.review}
             </Text>
             {item.images && item.images.length > 0 && (
@@ -114,11 +112,11 @@ const AllReviews = () => {
                   defaultRating={item.rating}
                   size={14}
                 />
-                <Text style={[styles.reviewRating, { color: activeTheme.colors.text.primary }]}>
+                <Text style={[styles.reviewRating, { color: theme.colors.text.primary }]}>
                   {item.rating > 1 ? `${item.rating}` : `${item.rating}`}
                 </Text>
               </View>
-              <Text style={[styles.reviewTimestamp, { color: activeTheme.colors.text.muted }]}>
+              <Text style={[styles.reviewTimestamp, { color: theme.colors.text.muted }]}>
                 {new Date(item.timestamp).toLocaleDateString()}
               </Text>
             </View>
@@ -130,7 +128,7 @@ const AllReviews = () => {
       <Modal visible={!!selectedImage} transparent={true}>
         <View style={styles.modalContainer}>
           <TouchableOpacity onPress={closeImageViewer} style={styles.closeButton}>
-            <FontAwesome6 name="xmark" size={24} color={activeTheme.colors.text.primary} />
+            <FontAwesome6 name="xmark" size={24} color={theme.colors.text.primary} />
           </TouchableOpacity>
           {selectedImage && (
             <Image source={{ uri: selectedImage }} style={styles.fullScreenImage} />
@@ -145,7 +143,7 @@ const AllReviews = () => {
               <FontAwesome6
                 name="chevron-left"
                 size={36}
-                color={currentImageIndex === 0 ? activeTheme.colors.text.muted : activeTheme.colors.text.primary}
+                color={currentImageIndex === 0 ? theme.colors.text.muted : theme.colors.text.primary}
               />
             </TouchableOpacity>
             <TouchableOpacity
@@ -163,8 +161,8 @@ const AllReviews = () => {
                 color={
                   currentImageIndex ===
                   (reviews.find((r) => r.images?.includes(selectedImage!))?.images || []).length - 1
-                    ? activeTheme.colors.text.muted
-                    : activeTheme.colors.text.primary
+                    ? theme.colors.text.muted
+                    : theme.colors.text.primary
                 }
               />
             </TouchableOpacity>

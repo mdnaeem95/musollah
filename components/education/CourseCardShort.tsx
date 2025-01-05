@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { ThemeContext } from '../context/ThemeContext';
+import { ThemeContext, useTheme } from '../../context/ThemeContext';
 
 interface CourseCardProps {
     id: string;
@@ -14,11 +14,10 @@ interface CourseCardProps {
 }
 
 const CourseCardShort: React.FC<CourseCardProps> = ({ id, title, description, category, icon, backgroundColour }) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   return (
-    <TouchableOpacity style={[styles.cardContainer, { backgroundColor: activeTheme.colors.secondary }]}>
+    <TouchableOpacity style={[styles.cardContainer, { backgroundColor: theme.colors.secondary }]}>
       <Link
         href={{
           pathname: '/courses/[courseId]',
@@ -33,10 +32,10 @@ const CourseCardShort: React.FC<CourseCardProps> = ({ id, title, description, ca
 
           {/* Course Details Section */}
           <View style={styles.cardDetails}>
-            <View style={[styles.cardHashTag, { borderColor: activeTheme.colors.text.primary }]}>
-              <Text style={[styles.hashtagText, { color: activeTheme.colors.text.primary }]}>{category}</Text>
+            <View style={[styles.cardHashTag, { borderColor: theme.colors.text.primary }]}>
+              <Text style={[styles.hashtagText, { color: theme.colors.text.primary }]}>{category}</Text>
             </View>
-            <Text style={[styles.headerText, { color: activeTheme.colors.text.primary }]}>{title}</Text>
+            <Text style={[styles.headerText, { color: theme.colors.text.primary }]}>{title}</Text>
           </View>
         </View>
       </Link>

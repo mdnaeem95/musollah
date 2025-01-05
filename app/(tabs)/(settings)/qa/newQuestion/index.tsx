@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { addNewQuestion } from '../../../../../redux/slices/questionSlice';
@@ -11,7 +11,7 @@ import {
   englishRecommendedTransformers,
 } from 'obscenity';
 import { useRouter } from 'expo-router';
-import { ThemeContext } from '../../../../../context/ThemeContext';
+import { useTheme } from '../../../../../context/ThemeContext';
 
 const NewQuestionScreen = () => {
   const [form, setForm] = useState({ title: '', body: '', tags: '' });
@@ -20,8 +20,8 @@ const NewQuestionScreen = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const matcher = new RegExpMatcher({
     ...englishDataset.build(),
@@ -106,14 +106,12 @@ const NewQuestionScreen = () => {
     );
   };
 
-  const styles = createStyles(activeTheme);
-
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Title</Text>
       <TextInput
         style={styles.input}
-        placeholderTextColor={activeTheme.colors.text.muted}
+        placeholderTextColor={theme.colors.text.muted}
         placeholder="Type a catchy title"
         value={form.title}
         onChangeText={(value) => handleChange('title', value)}
@@ -122,7 +120,7 @@ const NewQuestionScreen = () => {
       <Text style={styles.label}>Body</Text>
       <TextInput
         style={[styles.input, styles.textArea]}
-        placeholderTextColor={activeTheme.colors.text.muted}
+        placeholderTextColor={theme.colors.text.muted}
         placeholder="Type your question"
         value={form.body}
         onChangeText={(value) => handleChange('body', value)}
@@ -132,7 +130,7 @@ const NewQuestionScreen = () => {
       <Text style={styles.label}>Tags (comma separated)</Text>
       <TextInput
         style={styles.input}
-        placeholderTextColor={activeTheme.colors.text.muted}
+        placeholderTextColor={theme.colors.text.muted}
         placeholder="e.g., islam, fiqh, prayer"
         value={form.tags}
         onChangeText={(value) => handleChange('tags', value)}

@@ -1,10 +1,10 @@
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SettingsModal from '../../../../components/quran/SettingsModal';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const DoaLayout = () => {
   const router = useRouter();
@@ -18,8 +18,7 @@ const DoaLayout = () => {
     setTextSize,
     reciter,
     setReciter,
-  } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  } = useTheme();
 
   const toggleModal = () => setModalVisible(!isModalVisible);
 
@@ -39,7 +38,7 @@ const DoaLayout = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: activeTheme.colors.primary }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -55,17 +54,17 @@ const DoaLayout = () => {
             headerTitleStyle: {
               fontFamily: 'Outfit_700Bold',
               fontSize: 20,
-              color: activeTheme.colors.text.primary,
+              color: theme.colors.text.primary,
             },
             headerStyle: {
-              backgroundColor: activeTheme.colors.secondary,
+              backgroundColor: theme.colors.secondary,
             },
             headerLeft: () => (
               <TouchableOpacity onPress={() => router.back()}>
                 <FontAwesome6
                   name="arrow-left"
                   size={24}
-                  color={activeTheme.colors.text.primary}
+                  color={theme.colors.text.primary}
                   style={{ padding: 10 }}
                 />
               </TouchableOpacity>
@@ -78,20 +77,20 @@ const DoaLayout = () => {
             headerShown: true,
             headerTitle: 'Doas',
             headerStyle: {
-              backgroundColor: activeTheme.colors.secondary,
+              backgroundColor: theme.colors.secondary,
             },
-            headerTintColor: activeTheme.colors.text.primary,
+            headerTintColor: theme.colors.text.primary,
             headerTitleStyle: {
               fontFamily: 'Outfit_700Bold',
               fontSize: 20,
-              color: activeTheme.colors.text.primary,
+              color: theme.colors.text.primary,
             },
             headerLeft: () => (
               <TouchableOpacity onPress={() => router.back()}>
                 <FontAwesome6
                   name="arrow-left"
                   size={24}
-                  color={activeTheme.colors.text.primary}
+                  color={theme.colors.text.primary}
                   style={{ padding: 10 }}
                 />
               </TouchableOpacity>
@@ -101,7 +100,7 @@ const DoaLayout = () => {
                 <FontAwesome6
                   name="gear"
                   size={24}
-                  color={activeTheme.colors.text.primary}
+                  color={theme.colors.text.primary}
                   style={{ padding: 10 }}
                 />
               </TouchableOpacity>
@@ -120,8 +119,7 @@ const DoaLayout = () => {
         toggleDarkMode={toggleDarkMode}
         reciter={reciter}
         onReciterChange={setReciter}
-        activeTheme={activeTheme}
-        // Pass the conditional rendering of Reciter section
+        activeTheme={theme}
         showReciter={pathname.includes('/surahs')}
       />
     </View>

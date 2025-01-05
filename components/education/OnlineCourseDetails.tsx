@@ -1,14 +1,14 @@
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
-import { startCourse } from '../redux/slices/courseSlice';
-import { AppDispatch, RootState, store } from '../redux/store/store';
+import { startCourse } from '../../redux/slices/courseSlice';
+import { AppDispatch, RootState, store } from '../../redux/store/store';
 import { getAuth } from '@react-native-firebase/auth';
-import { CourseAndModuleProgress, CourseData, ModuleData } from '../utils/types';
-import SignInModal from './SignInModal';
-import { ThemeContext } from '../context/ThemeContext';
+import { CourseAndModuleProgress, CourseData, ModuleData } from '../../utils/types';
+import SignInModal from '../SignInModal';
+import { useTheme } from '../../context/ThemeContext';
 
 const OnlineCourseDetails = ({
   course,
@@ -23,8 +23,7 @@ const OnlineCourseDetails = ({
   const router = useRouter();
   const user = useSelector((state: RootState) => state.dashboard.user);
 
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const userProgress: CourseAndModuleProgress | undefined =
     user?.enrolledCourses.find(
@@ -73,26 +72,26 @@ const OnlineCourseDetails = ({
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: activeTheme.colors.primary }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
       <ScrollView contentContainerStyle={{ gap: 5 }} showsVerticalScrollIndicator={false}>
         {/* Author Information */}
-        <View style={[styles.authorContainer, { backgroundColor: activeTheme.colors.secondary }]}>
+        <View style={[styles.authorContainer, { backgroundColor: theme.colors.secondary }]}>
           <Image source={{ uri: teacherImage }} style={styles.authorAvatar} />
           <View style={{ marginLeft: 10, justifyContent: 'center' }}>
-            <Text style={[styles.subText, { color: activeTheme.colors.text.secondary }]}>Author</Text>
-            <Text style={[styles.mainText, { color: activeTheme.colors.text.primary }]}>{teacherName}</Text>
+            <Text style={[styles.subText, { color: theme.colors.text.secondary }]}>Author</Text>
+            <Text style={[styles.mainText, { color: theme.colors.text.primary }]}>{teacherName}</Text>
           </View>
         </View>
 
         {/* Course Details */}
         <View style={styles.section}>
-          <Text style={[styles.subText, { color: activeTheme.colors.text.secondary }]}>Description</Text>
-          <Text style={[styles.contentText, { color: activeTheme.colors.text.muted }]}>{course.description}</Text>
+          <Text style={[styles.subText, { color: theme.colors.text.secondary }]}>Description</Text>
+          <Text style={[styles.contentText, { color: theme.colors.text.muted }]}>{course.description}</Text>
         </View>
 
         {/* Modules */}
         <View style={styles.section}>
-          <Text style={[styles.subText, { color: activeTheme.colors.text.secondary }]}>Modules</Text>
+          <Text style={[styles.subText, { color: theme.colors.text.secondary }]}>Modules</Text>
           {course.modules.map((module: ModuleData, index: number) => {
             const moduleProgress = userProgress?.status.modules[module.moduleId];
             const isLocked = !userProgress || moduleProgress === 'locked';
@@ -102,19 +101,19 @@ const OnlineCourseDetails = ({
                 key={index}
                 style={[
                   styles.module,
-                  { backgroundColor: isLocked ? activeTheme.colors.text.muted : activeTheme.colors.secondary },
+                  { backgroundColor: isLocked ? theme.colors.text.muted : theme.colors.secondary },
                 ]}
                 disabled={isLocked}
                 onPress={() => router.push(`/courses/${course.id}/modules/${module.moduleId}`)}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <View>
-                    <Text style={[styles.subText, { color: activeTheme.colors.text.primary }]}>
+                    <Text style={[styles.subText, { color: theme.colors.text.primary }]}>
                       {`${index + 1}. ${module.title}`}
                     </Text>
-                    <Text style={[styles.contentText, { color: activeTheme.colors.text.secondary }]}>1 hour</Text>
+                    <Text style={[styles.contentText, { color: theme.colors.text.secondary }]}>1 hour</Text>
                   </View>
-                  {isLocked && <FontAwesome6 name="lock" size={20} color={activeTheme.colors.text.muted} />}
+                  {isLocked && <FontAwesome6 name="lock" size={20} color={theme.colors.text.muted} />}
                 </View>
               </TouchableOpacity>
             );
@@ -127,13 +126,13 @@ const OnlineCourseDetails = ({
             style={[
               styles.learningBtn,
               {
-                backgroundColor: userProgress ? activeTheme.colors.accent : activeTheme.colors.text.success,
+                backgroundColor: userProgress ? theme.colors.accent : theme.colors.text.success,
               },
             ]}
             onPress={handleStartLearning}
             disabled={!!userProgress || isEnrolling}
           >
-            <Text style={[styles.btnText, { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.btnText, { color: theme.colors.text.primary }]}>
               {isEnrolling ? 'Enrolling...' : userProgress ? 'Enrolled' : 'Start Learning'}
             </Text>
           </TouchableOpacity>
