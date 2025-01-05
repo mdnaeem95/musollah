@@ -3,6 +3,7 @@ import { getPrayerTimesInfo, extractNextDaysPrayerTimes } from "../utils/index"
 import { fetchMonthlyPrayerTimes } from "../api/prayers"
 import { scheduleNextDaysNotifications } from "../utils/notificationsScheduler"
 import prayerBackgrounds from "../assets/prayerBackgroundImages/prayerBackgrounds";
+import { useTheme } from "../context/ThemeContext";
 
 export const usePrayerTimes = (
     prayerTimes: any,
@@ -14,8 +15,14 @@ export const usePrayerTimes = (
         timeUntilNextPrayer: string;
     } | null>(null)
 
+    const { currentTheme } = useTheme();
+
     //@ts-ignore
-    const backgroundImage = useMemo(() => prayerBackgrounds[currentPrayer] || prayerBackgrounds.Subuh, [currentPrayer]);
+    const backgroundImage = useMemo(() => {
+        const themeKey = `${currentPrayer}${currentTheme.charAt(0).toUpperCase()}${currentTheme.slice(1)}`;
+        //@ts-ignore
+        return prayerBackgrounds[themeKey] || prayerBackgrounds.Subuh; 
+    }, [currentPrayer, currentTheme]);
 
     const fetchAndScheduleNotifications = useCallback(async () => {
         try {

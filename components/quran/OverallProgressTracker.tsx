@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Progress from 'react-native-progress';
-import { ThemeContext } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const OverallProgressTracker = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const [overallSurahProgress, setOverallSurahProgress] = useState(0);
 
@@ -20,8 +20,6 @@ const OverallProgressTracker = () => {
     loadOverallProgress();
   }, []); // Runs once on mount
 
-  const styles = createStyles(activeTheme);
-
   return (
     <View style={styles.overallProgressContainer}>
       <Text style={styles.overallProgressHeader}>Overall Quran Progress</Text>
@@ -29,8 +27,8 @@ const OverallProgressTracker = () => {
         <Progress.Bar
           progress={overallSurahProgress / 114} // Total surahs = 114
           height={10}
-          color={activeTheme.colors.accent}
-          unfilledColor={activeTheme.colors.primary}
+          color={theme.colors.accent}
+          unfilledColor={theme.colors.primary}
           borderWidth={0}
           style={styles.progressBar}
         />

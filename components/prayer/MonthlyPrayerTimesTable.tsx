@@ -4,7 +4,6 @@ import {
   Text,
   FlatList,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 
 // Props type for the monthly prayer times

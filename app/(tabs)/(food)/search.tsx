@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useContext } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   TextInput,
@@ -16,11 +16,10 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchRestaurants } from '../../../api/firebase';
 import { FlashList } from '@shopify/flash-list';
-import { ThemeContext } from '../../../context/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 
 const SearchPage = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme()
 
   const [searchQuery, setSearchQuery] = useState('');
   const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
@@ -107,7 +106,7 @@ const SearchPage = () => {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}
+      style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <TextInput
@@ -115,12 +114,12 @@ const SearchPage = () => {
         style={[
           styles.searchInput,
           {
-            backgroundColor: activeTheme.colors.secondary,
-            color: activeTheme.colors.text.primary,
+            backgroundColor: theme.colors.secondary,
+            color: theme.colors.text.primary,
           },
         ]}
         placeholder="Search restaurants or categories..."
-        placeholderTextColor={activeTheme.colors.text.muted}
+        placeholderTextColor={theme.colors.text.muted}
         value={searchQuery}
         onChangeText={(text) => {
           setSearchQuery(text);
@@ -131,14 +130,14 @@ const SearchPage = () => {
 
       {recentSearches.length > 0 && (
         <View style={styles.recencyContainer}>
-          <Text style={[styles.recencyTitle, { color: activeTheme.colors.text.primary }]}>
+          <Text style={[styles.recencyTitle, { color: theme.colors.text.primary }]}>
             Recent Searches
           </Text>
           {recentSearches.map((recentSearch, index) => (
             <View style={styles.recentSearchItem} key={index}>
               <FontAwesome6
                 name="clock"
-                color={activeTheme.colors.accent}
+                color={theme.colors.accent}
                 size={16}
                 style={styles.iconLeft}
               />
@@ -147,7 +146,7 @@ const SearchPage = () => {
                 style={styles.searchTextContainer}
                 onPress={() => handleRecentSearchTap(recentSearch)}
               >
-                <Text style={[styles.recentSearchText, { color: activeTheme.colors.text.primary }]}>
+                <Text style={[styles.recentSearchText, { color: theme.colors.text.primary }]}>
                   {recentSearch}
                 </Text>
               </TouchableOpacity>
@@ -155,7 +154,7 @@ const SearchPage = () => {
               <TouchableOpacity onPress={() => handleRemoveSearch(recentSearch)}>
                 <FontAwesome6
                   name="circle-xmark"
-                  color={activeTheme.colors.accent}
+                  color={theme.colors.accent}
                   size={16}
                   style={styles.iconLeft}
                 />
@@ -178,15 +177,15 @@ const SearchPage = () => {
             style={[
               styles.restaurantItem,
               {
-                borderBottomColor: activeTheme.colors.text.muted,
+                borderBottomColor: theme.colors.text.muted,
               },
             ]}
             onPress={() => router.replace(`/${item.id}`)}
           >
-            <Text style={[styles.restaurantName, { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.restaurantName, { color: theme.colors.text.primary }]}>
               {item.name}
             </Text>
-            <Text style={[styles.restaurantAddress, { color: activeTheme.colors.text.secondary }]}>
+            <Text style={[styles.restaurantAddress, { color: theme.colors.text.secondary }]}>
               {item.address}
             </Text>
           </TouchableOpacity>

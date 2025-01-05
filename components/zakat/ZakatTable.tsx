@@ -1,7 +1,7 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { ThemeContext } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ZakatTableProps {
   savings: string;
@@ -42,10 +42,8 @@ const ZakatTable = ({
   renderEligibilityIcon,
   openModalHandlers,
 }: ZakatTableProps) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
-
-  const styles = createStyles(activeTheme);
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   return (
     <View style={styles.tableContainer}>
@@ -97,15 +95,15 @@ const ZakatTable = ({
             disabled={!eligibility}
             onPress={openModal}
           >
-            <FontAwesome6 name={icon} size={24} color={eligibility ? activeTheme.colors.text.primary : activeTheme.colors.text.muted} />
-            <Text style={[styles.zakatLabel, { color: eligibility ? activeTheme.colors.text.primary : activeTheme.colors.text.muted }]}>
+            <FontAwesome6 name={icon} size={24} color={eligibility ? theme.colors.text.primary : theme.colors.text.muted} />
+            <Text style={[styles.zakatLabel, { color: eligibility ? theme.colors.text.primary : theme.colors.text.muted }]}>
               {type}
             </Text>
           </TouchableOpacity>
           <TextInput
             style={styles.input}
             placeholder="$0"
-            placeholderTextColor={activeTheme.colors.text.muted}
+            placeholderTextColor={theme.colors.text.muted}
             value={value}
             onChangeText={setValue}
             keyboardType="numeric"

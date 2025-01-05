@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useContext } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -6,12 +6,11 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import DailyAyah from '../../../components/quran/DailyAyah';
 import DailyGoalTracker from '../../../components/quran/DailyGoalTracker';
 import OverallProgressTracker from '../../../components/quran/OverallProgressTracker';
-import { ThemeContext } from '../../../context/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 
 const QuranDashboard = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
-  const styles = createStyles(activeTheme);
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const router = useRouter();
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -72,7 +71,7 @@ const QuranDashboard = () => {
                 <FontAwesome6
                   name={index === 0 ? 'book-quran' : index === 1 ? 'hands-praying' : 'bookmark'}
                   size={28}
-                  color={activeTheme.colors.text.primary}
+                  color={theme.colors.text.primary}
                   solid
                 />
                 <Text style={styles.iconLabel}>

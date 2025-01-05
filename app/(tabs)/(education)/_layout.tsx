@@ -1,32 +1,31 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Drawer } from 'expo-router/drawer';
-import React, { useContext } from 'react';
+import React from 'react';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { ThemeContext } from '../../../context/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 
 const EducationLayout = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme()
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: activeTheme.colors.primary }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.colors.primary }}>
       <Drawer
         screenOptions={{
           headerStyle: {
-            backgroundColor: activeTheme.colors.primary,
+            backgroundColor: theme.colors.primary,
           },
           headerTitleStyle: {
             fontFamily: 'Outfit_700Bold',
             fontSize: 20,
-            color: activeTheme.colors.text.primary,
+            color: theme.colors.text.primary,
           },
-          headerTintColor: activeTheme.colors.text.primary,
+          headerTintColor: theme.colors.text.primary,
           headerShadowVisible: false,
           drawerStyle: {
-            backgroundColor: activeTheme.colors.secondary,
+            backgroundColor: theme.colors.secondary,
           },
-          drawerActiveTintColor: activeTheme.colors.text.primary,
-          drawerInactiveTintColor: activeTheme.colors.text.muted,
+          drawerActiveTintColor: theme.colors.text.primary,
+          drawerInactiveTintColor: theme.colors.text.muted,
         }}
       >
         <Drawer.Screen

@@ -1,13 +1,12 @@
 import { Stack, useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
-import React, { useContext } from 'react';
-import { ThemeContext } from '../../../context/ThemeContext';
+import React from 'react';
+import { useTheme } from '../../../context/ThemeContext';
 
 const QuranLayout = () => {
   const router = useRouter();
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   return (
     <Stack
@@ -25,10 +24,10 @@ const QuranLayout = () => {
           headerTitleStyle: {
             fontFamily: 'Outfit_700Bold',
             fontSize: 20,
-            color: activeTheme.colors.text.primary,
+            color: theme.colors.text.primary,
           },
           headerStyle: {
-            backgroundColor: activeTheme.colors.primary,
+            backgroundColor: theme.colors.primary,
           },
         }}
       />
@@ -38,20 +37,20 @@ const QuranLayout = () => {
           headerShown: true,
           headerTitle: 'My Bookmarks',
           headerStyle: {
-            backgroundColor: activeTheme.colors.primary,
+            backgroundColor: theme.colors.primary,
           },
-          headerTintColor: activeTheme.colors.text.primary,
+          headerTintColor: theme.colors.text.primary,
           headerTitleStyle: {
             fontFamily: 'Outfit_700Bold',
             fontSize: 20,
-            color: activeTheme.colors.text.primary,
+            color: theme.colors.text.primary,
           },
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
               <FontAwesome6
                 name="arrow-left"
                 size={24}
-                color={activeTheme.colors.text.primary}
+                color={theme.colors.text.primary}
                 style={{ padding: 10 }}
               />
             </TouchableOpacity>

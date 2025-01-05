@@ -1,17 +1,17 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SettingsModal from '../../../../components/quran/SettingsModal';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const SurahDetailLayout = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const [isModalVisible, setModalVisible] = useState(false);
   const { theme, isDarkMode, toggleDarkMode, textSize, setTextSize, reciter, setReciter } =
-    useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+    useTheme();
 
   const toggleModal = () => setModalVisible(!isModalVisible);
 
@@ -33,19 +33,19 @@ const SurahDetailLayout = () => {
           options={{
             headerShown: true,
             headerTitle: 'Surahs',
-            headerStyle: { backgroundColor: activeTheme.colors.primary },
-            headerTintColor: activeTheme.colors.text.primary,
+            headerStyle: { backgroundColor: theme.colors.primary },
+            headerTintColor: theme.colors.text.primary,
             headerTitleStyle: {
               fontFamily: 'Outfit_700Bold',
               fontSize: 20,
-              color: activeTheme.colors.text.primary,
+              color: theme.colors.text.primary,
             },
             headerLeft: () => (
               <TouchableOpacity onPress={() => router.back()}>
                 <FontAwesome6
                   name="arrow-left"
                   size={24}
-                  color={activeTheme.colors.text.primary}
+                  color={theme.colors.text.primary}
                   style={{ padding: 10 }}
                 />
               </TouchableOpacity>
@@ -55,7 +55,7 @@ const SurahDetailLayout = () => {
                 <FontAwesome6
                   name="gear"
                   size={24}
-                  color={activeTheme.colors.text.primary}
+                  color={theme.colors.text.primary}
                   style={{ padding: 10 }}
                 />
               </TouchableOpacity>
@@ -67,19 +67,19 @@ const SurahDetailLayout = () => {
           options={{
             headerShown: true,
             headerTitle: 'Surahs',
-            headerStyle: { backgroundColor: activeTheme.colors.primary },
-            headerTintColor: activeTheme.colors.text.primary,
+            headerStyle: { backgroundColor: theme.colors.primary },
+            headerTintColor: theme.colors.text.primary,
             headerTitleStyle: {
               fontFamily: 'Outfit_700Bold',
               fontSize: 20,
-              color: activeTheme.colors.text.primary,
+              color: theme.colors.text.primary,
             },
             headerLeft: () => (
               <TouchableOpacity onPress={() => router.back()}>
                 <FontAwesome6
                   name="arrow-left"
                   size={24}
-                  color={activeTheme.colors.text.primary}
+                  color={theme.colors.text.primary}
                   style={{ padding: 10 }}
                 />
               </TouchableOpacity>
@@ -89,7 +89,7 @@ const SurahDetailLayout = () => {
                 <FontAwesome6
                   name="gear"
                   size={24}
-                  color={activeTheme.colors.text.primary}
+                  color={theme.colors.text.primary}
                   style={{ padding: 10 }}
                 />
               </TouchableOpacity>
@@ -107,7 +107,8 @@ const SurahDetailLayout = () => {
         toggleDarkMode={toggleDarkMode}
         reciter={reciter}
         onReciterChange={setReciter}
-        activeTheme={activeTheme}
+        activeTheme={theme}
+        showReciter={pathname.includes('/surahs')}
       />
     </View>
   );

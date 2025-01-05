@@ -1,10 +1,10 @@
 import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
-import React, { useRef, useState, useCallback, useContext, useEffect, useLayoutEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { Bookmark, Surah } from '../../../../utils/types';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 import { addBookmark, removeBookmark } from '../../../../redux/slices/quranSlice';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,10 +13,10 @@ import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FlashList } from '@shopify/flash-list';
 import TrackPlayer, { Event } from 'react-native-track-player';
-import { PlayPauseButton } from '../../../../components/AyahPlayPauseButton';
-import { FloatingPlayer } from '../../../../components/FloatingPlayer';
+import { PlayPauseButton } from '../../../../components/quran/AyahPlayPauseButton';
+import { FloatingPlayer } from '../../../../components/quran/FloatingPlayer';
 import { reciterOptions } from '../../../../utils/constants';
-import BookmarkIcon from '../../../../components/BookmarkIcon';
+import BookmarkIcon from '../../../../components/quran/BookmarkIcon';
 
 // Utility functions for bookmarking and marking read Ayahs
 const toggleItemInArray = (arr: number[], item: number) => (
@@ -45,13 +45,13 @@ const SurahTextScreen = () => {
     const [isPickerVisible, setPickerVisible] = useState<boolean>(false);
     const [audioLinks, setAudioLinks] = useState<string[]>(initialLinks);
 
-    const { theme, isDarkMode, textSize, reciter } = useContext(ThemeContext);
-    const activeTheme = isDarkMode ? theme.dark : theme.light;
+    const { theme, textSize, reciter } = useTheme();
     
     const generateTracks = (surah: Surah, reciter: string) => {
         return surah.arabicText.split('|').map((ayah, index) => {
         const rawUrl = surah.audioLinks.split(',')[index]?.replace('ar.alafasy', reciter);
         const trimmedUrl = rawUrl?.trim(); // Ensure no extra spaces
+        console.log('Audio URL:', trimmedUrl); // Add this to debug
         return {
             id: `${surah.number}-${index + 1}`,
             url: trimmedUrl || '',
@@ -107,8 +107,6 @@ const SurahTextScreen = () => {
                         surahNumber: parseInt(activeTrack.id.split('-')[0], 10), // Extract Surah number from ID
                         ayahIndex: parseInt(activeTrack.id.split('-')[1], 10), // Extract Ayah index from ID
                     }));
-    
-                    console.log('Saved last listened Ayah:', activeTrack.title);
                 }
 
                 listRef.current?.scrollToIndex({
@@ -144,21 +142,21 @@ const SurahTextScreen = () => {
             navigation.setOptions({
                 headerTitle: () => (
                     <View style={styles.headerContainer}>
-                        <Text style={[styles.headerText, { color: activeTheme.colors.text.primary }]}>
+                        <Text style={[styles.headerText, { color: theme.colors.text.primary }]}>
                             {surah.englishName}
                         </Text>
                         <TouchableOpacity onPress={togglePickerVisibility}>
                             <FontAwesome6
                                 name={isPickerVisible ? "chevron-up" : "chevron-down"}
                                 size={20}
-                                color={activeTheme.colors.text.primary}
+                                color={theme.colors.text.primary}
                             />
                         </TouchableOpacity>
                     </View>
                 ),
             });
         }
-    }, [navigation, surah, isPickerVisible, activeTheme]);
+    }, [navigation, surah, isPickerVisible, theme]);
 
     const togglePickerVisibility = () => {
         setPickerVisible(prev => !prev);
@@ -265,8 +263,8 @@ const SurahTextScreen = () => {
     
             // Determine the text color based on the theme and whether the Ayah is active
             const ayahTextColor = isActiveAyah
-                ? activeTheme.colors.accent // Highlighted text color
-                : activeTheme.colors.text.primary; // Regular text color
+                ? theme.colors.text.primary// Highlighted text color
+                : theme.colors.text.muted; // Regular text color
     
             return (
                 <View key={index} style={[styles.ayahContainer, { height: '100%' }]}>
@@ -275,10 +273,10 @@ const SurahTextScreen = () => {
                         <View
                             style={[
                                 styles.topRow,
-                                { backgroundColor: activeTheme.colors.secondary },
+                                { backgroundColor: theme.colors.secondary },
                             ]}
                         >
-                            <View style={styles.ayahNumber}>
+                            <View style={[styles.ayahNumber, { backgroundColor: theme.colors.primary }]}>
                                 <Text
                                     style={[
                                         styles.ayahNumberText,
@@ -311,8 +309,8 @@ const SurahTextScreen = () => {
                                         solid={isRead}
                                         color={
                                             isRead
-                                                ? activeTheme.colors.text.primary
-                                                : activeTheme.colors.text.muted
+                                                ? theme.colors.text.primary
+                                                : theme.colors.text.muted
                                         }
                                     />
                                 </TouchableOpacity>
@@ -337,7 +335,7 @@ const SurahTextScreen = () => {
                                     <Text
                                         style={[
                                             styles.translationText,
-                                            { color: activeTheme.colors.text.secondary },
+                                            { color: theme.colors.text.secondary },
                                         ]}
                                     >
                                         {englishTranslations[index]}
@@ -349,7 +347,7 @@ const SurahTextScreen = () => {
                         <View
                             style={[
                                 styles.separator,
-                                { backgroundColor: activeTheme.colors.text.secondary },
+                                { backgroundColor: theme.colors.text.secondary },
                             ]}
                         />
                     </View>
@@ -363,7 +361,7 @@ const SurahTextScreen = () => {
             readAyahs,
             surah?.englishTranslation,
             textSize,
-            activeTheme,
+            theme,
         ]
     );
 
@@ -397,13 +395,13 @@ const SurahTextScreen = () => {
             <View
                 style={[
                     styles.progressContainer,
-                    { backgroundColor: activeTheme.colors.secondary },
+                    { backgroundColor: theme.colors.secondary },
                 ]}
             >
                 <Text
                     style={[
                         styles.progressText,
-                        { color: activeTheme.colors.text.primary },
+                        { color: theme.colors.text.primary },
                     ]}
                 >
                     {`${surahNum}. ${surah?.englishName}`}
@@ -411,7 +409,7 @@ const SurahTextScreen = () => {
                 <Text
                     style={[
                         styles.progressText,
-                        { color: activeTheme.colors.text.primary },
+                        { color: theme.colors.text.primary },
                     ]}
                 >
                     Progress: {`${readAyahs.length}/${audioLinks.length}`}
@@ -421,7 +419,7 @@ const SurahTextScreen = () => {
     };
     
     return (
-        <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
+        <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
             {/* Progress Tracker */}
             {renderProgressTracker()}
 
@@ -444,7 +442,7 @@ const SurahTextScreen = () => {
 
             {/* Surah Picker */}
             {isPickerVisible && (
-                <View style={[styles.pickerContainer, { backgroundColor: activeTheme.colors.modalBackground }]}>
+                <View style={[styles.pickerContainer, { backgroundColor: theme.colors.modalBackground }]}>
                     <Picker
                         selectedValue={selectedSurah}
                         onValueChange={handleSurahChange}
@@ -454,7 +452,7 @@ const SurahTextScreen = () => {
                             <Picker.Item 
                                 key={surah.number} 
                                 label={`${surah.number}. ${surah.englishName}`} value={surah.number}
-                                color={activeTheme.colors.text.primary} 
+                                color={theme.colors.text.primary} 
                             />
                         ))}
                     </Picker>

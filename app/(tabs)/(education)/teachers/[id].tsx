@@ -1,10 +1,10 @@
 import { View, Text, ScrollView, Image, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-import React, { useLayoutEffect, useContext } from 'react';
+import React, { useLayoutEffect } from 'react';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../../redux/store/store';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 
 type Params = {
   id: string;
@@ -19,8 +19,7 @@ const TeacherDetails = () => {
   const navigation = useNavigation();
   const router = useRouter();
 
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   useLayoutEffect(() => {
     if (teacher) {
@@ -29,30 +28,30 @@ const TeacherDetails = () => {
   }, [navigation, teacher?.name]);
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
       <View
         style={[
           styles.teacherCard,
-          { backgroundColor: activeTheme.colors.secondary, shadowColor: activeTheme.colors.text.primary },
+          { backgroundColor: theme.colors.secondary, shadowColor: theme.colors.text.primary },
         ]}
       >
         <Image
           source={{ uri: teacher?.imagePath }}
-          style={[styles.teacherImage, { borderColor: activeTheme.colors.accent }]}
+          style={[styles.teacherImage, { borderColor: theme.colors.accent }]}
         />
         <View style={styles.teacherInfo}>
-          <Text style={[styles.teacherName, { color: activeTheme.colors.text.primary }]}>{teacher?.name}</Text>
-          <Text style={[styles.teacherExpertise, { color: activeTheme.colors.text.secondary }]}>{teacher?.expertise}</Text>
+          <Text style={[styles.teacherName, { color: theme.colors.text.primary }]}>{teacher?.name}</Text>
+          <Text style={[styles.teacherExpertise, { color: theme.colors.text.secondary }]}>{teacher?.expertise}</Text>
         </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ width: '100%' }}>
-        <Text style={[styles.coursesHeader, { color: activeTheme.colors.text.primary }]}>Background</Text>
-        <Text style={[styles.backgroundText, { color: activeTheme.colors.text.secondary }]}>{teacher?.background}</Text>
+        <Text style={[styles.coursesHeader, { color: theme.colors.text.primary }]}>Background</Text>
+        <Text style={[styles.backgroundText, { color: theme.colors.text.secondary }]}>{teacher?.background}</Text>
 
         {teacherCourses && (
           <>
-            <Text style={[styles.coursesHeader, { color: activeTheme.colors.text.primary }]}>Courses</Text>
+            <Text style={[styles.coursesHeader, { color: theme.colors.text.primary }]}>Courses</Text>
             <FlatList
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -61,7 +60,7 @@ const TeacherDetails = () => {
                 <TouchableOpacity
                   style={[
                     styles.courseCard,
-                    { backgroundColor: activeTheme.colors.secondary, shadowColor: activeTheme.colors.text.primary },
+                    { backgroundColor: theme.colors.secondary, shadowColor: theme.colors.text.primary },
                   ]}
                   onPress={() => router.push(`/courses/${item.id}`)}
                 >
@@ -72,13 +71,13 @@ const TeacherDetails = () => {
                         { backgroundColor: item.backgroundColour },
                       ]}
                     >
-                      <FontAwesome6 name={item.icon} size={54} color={activeTheme.colors.text.primary} />
+                      <FontAwesome6 name={item.icon} size={54} color={theme.colors.text.primary} />
                     </View>
                     <View style={styles.textContentContainer}>
-                      <Text style={[styles.courseCategoryText, { color: activeTheme.colors.text.secondary }]}>
+                      <Text style={[styles.courseCategoryText, { color: theme.colors.text.secondary }]}>
                         {item.category}
                       </Text>
-                      <Text style={[styles.courseHeaderText, { color: activeTheme.colors.text.primary }]}>
+                      <Text style={[styles.courseHeaderText, { color: theme.colors.text.primary }]}>
                         {item.title}
                       </Text>
                     </View>

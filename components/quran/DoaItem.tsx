@@ -1,7 +1,7 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Text, View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Doa } from '../utils/types';
-import { ThemeContext } from '../context/ThemeContext';
+import { Doa } from '../../utils/types';
+import { useTheme } from '../../context/ThemeContext';
 
 interface DoaProps {
   doa: Doa;
@@ -9,8 +9,7 @@ interface DoaProps {
 }
 
 const DoaItem = ({ doa, onPress }: DoaProps) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   return (
     <TouchableOpacity onPress={() => onPress(doa)}>
@@ -20,7 +19,7 @@ const DoaItem = ({ doa, onPress }: DoaProps) => {
             <Text
               style={[
                 styles.doaNumber,
-                { color: activeTheme.colors.text.primary },
+                { color: theme.colors.text.primary },
               ]}
             >
               {doa.number}
@@ -29,7 +28,7 @@ const DoaItem = ({ doa, onPress }: DoaProps) => {
               <Text
                 style={[
                   styles.doaTitle,
-                  { color: activeTheme.colors.text.primary },
+                  { color: theme.colors.text.primary },
                 ]}
               >
                 {doa.title}

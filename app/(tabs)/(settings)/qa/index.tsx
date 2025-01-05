@@ -1,14 +1,13 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import QuestionList from '../../../../components/QaQuestionList';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const LandingPage = () => {
   const router = useRouter();
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
@@ -28,7 +27,7 @@ const LandingPage = () => {
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
-  const styles = createStyles(activeTheme);
+  const styles = createStyles(theme);
 
   return (
     <View style={styles.container}>
@@ -39,7 +38,7 @@ const LandingPage = () => {
             <View style={styles.searchBarContainer}>
               <TextInput
                 placeholder="Search questions or content"
-                placeholderTextColor={activeTheme.colors.text.muted}
+                placeholderTextColor={theme.colors.text.muted}
                 style={styles.searchInput}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -51,7 +50,7 @@ const LandingPage = () => {
             <FontAwesome6
               name={isSearchExpanded ? 'xmark' : 'magnifying-glass'}
               size={24}
-              color={activeTheme.colors.text.secondary}
+              color={theme.colors.text.secondary}
             />
           </TouchableOpacity>
         </View>
@@ -67,7 +66,7 @@ const LandingPage = () => {
           <FontAwesome6
             name="question-circle"
             size={18}
-            color={activeTheme.colors.text.primary}
+            color={theme.colors.text.primary}
             style={styles.icon}
           />
           <Text style={styles.askButtonText}>Ask a Question</Text>

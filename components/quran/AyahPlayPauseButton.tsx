@@ -13,8 +13,6 @@ type PlayerButtonProps = {
 export const PlayPauseButton = ({ iconSize = 20, color, isActiveAyah, currentAyahIndex, trackIndex }: PlayerButtonProps) => {
 	const { playing } = useIsPlaying()
 
-    console.log(currentAyahIndex, trackIndex)
-
     const handlePlayPress = async () => {
         if (currentAyahIndex === trackIndex) {
             if (playing) {

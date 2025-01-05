@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import {
   Modal,
   View,
@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import { ThemeContext } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface GuideModalProps {
   isVisible: boolean;
@@ -14,10 +14,8 @@ interface GuideModalProps {
 }
 
 const GuideModal: React.FC<GuideModalProps> = ({ isVisible, onClose }) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
-
-  const styles = createStyles(activeTheme);
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   return (
     <Modal

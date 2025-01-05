@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import PrayerTimeItem from './PrayerTimeItem';
-import { PrayerTimes } from '../utils/types';
+import { PrayerTimes } from '../../utils/types';
 
 interface PrayerTimesListProps {
   prayerTimes: PrayerTimes | null;

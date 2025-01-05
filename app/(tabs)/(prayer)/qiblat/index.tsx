@@ -1,14 +1,13 @@
 import { StyleSheet, View } from 'react-native';
-import React, { useContext } from 'react';
-import Compass from '../../../../components/Compass';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import React from 'react';
+import { useTheme } from '../../../../context/ThemeContext';
+import Compass from '../../../../components/prayer/Compass';
 
 const QiblatTab = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
       <View style={styles.compassContainer}>
         <Compass />
       </View>

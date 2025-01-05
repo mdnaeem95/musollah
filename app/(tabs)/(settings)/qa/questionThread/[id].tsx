@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useContext } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useDispatch, useSelector } from 'react-redux';
@@ -11,7 +11,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { selectAnswersByQuestionId } from '../../../../../redux/slices/answerSlice';
 import { getAuth } from '@react-native-firebase/auth';
 import { fetchUserRole } from '../../../../../api/firebase';
-import { ThemeContext } from '../../../../../context/ThemeContext';
+import { useTheme } from '../../../../../context/ThemeContext';
 
 const auth = getAuth();
 const currentUser = auth.currentUser;
@@ -20,9 +20,8 @@ const QuestionThreadScreen = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
-  const styles = createStyles(activeTheme);
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const { entities: questionEntities, loading: questionLoading } = useSelector((state: RootState) => state.questions);
   const { entities: answerEntities, loading: answersLoading } = useSelector((state: RootState) => state.answers);
@@ -60,16 +59,16 @@ const QuestionThreadScreen = () => {
 
   if (questionLoading) {
     return (
-      <View style={[styles.centered, { backgroundColor: activeTheme.colors.primary }]}>
-        <ActivityIndicator size="large" color={activeTheme.colors.text.secondary} />
+      <View style={[styles.centered, { backgroundColor: theme.colors.primary }]}>
+        <ActivityIndicator size="large" color={theme.colors.text.secondary} />
       </View>
     );
   }
 
   if (!question) {
     return (
-      <View style={[styles.centered, { backgroundColor: activeTheme.colors.primary }]}>
-        <Text style={[styles.errorText, { color: activeTheme.colors.text.error }]}>
+      <View style={[styles.centered, { backgroundColor: theme.colors.primary }]}>
+        <Text style={[styles.errorText, { color: theme.colors.text.error }]}>
           Question not found.
         </Text>
       </View>
@@ -99,24 +98,24 @@ const QuestionThreadScreen = () => {
 
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <FontAwesome6 name="comment" size={20} color={activeTheme.colors.accent} />
+            <FontAwesome6 name="comment" size={20} color={theme.colors.accent} />
             <Text style={styles.statText}>{question.answerCount}</Text>
           </View>
           <View style={styles.statItem}>
-            <FontAwesome6 name="thumbs-up" size={20} color={activeTheme.colors.accent} />
+            <FontAwesome6 name="thumbs-up" size={20} color={theme.colors.accent} />
             <Text style={styles.statText}>{question.votes}</Text>
           </View>
         </View>
 
         {userRole === 'admin' && (
           <TouchableOpacity onPress={openModal}>
-            <FontAwesome6 name="reply" size={20} color={activeTheme.colors.accent} />
+            <FontAwesome6 name="reply" size={20} color={theme.colors.accent} />
           </TouchableOpacity>
         )}
       </View>
 
       {answersLoading ? (
-        <ActivityIndicator size="large" color={activeTheme.colors.accent} />
+        <ActivityIndicator size="large" color={theme.colors.accent} />
       ) : answers.length > 0 ? (
         answers.map((answer: any) => (
           <View key={answer.id} style={styles.answerContainer}>

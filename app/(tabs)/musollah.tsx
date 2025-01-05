@@ -13,21 +13,20 @@ import React, {
   useState,
   useMemo,
   useRef,
-  useContext,
 } from 'react';
-import Map, { Region, BidetLocation, MosqueLocation, MusollahLocation } from '../../components/Map';
+import Map, { Region, BidetLocation, MosqueLocation, MusollahLocation } from '../../components/musollah/Map';
 import { SearchBar } from '@rneui/themed';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
-import BidetModal from '../../components/BidetModal';
-import MosqueModal from '../../components/MosqueModal';
-import MusollahModal from '../../components/MusollahModal';
+import BidetModal from '../../components/musollah/BidetModal';
+import MosqueModal from '../../components/musollah/MosqueModal';
+import MusollahModal from '../../components/musollah/MusollahModal';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../redux/store/store';
 import { fetchMusollahData } from '../../redux/slices/musollahSlice';
 import { fetchUserLocation } from '../../redux/slices/userLocationSlice';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
-import { ThemeContext } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const locationTypes = ['Bidets', 'Musollahs', 'Mosques'];
 
@@ -37,8 +36,7 @@ interface ItemProps {
 }
 
 const MusollahTab = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme, isDarkMode } = useTheme();
 
   const dispatch = useDispatch<AppDispatch>();
   const { bidetLocations, mosqueLocations, musollahLocations, isLoading } = useSelector(
@@ -91,18 +89,18 @@ const MusollahTab = () => {
   const renderItem = useCallback(
     ({ item }: { item: BidetLocation | MosqueLocation | MusollahLocation }) => (
       <TouchableOpacity
-        style={[styles.itemContainer, { backgroundColor: activeTheme.colors.primary }]}
+        style={[styles.itemContainer, { backgroundColor: theme.colors.primary }]}
         onPress={() => handleMarkerPress(item)}
       >
-        <Text style={[styles.locationText, { color: activeTheme.colors.text.primary }]}>
+        <Text style={[styles.locationText, { color: theme.colors.text.primary }]}>
           {item.building}
         </Text>
-        <Text style={[styles.distanceText, { color: activeTheme.colors.text.secondary }]}>
+        <Text style={[styles.distanceText, { color: theme.colors.text.secondary }]}>
           Distance: {item.distance?.toFixed(2)}km
         </Text>
       </TouchableOpacity>
     ),
-    [handleMarkerPress, activeTheme]
+    [handleMarkerPress, theme]
   );
 
   const currentLocations = useMemo(() => {
@@ -144,7 +142,7 @@ const MusollahTab = () => {
   }, [userLocation]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: activeTheme.colors.primary }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.primary }}>
       <View style={{ flex: 1 }}>
         <View style={Platform.OS === 'ios' ? styles.searchBarIOS : styles.searchBarAndroid}>
           <SearchBar
@@ -155,7 +153,7 @@ const MusollahTab = () => {
             round
             lightTheme={!isDarkMode}
             containerStyle={{ margin: 0, padding: 0, borderRadius: 20 }}
-            inputContainerStyle={{ backgroundColor: activeTheme.colors.secondary }}
+            inputContainerStyle={{ backgroundColor: theme.colors.secondary }}
           />
         </View>
         <Map
@@ -175,13 +173,13 @@ const MusollahTab = () => {
       >
         <SegmentedControl
           style={{ margin: 10 }}
-          backgroundColor={activeTheme.colors.accent}
+          backgroundColor={theme.colors.accent}
           values={locationTypes}
           selectedIndex={selectedIndex}
           onChange={(event) => setSelectedIndex(event.nativeEvent.selectedSegmentIndex)}
         />
         {isLoading ? (
-          <ActivityIndicator size="large" color={activeTheme.colors.text.primary} />
+          <ActivityIndicator size="large" color={theme.colors.text.primary} />
         ) : (
           <View style={styles.flashListContent}>
             <FlashList

@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
-import React, { useContext } from 'react';
+import React from 'react';
 import Modal from 'react-native-modal';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { useTheme } from '../../context/ThemeContext';
 import { BidetLocation } from './Map';
-import { ThemeContext } from '../context/ThemeContext';
 
 interface BidetModalProps {
   isVisible: boolean;
@@ -12,8 +12,7 @@ interface BidetModalProps {
 }
 
 const InfoRow = ({ label, value }: { label: string; value: string }) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const { iconName, iconColor } =
     value.toLowerCase() === 'yes'
@@ -24,19 +23,18 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => {
 
   return (
     <View style={styles.infoColumn}>
-      <Text style={[styles.label, { color: activeTheme.colors.text.primary }]}>{label}</Text>
+      <Text style={[styles.label, { color: theme.colors.text.primary }]}>{label}</Text>
       {iconName ? (
         <FontAwesome6 name={iconName} size={20} color={iconColor} />
       ) : (
-        <Text style={[styles.valueText, { color: activeTheme.colors.text.secondary }]}>{value}</Text>
+        <Text style={[styles.valueText, { color: theme.colors.text.secondary }]}>{value}</Text>
       )}
     </View>
   );
 };
 
 const BidetModal = ({ isVisible, location, onClose }: BidetModalProps) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme()
 
   const openMaps = () => {
     const url = `https://www.google.com/maps/search/?api=1&query=${location?.building}, ${location?.address}`;
@@ -53,24 +51,24 @@ const BidetModal = ({ isVisible, location, onClose }: BidetModalProps) => {
       useNativeDriver
       style={styles.modal}
     >
-      <View style={[styles.contentContainer, { backgroundColor: activeTheme.colors.primary }]}>
+      <View style={[styles.contentContainer, { backgroundColor: theme.colors.primary }]}>
         {/* Close Button */}
         <View style={{ width: '100%' }}>
           <TouchableOpacity
             onPress={onClose}
-            style={[styles.closeButton, { backgroundColor: activeTheme.colors.accent }]}
+            style={[styles.closeButton, { backgroundColor: theme.colors.accent }]}
             accessibilityLabel="Close Modal"
             >
-            <FontAwesome6 name="xmark" size={18} color={activeTheme.colors.text.primary} solid />
+            <FontAwesome6 name="xmark" size={18} color={theme.colors.text.primary} solid />
           </TouchableOpacity>
         </View>
 
         {/* Location Info */}
         <View style={styles.textContainer}>
-          <Text style={[styles.locationText, { color: activeTheme.colors.text.primary }]}>
+          <Text style={[styles.locationText, { color: theme.colors.text.primary }]}>
             {location?.building}
           </Text>
-          <Text style={[styles.distanceText, { color: activeTheme.colors.text.secondary }]}>
+          <Text style={[styles.distanceText, { color: theme.colors.text.secondary }]}>
             {location?.address}, Singapore {location?.postal}
           </Text>
         </View>
@@ -85,10 +83,10 @@ const BidetModal = ({ isVisible, location, onClose }: BidetModalProps) => {
         {/* Open in Maps Button */}
         <TouchableOpacity
           onPress={openMaps}
-          style={[styles.googleMapsButton, { backgroundColor: activeTheme.colors.accent }]}
+          style={[styles.googleMapsButton, { backgroundColor: theme.colors.accent }]}
           accessibilityLabel="Open Location in Google Maps"
         >
-          <Text style={[styles.googleMapsButtonText, { color: activeTheme.colors.text.primary }]}>
+          <Text style={[styles.googleMapsButtonText, { color: theme.colors.text.primary }]}>
             Open in Maps
           </Text>
         </TouchableOpacity>

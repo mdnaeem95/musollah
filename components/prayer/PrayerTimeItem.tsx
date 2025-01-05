@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TextStyle, Dimensions } from 'react-native'
 import React from 'react'
 import { useSelector } from 'react-redux';
-import { RootState } from '../redux/store/store';
+import { RootState } from '../../redux/store/store';
 import { format, parse } from 'date-fns';
 
 const screenWidth = Dimensions.get('window').width;

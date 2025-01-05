@@ -1,7 +1,7 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Text, View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Surah } from '../utils/types';
-import { ThemeContext } from '../context/ThemeContext';
+import { Surah } from '../../utils/types';
+import { useTheme } from '../../context/ThemeContext';
 
 interface SurahProps {
   surah: Surah;
@@ -9,10 +9,8 @@ interface SurahProps {
 }
 
 const SurahItem = ({ surah, onPress }: SurahProps) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
-
-  const styles = createStyles(activeTheme);
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   return (
     <TouchableOpacity onPress={() => onPress(surah)}>

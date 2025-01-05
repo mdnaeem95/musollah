@@ -19,18 +19,18 @@ Notifications.setNotificationHandler({
 })
 
 const AppLayout = () => (
-  <ActionSheetProvider>
-    <ThemeProvider>
-      <NotificationProvider>
-        <Provider store={store}>
-          <PersistGate persistor={persistor} loading={<LoadingScreen message='Setting up the app...' />}>
-            <RootLayout />
-            <Toast config={toastConfig} />
-          </PersistGate>
-        </Provider>
-      </NotificationProvider>
-    </ThemeProvider>
-  </ActionSheetProvider>
+  <Provider store={store}>
+    <PersistGate persistor={persistor} loading={<LoadingScreen message='Setting up the app...' />}>
+      <ActionSheetProvider>
+        <ThemeProvider>
+          <NotificationProvider>
+                <RootLayout />
+                <Toast config={toastConfig} />
+          </NotificationProvider>
+        </ThemeProvider>
+      </ActionSheetProvider>
+    </PersistGate>
+  </Provider>
 );
 
 export default AppLayout;

@@ -1,14 +1,14 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput } from 'react-native';
 import { Divider } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../../redux/store/store';
-import CourseCard from '../../../../components/CourseCard';
+import CourseCard from '../../../../components/education/CourseCard';
 import { CourseData } from '../../../../utils/types';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { CheckBox } from '@rneui/base';
 import { FlashList } from '@shopify/flash-list';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const categories = [
   { title: 'All Courses' },
@@ -20,8 +20,7 @@ const categories = [
 ];
 
 const Courses = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const { courses } = useSelector((state: RootState) => state.dashboard);
   const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
@@ -81,21 +80,21 @@ const Courses = () => {
   });
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
       <View style={styles.headerContainer}>
         {isSearchExpanded && (
           <View
             style={[
               styles.searchBarContainer,
-              { backgroundColor: activeTheme.colors.secondary },
+              { backgroundColor: theme.colors.secondary },
             ]}
           >
             <TextInput
               placeholder="Search Course"
-              placeholderTextColor={activeTheme.colors.text.secondary}
+              placeholderTextColor={theme.colors.text.secondary}
               style={[
                 styles.searchInput,
-                { color: activeTheme.colors.text.primary },
+                { color: theme.colors.text.primary },
               ]}
               value={searchQuery}
               onChangeText={handleSearchChange}
@@ -106,19 +105,19 @@ const Courses = () => {
           <FontAwesome6
             name={isSearchExpanded ? 'xmark' : 'magnifying-glass'}
             size={24}
-            color={activeTheme.colors.text.primary}
+            color={theme.colors.text.primary}
           />
         </TouchableOpacity>
       </View>
 
       <TouchableOpacity
-        style={[styles.filterButton, { backgroundColor: activeTheme.colors.accent }]}
+        style={[styles.filterButton, { backgroundColor: theme.colors.accent }]}
         onPress={toggleFilterModal}
       >
         <Text
           style={[
             styles.filterButtonText,
-            { color: activeTheme.colors.text.primary },
+            { color: theme.colors.text.primary },
           ]}
         >
           Filter Courses
@@ -129,23 +128,23 @@ const Courses = () => {
         <View
           style={[
             styles.modalContainer,
-            { backgroundColor: activeTheme.colors.modalBackground },
+            { backgroundColor: theme.colors.modalBackground },
           ]}
         >
           <View
             style={[
               styles.modalContent,
-              { backgroundColor: activeTheme.colors.secondary },
+              { backgroundColor: theme.colors.secondary },
             ]}
           >
             <View style={styles.modalHeaderContainer}>
               <TouchableOpacity onPress={toggleFilterModal}>
-                <FontAwesome6 name="xmark" size={20} color={activeTheme.colors.text.primary} />
+                <FontAwesome6 name="xmark" size={20} color={theme.colors.text.primary} />
               </TouchableOpacity>
               <Text
                 style={[
                   styles.modalHeader,
-                  { color: activeTheme.colors.text.primary },
+                  { color: theme.colors.text.primary },
                 ]}
               >
                 Filter Courses
@@ -153,27 +152,27 @@ const Courses = () => {
               <View style={{ width: 20, height: 20 }} />
             </View>
 
-            <Text style={[styles.filterLabel, { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.filterLabel, { color: theme.colors.text.primary }]}>
               Course Type
             </Text>
             <View style={styles.optionContainer}>
               <CheckBox
                 title="Online"
                 checked={selectedTypes.Online}
-                containerStyle={{ backgroundColor: activeTheme.colors.secondary }}
-                textStyle={{ color: activeTheme.colors.text.primary }}
+                containerStyle={{ backgroundColor: theme.colors.secondary }}
+                textStyle={{ color: theme.colors.text.primary }}
                 onPress={() => handleTypeSelection('Online')}
               />
               <CheckBox
                 title="Physical"
                 checked={selectedTypes.Physical}
-                containerStyle={{ backgroundColor: activeTheme.colors.secondary }}
-                textStyle={{ color: activeTheme.colors.text.primary }}
+                containerStyle={{ backgroundColor: theme.colors.secondary }}
+                textStyle={{ color: theme.colors.text.primary }}
                 onPress={() => handleTypeSelection('Physical')}
               />
             </View>
 
-            <Text style={[styles.filterLabel, { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.filterLabel, { color: theme.colors.text.primary }]}>
               Category
             </Text>
             <View style={styles.optionContainer}>
@@ -183,8 +182,8 @@ const Courses = () => {
                   title={category.title}
                   //@ts-ignore
                   checked={selectedCategories[category.title]}
-                  containerStyle={{ backgroundColor: activeTheme.colors.secondary }}
-                  textStyle={{ color: activeTheme.colors.text.primary }}
+                  containerStyle={{ backgroundColor: theme.colors.secondary }}
+                  textStyle={{ color: theme.colors.text.primary }}
                   onPress={() => handleCategorySelection(category.title)}
                 />
               ))}
@@ -193,14 +192,14 @@ const Courses = () => {
             <TouchableOpacity
               style={[
                 styles.applyButton,
-                { backgroundColor: activeTheme.colors.accent },
+                { backgroundColor: theme.colors.accent },
               ]}
               onPress={() => setIsFilterModalVisible(false)}
             >
               <Text
                 style={[
                   styles.applyButtonText,
-                  { color: activeTheme.colors.text.primary },
+                  { color: theme.colors.text.primary },
                 ]}
               >
                 Apply Filters

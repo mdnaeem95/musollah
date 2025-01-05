@@ -1,18 +1,17 @@
 import { ActivityIndicator, View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { FontAwesome6 } from '@expo/vector-icons';
-import DoaItem from '../../../../components/DoaItem';
+import DoaItem from '../../../../components/quran/DoaItem';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { Doa } from '../../../../utils/types';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 import { FlashList } from '@shopify/flash-list';
 import { fetchDailyDoasData } from '../../../../redux/slices/doasSlice';
 
 const Doas = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const { doas, loading } = useSelector((state: RootState) => state.doas);
   const router = useRouter();
@@ -64,10 +63,10 @@ const Doas = () => {
   };
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={activeTheme.colors.text.primary} />
+          <ActivityIndicator size="large" color={theme.colors.text.primary} />
         </View>
       ) : (
         <>
@@ -76,15 +75,15 @@ const Doas = () => {
               <View
                 style={[
                   styles.searchBarContainer,
-                  { backgroundColor: activeTheme.colors.secondary },
+                  { backgroundColor: theme.colors.secondary },
                 ]}
               >
                 <TextInput
                   placeholder="Search Dua"
-                  placeholderTextColor={activeTheme.colors.text.muted}
+                  placeholderTextColor={theme.colors.text.muted}
                   style={[
                     styles.searchInput,
-                    { color: activeTheme.colors.text.primary },
+                    { color: theme.colors.text.primary },
                   ]}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
@@ -98,7 +97,7 @@ const Doas = () => {
               <FontAwesome6
                 name={isSearchExpanded ? 'xmark' : 'magnifying-glass'}
                 size={24}
-                color={activeTheme.colors.text.primary}
+                color={theme.colors.text.primary}
               />
             </TouchableOpacity>
 
@@ -110,7 +109,7 @@ const Doas = () => {
                 name="bookmark"
                 size={24}
                 solid
-                color={activeTheme.colors.text.primary}
+                color={theme.colors.text.primary}
               />
             </TouchableOpacity>
           </View>

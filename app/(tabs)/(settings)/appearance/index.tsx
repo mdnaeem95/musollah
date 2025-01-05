@@ -1,24 +1,33 @@
-import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableWithoutFeedback, Animated, Easing, Switch } from 'react-native';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  Animated,
+  Easing,
+  Switch,
+} from 'react-native';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const Appearance = () => {
-  const { theme, currentTheme, switchTheme, isDarkMode, toggleDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light; // Access the correct theme dynamically
-  const themes = ['green', 'blue', 'purple'];
+ const { theme, currentTheme, switchTheme, isDarkMode, toggleDarkMode } = useTheme();
+  const themes = ['green', 'blue', 'purple']; // Available themes
 
   const [animatedValues, setAnimatedValues] = useState(() =>
     themes.reduce((acc, themeName) => {
+      //@ts-ignore
       acc[themeName] = new Animated.Value(currentTheme === themeName ? 1 : 0);
       return acc;
-    }, {} as Record<string, Animated.Value>)
+    }, {})
   );
 
-  const handleThemeChange = (themeName: string) => {
+  const handleThemeChange = (themeName: any) => {
     Object.keys(animatedValues).forEach((key) => {
+      //@ts-ignore
       Animated.timing(animatedValues[key], {
         toValue: key === themeName ? 1 : 0,
-        duration: 500,
+        duration: 300, // Smooth transition
         easing: Easing.inOut(Easing.ease),
         useNativeDriver: false,
       }).start();
@@ -26,7 +35,7 @@ const Appearance = () => {
     switchTheme(themeName);
   };
 
-  const styles = createStyles(activeTheme);
+  const styles = createStyles(theme);
 
   return (
     <View style={styles.mainContainer}>
@@ -35,10 +44,14 @@ const Appearance = () => {
 
         {/* Theme Selection */}
         <View style={styles.checkboxContainer}>
-          {themes.map((themeName) => {
+          {themes.map((themeName: any) => {
+            //@ts-ignore
             const animatedColor = animatedValues[themeName].interpolate({
               inputRange: [0, 1],
-              outputRange: [activeTheme.colors.text.muted, activeTheme.colors.accent],
+              outputRange: [
+                theme.colors.text.muted,
+                theme.colors.accent,
+              ],
             });
 
             return (
@@ -53,7 +66,7 @@ const Appearance = () => {
                       styles.checkbox,
                       {
                         backgroundColor: animatedColor,
-                        borderColor: activeTheme.colors.text.primary,
+                        borderColor: theme.colors.text.primary,
                       },
                     ]}
                   />
@@ -70,10 +83,14 @@ const Appearance = () => {
             value={isDarkMode}
             onValueChange={toggleDarkMode}
             trackColor={{
-              false: activeTheme.colors.text.muted,
-              true: activeTheme.colors.accent,
+              false: theme.colors.text.muted,
+              true: theme.colors.accent,
             }}
-            thumbColor={isDarkMode ? activeTheme.colors.primary : activeTheme.colors.secondary}
+            thumbColor={
+              isDarkMode
+                ? theme.colors.primary
+                : theme.colors.secondary
+            }
           />
         </View>
       </View>

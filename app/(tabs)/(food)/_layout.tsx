@@ -1,39 +1,37 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { StyleSheet, TouchableOpacity } from 'react-native';
-import { ThemeContext } from '../../../context/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 
 export const CircleButton = ({ onPress }: any) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={[styles.circleButton, { backgroundColor: activeTheme.colors.secondary }]}
+      style={[styles.circleButton, { backgroundColor: theme.colors.secondary }]}
     >
       <FontAwesome6
         name="arrow-left"
         size={24}
-        color={activeTheme.colors.text.primary}
+        color={theme.colors.text.primary}
       />
     </TouchableOpacity>
   );
 };
 
 const FoodLayout = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
   const router = useRouter();
 
   const commonHeaderStyles = {
     headerTitleStyle: {
       fontFamily: 'Outfit_700Bold',
       fontSize: 20,
-      color: activeTheme.colors.text.primary,
+      color: theme.colors.text.primary,
     },
     headerStyle: {
-      backgroundColor: activeTheme.colors.primary,
+      backgroundColor: theme.colors.primary,
     },
   };
 

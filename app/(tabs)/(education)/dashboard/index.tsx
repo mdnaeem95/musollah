@@ -15,14 +15,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { fetchCoursesAndTeachers, fetchDashboardData } from '../../../../redux/slices/dashboardSlice';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
-import { ThemeContext } from '../../../../context/ThemeContext';
-import CourseCardShort from '../../../../components/CourseCardShort';
+import { useTheme } from '../../../../context/ThemeContext';
+import CourseCardShort from '../../../../components/education/CourseCardShort';
 
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
 const Dashboard = () => {
-  const { theme, isDarkMode } = React.useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const auth = getAuth();
   const router = useRouter();
@@ -42,16 +41,16 @@ const Dashboard = () => {
 
   const MemoizedTeacherCard = memo(({ teacher }: { teacher: any }) => (
     <TouchableOpacity
-      style={[styles.teacherCard, { backgroundColor: activeTheme.colors.secondary }]}
+      style={[styles.teacherCard, { backgroundColor: theme.colors.secondary }]}
       onPress={() => router.push(`/teachers/${teacher.id}`)}
     >
       <View style={styles.teacherContentContainer}>
         <Image source={{ uri: teacher.imagePath }} style={styles.teacherImage} />
         <View style={styles.textContentContainer}>
-          <Text style={[styles.courseHeaderText, { color: activeTheme.colors.text.primary }]}>
+          <Text style={[styles.courseHeaderText, { color: theme.colors.text.primary }]}>
             {teacher.name}
           </Text>
-          <Text style={[styles.courseCategoryText, { color: activeTheme.colors.text.muted }]}>
+          <Text style={[styles.courseCategoryText, { color: theme.colors.text.muted }]}>
             {teacher.expertise}
           </Text>
         </View>
@@ -102,8 +101,8 @@ const Dashboard = () => {
 
   if (loading && !refreshing) {
     return (
-      <View style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}>
-        <ActivityIndicator color={activeTheme.colors.text.primary} />
+      <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
+        <ActivityIndicator color={theme.colors.text.primary} />
       </View>
     );
   }
@@ -111,14 +110,14 @@ const Dashboard = () => {
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      style={[styles.mainContainer, { backgroundColor: activeTheme.colors.primary }]}
+      style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}
       contentContainerStyle={{ paddingBottom: 250 }}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
     >
       <View style={styles.headerContainer}>
-        <Text style={[styles.greetingText, { color: activeTheme.colors.text.primary }]}>
+        <Text style={[styles.greetingText, { color: theme.colors.text.primary }]}>
           Salam, {user?.name}
         </Text>
       </View>
@@ -127,7 +126,7 @@ const Dashboard = () => {
         {inProgressCourses.length > 0 && (
           <View>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={[styles.progressHeader, { color: activeTheme.colors.text.primary }]}>
+              <Text style={[styles.progressHeader, { color: theme.colors.text.primary }]}>
                 In Progress
               </Text>
             </View>
@@ -148,11 +147,11 @@ const Dashboard = () => {
                     key={index}
                     style={[
                       styles.progressCard,
-                      { backgroundColor: activeTheme.colors.secondary },
+                      { backgroundColor: theme.colors.secondary },
                     ]}
                     onPress={() => router.push(`/courses/${course.courseId}`)}
                   >
-                    <Text style={[styles.progressCourseTitle, { color: activeTheme.colors.text.primary }]}>
+                    <Text style={[styles.progressCourseTitle, { color: theme.colors.text.primary }]}>
                       {courseData.title}
                     </Text>
 
@@ -160,9 +159,9 @@ const Dashboard = () => {
                       <Progress.Bar
                         progress={progress}
                         height={10}
-                        color={activeTheme.colors.accent}
+                        color={theme.colors.accent}
                       />
-                      <Text style={[styles.progressCourseTitle, { color: activeTheme.colors.text.primary }]}>
+                      <Text style={[styles.progressCourseTitle, { color: theme.colors.text.primary }]}>
                         {Math.round(progress * 100)}%
                       </Text>
                     </View>
@@ -174,7 +173,7 @@ const Dashboard = () => {
         )}
 
         <View>
-          <Text style={[styles.coursesHeader, { color: activeTheme.colors.text.primary }]}>
+          <Text style={[styles.coursesHeader, { color: theme.colors.text.primary }]}>
             Courses
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -185,7 +184,7 @@ const Dashboard = () => {
         </View>
 
         <View>
-          <Text style={[styles.coursesHeader, { color: activeTheme.colors.text.primary, marginBottom: 10 }]}>
+          <Text style={[styles.coursesHeader, { color: theme.colors.text.primary, marginBottom: 10 }]}>
             Teachers
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>

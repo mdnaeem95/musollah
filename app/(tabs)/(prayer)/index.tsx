@@ -4,14 +4,14 @@ import Clock from 'react-live-clock';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
 
-import ExpandableButton from '../../../components/ExpandableButton';
-import PrayerLocationModal from '../../../components/PrayerLocationModal';
+import ExpandableButton from '../../../components/prayer/ExpandableButton';
 
 import { RootState } from '../../../redux/store/store';
 import { getFormattedDate, scaleSize } from '../../../utils';
 import { usePrayerTimes } from '../../../hooks/usePrayerTimes'
-import CurrentPrayerInfo from '../../../components/CurrentPrayerInfo';
-import PrayerTimesList from '../../../components/PrayerTimesList';
+import CurrentPrayerInfo from '../../../components/prayer/CurrentPrayerInfo';
+import PrayerTimesList from '../../../components/prayer/PrayerTimesList';
+import PrayerLocationModal from '../../../components/prayer/PrayerLocationModal';
 
 const PrayerTab = () => {
   const router = useRouter();

@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Dropdown } from 'react-native-element-dropdown';
 import * as Progress from 'react-native-progress';
-import { ThemeContext } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const DAILY_GOAL_KEY = 'dailyGoal';
 const DAILY_PROGRESS_KEY = 'dailyProgress';
@@ -15,8 +15,7 @@ const goalTypes = [
 ];
 
 const DailyGoalTracker = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const [dailyGoal, setDailyGoal] = useState<number>(5);
   const [progress, setProgress] = useState<number>(0);
@@ -76,7 +75,7 @@ const DailyGoalTracker = () => {
     await AsyncStorage.setItem(DAILY_PROGRESS_KEY, '0');
   };
 
-  const styles = createStyles(activeTheme);
+  const styles = createStyles(theme);
 
   return (
     <View style={styles.goalContainer}>
@@ -114,8 +113,8 @@ const DailyGoalTracker = () => {
         <Progress.Bar
           progress={goalType === 'Ayahs' ? progress / (dailyGoal || 1) : surahProgress / (dailyGoal || 1)}
           height={10}
-          color={activeTheme.colors.accent}
-          unfilledColor={activeTheme.colors.primary}
+          color={theme.colors.accent}
+          unfilledColor={theme.colors.primary}
           borderWidth={0}
           style={styles.progressBar}
         />

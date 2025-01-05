@@ -1,6 +1,6 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { ThemeContext } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface ThemedButtonProps {
   text: string;
@@ -17,9 +17,8 @@ const ThemedButton: React.FC<ThemedButtonProps> = ({
   textStyle,
   disabled = false,
 }) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
-  const styles = createStyles(activeTheme);
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   return (
     <TouchableOpacity

@@ -4,13 +4,38 @@ import AsarBackground from "./asarBackground.png"
 import MaghribBackground from "./maghribBackground.png"
 import IsyakBackground from "./isyaBackground.png"
 
+import SubuhBackgroundPurple from "./subuhBackgroundPurple.png"
+import ZohorBackgroundPurple from "./zuhurBackgroundPurple.png"
+import AsarBackgroundPurple from "./asarBackgroundPurple.png"
+import MaghribBackgroundPurple from "./maghribBackgroundPurple.png"
+import IsyakBackgroundPurple from "./isyaBackgroundPurple.png"
+
+import SubuhBackgroundBlue from "./subuhBackgroundBlue.png"
+import ZohorBackgroundBlue from "./zuhurBackgroundBlue.png"
+import AsarBackgroundBlue from "./asarBackgroundBlue.png"
+import MaghribBackgroundBlue from "./maghribBackgroundBlue.png"
+import IsyakBackgroundBlue from "./isyaBackgroundBlue.png"
+
+
 const prayerBackgrounds = {
     Subuh: SubuhBackground,
     Syuruk: SubuhBackground,
     Zohor: ZohorBackground,
     Asar: AsarBackground,
     Maghrib: MaghribBackground,
-    Isyak: IsyakBackground
+    Isyak: IsyakBackground,
+    SubuhPurple: SubuhBackgroundPurple,
+    SyurukPurple: SubuhBackgroundPurple,
+    ZohorPurple: ZohorBackgroundPurple,
+    AsarPurple: AsarBackgroundPurple,
+    MaghribPurple: MaghribBackgroundPurple,
+    IsyakPurple: IsyakBackgroundPurple,
+    SubuhBlue: SubuhBackgroundBlue,
+    SyurukBlue: SubuhBackgroundBlue,
+    ZohorBlue: ZohorBackgroundBlue,
+    AsarBlue: AsarBackgroundBlue,
+    MaghribBlue: MaghribBackgroundBlue,
+    IsyakBlue: IsyakBackgroundBlue,
 }
 
 export default prayerBackgrounds

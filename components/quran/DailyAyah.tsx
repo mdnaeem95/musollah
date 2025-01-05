@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { RootState } from '../../redux/store/store';
 import { getRandomAyahByMood } from '../../utils';
 import { Dropdown } from 'react-native-element-dropdown';
-import { ThemeContext } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const MOOD_KEY = 'selectedMood';
 const AYAH_KEY = 'dailyAyah';
@@ -24,9 +24,8 @@ const moods = [
 ];
 
 const DailyAyah = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
-  const styles = createStyles(activeTheme);
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const [ayah, setAyah] = useState<any>({
     arabicText: '',

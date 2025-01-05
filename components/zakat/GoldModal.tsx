@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   View,
@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { ThemeContext } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface GoldModalProps {
   isVisible: boolean;
@@ -29,8 +29,8 @@ const GoldModal: React.FC<GoldModalProps> = ({
   currentGoldPrice,
   formattedTimestamp,
 }) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const [usedGold, setUsedGold] = useState<string>(initialUsedGold);
   const [unusedGold, setUnusedGold] = useState<string>(initialUnusedGold);
@@ -47,8 +47,6 @@ const GoldModal: React.FC<GoldModalProps> = ({
     return ((currentGoldPrice * used * 0.0025) + (currentGoldPrice * unused * 0.0025)).toFixed(2);
   };
 
-  const styles = createStyles(activeTheme);
-
   return (
     <Modal
       visible={isVisible}
@@ -64,7 +62,7 @@ const GoldModal: React.FC<GoldModalProps> = ({
               onPress={() => setIsTooltipVisible(!isTooltipVisible)}
               style={styles.tooltipIcon}
             >
-              <FontAwesome6 name="circle-info" size={20} color={activeTheme.colors.text.muted} />
+              <FontAwesome6 name="circle-info" size={20} color={theme.colors.text.muted} />
             </TouchableOpacity>
           </View>
 
@@ -81,7 +79,7 @@ const GoldModal: React.FC<GoldModalProps> = ({
             style={styles.input}
             keyboardType="numeric"
             placeholder="0g"
-            placeholderTextColor={activeTheme.colors.text.muted}
+            placeholderTextColor={theme.colors.text.muted}
             value={usedGold}
             onChangeText={setUsedGold}
           />
@@ -93,7 +91,7 @@ const GoldModal: React.FC<GoldModalProps> = ({
             style={styles.input}
             keyboardType="numeric"
             placeholder="0g"
-            placeholderTextColor={activeTheme.colors.text.muted}
+            placeholderTextColor={theme.colors.text.muted}
             value={unusedGold}
             onChangeText={setUnusedGold}
           />

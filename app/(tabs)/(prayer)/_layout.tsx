@@ -1,131 +1,59 @@
-import { FontAwesome6 } from "@expo/vector-icons";
-import { Stack, useRouter } from "expo-router";
-import { TouchableOpacity } from "react-native";
-import { useContext } from "react";
-import { ThemeContext } from "../../../context/ThemeContext";
+import React from 'react';
+import { Stack, useRouter } from 'expo-router';
+import { FontAwesome6 } from '@expo/vector-icons';
+import { useTheme } from '../../../context/ThemeContext';
+import { TouchableOpacity } from 'react-native';
 
 const PrayerLayout = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
-
+  const { theme } = useTheme();
   const router = useRouter();
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = date.toLocaleString('default', { month: 'long' }); // Convert month to full name, e.g., 'October'
-  const formattedMonth = `${month} ${year}`;
 
   return (
-    <Stack screenOptions={{
-      headerShown: false
-    }}>
-      <Stack.Screen 
-        name="index"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen 
+    <Stack
+      screenOptions={({ route }) => ({
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: theme.colors.primary,
+        },
+        headerTintColor: theme.colors.text.primary,
+        headerTitleStyle: {
+          fontFamily: 'Outfit_700Bold',
+          fontSize: 20,
+          color: theme.colors.text.primary,
+        },
+        headerLeft: () => (
+          <TouchableOpacity style={{ padding: 10 }} onPress={() => router.back()}>
+            <FontAwesome6 name="arrow-left" size={24} color={theme.colors.text.primary} />
+          </TouchableOpacity>
+        ),
+      })}
+    >
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen
         name="qiblat/index"
         options={{
-          headerShown: true,
-          headerTitle: 'Qiblat',
-          headerStyle: {
-            backgroundColor: activeTheme.colors.primary,
-          },
-          headerTintColor: activeTheme.colors.text.primary,
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color: activeTheme.colors.text.primary,
-          },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color={activeTheme.colors.text.primary}
-                style={{ padding: 10 }}
-              />
-            </TouchableOpacity>
-          )
+          title: 'Qiblat',
         }}
       />
-      <Stack.Screen 
+      <Stack.Screen
         name="doa/index"
         options={{
-          headerShown: true,
-          headerTitle: 'Post-Prayer Doa',
-          headerStyle: {
-            backgroundColor: activeTheme.colors.primary,
-          },
-          headerTintColor: activeTheme.colors.text.primary,
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color: activeTheme.colors.text.primary,
-          },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color={activeTheme.colors.text.primary}
-                style={{ padding: 10 }}
-              />
-            </TouchableOpacity>
-          )
+          title: 'Post-Prayer Doa',
         }}
       />
-      <Stack.Screen 
+      <Stack.Screen
         name="monthlyPrayerTimes/index"
         options={{
-          headerShown: true,
-          headerTitle: formattedMonth,
-          headerStyle: {
-            backgroundColor: activeTheme.colors.primary,
-          },
-          headerTintColor: activeTheme.colors.text.primary,
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color: activeTheme.colors.text.primary,
-          },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color={activeTheme.colors.text.primary}
-                style={{ padding: 10 }}
-              />
-            </TouchableOpacity>
-          )
+          title: new Date().toLocaleString('default', {
+            month: 'long',
+            year: 'numeric',
+          }),
         }}
       />
-      <Stack.Screen 
+      <Stack.Screen
         name="prayerDashboard/index"
         options={{
-          headerShown: true,
-          headerTitle: 'Prayer Dashboard',
-          headerStyle: {
-            backgroundColor: activeTheme.colors.primary,
-          },
-          headerTintColor: activeTheme.colors.text.primary,
-          headerTitleStyle: {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 20,
-            color: activeTheme.colors.text.primary,
-          },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color={activeTheme.colors.text.primary}
-                style={{ padding: 10 }}
-              />
-            </TouchableOpacity>
-          )
+          title: 'Prayer Dashboard',
         }}
       />
     </Stack>

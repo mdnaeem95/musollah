@@ -1,11 +1,10 @@
 import { FontAwesome6 } from '@expo/vector-icons';
-import React, { useContext } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { ThemeContext } from '../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const OperatingHours = ({ hoursString }: { hoursString: string }) => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme()
 
   const parsedHours = parseOperatingHours(hoursString);
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
@@ -40,13 +39,13 @@ const OperatingHours = ({ hoursString }: { hoursString: string }) => {
             key={index}
             style={[
               styles.entry,
-              isToday && { backgroundColor: activeTheme.colors.accent, borderRadius: activeTheme.borderRadius.medium, padding: activeTheme.spacing.small },
+              isToday && { backgroundColor: theme.colors.accent, borderRadius: theme.borderRadius.medium, padding: theme.spacing.small },
             ]}
           >
-            <Text style={[styles.day, isToday && { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.day, isToday && { color: theme.colors.text.primary }]}>
               {entry.day}
             </Text>
-            <Text style={[styles.hours, isToday && { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.hours, isToday && { color: theme.colors.text.primary }]}>
               {entry.hours}
             </Text>
           </View>
@@ -58,13 +57,13 @@ const OperatingHours = ({ hoursString }: { hoursString: string }) => {
           <FontAwesome6 
             name={shopIsOpen ? 'check-circle' : 'times-circle'} 
             size={16}
-            color={shopIsOpen ? activeTheme.colors.text.success : activeTheme.colors.text.error}
+            color={shopIsOpen ? theme.colors.text.success : theme.colors.text.error}
             style={styles.statusIcon}
           />
           <Text
             style={[
               styles.status,
-              shopIsOpen ? { color: activeTheme.colors.text.success } : { color: activeTheme.colors.text.error },
+              shopIsOpen ? { color: theme.colors.text.success } : { color: theme.colors.text.error },
             ]}
           >
             {shopIsOpen ? 'Open Now' : 'Closed Now'}

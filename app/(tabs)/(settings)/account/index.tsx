@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Alert, StyleSheet, TextInput } from 'react-native';
-import Modal from 'react-native-modal';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { deleteUser, getAuth, signOut, updateProfile } from '@react-native-firebase/auth';
 import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from '@react-native-firebase/firestore';
 import { persistor } from '../../../../redux/store/store';
 import { useRouter, useSegments } from 'expo-router';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
+import Modal from 'react-native-modal';
 import ThemedButton from '../../../../components/ThemedButton'; // Reusable button component
 import SignInModal from '../../../../components/SignInModal';
 
@@ -15,13 +15,13 @@ const AccountSettings = () => {
   const firestore = getFirestore();
   const router = useRouter();
   const segments = useSegments();
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+  console.log(theme);
 
   const [currentUser, setCurrentUser] = useState(auth.currentUser);
   const [name, setName] = useState<string>('');
   const [coursesCompleted, setCoursesCompleted] = useState<number>(0);
-
   const [isModalVisible, setModalVisible] = useState<boolean>(false);
   const [isSignUpModalVisible, setIsSignUpModalVisible] = useState<boolean>(false);
   const [newName, setNewName] = useState<string>('');
@@ -104,15 +104,13 @@ const AccountSettings = () => {
     );
   };
 
-  const styles = createStyles(activeTheme);
-
   return (
     <View style={styles.container}>
       <View style={styles.form}>
         {/* Name Field */}
         <View style={styles.settingsField}>
           <View style={styles.settingsLeftField}>
-            <FontAwesome6 name="user" size={20} color={activeTheme.colors.text.primary} />
+            <FontAwesome6 name="user" size={20} color={theme.colors.text.primary} />
             <Text style={styles.settingsLabel}>Name</Text>
           </View>
           <View style={styles.settingsRightField}>
@@ -120,7 +118,7 @@ const AccountSettings = () => {
             <FontAwesome6
               name="edit"
               size={20}
-              color={activeTheme.colors.text.primary}
+              color={theme.colors.text.primary}
               onPress={() => setModalVisible(true)}
             />
           </View>
@@ -132,7 +130,7 @@ const AccountSettings = () => {
             <FontAwesome6
               name="graduation-cap"
               size={20}
-              color={activeTheme.colors.text.primary}
+              color={theme.colors.text.primary}
             />
             <Text style={styles.settingsLabel}>Courses Completed</Text>
           </View>
@@ -144,13 +142,13 @@ const AccountSettings = () => {
           <>
             <ThemedButton text="Sign Out" 
               onPress={handleSignOut} 
-              style={{ backgroundColor: activeTheme.colors.text.error }}
+              style={{ backgroundColor: theme.colors.text.error }}
               textStyle={{ color: '#FFFFFF' }} 
             />
             <ThemedButton 
               text="Delete Account" 
               onPress={handleDeleteAccount} 
-              style={{ backgroundColor: activeTheme.colors.text.error }}
+              style={{ backgroundColor: theme.colors.text.error }}
               textStyle={{ color: '#FFFFFF' }} 
             />
           </>
@@ -165,7 +163,7 @@ const AccountSettings = () => {
           <FontAwesome6
             name="xmark"
             size={20}
-            color={activeTheme.colors.text.primary}
+            color={theme.colors.text.primary}
             onPress={() => setModalVisible(false)}
             style={styles.closeButton}
           />
@@ -175,7 +173,7 @@ const AccountSettings = () => {
             value={newName}
             onChangeText={setNewName}
             placeholder="Enter new name"
-            placeholderTextColor={activeTheme.colors.text.muted}
+            placeholderTextColor={theme.colors.text.muted}
           />
           <ThemedButton text="Save" onPress={handleSaveName} />
         </View>
@@ -252,6 +250,6 @@ const createStyles = (theme: any) =>
       borderColor: theme.colors.text.muted,
       color: theme.colors.text.secondary,
     },
-  });
+});
 
 export default AccountSettings;

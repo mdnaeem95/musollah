@@ -1,4 +1,4 @@
-import { View, TouchableOpacity, Platform, Image } from 'react-native'
+import { View, TouchableOpacity, Platform } from 'react-native'
 import React from 'react'
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,9 +10,9 @@ export interface Region {
     longitudeDelta: number,
 }
 
-import BidetMarker from '../assets/bidetMarker.png';
-import MusollahMarker from '../assets/musollahMarker.png';
-import MosqueMarker from '../assets/mosqueMarker.png';
+import BidetMarker from '../../assets/bidetMarker.png';
+import MusollahMarker from '../../assets/musollahMarker.png';
+import MosqueMarker from '../../assets/mosqueMarker.png';
 
 interface MapProps {
     region: Region | undefined,

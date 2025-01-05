@@ -1,17 +1,17 @@
 import { FlatList, ActivityIndicator, View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { FontAwesome6 } from '@expo/vector-icons';
-import SurahItem from '../../../../components/SurahItem';
+import SurahItem from '../../../../components/quran/SurahItem';
 import { RootState } from '../../../../redux/store/store';
 import { Surah } from '../../../../utils/types';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 import { FlashList } from '@shopify/flash-list';
 
 const Surahs = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const { surahs, isLoading } = useSelector((state: RootState) => state.quran);
   const router = useRouter();
@@ -52,8 +52,6 @@ const Surahs = () => {
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
-  const styles = createStyles(activeTheme);
-
   return (
     <View style={styles.mainContainer}>
       {/* Header with Search Bar */}
@@ -62,7 +60,7 @@ const Surahs = () => {
           <View style={styles.searchBarContainer}>
             <TextInput
               placeholder="Search Surah"
-              placeholderTextColor={activeTheme.colors.text.muted}
+              placeholderTextColor={theme.colors.text.muted}
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -74,7 +72,7 @@ const Surahs = () => {
           <FontAwesome6 
             name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} 
             size={24} 
-            color={activeTheme.colors.text.primary}
+            color={theme.colors.text.primary}
           />
         </TouchableOpacity>
 
@@ -83,14 +81,14 @@ const Surahs = () => {
             name="bookmark" 
             size={24} 
             solid 
-            color={activeTheme.colors.text.primary} 
+            color={theme.colors.text.primary} 
           />
         </TouchableOpacity>
       </View>
 
       {/* Surah List or Loading Indicator */}
       {isLoading ? (
-        <ActivityIndicator style={styles.loadingIndicator} color={activeTheme.colors.text.primary} size="large" />
+        <ActivityIndicator style={styles.loadingIndicator} color={theme.colors.text.primary} size="large" />
       ) : (
         <FlashList
           estimatedItemSize={75}

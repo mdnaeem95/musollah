@@ -11,14 +11,14 @@ import SavingsModal from '../../../../../components/zakat/SavingsModal';
 import EligibilityModal from '../../../../../components/zakat/EligibilityModal';
 import ZakatTable from '../../../../../components/zakat/ZakatTable';
 import ThemedButton from '../../../../../components/ThemedButton';
-import { ThemeContext } from '../../../../../context/ThemeContext';
+import { useTheme } from '../../../../../context/ThemeContext';
 
 const nisabAmountNotWearing = 86;  // 86 grams for gold not meant for wearing
 const urufAmountWearing = 860;    // 860 grams for gold meant for wearing
 
 const ZakatHarta = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const [savings, setSavings] = useState<string>('');
   const [savingsInterest, setSavingsInterest] = useState<string>('0');
@@ -53,8 +53,6 @@ const ZakatHarta = () => {
     goldNotWearingHaul: false,
     goldWearingHaul: false,
   });
-
-  const styles = createStyles(activeTheme);
 
   const fetchGoldPrice = async () => {
     try {
@@ -92,9 +90,9 @@ const ZakatHarta = () => {
 
   const renderEligibilityIcon = (isEligible: boolean) => {
     return isEligible ? (
-      <FontAwesome6 name="check" size={24} color={activeTheme.colors.text.success} />
+      <FontAwesome6 name="check" size={24} color={theme.colors.text.success} />
     ) : (
-      <FontAwesome6 name="xmark" size={24} color={activeTheme.colors.text.error} />
+      <FontAwesome6 name="xmark" size={24} color={theme.colors.text.error} />
     );
   };
 

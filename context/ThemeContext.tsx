@@ -1,5 +1,12 @@
-import React, { createContext, useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../redux/store/store';
+import {
+  toggleDarkMode,
+  setTheme,
+  setTextSize,
+  setReciter,
+} from '../redux/slices/userPreferencesSlice';
 import { greenTheme, blueTheme, purpleTheme } from '../theme/theme';
 
 const themes = {
@@ -8,82 +15,64 @@ const themes = {
   purple: purpleTheme,
 };
 
+export type ThemeType = typeof greenTheme['light'] | typeof greenTheme['dark'];
+
 export const ThemeContext = createContext({
-  theme: greenTheme, // Default to green theme
+  theme: greenTheme.light, // Default theme (light mode of greenTheme)
   currentTheme: 'green',
-  switchTheme: (themeName: string) => {},
   isDarkMode: false,
+  switchTheme: (themeName: string) => {},
   toggleDarkMode: () => {},
-  textSize: 30, // Add text size default
+  textSize: 30,
   setTextSize: (size: number) => {},
-  reciter: 'alafasy',
-  setReciter: (reciter: string) => {}
+  reciter: 'ar.alafasy',
+  setReciter: (reciter: string) => {},
 });
 
-export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const [currentTheme, setCurrentTheme] = useState('green');
-  const [theme, setTheme] = useState(themes.green); 
-  const [isDarkMode, setIsDarkMode] = useState(true) // default is darker theme
-  const [textSize, setTextSize] = useState(30); // Default text size
-  const [reciter, setReciter] = useState('ar.alafasy')
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { theme: currentThemeName, isDarkMode, textSize, reciter } = useSelector(
+    (state: RootState) => state.userPreferences
+  );
 
-  useEffect(() => {
-    const loadSettings = async () => {
-      const savedTheme = await AsyncStorage.getItem('theme');
-      const savedTextSize = await AsyncStorage.getItem('textSize');
-      const savedReciter = await AsyncStorage.getItem('reciter');
+  const theme = isDarkMode ? themes[currentThemeName].dark : themes[currentThemeName].light;
 
-      //@ts-ignore
-      if (savedTheme && themes[savedTheme]) {
-        setCurrentTheme(savedTheme);
-        //@ts-ignore
-        setTheme(themes[savedTheme]);
-      }
-      if (savedTextSize !== null) setTextSize(parseInt(savedTextSize, 10));
-      if (savedReciter !== null) setReciter(savedReciter);
-    };
-    loadSettings();
-  }, []);
-
-  const switchTheme = async (themeName: string) => {
+  const switchTheme = (themeName: string) => {
     //@ts-ignore
     if (themes[themeName]) {
-      setCurrentTheme(themeName);
-      //@ts-ignore
-      setTheme(themes[themeName]);
-      await AsyncStorage.setItem('theme', themeName);
+      dispatch(setTheme(themeName));
     }
   };
 
-  const toggleDarkMode = async () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    await AsyncStorage.setItem('theme', JSON.stringify(newMode));
+  const toggleThemeMode = () => {
+    dispatch(toggleDarkMode());
   };
 
-  const updateTextSize = async (size: number) => {
-    setTextSize(size);
-    await AsyncStorage.setItem('textSize', size.toString());
+  const updateTextSize = (size: number) => {
+    dispatch(setTextSize(size));
   };
 
-  const updateReciter = async (newReciter: string) => {
-    setReciter(newReciter);
-    await AsyncStorage.setItem('reciter', newReciter)
-  }
+  const updateReciter = (newReciter: string) => {
+    dispatch(setReciter(newReciter));
+  };
 
   return (
-    <ThemeContext.Provider value={{
-      theme,
-      currentTheme,
-      switchTheme, 
-      isDarkMode, 
-      toggleDarkMode, 
-      textSize, 
-      setTextSize: updateTextSize, 
-      reciter, 
-      setReciter: updateReciter }}
+    <ThemeContext.Provider
+      value={{
+        theme,
+        currentTheme: currentThemeName,
+        isDarkMode,
+        switchTheme,
+        toggleDarkMode: toggleThemeMode,
+        textSize,
+        setTextSize: updateTextSize,
+        reciter,
+        setReciter: updateReciter,
+      }}
     >
       {children}
     </ThemeContext.Provider>
   );
 };
+
+export const useTheme = () => useContext(ThemeContext);

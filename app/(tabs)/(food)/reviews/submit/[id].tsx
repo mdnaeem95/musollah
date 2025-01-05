@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import { submitReview } from '../../../../../api/firebase';
 import { getAuth } from '@react-native-firebase/auth';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImageToFirebase } from '../../../../../api/storage/uploadImage';
-import { ThemeContext } from '../../../../../context/ThemeContext';
+import { useTheme } from '../../../../../context/ThemeContext';
 
 const MAX_REVIEW_LENGTH = 500;
 
@@ -33,8 +33,7 @@ const SubmitReview = () => {
   const { id } = useLocalSearchParams(); // Restaurant ID from the URL
   const router = useRouter();
 
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   const handleImagePicker = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -92,8 +91,8 @@ const SubmitReview = () => {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <ScrollView style={[styles.container, { backgroundColor: activeTheme.colors.primary }]}>
-        <Text style={[styles.label, { color: activeTheme.colors.text.primary }]}>Rating (1-5):</Text>
+      <ScrollView style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+        <Text style={[styles.label, { color: theme.colors.text.primary }]}>Rating (1-5):</Text>
 
         <AirbnbRating
           count={5}
@@ -104,14 +103,14 @@ const SubmitReview = () => {
           starContainerStyle={{ gap: 5 }}
         />
 
-        <Text style={[styles.label, { color: activeTheme.colors.text.primary }]}>Your Review:</Text>
+        <Text style={[styles.label, { color: theme.colors.text.primary }]}>Your Review:</Text>
         <TextInput
           style={[
             styles.input,
             styles.textArea,
             {
-              backgroundColor: activeTheme.colors.secondary,
-              color: activeTheme.colors.text.primary,
+              backgroundColor: theme.colors.secondary,
+              color: theme.colors.text.primary,
             },
           ]}
           value={reviewText}
@@ -120,25 +119,25 @@ const SubmitReview = () => {
           }}
           multiline
           placeholder="Write your review here..."
-          placeholderTextColor={activeTheme.colors.text.muted}
+          placeholderTextColor={theme.colors.text.muted}
         />
         <Text
           style={[
             styles.characterCount,
-            { color: activeTheme.colors.text.secondary },
+            { color: theme.colors.text.secondary },
           ]}
         >{`${reviewText.length}/${MAX_REVIEW_LENGTH}`}</Text>
 
-        <Text style={[styles.label, { color: activeTheme.colors.text.primary }]}>Images: </Text>
+        <Text style={[styles.label, { color: theme.colors.text.primary }]}>Images: </Text>
         <View style={styles.imageContainer}>
           {selectedImages.map((uri) => (
             <View key={uri} style={styles.imageWrapper}>
               <Image source={{ uri }} style={styles.imagePreview} />
               <TouchableOpacity
-                style={[styles.removeImage, { backgroundColor: activeTheme.colors.text.error }]}
+                style={[styles.removeImage, { backgroundColor: theme.colors.text.error }]}
                 onPress={() => removeImage(uri)}
               >
-                <Text style={[styles.removeText, { color: activeTheme.colors.text.primary }]}>
+                <Text style={[styles.removeText, { color: theme.colors.text.primary }]}>
                   X
                 </Text>
               </TouchableOpacity>
@@ -147,11 +146,11 @@ const SubmitReview = () => {
           <TouchableOpacity
             style={[
               styles.addImage,
-              { backgroundColor: activeTheme.colors.secondary },
+              { backgroundColor: theme.colors.secondary },
             ]}
             onPress={handleImagePicker}
           >
-            <Text style={[styles.addText, { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.addText, { color: theme.colors.text.primary }]}>
               + Add Image
             </Text>
           </TouchableOpacity>
@@ -162,14 +161,14 @@ const SubmitReview = () => {
           style={[
             styles.button,
             (reviewText.trim() === '' || rating === 0) && styles.disabled,
-            { backgroundColor: activeTheme.colors.accent },
+            { backgroundColor: theme.colors.accent },
           ]}
           disabled={loading || reviewText.trim() === '' || rating === 0}
         >
           {loading ? (
-            <ActivityIndicator size="small" color={activeTheme.colors.text.primary} />
+            <ActivityIndicator size="small" color={theme.colors.text.primary} />
           ) : (
-            <Text style={[styles.buttonText, { color: activeTheme.colors.text.primary }]}>
+            <Text style={[styles.buttonText, { color: theme.colors.text.primary }]}>
               Submit Review
             </Text>
           )}

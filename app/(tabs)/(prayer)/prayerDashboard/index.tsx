@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Alert, ActivityIndicator } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../../../redux/store/store';
@@ -12,7 +12,7 @@ import { getShortFormattedDate, shakeButton } from '../../../../utils';
 import { usePrayerStreakManager } from '../../../../hooks/usePrayerStreakManager'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 
 type PrayerLog = {
   Subuh: boolean;
@@ -23,9 +23,8 @@ type PrayerLog = {
 };
 
 const PrayersDashboard = () => {
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
-  const styles = createStyles(activeTheme);
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   // State and Redux
   const dispatch = useDispatch<AppDispatch>();
@@ -230,25 +229,25 @@ const PrayersDashboard = () => {
   }
 
   return (
-    <View style={[styles.safeArea, { backgroundColor: activeTheme.colors.primary }]}>
+    <View style={[styles.safeArea, { backgroundColor: theme.colors.primary }]}>
       {loading ? (
-        <ActivityIndicator size="large" color={activeTheme.colors.text.muted} />
+        <ActivityIndicator size="large" color={theme.colors.text.muted} />
       ) : (
         <>
           <ScrollView>
             <View style={styles.section}>
               <View style={styles.dateContainer}>
                 <TouchableOpacity onPress={handlePreviousDay} style={{ paddingHorizontal: 20 }}>
-                  <FontAwesome6 name="arrow-left" size={24} color={activeTheme.colors.text.muted} />
+                  <FontAwesome6 name="arrow-left" size={24} color={theme.colors.text.muted} />
                 </TouchableOpacity>
                 <View style={styles.dateInnerContainer}>
-                  <Text style={[styles.dateText, { color: activeTheme.colors.text.primary }]}>{format(selectedDate, 'MMMM dd, yyyy')}</Text>
-                  <Text style={[styles.dayText, { color: activeTheme.colors.text.secondary }]}>{format(selectedDate, 'EEEE')}</Text>
+                  <Text style={[styles.dateText, { color: theme.colors.text.primary }]}>{format(selectedDate, 'MMMM dd, yyyy')}</Text>
+                  <Text style={[styles.dayText, { color: theme.colors.text.secondary }]}>{format(selectedDate, 'EEEE')}</Text>
                 </View>
                 {/* Right chevron or placeholder */}
                 {selectedDate.toDateString() !== new Date().toDateString() ? (
                   <TouchableOpacity onPress={handleNextDay} style={styles.chevronContainer}>
-                    <FontAwesome6 name="arrow-right" size={24} color={activeTheme.colors.text.muted} />
+                    <FontAwesome6 name="arrow-right" size={24} color={theme.colors.text.muted} />
                   </TouchableOpacity>
                 ) : (
                   <View style={styles.chevronContainer} />
@@ -282,7 +281,7 @@ const PrayersDashboard = () => {
                 )
               })}
 
-              <Text style={[styles.sectionHeader, { color: activeTheme.colors.text.primary }]}>Weekly Prayer Log</Text>
+              <Text style={[styles.sectionHeader, { color: theme.colors.text.primary }]}>Weekly Prayer Log</Text>
 
               <View style={styles.calendarContainer}>
                 <View style={styles.row}>
@@ -300,13 +299,13 @@ const PrayersDashboard = () => {
                 {/* Prayer Sessions as rows */}
                 {prayerSessions.map((session) => (
                   <View key={session} style={styles.row}>
-                    <Text style={[styles.sessionLabel, { color: activeTheme.colors.text.primary }]}>{session}</Text>
+                    <Text style={[styles.sessionLabel, { color: theme.colors.text.primary }]}>{session}</Text>
                     {Array.from({ length: 7 }).map((_, dayIndex) => (
                       <View key={dayIndex} style={styles.cell}>
                         <FontAwesome6 
                           name="circle" 
                           size={12} 
-                          color={isLogged(dayIndex, session) ? activeTheme.colors.text.primary : activeTheme.colors.text.muted } 
+                          color={isLogged(dayIndex, session) ? theme.colors.text.primary : theme.colors.text.muted } 
                           solid={isLogged(dayIndex, session)} 
                         />
                       </View>
@@ -316,8 +315,8 @@ const PrayersDashboard = () => {
               </View>
             </View>
 
-            <View style={[styles.streakContainer, { backgroundColor: activeTheme.colors.secondary }]}>
-              <Text style={[styles.streakText, { color: activeTheme.colors.text.primary }]}>Prayer Streak</Text>
+            <View style={[styles.streakContainer, { backgroundColor: theme.colors.secondary }]}>
+              <Text style={[styles.streakText, { color: theme.colors.text.primary }]}>Prayer Streak</Text>
               <View style={styles.flamesContainer}>{renderFlames()}</View>
             </View>
           </ScrollView>

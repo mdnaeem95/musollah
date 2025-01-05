@@ -1,13 +1,12 @@
 import { FontAwesome6 } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
-import React, { useContext } from "react";
+import React from "react";
 import { TouchableOpacity } from "react-native";
-import { ThemeContext } from "../../../../context/ThemeContext";
+import { useTheme } from "../../../../context/ThemeContext";
 
 const TeachersLayout = () => {
   const router = useRouter();
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
 
   return (
     <Stack
@@ -21,19 +20,19 @@ const TeachersLayout = () => {
           headerShown: true,
           headerTitle: "Teacher Details",
           headerStyle: {
-            backgroundColor: activeTheme.colors.primary,
+            backgroundColor: theme.colors.primary,
           },
           headerTitleStyle: {
             fontFamily: "Outfit_700Bold",
             fontSize: 20,
-            color: activeTheme.colors.text.primary,
+            color: theme.colors.text.primary,
           },
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 8 }}>
               <FontAwesome6
                 name="arrow-left"
                 size={24}
-                color={activeTheme.colors.text.primary}
+                color={theme.colors.text.primary}
               />
             </TouchableOpacity>
           ),
@@ -45,19 +44,19 @@ const TeachersLayout = () => {
           headerShown: true,
           headerTitle: "Teachers",
           headerStyle: {
-            backgroundColor: activeTheme.colors.primary,
+            backgroundColor: theme.colors.primary,
           },
           headerTitleStyle: {
             fontFamily: "Outfit_700Bold",
             fontSize: 20,
-            color: activeTheme.colors.text.primary,
+            color: theme.colors.text.primary,
           },
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.push("/(education)/dashboard/")} style={{ paddingLeft: 8 }}>
               <FontAwesome6
                 name="arrow-left"
                 size={24}
-                color={activeTheme.colors.text.primary}
+                color={theme.colors.text.primary}
               />
             </TouchableOpacity>
           ),

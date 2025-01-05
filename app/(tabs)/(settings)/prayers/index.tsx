@@ -1,16 +1,16 @@
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Modal } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { Picker } from '@react-native-picker/picker';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { setReminderInterval, toggleTimeFormat } from '../../../../redux/slices/userPreferencesSlice';
-import { ThemeContext } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const PrayersSettings = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { timeFormat, reminderInterval } = useSelector((state: RootState) => state.userPreferences);
-  const { theme, isDarkMode } = useContext(ThemeContext);
-  const activeTheme = isDarkMode ? theme.dark : theme.light;
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const [isReminderPickerVisible, setIsReminderPickerVisible] = useState<boolean>(false);
 
@@ -23,8 +23,6 @@ const PrayersSettings = () => {
     setIsReminderPickerVisible(false);
   };
 
-  const styles = createStyles(activeTheme);
-
   return (
     <View style={styles.mainContainer}>
       <View style={styles.settingsContainer}>
@@ -34,11 +32,11 @@ const PrayersSettings = () => {
           <Switch
             value={timeFormat === '24-hour'}
             onValueChange={handleTimeFormatToggle}
-            trackColor={{ false: activeTheme.colors.text.muted, true: activeTheme.colors.accent }}
+            trackColor={{ false: theme.colors.text.muted, true: theme.colors.accent }}
             thumbColor={
               timeFormat === '24-hour'
-                ? activeTheme.colors.primary
-                : activeTheme.colors.secondary
+                ? theme.colors.primary
+                : theme.colors.secondary
             }
           />
         </View>
