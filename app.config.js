@@ -21,8 +21,8 @@ export default {
         "UIBackgroundModes": ["location", "fetch", "remote-notification", "audio"],
         "LSApplicationQueriesSchemes": ["file", "tel"],
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "We use your location to show you relevant data.",
-        "NSLocationAlwaysUsageDescription": "We use your location to show you relevant data even when the app is in the background."
+        "NSLocationWhenInUseUsageDescription": "We use your location to show you locations of interest nearby (mosques, musollah, food).",
+        "NSLocationAlwaysUsageDescription": "We use your location to show you locations of interest nearby (mosques, musollah, food)."
       },
       "googleServicesFile": "./GoogleService-Info.plist",
       "bundleIdentifier": "com.naeemsani95.rihlah",
@@ -30,7 +30,7 @@ export default {
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/rihlahAppIcon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [

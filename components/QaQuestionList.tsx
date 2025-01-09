@@ -8,11 +8,10 @@ import { Question, Tag } from '../utils/types';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { formatDistanceToNow } from 'date-fns';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth } from '@react-native-firebase/auth';
 import SignInModal from './SignInModal';
-import firestore from "@react-native-firebase/firestore";
 import { fetchUserLikedQuestions } from '../api/firebase';
+import { useTheme } from '../context/ThemeContext';
 
 interface QuestionListProps {
   searchQuery: string;
@@ -22,6 +21,9 @@ const auth = getAuth();
 const currentUser = auth.currentUser;
 
 const QuestionList: React.FC<QuestionListProps> = ({ searchQuery }) => {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { ids, entities, loading, error } = useSelector((state: RootState) => state.questions);
@@ -176,7 +178,7 @@ const QuestionList: React.FC<QuestionListProps> = ({ searchQuery }) => {
           <FontAwesome6 
             name={icon} 
             size={16} 
-            color="#BFE1DB" 
+            color={theme.colors.accent}
             solid={!!isLiked} // Ensure proper boolean handling
           />
         </TouchableOpacity>
@@ -184,7 +186,7 @@ const QuestionList: React.FC<QuestionListProps> = ({ searchQuery }) => {
         <FontAwesome6 
           name={icon} 
           size={16} 
-          color="#BFE1DB" 
+          color={theme.colors.accent}
           solid={false} // Default for non-clickable
         />
       )}
@@ -234,7 +236,8 @@ const QuestionList: React.FC<QuestionListProps> = ({ searchQuery }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) =>
+   StyleSheet.create({
   errorText: {
     color: '#FF6B6B',
     textAlign: 'center',
@@ -266,18 +269,18 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: 16,
     fontFamily: 'Outfit_400Regular',
-    color: '#BFE1DB',
+    color: theme.colors.text.primary,
   },
   title: {
     fontSize: 18,
     fontFamily: 'Outfit_600SemiBold',
-    color: '#ECDFCC',
+    color: theme.colors.text.primary,
     marginBottom: 5,
   },
   body: {
     fontSize: 14,
     fontFamily: 'Outfit_400Regular',
-    color: '#D1D5DB',
+    color: theme.colors.text.secondary,
     marginBottom: 10,
   },
   date: {

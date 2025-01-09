@@ -1,16 +1,28 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
+import { RootState, store } from "../redux/store/store"
 
 const SCHEDULED_NOTIFICATIONS_KEY = 'scheduled_notifications';
 
+const adhanOptions = { 
+  'Ahmad Al-Nafees': require('../assets/adhans/ahmadAlNafees.mp3'),
+  'Mishary Rashid Alafasy': require('../assets/adhans/mishary.mp3'),
+  'None': null
+};
+
 export const scheduleNextDaysNotifications = async (
   prayerTimesForDays: Record<string, any>,
-  reminderInterval: number
+  reminderInterval: number,
+  mutedNotifications: string[]
 ) => {
   try {
     const now = new Date(); // Current time for validation
     const scheduledNotifications = await AsyncStorage.getItem(SCHEDULED_NOTIFICATIONS_KEY);
     const scheduledDays = scheduledNotifications ? JSON.parse(scheduledNotifications) : {};
+
+    const state: RootState = store.getState();
+    const selectedAdhan = state.userPreferences.selectedAdhan;
+    const adhanAudio = adhanOptions[selectedAdhan] || null;
 
     for (const [date, prayerTimes] of Object.entries(prayerTimesForDays)) {
       const shouldReschedule = reminderInterval !== scheduledDays[date]?.reminderInterval;
@@ -23,6 +35,10 @@ export const scheduleNextDaysNotifications = async (
 
       console.log(`Scheduling notifications for ${date}.`);
       for (const [prayerName, prayerTime] of Object.entries(prayerTimes)) {
+        if (mutedNotifications.includes(prayerName)) {
+          console.log(`Skipping notifications for muted prayer: ${prayerName}`);
+          continue;
+        }
         //@ts-ignore
         const [hour, minute] = prayerTime.split(':').map(Number);
         const prayerDate = new Date(date);
@@ -56,7 +72,7 @@ export const scheduleNextDaysNotifications = async (
           content: {
             title: `Time for ${prayerName}`,
             body: `It's time for ${prayerName} prayer.`,
-            sound: true,
+            sound: adhanAudio,
           },
           trigger: prayerDate,
         });
