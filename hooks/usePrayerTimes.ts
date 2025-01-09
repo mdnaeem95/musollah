@@ -4,6 +4,8 @@ import { fetchMonthlyPrayerTimes } from "../api/prayers"
 import { scheduleNextDaysNotifications } from "../utils/notificationsScheduler"
 import prayerBackgrounds from "../assets/prayerBackgroundImages/prayerBackgrounds";
 import { useTheme } from "../context/ThemeContext";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store/store";
 
 export const usePrayerTimes = (
     prayerTimes: any,
@@ -16,6 +18,7 @@ export const usePrayerTimes = (
     } | null>(null)
 
     const { currentTheme } = useTheme();
+    const mutedNotifications = useSelector((state: RootState) => state.userPreferences.mutedNotifications)
 
     //@ts-ignore
     const backgroundImage = useMemo(() => {
@@ -41,7 +44,7 @@ export const usePrayerTimes = (
 
             // schedule notifications for the extracted days
             console.log('Scheduling notifications for:', nextDaysPrayerTimes, 'with interval:', reminderInterval);
-            await scheduleNextDaysNotifications(nextDaysPrayerTimes, reminderInterval);
+            await scheduleNextDaysNotifications(nextDaysPrayerTimes, reminderInterval, mutedNotifications);
         } catch (error) {
             console.error('Error fetching or scheduling notifications: ', error);
         }

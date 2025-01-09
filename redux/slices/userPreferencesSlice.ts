@@ -7,6 +7,8 @@ interface UserPreferencesState {
   reciter: string; // Selected reciter
   timeFormat: '12-hour' | '24-hour'; // Time format
   reminderInterval: number; // Reminder interval
+  selectedAdhan: 'Ahmad Al-Nafees' | 'Mishary Rashid Alafasy' | 'None'; // Selected Adhan audio file
+  mutedNotifications: string[];
 }
 
 const initialState: UserPreferencesState = {
@@ -16,6 +18,8 @@ const initialState: UserPreferencesState = {
   reciter: 'ar.alafasy', // Default reciter
   timeFormat: '12-hour', // Default to 12-hour format
   reminderInterval: 0,
+  selectedAdhan: 'None',
+  mutedNotifications: []
 };
 
 const userPreferencesSlice = createSlice({
@@ -43,6 +47,17 @@ const userPreferencesSlice = createSlice({
     toggleTimeFormat: (state) => {
       state.timeFormat = state.timeFormat === '12-hour' ? '24-hour' : '12-hour';
     },
+    setSelectedAdhan: (state, action) => {
+      state.selectedAdhan = action.payload;
+    },
+    toggleNotificationForPrayer: (state, action) => {
+      const prayer = action.payload;
+      if (state.mutedNotifications.includes(prayer)) {
+        state.mutedNotifications = state.mutedNotifications.filter((p) => p !== prayer);
+      } else {
+        state.mutedNotifications.push(prayer);
+      }
+    }
   },
 });
 
@@ -53,7 +68,9 @@ export const {
   setReciter,
   setTimeFormat,
   setReminderInterval,
-  toggleTimeFormat
+  toggleTimeFormat,
+  setSelectedAdhan,
+  toggleNotificationForPrayer
 } = userPreferencesSlice.actions;
 
 export default userPreferencesSlice.reducer;

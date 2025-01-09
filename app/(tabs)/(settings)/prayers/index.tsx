@@ -3,12 +3,17 @@ import { View, Text, StyleSheet, Switch, TouchableOpacity, Modal } from 'react-n
 import { useDispatch, useSelector } from 'react-redux';
 import { Picker } from '@react-native-picker/picker';
 import { AppDispatch, RootState } from '../../../../redux/store/store';
-import { setReminderInterval, toggleTimeFormat } from '../../../../redux/slices/userPreferencesSlice';
+import { setReminderInterval, toggleNotificationForPrayer, toggleTimeFormat } from '../../../../redux/slices/userPreferencesSlice';
 import { useTheme } from '../../../../context/ThemeContext';
+import { FontAwesome6 } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+
+const PRAYER_SESSIONS = ['Subuh', 'Syuruk', 'Zohor', 'Asar', 'Maghrib', 'Isyak']
 
 const PrayersSettings = () => {
+  const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { timeFormat, reminderInterval } = useSelector((state: RootState) => state.userPreferences);
+  const { timeFormat, reminderInterval, selectedAdhan, mutedNotifications } = useSelector((state: RootState) => state.userPreferences);
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
@@ -22,6 +27,10 @@ const PrayersSettings = () => {
     dispatch(setReminderInterval(value));
     setIsReminderPickerVisible(false);
   };
+
+  const handleToggleNotification = (prayerName: string) => {
+    dispatch(toggleNotificationForPrayer(prayerName))
+  }
 
   return (
     <View style={styles.mainContainer}>
@@ -51,7 +60,36 @@ const PrayersSettings = () => {
             {reminderInterval === 0 ? 'None' : `${reminderInterval} mins`}
           </Text>
         </TouchableOpacity>
+
+        {/* Adhan Selection */}
+        <TouchableOpacity style={styles.settingsField} onPress={() => router.push('./adhanSelection')}>
+          <Text style={styles.settingsName}>Adhan Audio</Text>
+          <View style={styles.chevronContainer}>
+            <Text style={styles.settingsValue}>{selectedAdhan}</Text>
+            <FontAwesome6 name="chevron-right" color={theme.colors.text.muted} size={theme.fontSizes.large} />
+          </View>
+        </TouchableOpacity>
       </View>
+
+        {/* Mute notifications */}
+        <Text style={styles.settingsHeader}>Prayer Notifications</Text>
+        <View style={styles.settingsContainer}>
+          {PRAYER_SESSIONS.map((prayer) => (
+            <View style={styles.settingsField} key={prayer}>
+              <Text style={styles.settingsName}>{prayer}</Text>
+              <Switch 
+                value={!mutedNotifications.includes(prayer)}
+                onValueChange={() => handleToggleNotification(prayer)}
+                trackColor={{ false: theme.colors.text.muted, true: theme.colors.accent }}
+                thumbColor={
+                  mutedNotifications.includes(prayer)
+                    ? theme.colors.primary
+                    : theme.colors.secondary
+                }
+              />
+            </View>
+          ))}
+        </View>
 
       {/* Reminder Interval Picker Modal */}
       <Modal
@@ -114,7 +152,19 @@ const createStyles = (theme: any) =>
     settingsValue: {
       fontFamily: 'Outfit_400Regular',
       fontSize: theme.fontSizes.medium,
+      color: theme.colors.text.muted,
+    },
+    settingsHeader: {
+      fontFamily: 'Outfit_500Medium',
+      fontSize: theme.fontSizes.large,
       color: theme.colors.text.primary,
+      marginTop: 16,
+      marginBottom: 10
+    },
+    chevronContainer: {
+      flexDirection: 'row',
+      alignContent: 'center',
+      gap: 10
     },
     modalBackground: {
       flex: 1,

@@ -35,6 +35,7 @@ const SettingsLayout = () => {
     { name: "index", title: "Settings & Others", showHeaderLeft: false },
     { name: "account/index", title: "Account Information" },
     { name: "prayers/index", title: "Prayer Settings" },
+    { name: "prayers/adhanSelection", title: "Adhan"},
     { name: "support/index", title: "Support & Feedback" },
     { name: "appearance/index", title: "Appearance" },
     { name: "food-additives/index", title: "Food Additives" },
