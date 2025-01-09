@@ -260,11 +260,11 @@ const PrayersDashboard = () => {
                   <View 
                     key={prayer}
                     //@ts-ignore
-                    style={[styles.prayerContainer, { backgroundColor: activeTheme.colors.secondary }, !todayLogs[prayer] && styles.inactivePrayerContainer ]}
+                    style={[styles.prayerContainer, { backgroundColor: theme.colors.secondary }, !todayLogs[prayer] && styles.inactivePrayerContainer ]}
                   >
                     <Text
                       //@ts-ignore
-                      style={[styles.prayerLabel, { color: activeTheme.colors.text.primary }, !todayLogs[prayer] && styles.inactivePrayerLabel]}
+                      style={[styles.prayerLabel, { color: theme.colors.text.primary }, !todayLogs[prayer] && styles.inactivePrayerLabel]}
                     >
                       {prayer}
                     </Text>
