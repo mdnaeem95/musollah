@@ -25,10 +25,13 @@ export const scheduleNextDaysNotifications = async (
     const adhanAudio = adhanOptions[selectedAdhan] || null;
 
     for (const [date, prayerTimes] of Object.entries(prayerTimesForDays)) {
-      const shouldReschedule = reminderInterval !== scheduledDays[date]?.reminderInterval;
+      const existingConfig = scheduledDays[date];
+      const shouldReschedule = !existingConfig 
+        || reminderInterval !== scheduledDays[date]?.reminderInterval 
+        || JSON.stringify(mutedNotifications) !== JSON.stringify(existingConfig.mutedNotifications);
 
       // Skip if already scheduled and no interval change
-      if (scheduledDays[date] && !shouldReschedule) {
+      if (!shouldReschedule) {
         console.log(`Notifications for ${date} are already scheduled.`);
         continue;
       }
@@ -97,7 +100,7 @@ export const scheduleNextDaysNotifications = async (
       }
 
       // Mark day as scheduled
-      scheduledDays[date] = { reminderInterval };
+      scheduledDays[date] = { reminderInterval, mutedNotifications };
     }
 
     // Save updated scheduled days
