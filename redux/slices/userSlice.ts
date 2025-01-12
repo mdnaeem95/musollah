@@ -39,6 +39,7 @@ export const signIn = createAsyncThunk(
       favouriteRestaurants: userData?.favouriteRestaurants || [],
       referralCode: userData?.referralCode || '',
       referralCount: userData?.referralCount || 0,
+      createdAt: userData?.createdAt || null,
     };
   }
 );
@@ -66,7 +67,8 @@ export const signUp = createAsyncThunk(
         likedQuestions: [],
         favouriteRestaurants: [],
         referralCode,
-        referralCount: 0,                       // New referral code for this user
+        referralCount: 0,
+        createdAt: firestore.FieldValue.serverTimestamp(),
     });
 
     // Return the Auth User data (no need to fetch Firestore again here)

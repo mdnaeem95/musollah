@@ -7,8 +7,11 @@ import SignInModal from '../../../../components/SignInModal';
 import { generateReferralCode } from '../../../../utils';
 import { differenceInDays } from 'date-fns';
 import DeviceInfo from 'react-native-device-info';
+import { useRouter } from 'expo-router';
+import ThemedButton from '../../../../components/ThemedButton';
 
 const ReferralScreen = () => {
+    const router = useRouter();
     const { theme } = useTheme();
     const styles = createStyles(theme);
 
@@ -17,8 +20,8 @@ const ReferralScreen = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [userLoggedIn, setUserLoggedIn] = useState<boolean>(false); // Tracks user's login status
     const [isAuthModalVisible, setAuthModalVisible] = useState<boolean>(false); // State for modal visibility
-    const [invitedBy, setInvitedBy] = useState<string | null>(null); // Stores who invited the user
     const [isNewUser, setIsNewUser] = useState<boolean>(false); // Tracks if the user is new
+    const [invitedBy, setInvitedBy] = useState<string | null>(null); 
 
     useEffect(() => {
         const checkAuthStatus = async () => {
@@ -35,6 +38,8 @@ const ReferralScreen = () => {
                         const userData = doc.data();
                         setReferralCode(userData?.referralCode || null);
                         setInvitedBy(userData?.invitedBy || null);
+
+                        console.log('user data: ', userData)
 
                         // Check if the user is new (created within the last 7 days)
                         if (userData?.createdAt) {
@@ -148,8 +153,10 @@ const ReferralScreen = () => {
                     timestamp: firestore.FieldValue.serverTimestamp(),
                 });
 
-                Alert.alert('Success', 'Referral code applied successfully!');
+                // Update the local state
                 setInvitedBy(userReferralCode);
+
+                Alert.alert('Success', 'Referral code applied successfully!');
             } else {
                 Alert.alert('Error', 'Invalid referral code. Please try again.');
             }
@@ -229,6 +236,11 @@ const ReferralScreen = () => {
                 </View>
             )}
 
+            <ThemedButton 
+                text="View Leaderboard"
+                onPress={() => router.push('./leaderboard')}
+            />
+
             {/* Sign In Modal */}
             <SignInModal isVisible={isAuthModalVisible} onClose={() => setAuthModalVisible(false)} />
         </View>
@@ -240,6 +252,7 @@ const createStyles = (theme: any) => StyleSheet.create({
         flex: 1,
         backgroundColor: theme.colors.primary,
         padding: theme.spacing.large,
+        gap: theme.spacing.large
     },
     loadingContainer: {
         flex: 1,
@@ -346,6 +359,19 @@ const createStyles = (theme: any) => StyleSheet.create({
         backgroundColor: theme.colors.disabled,
     },
     submitButtonText: {
+        color: theme.colors.text.secondary,
+        fontFamily: 'Outfit_500Medium',
+        fontSize: theme.fontSizes.medium,
+    },
+    leaderboardButton: {
+        marginTop: theme.spacing.large,
+        backgroundColor: theme.colors.primary,
+        paddingVertical: theme.spacing.medium,
+        paddingHorizontal: theme.spacing.large,
+        borderRadius: theme.borderRadius.small,
+        alignItems: 'center',
+    },
+    leaderboardButtonText: {
         color: theme.colors.text.secondary,
         fontFamily: 'Outfit_500Medium',
         fontSize: theme.fontSizes.medium,

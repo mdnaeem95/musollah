@@ -25,8 +25,6 @@ export const scheduleNextDaysNotifications = async (
     const adhanAudio = adhanOptions[selectedAdhan] || null;
 
     for (const [date, prayerTimes] of Object.entries(prayerTimesForDays)) {
-      const shouldReschedule = reminderInterval !== scheduledDays[date]?.reminderInterval;
-
       for (const [prayerName, prayerTime] of Object.entries(prayerTimes)) {
         if (mutedNotifications.includes(prayerName)) {
           console.log(`Skipping notifications for muted prayer: ${prayerName}`);
@@ -88,7 +86,7 @@ export const scheduleNextDaysNotifications = async (
             sound: adhanAudio,
           },
           trigger: prayerDate,
-        });
+        }); 
 
         // Pre-prayer reminder
         if (reminderInterval > 0) {
@@ -130,6 +128,9 @@ export const scheduleNextDaysNotifications = async (
     // Save updated scheduled days
     await AsyncStorage.setItem(SCHEDULED_NOTIFICATIONS_KEY, JSON.stringify(scheduledDays));
     console.log(`Updated scheduled notifications saved successfully`)
+    
+    const allNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    console.log('Currently Scheduled Notifications:', allNotifications);
   } catch (error) {
     console.error('Error scheduling notifications:', error);
     throw error;

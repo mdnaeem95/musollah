@@ -43,6 +43,7 @@ const SettingsLayout = () => {
     { name: "zakat/fidyah/index", title: "Zakat Fidyah" },
     { name: "zakat/harta/index", title: "Zakat Harta" },
     { name: "referral/index", title: "Referral" },
+    { name: "referral/leaderboard", title: "Leaderboard" }
   ];
 
   return (

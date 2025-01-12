@@ -22,6 +22,7 @@ const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
 const Dashboard = () => {
   const { theme } = useTheme();
+  const styles = createStyles(theme)
 
   const auth = getAuth();
   const router = useRouter();
@@ -198,7 +199,7 @@ const Dashboard = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
     mainContainer: {
       flex: 1,
       padding: 16,
@@ -234,14 +235,7 @@ const styles = StyleSheet.create({
       padding: 20,
       marginRight: 20,
       width: 220,
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 3,
-      },
-      shadowOpacity: 0.3,
-      shadowRadius: 4.65,
-      elevation: 6,
+      ...theme.shadows.default,
     },
     progressCourseTitle: {
       fontFamily: 'Outfit_500Medium',
@@ -252,20 +246,6 @@ const styles = StyleSheet.create({
       fontFamily: 'Outfit_600SemiBold',
       fontSize: 18,
       lineHeight: 22,
-    },
-    courseCard: {
-      borderRadius: 10,
-      padding: 15,
-      paddingVertical: 25,
-      marginRight: 20,
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-      elevation: 5,
     },
     courseHeaderText: {
       fontFamily: 'Outfit_600SemiBold',
@@ -283,14 +263,7 @@ const styles = StyleSheet.create({
       marginRight: 20,
       height: 250,
       width: 160,
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-      elevation: 5,
+      ...theme.shadows.default,
     },
     teacherImage: {
       width: '100%',

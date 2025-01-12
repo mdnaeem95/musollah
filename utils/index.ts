@@ -183,3 +183,10 @@ export const generateReferralCode = (userId: string): string => {
     return `${userId.slice(0, 4)}-${uuidv4().slice(0, 8)}`.toUpperCase();
 };
 
+export const maskEmail = (email: string): string => {
+  const [localPart, domain] = email.split('@');
+  if (localPart.length <= 5) {
+      return `${'*'.repeat(localPart.length)}@${domain}`;
+  }
+  return `${'*'.repeat(5)}${localPart.slice(5)}@${domain}`;
+};

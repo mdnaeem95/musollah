@@ -170,7 +170,7 @@ const RestaurantLocator = () => {
   };
 
   return (
-    <ScrollView style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
+    <ScrollView style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <TouchableOpacity
         style={[styles.searchBar, { backgroundColor: theme.colors.secondary }]}
         onPress={() => router.push('/search')}
