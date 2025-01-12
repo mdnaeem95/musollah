@@ -4,6 +4,7 @@ import firestore from '@react-native-firebase/firestore';
 import { UserState } from '../../utils/types';
 import { eachDayOfInterval, format } from 'date-fns';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generateReferralCode } from '../../utils';
 
 const initialState: UserState = {
     user: null,
@@ -35,19 +36,23 @@ export const signIn = createAsyncThunk(
       enrolledCourses: userData?.enrolledCourses || [],  // From Firestore
       prayerLogs: userData?.prayerLogs || [],            // From Firestore
       likedQuestions: userData?.likedQuestions || [],
-      favouriteRestaurants: userData?.favouriteRestaurants || []
+      favouriteRestaurants: userData?.favouriteRestaurants || [],
+      referralCode: userData?.referralCode || '',
+      referralCount: userData?.referralCount || 0,
     };
   }
 );
   
 export const signUp = createAsyncThunk(
   'user/signUp',
-  async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
+  async ({ email, password }: { email: string; password: string, }, { rejectWithValue }) => {
     try {
       const auth = getAuth();
       // First, create the user using Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+
+      const referralCode = generateReferralCode(user.uid);
       
       // Next, add the user document to Firestore
       const userDoc = firestore().collection('users').doc(user.uid);
@@ -59,7 +64,9 @@ export const signUp = createAsyncThunk(
         prayerLogs: [],                           // Default: empty prayer logs
         role: 'user',
         likedQuestions: [],
-        favouriteRestaurants: []
+        favouriteRestaurants: [],
+        referralCode,
+        referralCount: 0,                       // New referral code for this user
     });
 
     // Return the Auth User data (no need to fetch Firestore again here)
@@ -68,6 +75,7 @@ export const signUp = createAsyncThunk(
       email: user.email,
       displayName: user.displayName,
       photoURL: user.photoURL,
+      referralCode,
     };
   } catch (error: any) {
     console.error('Sign-up failed:', error.code, error.message, error.status);

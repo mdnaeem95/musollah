@@ -1,6 +1,8 @@
 import { format } from 'date-fns';
 import { ayahList } from './constants';
 import { Animated, Dimensions } from 'react-native';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 
 export const getFormattedDate = (date: Date) => {
     return format(date, "EEEE, do MMMM yyyy");
@@ -175,3 +177,9 @@ export const calculateContrastColor = (bgColor: string): string => {
   // Return white or black based on luminance
   return luminance > 186 ? '#000000' : '#FFFFFF';
 };
+
+export const generateReferralCode = (userId: string): string => {
+    // Generate a short alphanumeric code (e.g., 8 characters) using UUID
+    return `${userId.slice(0, 4)}-${uuidv4().slice(0, 8)}`.toUpperCase();
+};
+

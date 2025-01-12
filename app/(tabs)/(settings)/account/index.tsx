@@ -17,7 +17,6 @@ const AccountSettings = () => {
   const segments = useSegments();
   const { theme } = useTheme();
   const styles = createStyles(theme);
-  console.log(theme);
 
   const [currentUser, setCurrentUser] = useState(auth.currentUser);
   const [name, setName] = useState<string>('');

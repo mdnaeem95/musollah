@@ -69,6 +69,8 @@ export interface UserData {
     role: UserRole
     likedQuestions: string[];
     favouriteRestaurants?: { restaurantId: string; timestamp: string }[];
+    referralCode?: string;
+    referralCount?: number,
 }
 
 export interface MusollahState {
