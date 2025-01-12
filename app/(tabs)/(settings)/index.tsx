@@ -52,6 +52,15 @@ const SettingsTab = () => {
             </View>
             <FontAwesome6 name="chevron-right" color={theme.colors.text.primary} size={20} />
           </TouchableOpacity>
+
+          {/* REFERRAL */}
+          <TouchableOpacity style={styles.settingsField} onPress={() => router.push('/referral')}>
+            <View style={styles.settingsLeftField}>
+              <FontAwesome6 name="gift" color={theme.colors.text.primary} size={20} />
+              <Text style={styles.settingsName}>Referral</Text>
+            </View>
+            <FontAwesome6 name="chevron-right" color={theme.colors.text.primary} size={20} />
+          </TouchableOpacity>
         </View>
 
         {/* OTHER FEATURES */}

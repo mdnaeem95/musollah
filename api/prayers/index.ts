@@ -78,7 +78,6 @@ export const fetchIslamicDate = async (date: string) => {
 export const fetchMonthlyPrayerTimes = async (year: number, month: number) => {
     const apiUrl = `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=1.287953&longitude=103.851784`
     try {
-        console.log(`Fetching monthly prayer times for from ${apiUrl}.`)
         const response = await fetch(apiUrl)
 
         if (!response.ok) {
@@ -95,8 +94,6 @@ export const fetchMonthlyPrayerTimes = async (year: number, month: number) => {
             Maghrib: item.timings.Maghrib.replace(' (+08)', ''),
             Isyak: item.timings.Isha.replace(' (+08)', '')
         }))
-
-        console.log('Formatted Data from monthly prayer fetch', formattedData[0])
 
         return formattedData;
     } catch (error) {
