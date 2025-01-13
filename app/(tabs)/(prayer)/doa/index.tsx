@@ -47,14 +47,18 @@ const Doa = () => {
               <Text style={[styles.englishText, { color: theme.colors.text.muted }]}>{item.englishTranslation}</Text>
             </View>
           )}
+          ListHeaderComponent={(
+            <TouchableOpacity
+              style={[styles.tooltipIcon, { backgroundColor: theme.colors.secondary }]}
+              onPress={() => setTooltipVisible(true)}
+            >
+              <FontAwesome6 name="circle-info" size={15} color={theme.colors.text.primary} />
+            </TouchableOpacity>
+          )}
           initialNumToRender={10}
           removeClippedSubviews={true}
         />
       )}
-
-      <TouchableOpacity style={styles.tooltipIcon} onPress={() => setTooltipVisible(true)}>
-        <FontAwesome6 name="circle-info" size={15} color={theme.colors.text.muted} />
-      </TouchableOpacity>
 
       {tooltipVisible && (
         <Modal
@@ -89,12 +93,15 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   tooltipIcon: {
-    position: 'absolute',
-    left: 275,
-    top: 42,
+    marginTop: 20,
+    alignSelf: 'center', // Center the icon horizontally
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-  },
+    elevation: 3,
+  },  
   doaContainer: {
     padding: 20,
     borderBottomWidth: 1,
@@ -138,6 +145,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 10,
     alignItems: 'center',
+
   },
   tooltipText: {
     fontFamily: 'Outfit_400Regular',
