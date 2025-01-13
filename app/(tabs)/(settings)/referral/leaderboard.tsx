@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, ScrollView, Modal } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import { useTheme } from '../../../../context/ThemeContext';
 import { getAuth } from '@react-native-firebase/auth';
@@ -8,6 +8,15 @@ import { maskEmail } from '../../../../utils';
 const LeaderboardScreen = () => {
     const { theme } = useTheme();
     const styles = createStyles(theme);
+    const [isModalVisible, setModalVisible] = useState(false);
+
+    const handleOpenModal = () => {
+        setModalVisible(true);
+      };
+    
+      const handleCloseModal = () => {
+        setModalVisible(false);
+      };
 
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
