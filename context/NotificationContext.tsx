@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useRef, ReactNode, useEffect } from "react"
 import * as Notifications from "expo-notifications"
-import { Subscription } from "expo-modules-core"
 import { registerForPushNotificationsAsync } from "../utils/registerForPushNotificationsAsync"
 
 interface NotificationContextType {
@@ -27,13 +26,13 @@ interface NotificationProviderProps {
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     children
-}) => {
+}: { children: any }) => {
     const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
     const [notification, setNotification] = useState<Notifications.Notification | null>(null);
     const [error, setError] = useState<Error | null>(null);
 
-    const notificationListener = useRef<Subscription>();
-    const responseListener = useRef<Subscription>();
+    const notificationListener = useRef<Notifications.EventSubscription>();
+    const responseListener = useRef<Notifications.EventSubscription>();
 
     useEffect(() => {
         registerForPushNotificationsAsync().then(

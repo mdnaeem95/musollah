@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../../context/ThemeContext';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads'
 
 const SettingsTab = () => {
   const router = useRouter();
@@ -83,6 +84,19 @@ const SettingsTab = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Banner Ad */}
+      <View style={styles.adContainer}>
+        <BannerAd
+          unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-3113906121142395/6121333051'}
+          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+          requestOptions={{
+            requestNonPersonalizedAdsOnly: true, // GDPR-compliant ads
+          }}
+          onAdLoaded={() => console.log('Ad Loaded')}
+          onAdFailedToLoad={(error) => console.error('Ad Failed to Load', error)}
+        />
+      </View>
     </View>
   );
 };
@@ -144,6 +158,11 @@ const createStyles = (theme: any) => StyleSheet.create({
     marginTop: theme.spacing.small,
     textAlign: 'center',
     color: theme.colors.text.secondary,
+  },
+  adContainer: {
+    alignItems: 'center',
+    width: '100%', // Ensure the container doesn't exceed the screen width
+    overflow: 'hidden', // Prevent any overflow
   },
 });
 
