@@ -18,7 +18,6 @@ const PrayerTab = () => {
   const { prayerTimes, islamicDate, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
   const { reminderInterval } = useSelector((state: RootState) => state.userPreferences);
   const { currentPrayer, nextPrayerInfo, fetchAndScheduleNotifications, backgroundImage } = usePrayerTimes(prayerTimes, reminderInterval)
-
   const [isPrayerLocationModalVisible, setIsPrayerLocationModalVisible] = useState<boolean>(false);
 
   // Format the selected date
