@@ -18,6 +18,8 @@ import LoadingScreen from '../components/LoadingScreen';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import TrackPlayer from 'react-native-track-player';
 import { playbackService } from '../constants/playbackService';
+import mobileAds from 'react-native-google-mobile-ads';
+
 if (AppState.currentState === 'active') {
   SplashScreen.preventAutoHideAsync();
 }
@@ -30,6 +32,7 @@ const RootLayout = () => {
   const [isEssentialDataFetched, setIsEssentialDataFetched] = useState<boolean>(false);
   const [isTrackPlayerSetup, setIsTrackPlayerSetup] = useState(false);
   const [isNonEssentialDataFetched, setIsNonEssentialDataFetched] = useState<boolean>(false);
+  const [isAdMobInitialized, setIsAdMobInitialized] = useState(false);
   const [isFontsLoaded] = useFonts({
     Outfit_300Light,
     Outfit_500Medium,
@@ -50,6 +53,20 @@ const RootLayout = () => {
       setIsAuthenticated(!!user);
     });
     return () => unsubscribe();
+  }, []);
+
+  // Initialize AdMob SDK
+  useEffect(() => {
+    const initializeAdMob = async () => {
+      try {
+        const adapterStatuses = await mobileAds().initialize();
+        console.log('AdMob initialized:', adapterStatuses);
+        setIsAdMobInitialized(true);
+      } catch (error) {
+        console.error('Error initializing AdMob:', error);
+      }
+    };
+    initializeAdMob();
   }, []);
 
   // Fetch only essential data (Prayer Times) first
@@ -103,10 +120,10 @@ const RootLayout = () => {
         console.error('Error hiding SplashScreen:', error);
       }
     };
-    if (isFontsLoaded && isEssentialDataFetched && isTrackPlayerSetup)  {
+    if (isFontsLoaded && isEssentialDataFetched && isTrackPlayerSetup && isAdMobInitialized)  {
       hideSplashScreenandAnimate();
     }
-  }, [isFontsLoaded, isEssentialDataFetched, hideSplashScreen, isTrackPlayerSetup]);
+  }, [isFontsLoaded, isEssentialDataFetched, hideSplashScreen, isTrackPlayerSetup, isAdMobInitialized]);
   // reanimated style for splash screen sliding animation
   const animatedSplashStyle = useAnimatedStyle(() => {
     return {
@@ -114,7 +131,7 @@ const RootLayout = () => {
     }
   })
 
-  if (!isFontsLoaded || !isEssentialDataFetched || !isRehydrated) {
+  if (!isFontsLoaded || !isEssentialDataFetched || !isRehydrated || !isAdMobInitialized) {
     return (
       <View style={{ flex: 1 }}>
         <LoadingScreen message="Setting up the app..." />

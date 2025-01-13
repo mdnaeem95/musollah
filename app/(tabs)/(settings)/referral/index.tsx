@@ -9,7 +9,7 @@ import { differenceInDays } from 'date-fns';
 import DeviceInfo from 'react-native-device-info';
 import { useRouter } from 'expo-router';
 import ThemedButton from '../../../../components/ThemedButton';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads'
+import BannerAdComponent from '../../../../components/BannerAd';
 
 const ReferralScreen = () => {
     const router = useRouter();
@@ -248,17 +248,7 @@ const ReferralScreen = () => {
             </View>
 
             {/* Banner Ad */}
-            <View style={styles.adContainer}>
-                <BannerAd
-                unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-3113906121142395/6121333051'}
-                size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-                requestOptions={{
-                    requestNonPersonalizedAdsOnly: true, // GDPR-compliant ads
-                }}
-                onAdLoaded={() => console.log('Ad Loaded')}
-                onAdFailedToLoad={(error) => console.error('Ad Failed to Load', error)}
-                />
-            </View>
+            <BannerAdComponent />
         </View>
         
     );
