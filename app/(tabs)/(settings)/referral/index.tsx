@@ -9,6 +9,7 @@ import { differenceInDays } from 'date-fns';
 import DeviceInfo from 'react-native-device-info';
 import { useRouter } from 'expo-router';
 import ThemedButton from '../../../../components/ThemedButton';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads'
 
 const ReferralScreen = () => {
     const router = useRouter();
@@ -178,72 +179,88 @@ const ReferralScreen = () => {
 
     return (
         <View style={styles.mainContainer}>
-            <Text style={styles.title}>Referral Program</Text>
+            <View style={styles.container}>
+                <Text style={styles.title}>Referral Program</Text>
 
-            <View style={styles.contentContainer}>
-                {userLoggedIn ? (
-                    referralCode ? (
-                        <View style={styles.cardContainer}>
-                            <Text style={styles.cardTitle}>Your Referral Code</Text>
-                            <Text style={styles.referralCode}>{referralCode}</Text>
-                        </View>
+                <View style={styles.contentContainer}>
+                    {userLoggedIn ? (
+                        referralCode ? (
+                            <View style={styles.cardContainer}>
+                                <Text style={styles.cardTitle}>Your Referral Code</Text>
+                                <Text style={styles.referralCode}>{referralCode}</Text>
+                            </View>
+                        ) : (
+                            <View style={styles.cardContainer}>
+                                <Text style={styles.cardTitle}>No Referral Code</Text>
+                                <Text style={styles.cardDescription}>
+                                    You currently don’t have a referral code. Tap the button below to generate one.
+                                </Text>
+                                <TouchableOpacity
+                                    style={styles.generateButton}
+                                    onPress={handleGenerateReferralCode}
+                                >
+                                    <Text style={styles.generateButtonText}>Generate Code</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )
                     ) : (
                         <View style={styles.cardContainer}>
-                            <Text style={styles.cardTitle}>No Referral Code</Text>
+                            <Text style={styles.cardTitle}>Join the Referral Program</Text>
                             <Text style={styles.cardDescription}>
-                                You currently don’t have a referral code. Tap the button below to generate one.
+                                You need to have an account to join the referral program. Please sign in or sign up to
+                                participate.
                             </Text>
-                            <TouchableOpacity
-                                style={styles.generateButton}
-                                onPress={handleGenerateReferralCode}
-                            >
-                                <Text style={styles.generateButtonText}>Generate Code</Text>
+                            <TouchableOpacity style={styles.loginButton} onPress={handleAuthModalToggle}>
+                                <Text style={styles.loginButtonText}>Sign In / Sign Up</Text>
                             </TouchableOpacity>
                         </View>
-                    )
-                ) : (
-                    <View style={styles.cardContainer}>
-                        <Text style={styles.cardTitle}>Join the Referral Program</Text>
-                        <Text style={styles.cardDescription}>
-                            You need to have an account to join the referral program. Please sign in or sign up to
-                            participate.
-                        </Text>
-                        <TouchableOpacity style={styles.loginButton} onPress={handleAuthModalToggle}>
-                            <Text style={styles.loginButtonText}>Sign In / Sign Up</Text>
+                    )}
+                </View>
+
+                {/* Enter Referral Code Section */}
+                {userLoggedIn && isNewUser && !invitedBy && (
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Have a referral code? Enter it below:</Text>
+                        <TextInput
+                            style={styles.inputField}
+                            placeholder="Enter Referral Code"
+                            placeholderTextColor={theme.colors.text.secondary}
+                            value={userReferralCode}
+                            onChangeText={setUserReferralCode}
+                        />
+                        <TouchableOpacity
+                            style={[styles.submitButton, !userReferralCode.trim() && styles.disabledButton]}
+                            onPress={handleSubmitReferralCode}
+                            disabled={!userReferralCode.trim()}
+                        >
+                            <Text style={styles.submitButtonText}>Submit</Text>
                         </TouchableOpacity>
                     </View>
                 )}
+
+                <ThemedButton 
+                    text="View Leaderboard"
+                    onPress={() => router.push('/referral/leaderboard')}
+                />
+
+                {/* Sign In Modal */}
+                <SignInModal isVisible={isAuthModalVisible} onClose={() => setAuthModalVisible(false)} />
             </View>
 
-            {/* Enter Referral Code Section */}
-            {userLoggedIn && isNewUser && !invitedBy && (
-                <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Have a referral code? Enter it below:</Text>
-                    <TextInput
-                        style={styles.inputField}
-                        placeholder="Enter Referral Code"
-                        placeholderTextColor={theme.colors.text.secondary}
-                        value={userReferralCode}
-                        onChangeText={setUserReferralCode}
-                    />
-                    <TouchableOpacity
-                        style={[styles.submitButton, !userReferralCode.trim() && styles.disabledButton]}
-                        onPress={handleSubmitReferralCode}
-                        disabled={!userReferralCode.trim()}
-                    >
-                        <Text style={styles.submitButtonText}>Submit</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
-
-            <ThemedButton 
-                text="View Leaderboard"
-                onPress={() => router.push('./leaderboard')}
-            />
-
-            {/* Sign In Modal */}
-            <SignInModal isVisible={isAuthModalVisible} onClose={() => setAuthModalVisible(false)} />
+            {/* Banner Ad */}
+            <View style={styles.adContainer}>
+                <BannerAd
+                unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-3113906121142395/6121333051'}
+                size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                requestOptions={{
+                    requestNonPersonalizedAdsOnly: true, // GDPR-compliant ads
+                }}
+                onAdLoaded={() => console.log('Ad Loaded')}
+                onAdFailedToLoad={(error) => console.error('Ad Failed to Load', error)}
+                />
+            </View>
         </View>
+        
     );
 };
 
@@ -251,6 +268,9 @@ const createStyles = (theme: any) => StyleSheet.create({
     mainContainer: {
         flex: 1,
         backgroundColor: theme.colors.primary,
+    },
+    container: {
+        flex: 1,
         padding: theme.spacing.large,
         gap: theme.spacing.large
     },
@@ -263,7 +283,6 @@ const createStyles = (theme: any) => StyleSheet.create({
         fontFamily: 'Outfit_500Medium',
         fontSize: theme.fontSizes.xlarge,
         color: theme.colors.text.secondary,
-        marginBottom: theme.spacing.large,
         textAlign: 'center',
     },
     contentContainer: {
@@ -375,6 +394,11 @@ const createStyles = (theme: any) => StyleSheet.create({
         color: theme.colors.text.secondary,
         fontFamily: 'Outfit_500Medium',
         fontSize: theme.fontSizes.medium,
+    },
+    adContainer: {
+        alignItems: 'center',
+        width: '100%', // Ensure the container doesn't exceed the screen width
+        overflow: 'hidden', // Prevent any overflow
     },
 });
 

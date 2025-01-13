@@ -1,5 +1,5 @@
 
-import withBoringSSLFix from './withBoringSSLFix'
+// import withBoringSSLFix from './withBoringSSLFix'
 
 export default {
   "expo": {
@@ -54,15 +54,22 @@ export default {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3113906121142395~8011626070",
+          "iosAppId": "ca-app-pub-3113906121142395~4456095266",
+        }
+      ],
       "@react-native-firebase/auth",
       "@react-native-firebase/app",
-      withBoringSSLFix,
+      // withBoringSSLFix,
       [
         "expo-build-properties",
         {
           "ios": {
             "useFrameworks": "static",
-            "deploymentTarget": "13.4"
+            "deploymentTarget": "15.1"
           }
         }
       ],
@@ -83,7 +90,6 @@ export default {
       "eas": {
         "projectId": "deec8169-b934-4eff-8714-421a695e3d9b"
       },
-      "oneSignalAppId": "c29ae03e-7f34-4c06-a0ff-c430d2187991"
     },
     "owner": "naeemsani95",
     "updates": {
