@@ -19,6 +19,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from '
 import TrackPlayer from 'react-native-track-player';
 import { playbackService } from '../constants/playbackService';
 import mobileAds from 'react-native-google-mobile-ads';
+import { getTrackingPermissionsAsync, PermissionStatus, requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 
 if (AppState.currentState === 'active') {
   SplashScreen.preventAutoHideAsync();
@@ -26,7 +27,6 @@ if (AppState.currentState === 'active') {
 TrackPlayer.registerPlaybackService(() => playbackService)
 
 const RootLayout = () => {
-  const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();  
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isEssentialDataFetched, setIsEssentialDataFetched] = useState<boolean>(false);
@@ -59,6 +59,12 @@ const RootLayout = () => {
   useEffect(() => {
     const initializeAdMob = async () => {
       try {
+        const { status } = await getTrackingPermissionsAsync();
+
+        if (status === PermissionStatus.UNDETERMINED) {
+          await requestTrackingPermissionsAsync();
+        }
+        
         const adapterStatuses = await mobileAds().initialize();
         console.log('AdMob initialized:', adapterStatuses);
         setIsAdMobInitialized(true);
