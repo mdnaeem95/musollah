@@ -1,3 +1,5 @@
+import applePrivacyManifest from '../musollah/utils/apple-privacy-manifest.json'
+
 export default {
   "expo": {
     "name": "rihlah",
@@ -23,7 +25,8 @@ export default {
       },
       "googleServicesFile": "./GoogleService-Info.plist",
       "bundleIdentifier": "com.naeemsani95.rihlah",
-      "runtimeVersion": "1.0.0"
+      "runtimeVersion": "1.0.0",
+      "privacyManifests": applePrivacyManifest,
     },
     "android": {
       "adaptiveIcon": {
@@ -105,6 +108,14 @@ export default {
       ],
       [
         "expo-tracking-transparency"
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "rihlah",
+          "project": "rihlah",
+          "url": "https://sentry.io"
+        }
       ],
       "@react-native-firebase/auth",
       "@react-native-firebase/app",

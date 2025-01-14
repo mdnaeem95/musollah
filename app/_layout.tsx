@@ -10,6 +10,9 @@ import { ThemeProvider } from '../context/ThemeContext';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet'
 import Toast from 'react-native-toast-message'
 import { toastConfig } from '../utils/toastConfig';
+import * as Sentry from '@sentry/react-native'
+import { initSentry, useSentryNavigationConfig } from '../utils/sentry';
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -18,19 +21,25 @@ Notifications.setNotificationHandler({
   })
 })
 
-const AppLayout = () => (
-  <Provider store={store}>
-    <PersistGate persistor={persistor} loading={<LoadingScreen message='Setting up the app...' />}>
-      <ActionSheetProvider>
-        <ThemeProvider>
-          <NotificationProvider>
-                <RootLayout />
-                <Toast config={toastConfig} />
-          </NotificationProvider>
-        </ThemeProvider>
-      </ActionSheetProvider>
-    </PersistGate>
-  </Provider>
-);
+initSentry();
 
-export default AppLayout;
+function AppLayout () {
+  useSentryNavigationConfig()
+
+  return (
+    <Provider store={store}>
+      <PersistGate persistor={persistor} loading={<LoadingScreen message='Setting up the app...' />}>
+        <ActionSheetProvider>
+          <ThemeProvider>
+            <NotificationProvider>
+                  <RootLayout />
+                  <Toast config={toastConfig} />
+            </NotificationProvider>
+          </ThemeProvider>
+        </ActionSheetProvider>
+      </PersistGate>
+    </Provider>
+  )
+};
+
+export default Sentry.wrap(AppLayout);
