@@ -1,8 +1,9 @@
-import { View, Text, StyleSheet, ImageBackground } from 'react-native'
+import { View, Text, StyleSheet, ImageBackground, Button } from 'react-native'
 import React, { useEffect, useMemo, useState } from 'react'
 import Clock from 'react-live-clock';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
+import * as Sentry from '@sentry/react-native'
 
 import ExpandableButton from '../../../components/prayer/ExpandableButton';
 
@@ -66,6 +67,8 @@ const PrayerTab = () => {
         onCityPress={handleCityPress}
         onDashboardPress={() => router.push('/prayerDashboard')}
       />
+
+  <Button title='Try!' onPress={() => Sentry.captureException(new Error('First error')) }/>
     </ImageBackground>
   );
 };
