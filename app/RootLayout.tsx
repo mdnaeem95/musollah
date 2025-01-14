@@ -20,6 +20,7 @@ import TrackPlayer from 'react-native-track-player';
 import { playbackService } from '../constants/playbackService';
 import mobileAds from 'react-native-google-mobile-ads';
 import { getTrackingPermissionsAsync, PermissionStatus, requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
+import * as Sentry from '@sentry/react-native'
 
 if (AppState.currentState === 'active') {
   SplashScreen.preventAutoHideAsync();
@@ -64,7 +65,7 @@ const RootLayout = () => {
         if (status === PermissionStatus.UNDETERMINED) {
           await requestTrackingPermissionsAsync();
         }
-        
+
         const adapterStatuses = await mobileAds().initialize();
         console.log('AdMob initialized:', adapterStatuses);
         setIsAdMobInitialized(true);
