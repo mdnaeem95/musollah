@@ -15,17 +15,19 @@ import PrayerLocationModal from '../../../components/prayer/PrayerLocationModal'
 
 import moment from 'moment-timezone';
 
-// Add inside PrayerTab component
-useEffect(() => {
-  moment.locale('en'); // Replace 'ar' with the desired locale
-}, []);
-
 const PrayerTab = () => {
   const router = useRouter();
   const { prayerTimes, islamicDate, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
-  const { reminderInterval } = useSelector((state: RootState) => state.userPreferences);
+  const { reminderInterval, timeFormat } = useSelector((state: RootState) => state.userPreferences);
+  console.log(timeFormat)
   const { currentPrayer, nextPrayerInfo, fetchAndScheduleNotifications, backgroundImage } = usePrayerTimes(prayerTimes, reminderInterval)
   const [isPrayerLocationModalVisible, setIsPrayerLocationModalVisible] = useState<boolean>(false);
+
+  // Add inside PrayerTab component
+  useEffect(() => {
+    moment.locale('en');
+    fetchAndScheduleNotifications();
+  }, [fetchAndScheduleNotifications]);
 
   // Format the selected date
   const formattedDate = useMemo(() => {
@@ -38,10 +40,6 @@ const PrayerTab = () => {
     setIsPrayerLocationModalVisible(true);
   }
 
-  useEffect(() => {
-    fetchAndScheduleNotifications();
-  }, [fetchAndScheduleNotifications])
-
   return (
     <ImageBackground source={backgroundImage} style={styles.backgroundImage}>
       <View style={styles.mainContainer}>
@@ -50,7 +48,13 @@ const PrayerTab = () => {
             {selectedDate ? getFormattedDate(new Date(selectedDate)) : formattedDate}
           </Text>
           <Text style={styles.clockText}>
-            <Clock format={moment.localeData('en').longDateFormat('LT')} timezone={'Asia/Singapore'} element={Text} ticking={true} interval={60} />
+            <Clock 
+              format={timeFormat === '12-hour' ? 'hh:mm A' : 'HH:mm'} 
+              timezone={'Asia/Singapore'} 
+              element={Text} 
+              ticking={true} 
+              interval={60} 
+            />
           </Text>
           <Text style={styles.islamicDateText}>{islamicDate}</Text>
         </View>
