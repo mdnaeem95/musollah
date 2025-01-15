@@ -1,6 +1,5 @@
 import { View, Text, StyleSheet, ImageBackground } from 'react-native'
 import React, { useEffect, useMemo, useState } from 'react'
-import Clock from 'react-live-clock';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
 
@@ -13,19 +12,17 @@ import CurrentPrayerInfo from '../../../components/prayer/CurrentPrayerInfo';
 import PrayerTimesList from '../../../components/prayer/PrayerTimesList';
 import PrayerLocationModal from '../../../components/prayer/PrayerLocationModal';
 
-import moment from 'moment-timezone';
+import CustomClock from '../../../components/prayer/CustomClock';
 
 const PrayerTab = () => {
   const router = useRouter();
   const { prayerTimes, islamicDate, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
-  const { reminderInterval, timeFormat } = useSelector((state: RootState) => state.userPreferences);
-  console.log(timeFormat)
+  const { reminderInterval } = useSelector((state: RootState) => state.userPreferences);
   const { currentPrayer, nextPrayerInfo, fetchAndScheduleNotifications, backgroundImage } = usePrayerTimes(prayerTimes, reminderInterval)
   const [isPrayerLocationModalVisible, setIsPrayerLocationModalVisible] = useState<boolean>(false);
 
   // Add inside PrayerTab component
   useEffect(() => {
-    moment.locale('en');
     fetchAndScheduleNotifications();
   }, [fetchAndScheduleNotifications]);
 
@@ -47,15 +44,7 @@ const PrayerTab = () => {
           <Text style={styles.dateText}>
             {selectedDate ? getFormattedDate(new Date(selectedDate)) : formattedDate}
           </Text>
-          <Text style={styles.clockText}>
-            <Clock 
-              format={timeFormat === '12-hour' ? 'hh:mm' : 'HH:mm'} 
-              timezone={'Asia/Singapore'} 
-              element={Text} 
-              ticking={true} 
-              interval={60} 
-            />
-          </Text>
+          <CustomClock />
           <Text style={styles.islamicDateText}>{islamicDate}</Text>
         </View>
 
