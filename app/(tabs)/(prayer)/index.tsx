@@ -1,9 +1,8 @@
-import { View, Text, StyleSheet, ImageBackground, Button } from 'react-native'
+import { View, Text, StyleSheet, ImageBackground } from 'react-native'
 import React, { useEffect, useMemo, useState } from 'react'
 import Clock from 'react-live-clock';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
-import * as Sentry from '@sentry/react-native'
 
 import ExpandableButton from '../../../components/prayer/ExpandableButton';
 
@@ -13,6 +12,14 @@ import { usePrayerTimes } from '../../../hooks/usePrayerTimes'
 import CurrentPrayerInfo from '../../../components/prayer/CurrentPrayerInfo';
 import PrayerTimesList from '../../../components/prayer/PrayerTimesList';
 import PrayerLocationModal from '../../../components/prayer/PrayerLocationModal';
+
+import moment from 'moment-timezone';
+import 'moment/locale/en'; // Example for Arabic locale
+
+// Add inside PrayerTab component
+useEffect(() => {
+  moment.locale('en'); // Replace 'ar' with the desired locale
+}, []);
 
 const PrayerTab = () => {
   const router = useRouter();
@@ -44,7 +51,7 @@ const PrayerTab = () => {
             {selectedDate ? getFormattedDate(new Date(selectedDate)) : formattedDate}
           </Text>
           <Text style={styles.clockText}>
-            <Clock format={'HH:mm'} timezone={'Asia/Singapore'} element={Text} ticking={true} interval={60} />
+            <Clock format={moment.localeData().longDateFormat('LT')} timezone={'Asia/Singapore'} element={Text} ticking={true} interval={60} />
           </Text>
           <Text style={styles.islamicDateText}>{islamicDate}</Text>
         </View>
@@ -67,8 +74,6 @@ const PrayerTab = () => {
         onCityPress={handleCityPress}
         onDashboardPress={() => router.push('/prayerDashboard')}
       />
-
-  <Button title='Try!' onPress={() => Sentry.captureException(new Error('First error')) }/>
     </ImageBackground>
   );
 };
