@@ -114,7 +114,7 @@ export default {
         {
           "organization": "rihlah",
           "project": "rihlah",
-          "url": "https://sentry.io"
+          "url": "https://sentry.io/"
         }
       ],
       "@react-native-firebase/auth",

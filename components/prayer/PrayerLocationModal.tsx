@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Alert } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { fetchUserLocation } from '../../redux/slices/userLocationSlice';
-import { fetchPrayerTimesByLocationData, fetchPrayerTimesData } from '../../redux/slices/prayerSlice';
+import { fetchPrayerTimesByLocationData } from '../../redux/slices/prayerSlice';
 import { AppDispatch } from '../../redux/store/store';
-import { format } from 'date-fns';
 
 interface PrayerLocationModalProps {
   isVisible: boolean;
