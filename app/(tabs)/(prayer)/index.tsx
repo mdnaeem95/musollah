@@ -49,7 +49,7 @@ const PrayerTab = () => {
           </Text>
           <Text style={styles.clockText}>
             <Clock 
-              format={timeFormat === '12-hour' ? 'hh:mm A' : 'HH:mm'} 
+              format={timeFormat === '12-hour' ? 'hh:mm' : 'HH:mm'} 
               timezone={'Asia/Singapore'} 
               element={Text} 
               ticking={true} 
