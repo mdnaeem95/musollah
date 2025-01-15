@@ -14,7 +14,6 @@ import PrayerTimesList from '../../../components/prayer/PrayerTimesList';
 import PrayerLocationModal from '../../../components/prayer/PrayerLocationModal';
 
 import moment from 'moment-timezone';
-import 'moment/locale/en'; // Example for Arabic locale
 
 // Add inside PrayerTab component
 useEffect(() => {
