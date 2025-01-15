@@ -51,7 +51,7 @@ const PrayerTab = () => {
             {selectedDate ? getFormattedDate(new Date(selectedDate)) : formattedDate}
           </Text>
           <Text style={styles.clockText}>
-            <Clock format={moment.localeData().longDateFormat('LT')} timezone={'Asia/Singapore'} element={Text} ticking={true} interval={60} />
+            <Clock format={moment.localeData('en').longDateFormat('LT')} timezone={'Asia/Singapore'} element={Text} ticking={true} interval={60} />
           </Text>
           <Text style={styles.islamicDateText}>{islamicDate}</Text>
         </View>
