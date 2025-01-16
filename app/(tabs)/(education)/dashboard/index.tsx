@@ -41,22 +41,24 @@ const Dashboard = () => {
   const MemoizedCourseCardShort = memo(CourseCardShort);
 
   const MemoizedTeacherCard = memo(({ teacher }: { teacher: any }) => (
-    <TouchableOpacity
-      style={[styles.teacherCard, { backgroundColor: theme.colors.secondary }]}
-      onPress={() => router.push(`/teachers/${teacher.id}`)}
-    >
-      <View style={styles.teacherContentContainer}>
-        <Image source={{ uri: teacher.imagePath }} style={styles.teacherImage} />
-        <View style={styles.textContentContainer}>
-          <Text style={[styles.courseHeaderText, { color: theme.colors.text.primary }]}>
-            {teacher.name}
-          </Text>
-          <Text style={[styles.courseCategoryText, { color: theme.colors.text.muted }]}>
-            {teacher.expertise}
-          </Text>
+    <View style={styles.teacherCardShadow}>
+      <TouchableOpacity
+        style={[styles.teacherCard, { backgroundColor: theme.colors.secondary }]}
+        onPress={() => router.push(`/teachers/${teacher.id}`)}
+      >
+        <View style={styles.teacherContentContainer}>
+          <Image source={{ uri: teacher.imagePath }} style={styles.teacherImage} />
+          <View style={styles.textContentContainer}>
+            <Text style={[styles.courseHeaderText, { color: theme.colors.text.primary }]}>
+              {teacher.name}
+            </Text>
+            <Text style={[styles.courseCategoryText, { color: theme.colors.text.muted }]}>
+              {teacher.expertise}
+            </Text>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   ));
 
   const handleRefresh = async () => {
@@ -112,7 +114,7 @@ const Dashboard = () => {
     <ScrollView
       showsVerticalScrollIndicator={false}
       style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}
-      contentContainerStyle={{ paddingBottom: 250 }}
+      contentContainerStyle={{ paddingBottom: 100 }}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
@@ -144,29 +146,30 @@ const Dashboard = () => {
                   ).length / Object.keys(course.status.modules).length;
 
                 return (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.progressCard,
-                      { backgroundColor: theme.colors.secondary },
-                    ]}
-                    onPress={() => router.push(`/courses/${course.courseId}`)}
-                  >
-                    <Text style={[styles.progressCourseTitle, { color: theme.colors.text.primary }]}>
-                      {courseData.title}
-                    </Text>
-
-                    <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
-                      <Progress.Bar
-                        progress={progress}
-                        height={10}
-                        color={theme.colors.accent}
-                      />
+                  <View key={index} style={styles.progressCardShadow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.progressCard,
+                        { backgroundColor: theme.colors.secondary },
+                      ]}
+                      onPress={() => router.push(`/courses/${course.courseId}`)}
+                    >
                       <Text style={[styles.progressCourseTitle, { color: theme.colors.text.primary }]}>
-                        {Math.round(progress * 100)}%
+                        {courseData.title}
                       </Text>
-                    </View>
-                  </TouchableOpacity>
+
+                      <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
+                        <Progress.Bar
+                          progress={progress}
+                          height={10}
+                          color={theme.colors.accent}
+                        />
+                        <Text style={[styles.progressCourseTitle, { color: theme.colors.text.primary }]}>
+                          {Math.round(progress * 100)}%
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
                 );
               })}
             </ScrollView>
@@ -229,13 +232,21 @@ const createStyles = (theme: any) => StyleSheet.create({
       fontSize: 14,
       lineHeight: 17,
     },
+    progressCardShadow: {
+      borderRadius: 20,
+      backgroundColor: 'transparent',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.22,
+      shadowRadius: 2.22,
+      elevation: 3
+    },
     progressCard: {
       gap: 10,
       borderRadius: 20,
       padding: 20,
       marginRight: 20,
       width: 220,
-      ...theme.shadows.default,
     },
     progressCourseTitle: {
       fontFamily: 'Outfit_500Medium',
@@ -263,7 +274,15 @@ const createStyles = (theme: any) => StyleSheet.create({
       marginRight: 20,
       height: 250,
       width: 160,
-      ...theme.shadows.default,
+    },
+    teacherCardShadow: {
+      borderRadius: 10,
+      backgroundColor: 'transparent',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.22,
+      shadowRadius: 2.22,
+      elevation: 3
     },
     teacherImage: {
       width: '100%',

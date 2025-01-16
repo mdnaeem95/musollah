@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   doaText: {
     fontFamily: 'Amiri_400Regular',
     fontSize: 26,
-    lineHeight: 44,
+    lineHeight: 48,
     textAlign: 'right',
     paddingHorizontal: 20,
     marginBottom: 20,
