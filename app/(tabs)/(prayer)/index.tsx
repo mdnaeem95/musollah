@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ImageBackground } from 'react-native'
+import { View, Text, StyleSheet, ImageBackground, Platform } from 'react-native'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   },
   centeredView: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: Platform.OS === 'android' ? 5 : 20,
   },
   dateText: {
     fontFamily: 'Outfit_400Regular',
@@ -95,13 +95,7 @@ const styles = StyleSheet.create({
     fontSize: scaleSize(14),
     color: '#000000',
     textAlign: 'center',
-    marginTop: -10,
-  },
-  clockText: {
-    fontFamily: 'Outfit_600SemiBold',
-    fontSize: scaleSize(60),
-    color: '#000000',
-    textAlign: 'center',
+    marginTop: Platform.OS === 'android' ? 5 : -10,
   },
 });
 

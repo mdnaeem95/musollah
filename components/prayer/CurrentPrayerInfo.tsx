@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+import { scaleSize } from '../../utils';
 
 interface CurrentPrayerInfoProps {
   currentPrayer: string;
@@ -34,13 +35,14 @@ const styles = StyleSheet.create({
   },
   currentPrayerText: {
     fontFamily: 'Outfit_500Medium',
-    fontSize: 24,
+    fontSize: scaleSize(24),
+    lineHeight: 30,
     color: '#333333',
     textAlign: 'center',
   },
   nextPrayerText: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 14,
+    fontSize: scaleSize(14),
     color: '#666666',
     textAlign: 'center',
     marginTop: 5,

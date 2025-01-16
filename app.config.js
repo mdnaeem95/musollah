@@ -1,4 +1,4 @@
-import applePrivacyManifest from '../musollah/utils/apple-privacy-manifest.json'
+import applePrivacyManifest from './utils/apple-privacy-manifest.json'
 
 export default {
   "expo": {
