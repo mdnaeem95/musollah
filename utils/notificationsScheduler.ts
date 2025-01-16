@@ -46,6 +46,15 @@ export const scheduleNextDaysNotifications = async (
           continue;
         }
 
+        // Check is notification is already scheduled
+        if (
+          scheduledDays[date]?.[prayerName] &&
+          scheduledDays[date][prayerName].length > 0
+        ) {
+          console.log(`Notification for ${prayerName} on ${date} already scheduled. Skipping...`);
+          continue
+        }
+
         //@ts-ignore
         const [hour, minute] = prayerTime.split(':').map(Number);
         const prayerDate = new Date(date);

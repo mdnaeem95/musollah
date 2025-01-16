@@ -234,7 +234,7 @@ const PrayersDashboard = () => {
         <ActivityIndicator size="large" color={theme.colors.text.muted} />
       ) : (
         <>
-          <ScrollView>
+          <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.section}>
               <View style={styles.dateContainer}>
                 <TouchableOpacity onPress={handlePreviousDay} style={{ paddingHorizontal: 20 }}>

@@ -15,30 +15,6 @@ const TeachersLayout = () => {
       }}
     >
       <Stack.Screen
-        name="[id]"
-        options={{
-          headerShown: true,
-          headerTitle: "Teacher Details",
-          headerStyle: {
-            backgroundColor: theme.colors.primary,
-          },
-          headerTitleStyle: {
-            fontFamily: "Outfit_700Bold",
-            fontSize: 20,
-            color: theme.colors.text.primary,
-          },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 8 }}>
-              <FontAwesome6
-                name="arrow-left"
-                size={24}
-                color={theme.colors.text.primary}
-              />
-            </TouchableOpacity>
-          ),
-        }}
-      />
-      <Stack.Screen
         name="index"
         options={{
           headerShown: true,
@@ -53,6 +29,30 @@ const TeachersLayout = () => {
           },
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.push("/(education)/dashboard/")} style={{ paddingLeft: 8 }}>
+              <FontAwesome6
+                name="arrow-left"
+                size={24}
+                color={theme.colors.text.primary}
+              />
+            </TouchableOpacity>
+          ),
+        }}
+      />
+      <Stack.Screen
+        name="[id]"
+        options={{
+          headerShown: true,
+          headerTitle: "Teacher Details",
+          headerStyle: {
+            backgroundColor: theme.colors.primary,
+          },
+          headerTitleStyle: {
+            fontFamily: "Outfit_700Bold",
+            fontSize: 20,
+            color: theme.colors.text.primary,
+          },
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 8 }}>
               <FontAwesome6
                 name="arrow-left"
                 size={24}

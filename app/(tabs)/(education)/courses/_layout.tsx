@@ -42,7 +42,7 @@ const CoursesLayout = () => {
           ...sharedScreenOptions,
           headerTitle: 'Courses',
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.push('/(education)/dashboard/')} style={{ paddingLeft: 6 }}>
+            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 6 }}>
               <FontAwesome6
                 name="arrow-left"
                 size={24}
@@ -70,6 +70,7 @@ const CoursesLayout = () => {
       />
       <Stack.Screen
         name="[courseId]/modules/[moduleId]"
+        //@ts-ignore
         options={{
           ...sharedScreenOptions,
           headerTitle: 'Courses',

@@ -62,7 +62,7 @@ const PrayersSettings = () => {
         </TouchableOpacity>
 
         {/* Adhan Selection */}
-        <TouchableOpacity style={styles.settingsField} onPress={() => router.push('./adhanSelection')}>
+        <TouchableOpacity style={styles.settingsField} onPress={() => router.push('./prayers/adhanSelection')}>
           <Text style={styles.settingsName}>Adhan Audio</Text>
           <View style={styles.chevronContainer}>
             <Text style={styles.settingsValue}>{selectedAdhan}</Text>

@@ -1,8 +1,8 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { ThemeContext, useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface CourseCardProps {
     id: string;
@@ -17,33 +17,44 @@ const CourseCardShort: React.FC<CourseCardProps> = ({ id, title, description, ca
   const { theme } = useTheme();
 
   return (
-    <TouchableOpacity style={[styles.cardContainer, { backgroundColor: theme.colors.secondary }]}>
-      <Link
-        href={{
-          pathname: '/courses/[courseId]',
-          params: { courseId: `${id}` },
-        }}
-      >
-        <View style={styles.cardContent}>
-          {/* Icon Section as full width background */}
-          <View style={[styles.iconContainer, { backgroundColor: backgroundColour }]}>
-            <FontAwesome6 size={60} name={icon} color="black" />
-          </View>
-
-          {/* Course Details Section */}
-          <View style={styles.cardDetails}>
-            <View style={[styles.cardHashTag, { borderColor: theme.colors.text.primary }]}>
-              <Text style={[styles.hashtagText, { color: theme.colors.text.primary }]}>{category}</Text>
+    <View style={styles.cardShadow}>
+      <TouchableOpacity style={[styles.cardContainer, { backgroundColor: theme.colors.secondary }]}>
+        <Link
+          href={{
+            pathname: '/courses/[courseId]',
+            params: { courseId: `${id}` },
+          }}
+        >
+          <View style={styles.cardContent}>
+            {/* Icon Section as full width background */}
+            <View style={[styles.iconContainer, { backgroundColor: backgroundColour }]}>
+              <FontAwesome6 size={60} name={icon} color="black" />
             </View>
-            <Text style={[styles.headerText, { color: theme.colors.text.primary }]}>{title}</Text>
+
+            {/* Course Details Section */}
+            <View style={styles.cardDetails}>
+              <View style={[styles.cardHashTag, { borderColor: theme.colors.text.primary }]}>
+                <Text style={[styles.hashtagText, { color: theme.colors.text.primary }]}>{category}</Text>
+              </View>
+              <Text style={[styles.headerText, { color: theme.colors.text.primary }]}>{title}</Text>
+            </View>
           </View>
-        </View>
-      </Link>
-    </TouchableOpacity>
+        </Link>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  cardShadow: {
+    borderRadius: 15,
+    backgroundColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+    elevation: 3
+  },
   cardContainer: {
     flex: 1,
     borderRadius: 15,

@@ -38,7 +38,7 @@ const DoaLayout = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+    <View style={styles.container}>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -57,7 +57,7 @@ const DoaLayout = () => {
               color: theme.colors.text.primary,
             },
             headerStyle: {
-              backgroundColor: theme.colors.secondary,
+              backgroundColor: theme.colors.primary,
             },
             headerLeft: () => (
               <TouchableOpacity onPress={() => router.back()}>
@@ -77,7 +77,7 @@ const DoaLayout = () => {
             headerShown: true,
             headerTitle: 'Doas',
             headerStyle: {
-              backgroundColor: theme.colors.secondary,
+              backgroundColor: theme.colors.primary,
             },
             headerTintColor: theme.colors.text.primary,
             headerTitleStyle: {
