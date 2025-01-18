@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  Platform
 } from 'react-native';
 import * as Progress from 'react-native-progress';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -236,17 +237,24 @@ const createStyles = (theme: any) => StyleSheet.create({
       borderRadius: 20,
       backgroundColor: 'transparent',
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
+      shadowOffset: { width: 0, height: Platform.OS === 'android' ? 0 : 1 },
       shadowOpacity: 0.22,
-      shadowRadius: 2.22,
-      elevation: 3
+      shadowRadius: Platform.OS === 'android' ? 0 : 2.22,
+      elevation: Platform.OS === 'android' ? 0 : 3
     },
     progressCard: {
       gap: 10,
       borderRadius: 20,
       padding: 20,
       marginRight: 20,
+      marginBottom: 5,
+      marginLeft: 2,
+      marginTop: 2,
       width: 220,
+      shadowOffset: { width: 0, height: Platform.OS === 'android' ? 2 : 1 },
+      shadowOpacity: 0.3,
+      shadowRadius: Platform.OS === 'android' ? 3.5 : 2,
+      elevation: Platform.OS === 'android' ? 2.5 : 1,
     },
     progressCourseTitle: {
       fontFamily: 'Outfit_500Medium',
@@ -269,11 +277,16 @@ const createStyles = (theme: any) => StyleSheet.create({
       lineHeight: 17,
     },
     teacherCard: {
+      margin: 2,
       borderRadius: 10,
       padding: 10,
       marginRight: 20,
       height: 250,
       width: 160,
+      shadowOffset: { width: 0, height: Platform.OS === 'android' ? 2 : 1 },
+      shadowOpacity: 0.3,
+      shadowRadius: Platform.OS === 'android' ? 3.5 : 2,
+      elevation: Platform.OS === 'android' ? 2.5 : 1,
     },
     teacherCardShadow: {
       borderRadius: 10,
@@ -282,7 +295,7 @@ const createStyles = (theme: any) => StyleSheet.create({
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.22,
       shadowRadius: 2.22,
-      elevation: 3
+      elevation: Platform.OS === 'android' ? 0 : 3
     },
     teacherImage: {
       width: '100%',

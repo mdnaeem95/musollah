@@ -38,10 +38,36 @@ export const scheduleNextDaysNotifications = async (
         const prayerDate = new Date(date);
         prayerDate.setHours(hour, minute);
 
-        // Skip past prayer times
+        // Ensure prayer time is in the future
         if (prayerDate <= now) {
           console.log(`Skipping past prayer time for ${prayerName} on ${date}.`);
           continue;
+        }
+
+        // Handle Syuruk separately
+        if (prayerName.toLowerCase() === 'syuruk') {
+          if (scheduledDays[date]?.[prayerName]) {
+            console.log(`Notification for Syuruk on ${date} already scheduled. Skipping.`);
+            continue;
+          }
+
+          console.log(`Scheduling Syuruk notification for ${date} at ${prayerDate}.`);
+          const syurukNotificationId = await Notifications.scheduleNotificationAsync({
+            content: {
+              title: `It's Sunrise`,
+              body: `The sun is rising now. Reflect and prepare for the day.`,
+              sound: true,
+            },
+            trigger: prayerDate,
+          });
+
+          // Store Syuruk notification ID
+          scheduledDays[date] = {
+            ...scheduledDays[date],
+            [prayerName]: [syurukNotificationId],
+          };
+
+          continue; // Skip reminder logic for Syuruk
         }
 
         // Check if this prayer is already scheduled

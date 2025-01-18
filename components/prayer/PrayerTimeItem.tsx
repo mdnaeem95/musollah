@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     container: {
       justifyContent: 'space-between',
       width: containerWidth,
-      minHeight: 54,
+      minHeight: Platform.OS === 'android' ? 45 : 54,
       borderRadius: 15,
       borderColor: 'rgba(255, 255, 255)', 
       borderWidth: 1,
@@ -44,10 +44,10 @@ const styles = StyleSheet.create({
       paddingHorizontal: 10,
       backgroundColor: 'rgba(255, 255, 255, 0.5)',
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
+      shadowOffset: { width: 0, height: Platform.OS === 'android' ? 0 : 4 },
       shadowOpacity: 0.2,
-      shadowRadius: 6,
-      elevation: 4, // Shadow for Android
+      shadowRadius: Platform.OS === 'android' ? 0 : 6,
+      elevation: Platform.OS === 'android' ? 0 : 4, // Shadow for Android
     },
     prayerName: {
       fontFamily: 'Outfit_500Medium',
