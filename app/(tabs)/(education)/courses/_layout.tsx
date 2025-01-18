@@ -1,7 +1,7 @@
 import { FontAwesome6 } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
 import React from 'react';
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, Platform } from "react-native";
 import { useTheme } from '../../../../context/ThemeContext';
 
 const CoursesLayout = () => {
@@ -16,15 +16,15 @@ const CoursesLayout = () => {
     headerTintColor: theme.colors.text.primary,
     headerTitleStyle: {
       fontFamily: 'Outfit_700Bold',
-      fontSize: 20,
+      fontSize: Platform.OS === 'android' ? 18 : 20,
       color: theme.colors.text.primary,
     },
     headerLeft: ({ canGoBack }: { canGoBack: boolean }) => (
       canGoBack && (
-        <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 6 }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 6, marginRight: Platform.OS === 'android' ? 10 : 0, justifyContent: 'center', alignItems: 'center' }}>
           <FontAwesome6
             name="arrow-left"
-            size={24}
+            size={Platform.OS === 'android' ? 20 : 24}
             color={theme.colors.text.primary}
           />
         </TouchableOpacity>
@@ -42,10 +42,10 @@ const CoursesLayout = () => {
           ...sharedScreenOptions,
           headerTitle: 'Courses',
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 6 }}>
+            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 6, marginRight: Platform.OS === 'android' ? 10 : 0, justifyContent: 'center', alignItems: 'center' }}>
               <FontAwesome6
                 name="arrow-left"
-                size={24}
+                size={Platform.OS === 'android' ? 20 : 24}
                 color={theme.colors.text.primary}
               />
             </TouchableOpacity>
@@ -58,10 +58,10 @@ const CoursesLayout = () => {
           ...sharedScreenOptions,
           headerTitle: 'Courses',
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.push('/(education)/dashboard/')} style={{ paddingLeft: 6 }}>
+            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 6, marginRight: Platform.OS === 'android' ? 10 : 0, justifyContent: 'center', alignItems: 'center' }}>
               <FontAwesome6
                 name="arrow-left"
-                size={24}
+                size={Platform.OS === 'android' ? 20 : 24}
                 color={theme.colors.text.primary}
               />
             </TouchableOpacity>

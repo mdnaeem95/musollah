@@ -73,7 +73,7 @@ const OnlineCourseDetails = ({
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
-      <ScrollView contentContainerStyle={{ gap: 5 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ gap: 5, paddingBottom: 50 }} showsVerticalScrollIndicator={false}>
         {/* Author Information */}
         <View style={[styles.authorContainer, { backgroundColor: theme.colors.secondary }]}>
           <Image source={{ uri: teacherImage }} style={styles.authorAvatar} />
@@ -108,10 +108,10 @@ const OnlineCourseDetails = ({
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <View>
-                    <Text style={[styles.subText, { color: theme.colors.text.primary }]}>
+                    <Text style={[styles.subText, { color: isLocked ? "#000" : theme.colors.text.primary }]}>
                       {`${index + 1}. ${module.title}`}
                     </Text>
-                    <Text style={[styles.contentText, { color: theme.colors.text.secondary }]}>1 hour</Text>
+                    <Text style={[styles.contentText, { color: isLocked ? "#000" : theme.colors.text.secondary }]}>1 hour</Text>
                   </View>
                   {isLocked && <FontAwesome6 name="lock" size={20} color={theme.colors.text.muted} />}
                 </View>
@@ -192,8 +192,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 5,
     elevation: 3,
+    margin: 2
   },
   learningBtn: {
+    margin: 2,
     alignItems: 'center',
     paddingVertical: 12,
     borderRadius: 10,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { getPrayerTimesInfo, extractNextDaysPrayerTimes } from "../utils/index"
 import { fetchMonthlyPrayerTimes } from "../api/prayers"
 import { scheduleNextDaysNotifications } from "../utils/notificationsScheduler"
@@ -18,7 +18,10 @@ export const usePrayerTimes = (
     } | null>(null)
 
     const { currentTheme } = useTheme();
-    const mutedNotifications = useSelector((state: RootState) => state.userPreferences.mutedNotifications)
+    const mutedNotifications = useSelector((state: RootState) => state.userPreferences.mutedNotifications);
+
+      // Track last schedule to prevent multiple triggers
+    const lastScheduleRef = useRef<number | null>(null);
 
     //@ts-ignore
     const backgroundImage = useMemo(() => {
@@ -28,6 +31,17 @@ export const usePrayerTimes = (
     }, [currentPrayer, currentTheme]);
 
     const fetchAndScheduleNotifications = useCallback(async () => {
+        const now = Date.now();
+        const MIN_SCHEDULE_INTERVAL = 5000; // 5 seconds (adjust as needed)
+    
+        // Prevent multiple schedules within the debounce interval
+        if (lastScheduleRef.current && now - lastScheduleRef.current < MIN_SCHEDULE_INTERVAL) {
+          console.log("Skipping redundant notification scheduling...");
+          return;
+        }
+    
+        lastScheduleRef.current = now;
+        
         try {
             const today = new Date();
             const year = today.getFullYear();
