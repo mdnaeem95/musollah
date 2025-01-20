@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Slot, Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useDispatch } from 'react-redux';
-import Purchases from 'react-native-purchases';
 import * as SplashScreen from 'expo-splash-screen';
-import { AppState, Platform, StyleSheet, View } from 'react-native';
+import { AppState, StyleSheet, View } from 'react-native';
 import { Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from "@expo-google-fonts/outfit";
 import { Amiri_400Regular } from "@expo-google-fonts/amiri";
 import { useFonts } from 'expo-font';
@@ -20,7 +19,7 @@ import TrackPlayer from 'react-native-track-player';
 import { playbackService } from '../constants/playbackService';
 import mobileAds from 'react-native-google-mobile-ads';
 import { getTrackingPermissionsAsync, PermissionStatus, requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
-import * as Sentry from '@sentry/react-native'
+import { registerForPushNotificationsAsync } from '../utils/registerForPushNotificationsAsync';
 
 if (AppState.currentState === 'active') {
   SplashScreen.preventAutoHideAsync();
@@ -74,6 +73,7 @@ const RootLayout = () => {
       }
     };
     initializeAdMob();
+    registerForPushNotificationsAsync();
   }, []);
 
   // Fetch only essential data (Prayer Times) first

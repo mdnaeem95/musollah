@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { scaleSize } from '../../utils';
+import { useTheme } from '../../context/ThemeContext';
 
 interface CurrentPrayerInfoProps {
   currentPrayer: string;
@@ -14,6 +15,9 @@ const CurrentPrayerInfo = ({
   currentPrayer,
   nextPrayerInfo,
 }: CurrentPrayerInfoProps) => {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   if (!currentPrayer || !nextPrayerInfo) {
     return null; // Render nothing if data is missing
   }
@@ -28,7 +32,7 @@ const CurrentPrayerInfo = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     alignItems: 'center',
     marginVertical: 10,
@@ -37,13 +41,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_500Medium',
     fontSize: scaleSize(24),
     lineHeight: 30,
-    color: '#333333',
+    color: "#000000",
     textAlign: 'center',
   },
   nextPrayerText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: scaleSize(14),
-    color: '#666666',
+    color: "#000000",
     textAlign: 'center',
     marginTop: 5,
   },
