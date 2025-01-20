@@ -1,8 +1,8 @@
-import SubuhBackground from "./subuhBackground.png"
-import ZohorBackground from "./zuhurBackground.png"
-import AsarBackground from "./asarBackground.png"
-import MaghribBackground from "./maghribBackground.png"
-import IsyakBackground from "./isyaBackground.png"
+import SubuhBackgroundGreen from "./subuhBackground.png"
+import ZohorBackgroundGreen from "./zuhurBackground.png"
+import AsarBackgroundGreen from "./asarBackground.png"
+import MaghribBackgroundGreen from "./maghribBackground.png"
+import IsyakBackgroundGreen from "./isyaBackground.png"
 
 import SubuhBackgroundPurple from "./subuhBackgroundPurple.png"
 import ZohorBackgroundPurple from "./zuhurBackgroundPurple.png"
@@ -18,12 +18,12 @@ import IsyakBackgroundBlue from "./isyaBackgroundBlue.png"
 
 
 const prayerBackgrounds = {
-    Subuh: SubuhBackground,
-    Syuruk: SubuhBackground,
-    Zohor: ZohorBackground,
-    Asar: AsarBackground,
-    Maghrib: MaghribBackground,
-    Isyak: IsyakBackground,
+    SubuhGreen: SubuhBackgroundGreen,
+    SyurukGreen: SubuhBackgroundGreen,
+    ZohorGreen: ZohorBackgroundGreen,
+    AsarGreen: AsarBackgroundGreen,
+    MaghribGreen: MaghribBackgroundGreen,
+    IsyakGreen: IsyakBackgroundGreen,
     SubuhPurple: SubuhBackgroundPurple,
     SyurukPurple: SubuhBackgroundPurple,
     ZohorPurple: ZohorBackgroundPurple,
