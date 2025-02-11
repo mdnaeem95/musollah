@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../../../../context/ThemeContext';
 
-type PrayerLog = {
+export type PrayerLog = {
   Subuh: boolean;
   Zohor: boolean;
   Asar: boolean;

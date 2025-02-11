@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, StyleProp, TextStyle } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store/store';
 
-const CustomClock = () => {
+interface CustomClockProps {
+  isRamadanMode?: boolean;
+}
+
+const CustomClock: React.FC<CustomClockProps> = ({ isRamadanMode = false }) => {
   const [currentTime, setCurrentTime] = useState('');
   const { timeFormat } = useSelector((state: RootState) => state.userPreferences);
 
   // Function to format time based on user preference
-  const formatTime = (date: any) => {
+  const formatTime = (date: Date) => {
     const hours = date.getHours();
     const minutes = date.getMinutes();
     if (timeFormat === '12-hour') {
@@ -34,7 +38,9 @@ const CustomClock = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.clockText}>{currentTime}</Text>
+      <Text style={[styles.clockText, isRamadanMode && styles.clockTextRamadan]}>
+        {currentTime}
+      </Text>
     </View>
   );
 };
@@ -49,6 +55,9 @@ const styles = StyleSheet.create({
     fontSize: 60,
     color: '#000000',
     textAlign: 'center',
+  },
+  clockTextRamadan: {
+    fontSize: 24,
   },
 });
 
