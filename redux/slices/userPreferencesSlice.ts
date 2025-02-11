@@ -9,6 +9,7 @@ interface UserPreferencesState {
   reminderInterval: number; // Reminder interval
   selectedAdhan: 'Ahmad Al-Nafees' | 'Mishary Rashid Alafasy' | 'None'; // Selected Adhan audio file
   mutedNotifications: string[];
+  ramadanMode: boolean; // Ramadan mode toggle
 }
 
 const initialState: UserPreferencesState = {
@@ -19,7 +20,8 @@ const initialState: UserPreferencesState = {
   timeFormat: '12-hour', // Default to 12-hour format
   reminderInterval: 0,
   selectedAdhan: 'None',
-  mutedNotifications: []
+  mutedNotifications: [],
+  ramadanMode: false, // Default to off
 };
 
 const userPreferencesSlice = createSlice({
@@ -57,7 +59,10 @@ const userPreferencesSlice = createSlice({
       } else {
         state.mutedNotifications.push(prayer);
       }
-    }
+    },
+    toggleRamadanMode: (state) => {
+      state.ramadanMode = !state.ramadanMode;
+    },
   },
 });
 
@@ -70,7 +75,8 @@ export const {
   setReminderInterval,
   toggleTimeFormat,
   setSelectedAdhan,
-  toggleNotificationForPrayer
+  toggleNotificationForPrayer,
+  toggleRamadanMode
 } = userPreferencesSlice.actions;
 
 export default userPreferencesSlice.reducer;

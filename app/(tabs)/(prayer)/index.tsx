@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ImageBackground, Platform } from 'react-native'
+import { View, Text, StyleSheet, ImageBackground, Platform, ScrollView, SafeAreaView } from 'react-native'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
@@ -13,11 +13,19 @@ import PrayerTimesList from '../../../components/prayer/PrayerTimesList';
 import PrayerLocationModal from '../../../components/prayer/PrayerLocationModal';
 
 import CustomClock from '../../../components/prayer/CustomClock';
+import { useTheme } from '../../../context/ThemeContext';
+import RamadanPrayerTimes from '../../../components/prayer/RamadanPrayerTimes';
+import LocationInfo from '../../../components/prayer/LocationInfo';
+import QuickAccessButtons from '../../../components/prayer/QuickAccessButtons';
+import FastTracker from '../../../components/prayer/FastTracker';
+import PuasaDoaCarousel from '../../../components/prayer/PuasaDoaCarousel';
 
 const PrayerTab = () => {
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const { prayerTimes, islamicDate, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
-  const { reminderInterval } = useSelector((state: RootState) => state.userPreferences);
+  const { reminderInterval, ramadanMode } = useSelector((state: RootState) => state.userPreferences);
   const { currentPrayer, nextPrayerInfo, fetchAndScheduleNotifications, backgroundImage } = usePrayerTimes(prayerTimes, reminderInterval)
   const [isPrayerLocationModalVisible, setIsPrayerLocationModalVisible] = useState<boolean>(false);
 
@@ -35,6 +43,36 @@ const PrayerTab = () => {
   // Handle city press to open location modal
   const handleCityPress = () => {
     setIsPrayerLocationModalVisible(true);
+  }
+
+  if (ramadanMode) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View style={styles.outerContainer}>
+            {/* Left container (half the screen) with clock and current prayer info */}
+            <View style={styles.leftContainer}>
+              <LocationInfo />
+              <View style={styles.prayerSessionContainer}>
+                <CurrentPrayerInfo
+                  currentPrayer={currentPrayer}
+                  nextPrayerInfo={nextPrayerInfo}
+                  isRamadanMode
+                />
+              </View>
+            </View>
+
+            {/* Right container placeholder - add additional components here in the future */}
+            <View style={styles.rightContainer}>
+              <QuickAccessButtons />
+            </View>
+          </View>
+          <RamadanPrayerTimes />
+          <FastTracker />
+          <PuasaDoaCarousel />
+        </ScrollView>
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -70,7 +108,7 @@ const PrayerTab = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   backgroundImage: {
     flex: 1,
     resizeMode: 'cover',
@@ -96,6 +134,37 @@ const styles = StyleSheet.create({
     color: '#000000',
     textAlign: 'center',
     marginTop: Platform.OS === 'android' ? 5 : -10,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+  },
+  contentContainer: {
+    padding: theme.spacing.medium,
+  },
+  outerContainer: {
+    flexDirection: 'row',
+    padding: theme.spacing.medium,
+    justifyContent: 'space-between',
+  },
+  leftContainer: {
+    width: '35%',
+    backgroundColor: theme.colors.secondary,
+    borderRadius: theme.borderRadius.medium,
+    padding: theme.spacing.medium,
+    ...theme.shadows.default,
+  },
+  rightContainer: {
+    width: '60%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  clockContainer: {
+    alignItems: 'center',
+    marginBottom: theme.spacing.medium,
+  },
+  prayerSessionContainer: {
+    alignItems: 'center',
   },
 });
 

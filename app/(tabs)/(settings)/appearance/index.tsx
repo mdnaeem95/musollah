@@ -9,9 +9,14 @@ import {
   Switch,
 } from 'react-native';
 import { useTheme } from '../../../../context/ThemeContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../../../redux/store/store';
+import { toggleRamadanMode } from '../../../../redux/slices/userPreferencesSlice';
 
 const Appearance = () => {
- const { theme, currentTheme, switchTheme, isDarkMode, toggleDarkMode } = useTheme();
+  const { theme, currentTheme, switchTheme, isDarkMode, toggleDarkMode } = useTheme();
+  const dispatch = useDispatch();
+  const isRamadanMode = useSelector((state: RootState) => state.userPreferences.ramadanMode) 
   const themes = ['green', 'blue', 'purple']; // Available themes
 
   const [animatedValues, setAnimatedValues] = useState(() =>
@@ -33,6 +38,11 @@ const Appearance = () => {
       }).start();
     });
     switchTheme(themeName);
+  };
+
+  // Ramadan Mode state & toggle function
+  const toggleRamadanModeHandler = () => {
+    dispatch(toggleRamadanMode());
   };
 
   const styles = createStyles(theme);
@@ -91,6 +101,20 @@ const Appearance = () => {
                 ? theme.colors.primary
                 : theme.colors.secondary
             }
+          />
+        </View>
+
+        {/* Ramadan Mode Toggle */}
+        <View style={styles.settingsField}>
+          <Text style={styles.darkModeLabel}>Ramadan Mode</Text>
+          <Switch
+            value={isRamadanMode}
+            onValueChange={toggleRamadanModeHandler}
+            trackColor={{
+              false: theme.colors.text.muted,
+              true: theme.colors.accent,
+            }}
+            thumbColor={isRamadanMode ? theme.colors.primary : theme.colors.secondary}
           />
         </View>
       </View>
