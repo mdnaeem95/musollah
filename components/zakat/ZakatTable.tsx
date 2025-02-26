@@ -13,10 +13,10 @@ interface ZakatTableProps {
   shares: string;
   setShares: (value: string) => void;
   eligibility: {
-    savings: boolean;
-    gold: boolean;
-    insurance: boolean;
-    shares: boolean;
+    savings: { eligible: boolean; amount: string };
+    gold: { eligible: boolean; notForUse: string; forUse: string };
+    insurance: { eligible: boolean; amount: string };
+    shares: { eligible: boolean; amount: string };
   };
   totalZakat: number;
   renderEligibilityIcon: (isEligible: boolean) => React.ReactNode;
@@ -49,9 +49,9 @@ const ZakatTable = ({
     <View style={styles.tableContainer}>
       {/* Table Header */}
       <View style={styles.tableHeaderRow}>
-        <Text style={styles.tableHeader}>Type of Zakat</Text>
-        <Text style={styles.tableHeader}>Amount</Text>
-        <Text style={styles.tableHeader}>Eligibility</Text>
+        <Text style={styles.columnType}>Type of Zakat</Text>
+        <Text style={styles.columnAmount}>Amount</Text>
+        <Text style={styles.columnEligibility}>Eligibility</Text>
       </View>
 
       {/* Zakat Rows */}
@@ -107,10 +107,10 @@ const ZakatTable = ({
             value={value}
             onChangeText={setValue}
             keyboardType="numeric"
-            editable={eligibility}
+            editable={eligibility.eligible}
           />
           <View style={styles.columnEligibility}>
-            {renderEligibilityIcon(eligibility)}
+            {renderEligibilityIcon(eligibility.eligible)}
           </View>
         </View>
       ))}
@@ -139,6 +139,20 @@ const createStyles = (theme: any) =>
       padding: theme.spacing.small,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.accent,
+    },
+    columnType: {
+      width: '40%',  // Matches header
+      paddingLeft: theme.spacing.small,
+    },
+    columnAmount: {
+      width: '30%',  // Matches header
+      alignItems: 'center',
+      marginLeft: 10
+    },
+    columnEligibility: {
+      width: '30%',  // Matches header
+      alignItems: 'center',
+      marginLeft: 20
     },
     tableHeader: {
       flex: 1,
@@ -175,10 +189,6 @@ const createStyles = (theme: any) =>
       color: theme.colors.text.primary,
       textAlign: 'right',
     },
-    columnEligibility: {
-      flex: 1,
-      alignItems: 'center',
-    },
     totalRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -196,6 +206,6 @@ const createStyles = (theme: any) =>
       fontFamily: 'Outfit_600SemiBold',
       color: theme.colors.text.primary,
     },
-  });
+});
 
 export default ZakatTable;

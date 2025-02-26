@@ -26,7 +26,7 @@ const ZakatHarta = () => {
   const [insurance, setInsurance] = useState<string>('');
   const [shares, setShares] = useState<string>('');
   const [totalZakat, setTotalZakat] = useState<number>(0);
-  const [nisabAmount, setNisabAmount] = useState(9901);
+  const [nisabAmount, setNisabAmount] = useState(10358);
 
   const [currentGoldPrice, setCurrentGoldPrice] = useState<number>(0);
   const [goldPriceTimeStamp, setGoldPriceTimeStamp] = useState('');
@@ -42,12 +42,12 @@ const ZakatHarta = () => {
   const [unusedGold, setUnusedGold] = useState<string>('0');
 
   const [eligibility, setEligibility] = useState({
-    savings: false,
-    gold: false,
-    insurance: false,
-    shares: false,
+    savings: { eligible: false, amount: '0' },
+    gold: { eligible: false, notForUse: '0', forUse: '0' },
+    insurance: { eligible: false, amount: '0' },
+    shares: { eligible: false, amount: '0' },
   });
-
+  
   const [haulStates, setHaulStates] = useState({
     savingsHaul: false,
     goldNotWearingHaul: false,
@@ -73,12 +73,13 @@ const ZakatHarta = () => {
   }, [savings, gold, insurance, shares]);
 
   const calculateZakat = () => {
-    const totalAssets =
-      parseFloat(savings) +
-      parseFloat(gold) +
-      parseFloat(insurance) +
-      parseFloat(shares);
-    setTotalZakat(totalAssets * 0.025);
+    const zakatSavings = parseFloat(savings) || 0;
+    const zakatGold = parseFloat(gold) || 0;
+    const zakatInsurance = eligibility.insurance.eligible ? parseFloat(eligibility.insurance.amount) || 0 : 0;
+    const zakatShares = eligibility.shares.eligible ? parseFloat(eligibility.shares.amount) || 0 : 0;
+  
+    const total = (zakatSavings + zakatGold + zakatInsurance + zakatShares);
+    setTotalZakat(total);
   };
 
   const parseDate = (timestamp: any) => {
@@ -125,8 +126,10 @@ const ZakatHarta = () => {
           }}
         />
 
-        <ThemedButton text="Check Eligibility" onPress={() => setIsEligibilityModalVisible(true)} textStyle={{ color: '#000' }} />
-        <ThemedButton text="Guide" onPress={() => setIsGuideModalVisible(true)} textStyle={{ color: '#000' }} />
+        <View style={{ width: '95%', gap: 20, alignItems: 'center', justifyContent: 'center', marginHorizontal: 5 }}>
+          <ThemedButton text="Check Eligibility" onPress={() => setIsEligibilityModalVisible(true)} textStyle={{ color: theme.colors.accent }} style={{ backgroundColor: theme.colors.secondary }} />
+          <ThemedButton text="Guide" onPress={() => setIsGuideModalVisible(true)} textStyle={{ color: theme.colors.accent }} style={{ backgroundColor: theme.colors.secondary }} />
+        </View>
 
         <EligibilityModal
           isVisible={isEligibilityModalVisible}
@@ -139,7 +142,16 @@ const ZakatHarta = () => {
             shares,
           }}
           initialHaulStates={haulStates}
-          onCalculate={setEligibility}
+          onCalculate={(newEligibility) => {
+            setEligibility(newEligibility)
+
+            // Auto-fill the input fields with eligibility amounts
+            setSavings(newEligibility.savings.amount);
+            setUnusedGold(newEligibility.gold.notForUse);
+            setUsedGold(newEligibility.gold.forUse);
+            setInsurance(newEligibility.insurance.amount);
+            setShares(newEligibility.shares.amount);
+          }}
           nisabAmount={nisabAmount}
           nisabAmountNotWearing={nisabAmountNotWearing}
           urufAmountWearing={urufAmountWearing}

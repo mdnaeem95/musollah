@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import Carousel from 'react-native-snap-carousel';
+import Carousel from 'react-native-reanimated-carousel';
 import { useTheme } from '../../context/ThemeContext';
 import { scaleSize } from '../../utils';
 
@@ -9,9 +9,9 @@ const { width } = Dimensions.get('window');
 const doas = [
   {
     title: "Niat Puasa",
-    arabic: "وَبِصَوْمِ غَدٍ نَوَيْتُ مِنْ شَهْرِ رَمَضَانَ",
-    transliteration: "Wa bisawmi ghadin nawaitu min shahri Ramadan",
-    meaning: "I intend to fast tomorrow in the month of Ramadan.",
+    arabic: "نَوَيْتُ صَوْمَ غَدٍ أَنْ أَدَاءِ فَرْضِ رَمَضَانَ هَذِهِ السَّنَةِ لِلَّهِ تَعَالَى",
+    transliteration: "Nawaitu sauma ghodin an'adaai fardhi syahir romadhona haadzihis sanati lillahi ta'ala",
+    meaning: "I intend to fast tomorrow in the month of Ramadan this year because of Allah.",
   },
   {
     title: "Doa Berbuka Puasa",
@@ -30,32 +30,28 @@ const doas = [
 const PuasaDoaCarousel = () => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
-  const carouselRef = useRef<Carousel<any>>(null);
-
-  const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>{item.title}</Text>
-      <Text style={styles.arabic}>{item.arabic}</Text>
-      <Text style={styles.transliteration}>{item.transliteration}</Text>
-      <Text style={styles.meaning}>{item.meaning}</Text>
-    </View>
-  );
 
   return (
-    <View style={styles.container}>
+    <>
       <Text style={styles.title}>Puasa-Related Doas</Text>
-      
-      <Carousel
-        ref={carouselRef}
-        data={doas}
-        renderItem={renderItem}
-        sliderWidth={width}
-        itemWidth={width * 0.85}
-        layout="default"
-        inactiveSlideScale={0.9}
-        inactiveSlideOpacity={0.6}
-      />
-    </View>
+      <View style={styles.container}>
+        <Carousel
+          width={width}
+          height={300}
+          data={doas}
+          scrollAnimationDuration={500}
+          loop={false}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>{item.title}</Text>
+              <Text style={styles.arabic}>{item.arabic}</Text>
+              <Text style={styles.transliteration}>{item.transliteration}</Text>
+              <Text style={styles.meaning}>{item.meaning}</Text>
+            </View>
+          )}
+        />
+      </View>
+    </>
   );
 };
 
@@ -69,12 +65,14 @@ const createStyles = (theme: any) =>
       fontSize: scaleSize(18),
       fontFamily: 'Outfit_600SemiBold',
       color: theme.colors.text.primary,
-      marginBottom: theme.spacing.small,
-      textAlign: 'center',
+      marginLeft: theme.spacing.medium,
+      marginTop: theme.spacing.medium,
+      textAlign: 'left',
     },
     card: {
-      width: width * 0.85,
+      width: width * 0.9,
       backgroundColor: theme.colors.secondary,
+      marginLeft: 20,
       padding: theme.spacing.large,
       borderRadius: theme.borderRadius.medium,
       alignItems: 'center',
@@ -89,8 +87,8 @@ const createStyles = (theme: any) =>
     },
     arabic: {
       fontSize: scaleSize(22),
-      fontFamily: 'Outfit_700Bold',
-      color: theme.colors.accent,
+      fontFamily: 'Amiri_400Regular',
+      color: theme.colors.text.primary,
       textAlign: 'center',
       marginBottom: theme.spacing.medium,
     },

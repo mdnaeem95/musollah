@@ -225,6 +225,9 @@ const SurahTextScreen = () => {
                 const uniqueOverallAyahs = new Set([...readAyahsOverall, `${surahNum}:${ayahNumber}`]);
                 AsyncStorage.setItem('readAyahsOverall', JSON.stringify(Array.from(uniqueOverallAyahs)));
             });
+
+            // ✅ NEW: Save last read Ayah separately
+            AsyncStorage.setItem('lastReadAyah', JSON.stringify({ surahNumber: surahNum, ayahNumber }));
     
             // Check if the surah is fully read for both daily and overall tracking
             if (updatedReadAyahs.length === arabicAyahs.length) {
