@@ -85,9 +85,9 @@ const FastTracker = () => {
   const weekDates = ramadanDates.slice(startIndex, endIndex);
 
   return (
+    <>
+    <Text style={styles.title}>Fast Tracker</Text>
     <View style={styles.container}>
-      <Text style={styles.title}>Fast Tracker</Text>
-      
       {/* Week Navigation */}
       <View style={styles.weekNav}>
         <TouchableOpacity 
@@ -141,6 +141,7 @@ const FastTracker = () => {
         </>
       )}
     </View>
+    </>
   );
 };
 
@@ -157,8 +158,8 @@ const createStyles = (theme: any) =>
       fontSize: scaleSize(18),
       fontFamily: 'Outfit_600SemiBold',
       color: theme.colors.text.primary,
-      marginBottom: theme.spacing.small,
-      textAlign: 'center',
+      marginLeft: theme.spacing.medium,
+      marginTop: theme.spacing.medium
     },
     weekNav: {
       flexDirection: 'row',

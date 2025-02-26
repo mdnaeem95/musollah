@@ -181,6 +181,8 @@ const RamadanPrayerTimes = () => {
   return (
     <View style={styles.container}>
       {/* Top Section: Date Scroller */}
+      <Text style={styles.header}>Prayer Times & Logger</Text>
+
       <View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} ref={scrollViewRef}>
           {dates.map((dateItem, index) => (
@@ -247,6 +249,11 @@ const createStyles = (theme: any) =>
       padding: theme.spacing.medium,
       gap: 20
     },
+    header: {
+      fontSize: scaleSize(18),
+      fontFamily: 'Outfit_600SemiBold',
+      color: theme.colors.text.primary,
+    },
     dateWrapper: {
         justifyContent: 'center',
         alignItems: 'center'
@@ -261,7 +268,7 @@ const createStyles = (theme: any) =>
       alignItems: 'center',
     },
     todayHighlight: {
-        backgroundColor: theme.colors.accent,
+        backgroundColor: theme.colors.muted,
         borderRadius: scaleSize(20),
         borderWidth: 2,
         borderColor: theme.colors.text.primary
@@ -274,7 +281,7 @@ const createStyles = (theme: any) =>
     todayText: {
         fontSize: scaleSize(26),
         fontFamily: 'Outfit_700Bold',
-        color: theme.colors.text.primary
+        color: theme.colors.accent
     },
     dateMonth: {
       fontFamily: 'Outfit_400Regular',

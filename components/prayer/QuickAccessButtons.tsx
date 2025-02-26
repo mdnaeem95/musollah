@@ -27,12 +27,28 @@ const QuickAccessButtons = () => {
         <Text style={styles.buttonLabel}>Doas</Text>
       </View>
 
+      {/* Zakat */}
+      <View style={styles.buttonWrapper}>
+        <TouchableOpacity style={styles.button} onPress={() => router.replace('(settings)/zakat')}>
+          <FontAwesome6 name="money-bill" size={24} color={theme.colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={styles.buttonLabel}>Zakat</Text>
+      </View>
+
       {/* Monthly Prayer Times */}
       <View style={styles.buttonWrapper}>
         <TouchableOpacity style={styles.button} onPress={() => router.push('/monthlyPrayerTimes')}>
           <FontAwesome6 name="calendar-alt" size={24} color={theme.colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.buttonLabel}>Monthly</Text>
+      </View>
+
+      {/* Terawih */}
+      <View style={styles.buttonWrapper}>
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/terawih')}>
+          <FontAwesome6 name="location-dot" size={24} color={theme.colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={styles.buttonLabel}>Terawih</Text>
       </View>
 
       {/* Prayer Dashboard */}
@@ -57,7 +73,7 @@ const createStyles = (theme: any) =>
     },
     buttonWrapper: {
       alignItems: 'center',
-      width: '45%',
+      width: '30%',
     },
     button: {
       width: scaleSize(50),

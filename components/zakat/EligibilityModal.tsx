@@ -27,10 +27,10 @@ interface EligibilityModalProps {
     goldWearingHaul: boolean;
   };
   onCalculate: (eligibility: {
-    savings: boolean;
-    gold: boolean;
-    insurance: boolean;
-    shares: boolean;
+    savings: { eligible: boolean; amount: string };
+    gold: { eligible: boolean; notForUse: string; forUse: string };
+    insurance: { eligible: boolean; amount: string };
+    shares: { eligible: boolean; amount: string };
   }) => void;
   nisabAmount: number;
   nisabAmountNotWearing: number;
@@ -69,11 +69,16 @@ const EligibilityModal: React.FC<EligibilityModalProps> = ({
     const sharesEligible = parseFloat(eligibilityShares) >= nisabAmount;
 
     onCalculate({
-      savings: savingsEligible,
-      gold: goldEligible,
-      insurance: insuranceEligible,
-      shares: sharesEligible,
+      savings: { eligible: savingsEligible, amount: eligibilitySavings },
+      gold: {
+        eligible: goldEligible,
+        notForUse: eligibilityGoldNotForUse,
+        forUse: eligibilityGoldForUse,
+      },
+      insurance: { eligible: insuranceEligible, amount: (insuranceEligible ? (parseFloat(eligibilityInsurance) * 0.025).toFixed(2) : "0") },
+      shares: { eligible: sharesEligible, amount: (sharesEligible ? (parseFloat(eligibilityShares) * 0.025).toFixed(2) : "0") },
     });
+
     onClose();
   };
 
@@ -211,7 +216,7 @@ const createStyles = (theme: any) =>
     calculateButton: {
       marginTop: theme.spacing.medium,
       padding: theme.spacing.medium,
-      backgroundColor: theme.colors.text.success,
+      backgroundColor: theme.colors.secondary,
       borderRadius: theme.borderRadius.medium,
     },
     calculateButtonText: {

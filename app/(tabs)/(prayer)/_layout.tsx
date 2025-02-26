@@ -36,6 +36,12 @@ const PrayerLayout = () => {
         }}
       />
       <Stack.Screen
+        name="terawih/index"
+        options={{
+          title: 'Terawih Locations',
+        }}
+      />
+      <Stack.Screen
         name="doa/index"
         options={{
           title: 'Post-Prayer Doa',

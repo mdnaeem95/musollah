@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Alert, StyleSheet, TextInput } from 'react-native';
+import { View, Text, Alert, StyleSheet, TextInput, Pressable, Animated } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { deleteUser, getAuth, signOut, updateProfile } from '@react-native-firebase/auth';
 import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from '@react-native-firebase/firestore';
@@ -7,7 +7,7 @@ import { persistor } from '../../../../redux/store/store';
 import { useRouter, useSegments } from 'expo-router';
 import { useTheme } from '../../../../context/ThemeContext';
 import Modal from 'react-native-modal';
-import ThemedButton from '../../../../components/ThemedButton'; // Reusable button component
+import ThemedButton from '../../../../components/ThemedButton'; 
 import SignInModal from '../../../../components/SignInModal';
 
 const AccountSettings = () => {
@@ -53,7 +53,7 @@ const AccountSettings = () => {
         await updateDoc(userDocRef, { name: newName });
         setName(newName);
         setModalVisible(false);
-        Alert.alert('Success', 'Name updated successfully!');
+        Alert.alert('Success!', 'Name changed successfully!');
       }
     } catch (error) {
       console.error('Error updating name:', error);
@@ -107,34 +107,20 @@ const AccountSettings = () => {
     <View style={styles.container}>
       <View style={styles.form}>
         {/* Name Field */}
-        <View style={styles.settingsField}>
-          <View style={styles.settingsLeftField}>
-            <FontAwesome6 name="user" size={20} color={theme.colors.text.primary} />
-            <Text style={styles.settingsLabel}>Name</Text>
-          </View>
-          <View style={styles.settingsRightField}>
-            <Text style={styles.valueText}>{name}</Text>
-            <FontAwesome6
-              name="edit"
-              size={20}
-              color={theme.colors.text.primary}
-              onPress={() => setModalVisible(true)}
-            />
-          </View>
-        </View>
+        <SettingsField 
+          icon="user"
+          label="Name"
+          value={name}
+          onPress={() => setModalVisible(true)}
+          editable
+        />
 
         {/* Courses Completed Field */}
-        <View style={styles.settingsField}>
-          <View style={styles.settingsLeftField}>
-            <FontAwesome6
-              name="graduation-cap"
-              size={20}
-              color={theme.colors.text.primary}
-            />
-            <Text style={styles.settingsLabel}>Courses Completed</Text>
-          </View>
-          <Text style={styles.valueText}>{coursesCompleted}</Text>
-        </View>
+        <SettingsField 
+          icon="graduation-cap"
+          label="Courses Completed"
+          value={coursesCompleted.toString()}
+        />
 
         {/* Actions */}
         {currentUser ? (
@@ -159,14 +145,13 @@ const AccountSettings = () => {
       {/* Edit Name Modal */}
       <Modal isVisible={isModalVisible} onBackdropPress={() => setModalVisible(false)}>
         <View style={styles.modalContent}>
-          <FontAwesome6
-            name="xmark"
-            size={20}
-            color={theme.colors.text.primary}
-            onPress={() => setModalVisible(false)}
-            style={styles.closeButton}
-          />
+          {/* Close Button */}
+          <Pressable onPress={() => setModalVisible(false)} style={styles.closeButton}>
+            <FontAwesome6 name="xmark" size={18} color={theme.colors.text.primary}/>
+          </Pressable>
+
           <Text style={styles.modalTitle}>Edit Name</Text>
+
           <TextInput
             style={styles.input}
             value={newName}
@@ -174,13 +159,41 @@ const AccountSettings = () => {
             placeholder="Enter new name"
             placeholderTextColor={theme.colors.text.muted}
           />
-          <ThemedButton text="Save" onPress={handleSaveName} />
+
+          <View style={styles.buttonRow}>
+            <ThemedButton text="Back" onPress={() => setModalVisible(false)} style={styles.backButton} textStyle={{ color: '#FFFFFF' }} />
+            <ThemedButton text="Save" onPress={handleSaveName} style={{ flex: 1 }} />
+          </View>
         </View>
       </Modal>
 
       {/* Sign In Modal */}
       <SignInModal isVisible={isSignUpModalVisible} onClose={() => setIsSignUpModalVisible(false)} />
     </View>
+  );
+};
+
+const SettingsField = ({ icon, label, value, onPress, editable }: { icon: any; label: string; value: string; onPress?: () => void; editable?: boolean }) => {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+  const scaleValue = new Animated.Value(1);
+
+  const handlePressIn = () => Animated.timing(scaleValue, { toValue: 0.95, duration: 100, useNativeDriver: true }).start();
+  const handlePressOut = () => Animated.timing(scaleValue, { toValue: 1, duration: 100, useNativeDriver: true }).start();
+
+  return (
+    <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={editable ? onPress : undefined}>
+      <Animated.View style={[styles.settingsField, { transform: [{ scale: scaleValue }] }]}>
+        <View style={styles.settingsLeftField}>
+          <FontAwesome6 name={icon} size={20} color={theme.colors.text.primary} />
+          <Text style={styles.settingsLabel}>{label}</Text>
+        </View>
+        <View style={styles.settingsLeftField}>
+          <Text style={styles.valueText}>{value}</Text>
+          {editable && <FontAwesome6 name="edit" size={18} color={theme.colors.text.primary} />}
+        </View>
+      </Animated.View>
+    </Pressable>
   );
 };
 
@@ -192,12 +205,11 @@ const createStyles = (theme: any) =>
       padding: theme.spacing.medium,
     },
     form: {
-      marginTop: theme.spacing.medium,
-      gap: theme.spacing.medium,
       backgroundColor: theme.colors.secondary,
       borderRadius: theme.borderRadius.large,
       padding: theme.spacing.medium,
       ...theme.shadows.default,
+      gap: theme.spacing.medium
     },
     settingsField: {
       flexDirection: 'row',
@@ -210,12 +222,7 @@ const createStyles = (theme: any) =>
     settingsLeftField: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.small,
-    },
-    settingsRightField: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.small,
+      gap: theme.spacing.small
     },
     settingsLabel: {
       fontSize: theme.fontSizes.medium,
@@ -225,30 +232,47 @@ const createStyles = (theme: any) =>
     valueText: {
       fontSize: theme.fontSizes.medium,
       color: theme.colors.text.secondary,
-      fontFamily: 'Outfit_400Regular',
+      fontFamily: 'Outfit_400Regular'
     },
     modalContent: {
+      gap: theme.spacing.large,
       backgroundColor: theme.colors.secondary,
-      padding: theme.spacing.medium,
+      padding: theme.spacing.large,
       borderRadius: theme.borderRadius.medium,
+      alignItems: 'center',
+      width: '90%',
+      alignSelf: 'center'
     },
     closeButton: {
-      alignSelf: 'flex-end',
+      position: 'absolute',
+      top: 12,
+      right: 12,
+      padding: theme.spacing.small
     },
     modalTitle: {
-      fontSize: theme.fontSizes.large,
-      marginBottom: theme.spacing.medium,
+      fontSize: theme.fontSizes.xLarge,
       fontFamily: 'Outfit_600SemiBold',
       color: theme.colors.text.secondary,
     },
     input: {
+      width: '100%',
       backgroundColor: theme.colors.primary,
       borderRadius: theme.borderRadius.small,
       padding: theme.spacing.small,
-      borderWidth: 1,
       borderColor: theme.colors.text.muted,
       color: theme.colors.text.secondary,
     },
+    buttonRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: theme.spacing.medium,
+      width: '100%',
+      paddingHorizontal: theme.spacing.small
+    },
+    backButton: {
+      backgroundColor: theme.colors.text.error,
+      flex: 1
+    }
 });
 
 export default AccountSettings;

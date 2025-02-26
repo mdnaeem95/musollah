@@ -1,16 +1,8 @@
-// App.jsx
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 import React from 'react'
 import { FontAwesome6 } from '@expo/vector-icons';
 
-/*
-  1. Create the config to match the Twitter bookmark toast style
-*/
 export const toastConfig = {
-  /*
-    Custom 'success' type for the bookmark notification,
-    styled similarly to Twitter
-  */
   success: (props: any) => (
     <BaseToast
       {...props}
@@ -40,7 +32,6 @@ export const toastConfig = {
       )}
     />
   ),
-  // Custom toast for removing a bookmark
   removed: (props: any) => (
     <BaseToast
       {...props}

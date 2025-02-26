@@ -38,7 +38,9 @@ const QuranDashboard = () => {
     useCallback(() => {
       const loadLastStates = async () => {
         const lastListened = await AsyncStorage.getItem('lastListenedAyah');
+        console.log('Last Listened: ', lastListened)
         const lastRead = await AsyncStorage.getItem('lastReadAyah');
+        console.log('Last Read: ', lastRead)
 
         if (lastListened) {
           const { surahNumber, ayahIndex } = JSON.parse(lastListened);

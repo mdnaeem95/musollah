@@ -19,6 +19,8 @@ import LocationInfo from '../../../components/prayer/LocationInfo';
 import QuickAccessButtons from '../../../components/prayer/QuickAccessButtons';
 import FastTracker from '../../../components/prayer/FastTracker';
 import PuasaDoaCarousel from '../../../components/prayer/PuasaDoaCarousel';
+import TerawihLocator from '../../../components/prayer/TerawihLocator';
+import LastReadQuran from '../../../components/prayer/LastReadQuran';
 
 const PrayerTab = () => {
   const router = useRouter();
@@ -68,8 +70,10 @@ const PrayerTab = () => {
             </View>
           </View>
           <RamadanPrayerTimes />
+          <TerawihLocator />
           <FastTracker />
           <PuasaDoaCarousel />
+          <LastReadQuran />
         </ScrollView>
       </SafeAreaView>
     );
