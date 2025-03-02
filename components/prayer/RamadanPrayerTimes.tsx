@@ -104,80 +104,141 @@ const RamadanPrayerTimes = () => {
   // fetch prayer session avalability
   const checkPrayerPassed = async () => {
     try {
+      console.log("⏳ Checking prayer availability...");
+      
+      // 🔍 Fetch Cached Prayer Times for Selected Date
       const prayerSessionTimes = await AsyncStorage.getItem(`prayers_${shortFormattedDate}`);
-      const prayerSessionTimesData = JSON.parse(prayerSessionTimes!);
-      
-      if (!prayerSessionTimesData) return;
-      
-      const currentTime = new Date();  
-      // Convert prayer times to comparable Date objects
+      if (!prayerSessionTimes) {
+        console.log("⚠️ No cached prayer data found.");
+        return [];
+      }
+  
+      const prayerSessionTimesData = JSON.parse(prayerSessionTimes);
+      console.log("📌 Cached Prayer Data:", prayerSessionTimesData);
+  
+      const currentTime = new Date();
+      console.log("🕰️ Current Time:", currentTime.toLocaleTimeString());
+  
+      // 🔍 Convert prayer times to Date objects and compare
       return Object.entries(prayerSessionTimesData.prayerTimes).map(([prayer, time]) => {
+        console.log(`🔍 Processing: ${prayer} - ${time}`);
+        
+        if (!time) {
+          console.log(`⚠️ Skipping ${prayer}, invalid time.`);
+          return { prayer, isAvailable: false };
+        }
+  
         //@ts-ignore
         const [hour, minute] = time.split(":").map(Number);
+        if (isNaN(hour) || isNaN(minute)) {
+          console.error(`❌ Invalid time format for ${prayer}:`, time);
+          return { prayer, isAvailable: false };
+        }
+  
         const prayerDate = new Date();
         prayerDate.setHours(hour, minute, 0, 0);
+        console.log(`🕰️ Prayer Time: ${prayerDate.toLocaleTimeString()}`);
+  
         return { prayer, isAvailable: currentTime >= prayerDate };
       });
     } catch (error) {
-      console.error('Error checking prayer availability: ', error);
+      console.error('❌ Error checking prayer availability:', error);
       return [];
     }
   };
-
+  
   const handleTogglePrayer = async (prayer: string) => {
     const auth = getAuth();
     const currentUser = auth.currentUser;
-
-    const isAvailable = toggablePrayers?.find(item => item.prayer === prayer)?.isAvailable;
-    if (!isAvailable) {
-        shakeButton(shakeAnimation);
-        Toast.show({
-            type: 'removed',
-            text1: `Can't log ${prayer} as it's not time yet.`,
-            visibilityTime: 2000,
-            autoHide: true,
-        });
-        return
+  
+    console.log(`📝 Trying to log ${prayer} for ${selectedDate?.dateString}...`);
+  
+    // Convert selectedDate to a Date object
+    const [day, month, year] = (selectedDate?.dateString ?? '').split('/');
+    if (!day || !month || !year) {
+      console.error('❌ Invalid selectedDate.dateString format:', selectedDate?.dateString);
+      return;
     }
-
-    if (currentUser) {
-        const updatedLogs = {
-          ...todayLogs,
-          //@ts-ignore
-          [prayer]: !todayLogs[prayer],
-        };
+  
+    const selectedDateObject = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
     
-        setTodayLogs(updatedLogs);
-        try {
-          const [day, month, year] = (selectedDate?.dateString ?? '').split('/');
-          if (!day || !month || !year) throw new Error('Invalid selectedDate.dateString format');
-
-          const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-
-          await dispatch(
-            savePrayerLog({
-              userId: currentUser.uid,
-              //@ts-ignore
-              date: formattedDate,
-              prayerLog: updatedLogs,
-            })
-          ).unwrap();
-        } catch (error) {
-          console.error('Error saving prayer log:', error);
-          Alert.alert('Error', 'Failed to save prayer log. Please try again.');
-        }
-      } else {
-        Alert.alert(
-          'Authentication Required',
-          'Please create an account to log your prayers.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Sign Up', onPress: () => setIsAuthModalVisible(true) },
-          ]
-        );
+    // Normalize to **midnight** for accurate date-only comparison
+    selectedDateObject.setHours(0, 0, 0, 0);
+  
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+  
+    console.log(`📅 Selected Date: ${selectedDateObject}`);
+    console.log(`📅 Today (Normalized): ${today}`);
+  
+    // 🚨 Prevent logging for future dates
+    if (selectedDateObject > today) {
+      console.log("🚨 Cannot log prayers for future dates!");
+      Toast.show({
+        type: 'removed',
+        text1: "You can't log prayers for future dates.",
+        visibilityTime: 2000,
+        autoHide: true,
+      });
+      return;
+    }
+  
+    // ✅ Check if logging is allowed for **today** or **past dates**
+    const isAvailable = toggablePrayers?.find(item => item.prayer === prayer)?.isAvailable;
+    console.log(`🔍 Prayer Availability: ${prayer} isAvailable =`, isAvailable);
+  
+    if (!isAvailable && selectedDateObject.getTime() !== today.getTime()) {
+      shakeButton(shakeAnimation);
+      Toast.show({
+        type: 'removed',
+        text1: `Can't log ${prayer} as it's not time yet.`,
+        visibilityTime: 2000,
+        autoHide: true,
+      });
+      return;
+    }
+  
+    if (currentUser) {
+      const updatedLogs = {
+        ...todayLogs,
+        //@ts-ignore
+        [prayer]: !todayLogs[prayer], // Toggle log state
+      };
+  
+      console.log("✅ Updated Logs:", updatedLogs);
+  
+      setTodayLogs(updatedLogs);
+      
+      try {
+        const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        console.log("📅 Formatted Date for Logging:", formattedDate);
+  
+        await dispatch(
+          savePrayerLog({
+            userId: currentUser.uid,
+            date: formattedDate,
+            prayerLog: updatedLogs,
+          })
+        ).unwrap();
+  
+        console.log("✅ Successfully logged prayer!");
+      } catch (error) {
+        console.error('❌ Error saving prayer log:', error);
+        Alert.alert('Error', 'Failed to save prayer log. Please try again.');
       }
-  }
-
+    } else {
+      Alert.alert(
+        'Authentication Required',
+        'Please create an account to log your prayers.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign Up', onPress: () => setIsAuthModalVisible(true) },
+        ]
+      );
+    }
+  };
+  
+  
   // useFocusEffect to fetch logs whenever the page is focused
   useFocusEffect(
     useCallback(() => {
