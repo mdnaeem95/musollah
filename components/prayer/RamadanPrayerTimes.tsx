@@ -83,23 +83,38 @@ const RamadanPrayerTimes = () => {
     try {
         setLoadingLogs(true);
 
-        // Debugging log: Check what dateString is
-        console.log("Fetching logs for dateString:", dateString);
+        console.log("🔍 Fetching logs for:", dateString);
 
-        // ✅ Convert M/D/YYYY to YYYY-MM-DD (ensuring leading zeros)
-        const [month, day, year] = dateString.split('/').map(num => num.padStart(2, '0')); 
+        // ✅ Convert D/M/YYYY → YYYY-MM-DD (Ensuring Leading Zeros)
+        const [day, month, year] = dateString.split('/').map(num => num.padStart(2, '0'));
         const formattedDate = `${year}-${month}-${day}`;
-        
-        console.log("Formatted date for fetching logs:", formattedDate);
 
+        console.log("📌 Corrected formatted date:", formattedDate);
+
+        // Fetch logs from backend
         const result = await dispatch(fetchPrayerLog({ date: formattedDate })).unwrap();
-        setTodayLogs(result.prayerLog || {});
+
+        console.log("✅ Fetched prayer log:", result);
+
+        // ✅ Ensure it's updating correctly
+        if (result && result.prayerLog) {
+            setTodayLogs(result.prayerLog);
+        } else {
+            console.warn("⚠️ No prayer logs found, resetting...");
+            setTodayLogs({
+                Subuh: false,
+                Zohor: false,
+                Asar: false,
+                Maghrib: false,
+                Isyak: false,
+            });
+        }
     } catch (error) {
-        console.error('Error fetching prayer logs: ', error);
+        console.error("❌ Error fetching prayer logs:", error);
     } finally {
         setLoadingLogs(false);
     }
-  }
+  };
 
   // fetch prayer session avalability
   const checkPrayerPassed = async () => {
@@ -237,8 +252,7 @@ const RamadanPrayerTimes = () => {
       );
     }
   };
-  
-  
+   
   // useFocusEffect to fetch logs whenever the page is focused
   useFocusEffect(
     useCallback(() => {
