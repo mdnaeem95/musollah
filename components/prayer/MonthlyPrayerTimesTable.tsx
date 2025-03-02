@@ -5,16 +5,17 @@ import {
   FlatList,
   StyleSheet,
 } from 'react-native';
+import { PrayerTimes2025 } from '../../utils/types';
 
 // Props type for the monthly prayer times
 export type PrayerTime = {
   date: string;
-  Subuh: string;
-  Syuruk: string;
-  Zohor: string;
-  Asar: string;
-  Maghrib: string;
-  Isyak: string;
+  subuh: string;
+  syuruk: string;
+  zohor: string;
+  asar: string;
+  maghrib: string;
+  isyak: string;
 };
 
 type MonthlyPrayerTimesTableProps = {
@@ -24,7 +25,9 @@ type MonthlyPrayerTimesTableProps = {
 const MonthlyPrayerTimesTable: React.FC<MonthlyPrayerTimesTableProps> = ({
   monthlyPrayerTimes,
 }) => {
-    const todayDate = new Date().getDate().toString().padStart(2, '0');
+    const today = new Date();
+    const todayDate = today.getDate().toString(); 
+
   // Define the table header
   const TableHeader = () => (
     <View style={styles.tableRow}>
@@ -40,17 +43,17 @@ const MonthlyPrayerTimesTable: React.FC<MonthlyPrayerTimesTableProps> = ({
 
   // Define the table row component
   const TableRow = ({ item }: { item: PrayerTime }) => {
-    const isToday = item.date === todayDate;
+    const isToday = item.date.toString() === todayDate;
 
     return (
     <View style={[styles.tableRow, isToday && styles.todayRow]}>
       <Text style={styles.tableText}>{item.date}</Text>
-      <Text style={styles.tableText}>{item.Subuh}</Text>
-      <Text style={styles.tableText}>{item.Syuruk}</Text>
-      <Text style={styles.tableText}>{item.Zohor}</Text>
-      <Text style={styles.tableText}>{item.Asar}</Text>
-      <Text style={styles.tableText}>{item.Maghrib}</Text>
-      <Text style={styles.tableText}>{item.Isyak}</Text>
+      <Text style={styles.tableText}>{item.subuh}</Text>
+      <Text style={styles.tableText}>{item.syuruk}</Text>
+      <Text style={styles.tableText}>{item.zohor}</Text>
+      <Text style={styles.tableText}>{item.asar}</Text>
+      <Text style={styles.tableText}>{item.maghrib}</Text>
+      <Text style={styles.tableText}>{item.isyak}</Text>
     </View>
     )
   };

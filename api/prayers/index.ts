@@ -1,5 +1,6 @@
 import { formatDateForAPI } from '../../utils';
-import { subDays } from 'date-fns';
+import firestore from '@react-native-firebase/firestore';
+import { PrayerTimes2025 } from '../../utils/types';
 
 export const fetchPrayerTimes = async () => {
     try {
@@ -102,3 +103,46 @@ export const fetchMonthlyPrayerTimes = async (year: number, month: number) => {
         throw error;
     }
 }
+
+export const fetchMonthlyPrayerTimesFromFirebase = async (year: number, month: number): Promise<PrayerTimes2025[]> => {
+    try {
+        console.log(`📅 Fetching monthly prayer times for: ${month}/${year}`);
+
+        // Convert month to a string without leading zeros for consistency with Firebase
+        const monthStr = month.toString();
+
+        // Fetch all prayer times from Firebase
+        const prayerTimesSnapshot = await firestore().collection('prayerTimes2025').get();
+
+        if (prayerTimesSnapshot.empty) {
+            throw new Error('No prayer times found in Firebase.');
+        }
+
+        //@ts-ignore
+        const prayerTimesList: PrayerTimes2025[] = prayerTimesSnapshot.docs
+            .map(doc => doc.data() as PrayerTimes2025)
+            .filter(prayerTime => {
+                // Extract month from stored date format (D/M/YYYY)
+                const [, prayerMonth, prayerYear] = prayerTime.date.split('/');
+
+                return prayerMonth === monthStr && prayerYear === year.toString();
+            })
+            .map(prayerTime => ({
+                date: prayerTime.date.split('/')[0], // Extract day only
+                day: parseInt(prayerTime.date.split('/')[0], 10),
+                subuh: prayerTime.time.subuh,
+                syuruk: prayerTime.time.syuruk,
+                zohor: prayerTime.time.zohor,
+                asar: prayerTime.time.asar,
+                maghrib: prayerTime.time.maghrib,
+                isyak: prayerTime.time.isyak
+            }));
+
+        console.log(`✅ Retrieved ${prayerTimesList.length} records for ${month}/${year}`);
+        //@ts-ignore
+        return prayerTimesList.sort((a, b) => a.day! - b.day!);
+    } catch (error) {
+        console.error('❌ Error fetching monthly prayer times from Firebase:', error);
+        throw error;
+    }
+};

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import { fetchMonthlyPrayerTimes } from '../../../../api/prayers';
+import { fetchMonthlyPrayerTimesFromFirebase } from '../../../../api/prayers';
 import MonthlyPrayerTimesTable, { PrayerTime } from '../../../../components/prayer/MonthlyPrayerTimesTable';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -9,7 +9,7 @@ import { useTheme } from '../../../../context/ThemeContext';
 const currentYear = new Date().getFullYear();
 const currentMonth = new Date().getMonth() + 1;
 
-const MONTHLY_PRAYER_TIMES_KEY = 'monthly_prayer_times';
+const MONTHLY_PRAYER_TIMES_KEY = `monthly_prayer_times_${currentYear}_${currentMonth}`;
 
 const saveToStorage = async (key: string, data: any) => {
   try {
@@ -38,32 +38,37 @@ const MonthlyPrayerTimesPage = () => {
 
   useEffect(() => {
     const fetchMonthlyData = async () => {
-      const cacheKey = `${MONTHLY_PRAYER_TIMES_KEY}_${currentYear}_${currentMonth}`;
-
-      const cachedData = await loadFromStorage(cacheKey);
-
-      if (cachedData) {
-        console.log(`Using cached data for ${cacheKey}`);
-        setMonthlyPrayerTimes(cachedData);
-        return;
-      }
-
       try {
-        setLoading(true);
-        const data = await fetchMonthlyPrayerTimes(currentYear, currentMonth);
-        if (data) {
-          setMonthlyPrayerTimes(data);
-          await saveToStorage(cacheKey, data);
+        console.log(`📅 Fetching monthly prayer times for ${currentMonth}/${currentYear}`);
+
+        // Step 1: Check cache
+        // const cachedData = await loadFromStorage(MONTHLY_PRAYER_TIMES_KEY);
+        // if (cachedData) {
+        //   console.log(`✅ Using cached data for ${currentMonth}/${currentYear}`);
+        //   setMonthlyPrayerTimes(cachedData);
+        //   setLoading(false);
+        //   return;
+        // }
+
+        // Step 2: Fetch from Firebase
+        const firebaseData = await fetchMonthlyPrayerTimesFromFirebase(currentYear, currentMonth);
+        if (firebaseData.length > 0) {
+          console.log(`🔥 Fetched ${firebaseData.length} records from Firebase`);
+          //@ts-ignore
+          setMonthlyPrayerTimes(firebaseData);
+          await saveToStorage(MONTHLY_PRAYER_TIMES_KEY, firebaseData);
+        } else {
+          console.warn(`⚠️ No prayer times found for ${currentMonth}/${currentYear}`);
         }
       } catch (error) {
-        console.log('Failed to fetch monthly times.');
+        console.error('❌ Failed to fetch monthly prayer times:', error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchMonthlyData();
-  }, [currentYear, currentMonth]);
+  }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
