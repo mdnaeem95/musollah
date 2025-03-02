@@ -1,8 +1,19 @@
 import { LocationObject } from 'expo-location';
-import { GamificationData, GamificationState } from '../redux/slices/gamificationSlice';
 
 export type CourseStatus = 'completed' | 'in progress' | 'unenrolled';
 export type ModuleStatus = 'completed' | 'in progress' | 'locked';
+
+export interface PrayerTimes2025 {
+    date: string; // Stored as "D/M/YYYY" in Firebase
+    time: {
+      subuh: string;
+      syuruk: string;
+      zohor: string;
+      asar: string;
+      maghrib: string;
+      isyak: string;
+    };
+}
 
 export interface CoursesState {
     courses: CourseData[];

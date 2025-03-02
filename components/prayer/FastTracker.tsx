@@ -8,7 +8,7 @@ import { scaleSize } from '../../utils';
 import { getAuth } from '@react-native-firebase/auth';
 import SignInModal from '../SignInModal';
 
-const ramadanStartDate = new Date(2025, 2, 1); // March 1, 2025
+const ramadanStartDate = new Date(2025, 2, 2); // March 1, 2025
 const totalDays = 30; // 30 days of Ramadan
 const daysPerPage = 7; // Show 7 days per page
 const today = new Date(); // Get today's date

@@ -36,7 +36,7 @@ export const usePrayerTimes = (
     
         // Prevent multiple schedules within the debounce interval
         if (lastScheduleRef.current && now - lastScheduleRef.current < MIN_SCHEDULE_INTERVAL) {
-          console.log("Skipping redundant notification scheduling...");
+        //console.log("Skipping redundant notification scheduling...");
           return;
         }
     
@@ -55,7 +55,7 @@ export const usePrayerTimes = (
             const nextDaysPrayerTimes = extractNextDaysPrayerTimes(monthlyPrayerTimes, numDays);
 
             // schedule notifications for the extracted days
-            console.log('Scheduling notifications for:', nextDaysPrayerTimes, 'with interval:', reminderInterval);
+            // console.log('Scheduling notifications for:', nextDaysPrayerTimes, 'with interval:', reminderInterval);
             await scheduleNextDaysNotifications(nextDaysPrayerTimes, reminderInterval, mutedNotifications);
         } catch (error) {
             console.error('Error fetching or scheduling notifications: ', error);

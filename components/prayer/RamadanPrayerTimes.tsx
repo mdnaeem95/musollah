@@ -4,7 +4,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { getShortFormattedDate, scaleSize, shakeButton } from '../../utils';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../redux/store/store';
-import { fetchPrayerTimesByDate } from '../../redux/slices/prayerSlice';
+import { fetchPrayerTimesByDate, fetchPrayerTimesFromFirebase } from '../../redux/slices/prayerSlice';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { getAuth } from '@react-native-firebase/auth';
 import { fetchPrayerLog, savePrayerLog } from '../../redux/slices/userSlice';
@@ -12,27 +12,27 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect } from 'expo-router';
 import { PrayerLog } from '../../app/(tabs)/(prayer)/prayerDashboard';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import SignInModal from '../SignInModal';
 
 // Function to generate dates dynamically
 const generateDates = () => {
-    const today = new Date();
-    const dates = [];
-  
-    for (let i = -5; i <= 5; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      dates.push({ 
-        day: date.getDate(),
-        month: date.toLocaleString('en-US', { month: 'long' }),
-        year: date.getFullYear(),
-        isToday: i === 0,
-        dateString: date.toISOString().split('T')[0],
-    });
-    }
-  
-    return dates;
+  const today = new Date();
+  const dates = [];
+
+  for (let i = -5; i <= 5; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    dates.push({ 
+      day: date.getDate(),
+      month: date.toLocaleString('en-US', { month: 'long' }),
+      year: date.getFullYear(),
+      isToday: i === 0,
+      dateString: format(date, 'd/M/yyyy'), // Ensure no leading zeros!
+  });
+  }
+
+  return dates;
 };
 
 const RamadanPrayerTimes = () => {
@@ -72,6 +72,7 @@ const RamadanPrayerTimes = () => {
   }, []);
 
   useEffect(() => {
+    console.log("📌 UI: Prayer Times from Redux:", prayerTimes);
     checkPrayerPassed().then(setToggablePrayers);
   }, []);
 
@@ -82,7 +83,17 @@ const RamadanPrayerTimes = () => {
   const fetchLogsForDate = async (dateString: string) => {
     try {
         setLoadingLogs(true);
-        const result = await dispatch(fetchPrayerLog({ date: format(dateString, 'yyyy-MM-dd') })).unwrap();
+
+        // Debugging log: Check what dateString is
+        console.log("Fetching logs for dateString:", dateString);
+
+        // ✅ Convert M/D/YYYY to YYYY-MM-DD (ensuring leading zeros)
+        const [month, day, year] = dateString.split('/').map(num => num.padStart(2, '0')); 
+        const formattedDate = `${year}-${month}-${day}`;
+        
+        console.log("Formatted date for fetching logs:", formattedDate);
+
+        const result = await dispatch(fetchPrayerLog({ date: formattedDate })).unwrap();
         setTodayLogs(result.prayerLog || {});
     } catch (error) {
         console.error('Error fetching prayer logs: ', error);
@@ -166,18 +177,30 @@ const RamadanPrayerTimes = () => {
   // useFocusEffect to fetch logs whenever the page is focused
   useFocusEffect(
     useCallback(() => {
-      checkPrayerPassed();
-      if (selectedDate) {
-        dispatch(fetchPrayerTimesByDate(selectedDate.dateString) as any);
-      }
-      if (currentUser && selectedDate) {
-        fetchLogsForDate(selectedDate.dateString);
-      } else {
-        console.log('User not authenticated. Skipping prayer log fetch.');
-      }
-    }, [selectedDate, dispatch]) // Include selectedDate in the dependency array
-  );
-
+      if (!selectedDate) return;
+  
+      const fetchPrayerData = async () => {
+        try {
+          console.log("📅 Fetching prayer times for:", selectedDate.dateString);
+  
+          // Dispatch Redux action with properly formatted date
+          await dispatch(fetchPrayerTimesFromFirebase({ inputDate: selectedDate.dateString })).unwrap();
+  
+          // Fetch logs if user is authenticated
+          if (currentUser) {
+            fetchLogsForDate(selectedDate.dateString);
+          } else {
+            console.log("User not authenticated. Skipping prayer log fetch.");
+          }
+        } catch (error) {
+          console.error("❌ Error fetching prayer times:", error);
+        }
+      };
+  
+      fetchPrayerData();
+    }, [selectedDate, dispatch, currentUser])
+  );  
+  
   return (
     <View style={styles.container}>
       {/* Top Section: Date Scroller */}

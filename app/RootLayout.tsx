@@ -9,7 +9,7 @@ import { useFonts } from 'expo-font';
 import { AppDispatch, persistor } from '../redux/store/store';
 import { useLogTrackPlayerState } from '../hooks/useLogTrackPlayerState'
 import { useSetupTrackPlayer } from "../hooks/useSetupTrackPlayer"
-import { fetchPrayerTimesData } from '../redux/slices/prayerSlice';
+import { fetchPrayerTimesData, fetchPrayerTimesFromFirebase } from '../redux/slices/prayerSlice';
 import { fetchSurahsData } from '../redux/slices/quranSlice';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import { fetchDailyDoasData } from '../redux/slices/doasSlice';
@@ -79,19 +79,28 @@ const RootLayout = () => {
   // Fetch only essential data (Prayer Times) first
   useEffect(() => {
     if (!isRehydrated) return;
+
     const fetchEssentialData = async () => {
       try {
-        console.log('Fetching essential data: Prayer Times...');
-        await dispatch(fetchPrayerTimesData()).unwrap();
+        console.log('Fetching essential data: Firebase + API Prayer Times...');
+
+        // Fetch Firebase & API in parallel
+        await Promise.all([
+          dispatch(fetchPrayerTimesFromFirebase({})).unwrap(),
+        ]);
+
         setIsEssentialDataFetched(true);
       } catch (error) {
         console.error('Error fetching essential data:', error);
+        setIsEssentialDataFetched(true);
       }
     };
+
     if (!isEssentialDataFetched) {
       fetchEssentialData();
     }
   }, [dispatch, isEssentialDataFetched, isRehydrated]);
+
   // Fetch some non-essential data (surahs) after the app has loaded but defer fetching user location and musollah data until necessary
   useEffect(() => {
       const fetchNonEssentialData = async () => {

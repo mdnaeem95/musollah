@@ -45,8 +45,6 @@ const TerawihLocator = () => {
 
         const mosques = querySnapshot.docs.map((doc) => {
             const data = doc.data();
-            console.log('Data', data)
-            console.log('Data location:', data.location)
             return {
                 name: data.building,
                 address: data.address,
@@ -65,8 +63,6 @@ const TerawihLocator = () => {
           const currDist = getDistance(latitude, longitude, curr.location.latitude, curr.location.longitude);
           return currDist < prevDist ? curr : prev;
         });
-
-        console.log('Closest', closest)
 
         setNearestMosque({
           name: closest.name,
