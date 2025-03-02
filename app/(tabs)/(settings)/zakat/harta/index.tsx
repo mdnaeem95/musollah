@@ -26,7 +26,7 @@ const ZakatHarta = () => {
   const [insurance, setInsurance] = useState<string>('');
   const [shares, setShares] = useState<string>('');
   const [totalZakat, setTotalZakat] = useState<number>(0);
-  const [nisabAmount, setNisabAmount] = useState(10358);
+  const [nisabAmount, setNisabAmount] = useState(10975);
 
   const [currentGoldPrice, setCurrentGoldPrice] = useState<number>(0);
   const [goldPriceTimeStamp, setGoldPriceTimeStamp] = useState('');

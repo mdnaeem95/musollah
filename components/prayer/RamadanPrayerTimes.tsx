@@ -4,7 +4,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { getShortFormattedDate, scaleSize, shakeButton } from '../../utils';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../redux/store/store';
-import { fetchPrayerTimesByDate, fetchPrayerTimesFromFirebase } from '../../redux/slices/prayerSlice';
+import { fetchPrayerTimesFromFirebase } from '../../redux/slices/prayerSlice';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { getAuth } from '@react-native-firebase/auth';
 import { fetchPrayerLog, savePrayerLog } from '../../redux/slices/userSlice';
@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect } from 'expo-router';
 import { PrayerLog } from '../../app/(tabs)/(prayer)/prayerDashboard';
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
 import SignInModal from '../SignInModal';
 
 // Function to generate dates dynamically
@@ -72,7 +72,6 @@ const RamadanPrayerTimes = () => {
   }, []);
 
   useEffect(() => {
-    console.log("📌 UI: Prayer Times from Redux:", prayerTimes);
     checkPrayerPassed().then(setToggablePrayers);
   }, []);
 
@@ -150,11 +149,16 @@ const RamadanPrayerTimes = () => {
     
         setTodayLogs(updatedLogs);
         try {
+          const [day, month, year] = (selectedDate?.dateString ?? '').split('/');
+          if (!day || !month || !year) throw new Error('Invalid selectedDate.dateString format');
+
+          const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+
           await dispatch(
             savePrayerLog({
               userId: currentUser.uid,
               //@ts-ignore
-              date: format(selectedDate?.dateString, 'yyyy-MM-dd'),
+              date: formattedDate,
               prayerLog: updatedLogs,
             })
           ).unwrap();
