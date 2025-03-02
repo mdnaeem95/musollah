@@ -3,6 +3,10 @@ import { getShortFormattedDate, formatIslamicDate, getPrayerTimesInfo } from '..
 import { fetchPrayerTimes, fetchIslamicDate, fetchTimesByDate, fetchPrayerTimesByLocation } from '../../api/prayers';
 import { PrayerState } from '../../utils/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fetchPrayerTimes2025 } from '../../api/firebase';
+import { format, parse, subDays } from 'date-fns';
+
+const PRAYER_TIMES_CACHE_KEY = 'prayerTimes2025Cache';
 
 const initialState: PrayerState = {
   prayerTimes: null,
@@ -53,7 +57,7 @@ export const fetchPrayerTimesData = createAsyncThunk(
         const newPrayerTimes = { Subuh, Syuruk, Zohor, Asar, Maghrib, Isyak };
   
         const islamicDateData = await fetchIslamicDate(shortFormattedDate);
-        const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date);
+        const formattedIslamicDate = islamicDateData.hijriDate
   
         const prayerInfo = getPrayerTimesInfo(newPrayerTimes, currentDate);
   
@@ -88,7 +92,7 @@ export const fetchPrayerTimesByDate = createAsyncThunk(
       const shortFormattedDate = getShortFormattedDate(new Date(date));
 
       const islamicDateData = await fetchIslamicDate(shortFormattedDate);
-      const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date);
+      const formattedIslamicDate = islamicDateData.hijriDate
 
       const prayerInfo = getPrayerTimesInfo(newPrayerTimes, new Date(date));
 
@@ -104,6 +108,85 @@ export const fetchPrayerTimesByDate = createAsyncThunk(
       };
     } catch (error) {
       return rejectWithValue('Failed to fetch prayer times by date');
+    }
+  }
+);
+
+// Thunk to fetch prayer times from Firebase
+export const fetchPrayerTimesFromFirebase = createAsyncThunk(
+  'prayers/fetchPrayerTimesFromFirebase',
+  async ({ inputDate }: { inputDate?: string } = {}, { rejectWithValue }) => {
+    try {
+      // Use today's date if inputDate is not provided
+      const today = new Date();
+      const parsedDate = inputDate
+        ? parse(inputDate, 'd/M/yyyy', new Date())
+        : today;
+
+      if (isNaN(parsedDate.getTime())) {
+        throw new Error(`❌ Error: Unable to parse date '${inputDate || 'undefined'}'`);
+      }
+
+      const firebaseFormattedDate = format(parsedDate, 'd/M/yyyy'); // Ensures correct format
+      console.log("✅ Fetching Firebase prayer times for:", firebaseFormattedDate);
+
+      // Check cache first
+      const cacheKey = `prayers_firebase_${firebaseFormattedDate}`;
+      // const cachedData = await getCachedPrayerData(cacheKey);
+      // if (cachedData) {
+      //   console.log("✅ Using cached Firebase prayer data...");
+      //   return cachedData;
+      // }
+
+      // Fetch from Firestore
+      const prayerTimesList = await fetchPrayerTimes2025();
+      const todayPrayerData = prayerTimesList.find(pt => pt.date === firebaseFormattedDate);
+
+      if (!todayPrayerData) {
+        throw new Error(`❌ No prayer data found for ${firebaseFormattedDate}`);
+      }
+
+      console.log("🔍 Found prayer data:", todayPrayerData);
+
+      // Construct prayer times object
+      const newPrayerTimes = {
+        Subuh: todayPrayerData.time.subuh,
+        Syuruk: todayPrayerData.time.syuruk,
+        Zohor: todayPrayerData.time.zohor,
+        Asar: todayPrayerData.time.asar,
+        Maghrib: todayPrayerData.time.maghrib,
+        Isyak: todayPrayerData.time.isyak,
+      };
+
+      console.log("📌 Retrieved Prayer Times:", newPrayerTimes);
+
+      // 🔹 Fetch Islamic Date (Minus One Day Fix)
+      const shortFormattedDate = format(subDays(parsedDate, 1), 'dd-MM-yyyy');
+      const islamicDateData = await fetchIslamicDate(shortFormattedDate);
+      const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date);
+
+      // 🔹 Get Current & Next Prayer Info
+      const prayerInfo = getPrayerTimesInfo(newPrayerTimes, parsedDate);
+
+      // Final result
+      const result = {
+        prayerTimes: newPrayerTimes,
+        islamicDate: formattedIslamicDate,
+        currentPrayer: prayerInfo.currentPrayer,
+        nextPrayerInfo: {
+          nextPrayer: prayerInfo.nextPrayer,
+          timeUntilNextPrayer: prayerInfo.timeUntilNextPrayer,
+        },
+      };
+
+      console.log("🔹 Complete Prayer Data:", result);
+
+      // Cache the result
+      await cachePrayerData(cacheKey, result);
+      return result;
+    } catch (error) {
+      console.error("❌ Error fetching prayer times from Firebase:", error);
+      return rejectWithValue("Failed to fetch prayer times from Firebase");
     }
   }
 );
@@ -129,7 +212,7 @@ export const fetchPrayerTimesByLocationData = createAsyncThunk(
         const newPrayerTimes = { Subuh, Syuruk, Zohor, Asar, Maghrib, Isyak };
 
       const islamicDateData = await fetchIslamicDate(shortFormattedDate);
-      const formattedIslamicDate = formatIslamicDate(islamicDateData.data.hijri.date);
+      const formattedIslamicDate = islamicDateData.hijriDate
 
       const prayerInfo = getPrayerTimesInfo(newPrayerTimes, new Date());
 
@@ -199,6 +282,7 @@ const prayerSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchPrayerTimesByLocationData.fulfilled, (state, action) => {
+        console.log("🟢 Redux: Updating state with prayer times", action.payload);
         state.prayerTimes = action.payload.prayerTimes;
         state.islamicDate = action.payload.islamicDate;
         state.currentPrayer = action.payload.currentPrayer;
@@ -206,6 +290,21 @@ const prayerSlice = createSlice({
         state.isLoading = false;
       })
       .addCase(fetchPrayerTimesByLocationData.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(fetchPrayerTimesFromFirebase.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchPrayerTimesFromFirebase.fulfilled, (state, action) => {
+        state.prayerTimes = action.payload.prayerTimes;
+        state.islamicDate = action.payload.islamicDate;
+        state.currentPrayer = action.payload.currentPrayer;
+        state.nextPrayerInfo = action.payload.nextPrayerInfo;
+        state.isLoading = false;
+      })
+      .addCase(fetchPrayerTimesFromFirebase.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

@@ -1,7 +1,10 @@
 import firestore from "@react-native-firebase/firestore";
 import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/musollah/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
-import { ContentData, CourseData, Doa, DoaAfterPrayer, FoodAdditive, ModuleData, Restaurant, Surah, TeacherData, UserData, Question, Answer, Vote, Comment, RestaurantReview } from "../../utils/types";
+import { ContentData, CourseData, Doa, DoaAfterPrayer, FoodAdditive, ModuleData, Restaurant, Surah, TeacherData, UserData, Question, Answer, Vote, Comment, RestaurantReview, PrayerTimes2025 } from "../../utils/types";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const PRAYER_TIMES_CACHE_KEY = 'prayerTimes2025Cache';
 
 export const fetchUserData = async (userId: string ): Promise<UserData> => {
     try {
@@ -624,3 +627,40 @@ const updateRestaurantRating = async (restaurantId: string) => {
         totalReviews
     })
 }
+
+export const fetchPrayerTimes2025 = async (): Promise<PrayerTimes2025[]> => {
+    try {
+        // Check if already cached
+        const cachedData = await AsyncStorage.getItem(PRAYER_TIMES_CACHE_KEY);
+        if (cachedData) {
+            console.log('✅ Using cached prayer times list...');
+            return JSON.parse(cachedData);
+        }
+
+        console.log('🔥 Fetching full prayer list from Firebase...');
+        const prayerTimesSnapshot = await firestore().collection('prayerTimes2025').get();
+      
+        const prayerTimesList = prayerTimesSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                date: data.date, // "M/D/YYYY" format
+                time: {
+                    subuh: data.time.subuh,
+                    syuruk: data.time.syuruk,
+                    zohor: data.time.zohor,
+                    asar: data.time.asar,
+                    maghrib: data.time.maghrib,
+                    isyak: data.time.isyak,
+                },
+            } as PrayerTimes2025;
+        });
+
+        // Cache the fetched data
+        await AsyncStorage.setItem(PRAYER_TIMES_CACHE_KEY, JSON.stringify(prayerTimesList));
+
+        return prayerTimesList;
+    } catch (error) {
+        console.error('❌ Error fetching prayer times:', error);
+        throw error;
+    }
+};
