@@ -9,7 +9,7 @@ import { useFonts } from 'expo-font';
 import { AppDispatch, persistor } from '../redux/store/store';
 import { useLogTrackPlayerState } from '../hooks/useLogTrackPlayerState'
 import { useSetupTrackPlayer } from "../hooks/useSetupTrackPlayer"
-import { fetchPrayerTimesData, fetchPrayerTimesFromFirebase } from '../redux/slices/prayerSlice';
+import { fetchPrayerTimesFromFirebase } from '../redux/slices/prayerSlice';
 import { fetchSurahsData } from '../redux/slices/quranSlice';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import { fetchDailyDoasData } from '../redux/slices/doasSlice';

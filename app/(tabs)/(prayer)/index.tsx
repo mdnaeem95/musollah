@@ -23,7 +23,7 @@ import TerawihLocator from '../../../components/prayer/TerawihLocator';
 import LastReadQuran from '../../../components/prayer/LastReadQuran';
 
 import { ExtensionStorage } from "@bacons/apple-targets";
-import { fetchPrayerTimesData, fetchPrayerTimesFromFirebase } from '../../../redux/slices/prayerSlice';
+import { fetchPrayerTimesFromFirebase } from '../../../redux/slices/prayerSlice';
 import { format } from 'date-fns';
 
 const PrayerTab = () => {

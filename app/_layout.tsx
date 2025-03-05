@@ -10,8 +10,8 @@ import { ThemeProvider } from '../context/ThemeContext';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet'
 import Toast from 'react-native-toast-message'
 import { toastConfig } from '../utils/toastConfig';
-import * as Sentry from '@sentry/react-native'
-import { initSentry, useSentryNavigationConfig } from '../utils/sentry';
+// import * as Sentry from '@sentry/react-native'
+// import { initSentry, useSentryNavigationConfig } from '../utils/sentry';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -21,10 +21,10 @@ Notifications.setNotificationHandler({
   })
 })
 
-initSentry();
+// initSentry();
 
 function AppLayout () {
-  useSentryNavigationConfig()
+  // useSentryNavigationConfig()
 
   return (
     <Provider store={store}>
@@ -42,4 +42,4 @@ function AppLayout () {
   )
 };
 
-export default Sentry.wrap(AppLayout);
+export default AppLayout;
