@@ -15,6 +15,12 @@ export default {
       "backgroundColor": "#2E3D3A"
     },
     "ios": {
+      "appleTeamId": "RF3P52KUZA",
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.rihlah.prayerTimesWidget"
+        ]
+      },
       "supportsTablet": false,
       "infoPlist": {
         "UIBackgroundModes": ["location", "fetch", "remote-notification", "audio"],
@@ -117,6 +123,7 @@ export default {
           "url": "https://sentry.io/"
         }
       ],
+      "@bacons/apple-targets",
       "@react-native-firebase/auth",
       "@react-native-firebase/app",
       [

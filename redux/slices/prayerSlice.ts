@@ -6,8 +6,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchPrayerTimes2025 } from '../../api/firebase';
 import { format, parse, subDays } from 'date-fns';
 
-const PRAYER_TIMES_CACHE_KEY = 'prayerTimes2025Cache';
-
 const initialState: PrayerState = {
   prayerTimes: null,
   islamicDate: null,
