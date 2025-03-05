@@ -3,11 +3,12 @@ import SwiftUI
 
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent())
+        SimpleEntry(date: Date(), hasData: false, configuration: ConfigurationAppIntent())
     }
 
     func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: configuration)
+        let hasData = checkForStoredData()
+        return SimpleEntry(date: Date(), hasData: hasData, configuration: configuration)
     }
     
     func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
@@ -15,81 +16,54 @@ struct Provider: AppIntentTimelineProvider {
 
         // Generate a timeline consisting of five entries an hour apart, starting from the current date.
         let currentDate = Date()
+        let hasData = checkForStoredData()
         for hourOffset in 0 ..< 5 {
             let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, configuration: configuration)
+            let entry = SimpleEntry(date: entryDate, hasData: hasData, configuration: configuration)
             entries.append(entry)
         }
 
         return Timeline(entries: entries, policy: .atEnd)
     }
 
-//    func relevances() async -> WidgetRelevances<ConfigurationAppIntent> {
-//        // Generate a list containing the contexts this widget is relevant in.
-//    }
+    // Function to check if prayerTimesToday is stored
+    private func checkForStoredData() -> Bool {
+        let defaults = UserDefaults(suiteName: "group.com.rihlah.prayerTimesWidget")
+        if let storedData = defaults?.string(forKey: "prayerTimesToday") {
+            print("🟢 Widget Retrieved Data:", storedData) // Debugging log
+            return true
+        }
+        print("❌ No stored prayer times found")
+        return false
+    }
 }
 
 struct SimpleEntry: TimelineEntry {
     let date: Date
+    let hasData: Bool
     let configuration: ConfigurationAppIntent
 }
 
-struct WidgetEntryView: View {
+struct widgetEntryView : View {
     var entry: Provider.Entry
 
-    func getPrayersData() -> [String: Any]? {
-        let defaults = UserDefaults(suiteName: "group.com.rihlah.prayerTimesWidget")
-        if let prayerData = defaults?.string(forKey: "prayerTimesToday"),
-           let jsonData = prayerData.data(using: .utf8) {
-            do {
-                return try JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any]
-            } catch {
-                print("❌ Error decoding prayer times JSON: \(error)")
-            }
-        }
-        return nil
-    }
-
     var body: some View {
-        VStack(alignment: .leading) {
-            if let prayerData = getPrayersData(),
-               let prayerTimes = prayerData["prayerTimes"] as? [String: String],
-               let currentPrayer = prayerData["currentPrayer"] as? String,
-               let nextPrayerInfo = prayerData["nextPrayerInfo"] as? [String: String],
-               let nextPrayer = nextPrayerInfo["nextPrayer"],
-               let timeUntilNextPrayer = nextPrayerInfo["timeUntilNextPrayer"] {
-                
-                Text("Today's Prayers:")
+        VStack {
+            if entry.hasData {
+                Text("Data available ✅")
                     .font(.headline)
-                    .padding(.bottom, 2)
-
-                ForEach(prayerTimes.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
-                    Text("\(key): \(value)")
-                        .font(.body)
-                }
-
-                Divider()
-
-                Text("🕌 Current: \(currentPrayer)")
-                    .font(.headline)
-                    .foregroundColor(.blue)
-
-                Text("⏳ Next: \(nextPrayer) in \(timeUntilNextPrayer)")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.green)
             } else {
-                Text("Prayer times not available")
+                Text("No data ❌")
                     .font(.headline)
                     .foregroundColor(.red)
             }
         }
-        .padding()
     }
 }
 
-
-struct widget: Widget {
-    let kind: String = "widget"
+struct PrayerTimesWidget: Widget {
+    let kind: String = "PrayerTimesWidget"
 
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
@@ -114,8 +88,8 @@ extension ConfigurationAppIntent {
 }
 
 #Preview(as: .systemSmall) {
-    widget()
+    PrayerTimesWidget()
 } timeline: {
-    SimpleEntry(date: .now, configuration: .smiley)
-    SimpleEntry(date: .now, configuration: .starEyes)
+    SimpleEntry(date: .now, hasData: true, configuration: ConfigurationAppIntent.smiley)
+    SimpleEntry(date: .now, hasData: false, configuration: ConfigurationAppIntent.starEyes)
 }

@@ -115,14 +115,6 @@ export default {
       [
         "expo-tracking-transparency"
       ],
-      [
-        "@sentry/react-native/expo",
-        {
-          "organization": "rihlah",
-          "project": "rihlah",
-          "url": "https://sentry.io/"
-        }
-      ],
       "@bacons/apple-targets",
       "@react-native-firebase/auth",
       "@react-native-firebase/app",
