@@ -10,7 +10,6 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "@bacons/apple-targets": "^0.2.1",
     "@expo-google-fonts/amiri": "^0.2.3",
     "@expo-google-fonts/outfit": "^0.2.3",
     "@expo/react-native-action-sheet": "^4.1.0",

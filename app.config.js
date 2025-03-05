@@ -16,11 +16,6 @@ export default {
     },
     "ios": {
       "appleTeamId": "RF3P52KUZA",
-      "entitlements": {
-        "com.apple.security.application-groups": [
-          "group.com.rihlah.prayerTimesWidget"
-        ]
-      },
       "supportsTablet": false,
       "infoPlist": {
         "UIBackgroundModes": ["location", "fetch", "remote-notification", "audio"],
