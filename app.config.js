@@ -110,7 +110,6 @@ export default {
       [
         "expo-tracking-transparency"
       ],
-      "@bacons/apple-targets",
       "@react-native-firebase/auth",
       "@react-native-firebase/app",
       [
