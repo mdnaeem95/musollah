@@ -22,7 +22,6 @@ import PuasaDoaCarousel from '../../../components/prayer/PuasaDoaCarousel';
 import TerawihLocator from '../../../components/prayer/TerawihLocator';
 import LastReadQuran from '../../../components/prayer/LastReadQuran';
 
-import { ExtensionStorage } from "@bacons/apple-targets";
 import { fetchPrayerTimesFromFirebase } from '../../../redux/slices/prayerSlice';
 import { format } from 'date-fns';
 
@@ -35,39 +34,6 @@ const PrayerTab = () => {
   const { reminderInterval, ramadanMode } = useSelector((state: RootState) => state.userPreferences);
   const { currentPrayer, nextPrayerInfo, fetchAndScheduleNotifications, backgroundImage } = usePrayerTimes(prayerTimes, reminderInterval)
   const [isPrayerLocationModalVisible, setIsPrayerLocationModalVisible] = useState<boolean>(false);
-
-  const widgetStorage = new ExtensionStorage("group.com.rihlah.prayerTimesWidget");
-
-  useEffect(() => {
-    const fetchAndStorePrayerTimes = async () => {
-      try {
-        // ✅ Step 1: Get today’s date in `d/M/yyyy` format
-        const todayDate = format(new Date(), "d/M/yyyy");
-        console.log("📅 Fetching prayer times for:", todayDate);
-
-        // ✅ Step 2: Fetch prayer times from Firebase
-        const response = await dispatch(fetchPrayerTimesFromFirebase({ inputDate: todayDate })).unwrap();
-
-        if (response) {
-          console.log("🟢 Fetched Prayer Times:", response);
-
-          // ✅ Step 3: Store in widget storage
-          widgetStorage.set("prayerTimesToday", JSON.stringify(response));
-          console.log("📌 Stored in widget storage:", response);
-
-          // ✅ Step 4: Reload the widget
-          ExtensionStorage.reloadWidget();
-          console.log("🔄 Widget reloaded!");
-        } else {
-          console.warn("❌ No prayer times fetched!");
-        }
-      } catch (error) {
-        console.error("❌ Error fetching/storing prayer times:", error);
-      }
-    };
-
-    fetchAndStorePrayerTimes();
-  }, [dispatch]);
 
   // Add inside PrayerTab component
   useEffect(() => {
