@@ -1,25 +1,44 @@
 import { View, Text, ScrollView, Image, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-import React, { useLayoutEffect } from 'react';
+import React, { useEffect, useLayoutEffect } from 'react';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../../../redux/store/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../../../context/ThemeContext';
+import { getArticles } from '../../../../redux/slices/articlesSlice';
 
 type Params = {
   id: string;
 };
 
 const TeacherDetails = () => {
+  const dispatch = useDispatch<AppDispatch>()
   const { id } = useLocalSearchParams<Params>();
-  const { teachers, courses } = useSelector((state: RootState) => state.dashboard);
+  const { teachers, courses, articles } = useSelector((state: RootState) => ({
+    teachers: state.dashboard.teachers,
+    courses: state.dashboard.courses,
+    articles: state.articles.articles, 
+  }));
 
   const teacher = teachers.find((teacher) => teacher.id === id);
+  console.log('Teacher name: ', teacher?.name)
   const teacherCourses = courses.filter((course) => course.teacherId === id);
+
+  // Fetch articles if they haven't been loaded
+  useEffect(() => {
+    if (articles.length === 0) {
+      dispatch(getArticles());
+    }
+  }, [dispatch, articles.length]);
+
+  const teacherArticles = articles.filter((article) => article.author === teacher?.name); 
+
   const navigation = useNavigation();
   const router = useRouter();
-
   const { theme } = useTheme();
+
+  console.log('All articles:', articles);
+  console.log('Teacher name:', teacher?.name);
 
   useLayoutEffect(() => {
     if (teacher) {
@@ -49,7 +68,8 @@ const TeacherDetails = () => {
         <Text style={[styles.coursesHeader, { color: theme.colors.text.primary }]}>Background</Text>
         <Text style={[styles.backgroundText, { color: theme.colors.text.secondary }]}>{teacher?.background}</Text>
 
-        {teacherCourses && (
+        {/* Courses Section */}
+        {teacherCourses.length > 0 && (
           <>
             <Text style={[styles.coursesHeader, { color: theme.colors.text.primary }]}>Courses</Text>
             <FlatList
@@ -85,7 +105,41 @@ const TeacherDetails = () => {
                 </TouchableOpacity>
               )}
               keyExtractor={(item) => item.id}
-              numColumns={1}
+            />
+          </>
+        )}
+
+        {/* Articles Section */}
+        {teacherArticles.length > 0 && (
+          <>
+            <Text style={[styles.coursesHeader, { color: theme.colors.text.primary }]}>Articles</Text>
+            <FlatList
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              data={teacherArticles}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.articleCard,
+                    { backgroundColor: theme.colors.secondary, shadowColor: theme.colors.text.primary },
+                  ]}
+                  onPress={() => router.push(`/articles/${item.id}`)}
+                >
+                  <Image
+                    source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }}
+                    style={styles.articleImage}
+                  />
+                  <View style={styles.articleTextContainer}>
+                    <Text style={[styles.articleTitle, { color: theme.colors.text.primary }]} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                    <Text style={[styles.articleDate, { color: theme.colors.text.muted }]}>
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              keyExtractor={(item) => item.id}
             />
           </>
         )}
@@ -174,6 +228,34 @@ const styles = StyleSheet.create({
   courseHeaderText: {
     fontFamily: 'Outfit_600SemiBold',
     fontSize: 14,
+  },
+  articleCard: {
+    width: 200,
+    borderRadius: 12,
+    marginRight: 16,
+    marginBottom: 10,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  articleImage: {
+    width: '100%',
+    height: 120,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  articleTextContainer: {
+    padding: 10,
+  },
+  articleTitle: {
+    fontFamily: 'Outfit_600SemiBold',
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  articleDate: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 12,
   },
 });
 
