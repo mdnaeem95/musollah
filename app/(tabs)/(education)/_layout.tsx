@@ -46,6 +46,15 @@ const EducationLayout = () => {
           }}
         />
         <Drawer.Screen
+          name="articles"
+          options={{
+            headerShown: false,
+            drawerLabel: 'Articles',
+            title: 'Articles',
+            drawerIcon: ({ color }) => <FontAwesome6 name="book-open" color={color} />,
+          }}
+        />
+        <Drawer.Screen
           name="teachers"
           options={{
             headerShown: false,

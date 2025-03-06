@@ -1,7 +1,7 @@
-import firestore from "@react-native-firebase/firestore";
+import firestore, { query } from "@react-native-firebase/firestore";
 import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/musollah/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
-import { ContentData, CourseData, Doa, DoaAfterPrayer, FoodAdditive, ModuleData, Restaurant, Surah, TeacherData, UserData, Question, Answer, Vote, Comment, RestaurantReview, PrayerTimes2025 } from "../../utils/types";
+import { ContentData, CourseData, Doa, DoaAfterPrayer, FoodAdditive, ModuleData, Restaurant, Surah, TeacherData, UserData, Question, Answer, Vote, Comment, RestaurantReview, PrayerTimes2025, Article, ArticleContent } from "../../utils/types";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PRAYER_TIMES_CACHE_KEY = 'prayerTimes2025Cache';
@@ -664,3 +664,29 @@ export const fetchPrayerTimes2025 = async (): Promise<PrayerTimes2025[]> => {
         throw error;
     }
 };
+
+export const fetchArticles = async (): Promise<Article[]> => {
+    try {
+        const snapshot = await firestore()
+            .collection('articles')
+            .get();
+
+        const articlesList = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                title: data.title,
+                author: data.author,
+                createdAt: data.createdAt.toDate().toISOString(),
+                imageUrl: data.imageUrl || '',
+                tags: data.tags || [],
+                content: Array.isArray(data.content) ? (data.content as ArticleContent[]) : [], // Ensure it's an array
+            };
+        });
+
+        return articlesList;
+    } catch (error) {
+        console.error('Error fetching favourites:', error);
+        throw error;
+    }
+} 

@@ -3,6 +3,23 @@ import { LocationObject } from 'expo-location';
 export type CourseStatus = 'completed' | 'in progress' | 'unenrolled';
 export type ModuleStatus = 'completed' | 'in progress' | 'locked';
 
+export type Article = {
+    id: string;
+    title: string;
+    author: string;
+    content: ArticleContent[];
+    createdAt: string; // Firestore Timestamp will be converted to Date
+    category?: string;
+    tags?: string[];
+    imageUrl?: string;
+};
+
+export type ArticleContent = 
+ | { type: 'paragraph'; text: string }
+ | { type: 'heading'; text: string }
+ | { type: 'quote'; text: string }
+ | { type: 'list'; text: string[] }
+  
 export interface PrayerTimes2025 {
     date: string; // Stored as "D/M/YYYY" in Firebase
     time: {

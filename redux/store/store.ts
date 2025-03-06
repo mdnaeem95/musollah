@@ -11,6 +11,7 @@ import answersReducer from '../slices/answerSlice'
 import questionsReducer from '../slices/questionSlice'
 import userPreferencesReducer from '../slices/userPreferencesSlice';
 import gamificationReducer from '../slices/gamificationSlice';
+import articleReducer from '../slices/articlesSlice'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persistReducer, persistStore, FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
 import autoMergeLevel2 from 'redux-persist/lib/stateReconciler/autoMergeLevel2'; // For deep merging
@@ -28,7 +29,8 @@ const rootReducer = combineReducers({
   doas: doasReducer,
   answers: answersReducer,
   questions: questionsReducer,
-  gamification: gamificationReducer
+  gamification: gamificationReducer,
+  articles: articleReducer
 });
 
 // Define RootState type using ReturnType
