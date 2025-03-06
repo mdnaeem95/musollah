@@ -52,7 +52,7 @@ const ArticlesLayout = () => {
             color: theme.colors.text.primary,
           },
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 8 }}>
+            <TouchableOpacity onPress={() => router.push('/articles')} style={{ paddingLeft: 8 }}>
               <FontAwesome6
                 name="arrow-left"
                 size={24}
