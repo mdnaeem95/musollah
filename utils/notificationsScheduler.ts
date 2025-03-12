@@ -45,23 +45,28 @@ export const scheduleNextDaysNotifications = async (
           continue;
         }
 
-        // Extract time values
-        const [, hour, minute, second] = timeMatch.map(Number);
+        // Extract hour, minute, second
+        const [, hourStr, minuteStr, secondStr] = timeMatch;
+        const hour = parseInt(hourStr, 10);
+        const minute = parseInt(minuteStr, 10);
+        const second = secondStr ? parseInt(secondStr, 10) : 0;
 
-        // Ensure correct local time by setting hours directly
+        console.log(`🕒 Extracted Time for ${prayerName}:`, {
+          original: prayerTime,
+          hour,
+          minute,
+          second,
+        });
+
+        // Correctly create a date object for the prayer time
         const prayerDate = new Date(date);
-        prayerDate.setHours(hour, minute, second || 0, 0);
+        prayerDate.setHours(hour, minute, second, 0); // Ensure exact time
 
-        console.log(`⏰ Parsed Prayer Time:`, {
+        console.log(`📅 Parsed Prayer Time for ${prayerName}:`, {
           prayerName,
           date,
-          rawTime: prayerTime,
-          parsedHour: hour,
-          parsedMinute: minute,
-          expectedPrayerDate: prayerDate,
+          expectedPrayerDate: prayerDate.toLocaleString(),
           timestamp: prayerDate.getTime(),
-          localTimeString: prayerDate.toLocaleString(),
-          utcTimeString: prayerDate.toUTCString(),
         });
 
         // Ensure prayer time is in the future
@@ -106,12 +111,12 @@ export const scheduleNextDaysNotifications = async (
             const scheduledNotification = allScheduled.find(n => n.identifier === notificationId);
             if (scheduledNotification) {
               //@ts-ignore
-              const scheduledTime = new Date(scheduledNotification.trigger?.value);
+              const scheduledTime = new Date(scheduledNotification.trigger?.value || 0);
 
               console.log(`🔍 Checking notification timing for ${prayerName}:`, {
                 expected: prayerDate.getTime(),
-                scheduled: scheduledTime.getTime(),
                 localScheduled: scheduledTime.toLocaleString(),
+                scheduled: scheduledTime.getTime(),
                 utcScheduled: scheduledTime.toUTCString(),
               });
 
