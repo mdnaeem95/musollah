@@ -1,71 +1,65 @@
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, Pressable, Image, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, Image, TextInput, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { getArticles } from '../../../../redux/slices/articlesSlice';
 import { RootState, AppDispatch } from '../../../../redux/store/store';
+import { FlashList } from '@shopify/flash-list';
+import { ArticleCategory } from '../../../../utils/types';
+import { fetchCategories } from '../../../../api/firebase';
+import { FontAwesome6 } from '@expo/vector-icons';
 
 const ArticlesScreen = () => {
   const { theme } = useTheme();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { articles, loading, error } = useSelector((state: RootState) => state.articles);
-
-  // State for search query
+  
+  // State for filtering
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<ArticleCategory | null>(null);
   const [filteredArticles, setFilteredArticles] = useState(articles);
+  const [categories, setCategories] = useState<ArticleCategory[]>([]);
 
   useEffect(() => {
     dispatch(getArticles());
+    fetchCategories().then(setCategories);
   }, [dispatch]);
 
-  // Update filtered articles when articles change
   useEffect(() => {
-    setFilteredArticles(articles);
-  }, [articles]);
-
-  // Function to handle search
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    
-    if (query.trim() === '') {
+    if (!selectedCategory) {
+      // No category selected, show all articles
       setFilteredArticles(articles);
-      return;
+    } else {
+      // Filter articles that match the selected category
+      const filtered = articles.filter(article => article.category?.id === selectedCategory.id);
+  
+      // Ensure at least one article is shown (avoid empty results by mistake)
+      setFilteredArticles(filtered.length > 0 ? filtered : articles);
     }
-
-    const lowerQuery = query.toLowerCase();
-    
-    const filtered = articles.filter((article) =>
-      article.title.toLowerCase().includes(lowerQuery) ||
-      article.author.toLowerCase().includes(lowerQuery) ||
-      (article.tags && article.tags.some(tag => tag.toLowerCase().includes(lowerQuery)))
-    );
-
-    setFilteredArticles(filtered);
-  };
+  }, [selectedCategory, articles]);  
 
   if (loading) return <ActivityIndicator size="large" color={theme.colors.text.primary} />;
   if (error) return <Text style={{ color: 'red', textAlign: 'center', marginTop: 20 }}>{error}</Text>;
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.primary }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.primary, paddingBottom: 20 }}>
       {/* Search Bar */}
-      <View
-        style={{
-          padding: 15,
-          backgroundColor: theme.colors.secondary,
-          borderRadius: 8,
-          margin: 15,
-          flexDirection: 'row',
-          alignItems: 'center',
-        }}
-      >
+      <View style={{
+        padding: 15,
+        backgroundColor: theme.colors.secondary,
+        borderRadius: 8,
+        marginHorizontal: 15,
+        marginVertical: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+      }}>
         <TextInput
           placeholder="Search articles..."
           placeholderTextColor={theme.colors.text.muted}
           value={searchQuery}
-          onChangeText={handleSearch}
+          onChangeText={setSearchQuery}
           style={{
             flex: 1,
             color: theme.colors.text.primary,
@@ -75,12 +69,102 @@ const ArticlesScreen = () => {
         />
       </View>
 
-      <FlatList
+      {/* Browse Categories Header */}
+      <Text style={{ fontSize: 20, fontFamily: 'Outfit_700Bold', color: theme.colors.text.primary, marginLeft: 15, marginBottom: 10 }}>
+        Browse Categories
+      </Text>
+
+      {/* Categories Section */}
+      <FlashList
+        horizontal
+        estimatedItemSize={120}
+        data={categories}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => {
+          const isSelected = selectedCategory?.id === item.id;
+
+          return (
+            <TouchableOpacity
+              style={{ marginHorizontal: 10, alignItems: 'center', position: 'relative' }}
+              onPress={() => setSelectedCategory(prev => (prev?.id === item.id ? null : item))} // Toggle selection
+            >
+              {/* Image with Overlay */}
+              <View style={{ position: 'relative' }}>
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={{
+                    width: 130,
+                    height: 130,
+                    borderRadius: 12,
+                    backgroundColor: theme.colors.secondary,
+                    borderWidth: isSelected ? 3 : 0, // Add border if selected
+                    borderColor: theme.colors.accent,
+                    opacity: isSelected ? 0.7 : 1, // Reduce opacity if selected
+                  }}
+                />
+                {/* Full Overlay for Text */}
+                <View
+                  style={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: isSelected ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.4)', // Darker overlay when selected
+                    borderRadius: 12,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: 'white',
+                      fontSize: 16,
+                      fontWeight: 'bold',
+                      textAlign: 'center',
+                      paddingHorizontal: 5,
+                      textTransform: 'uppercase',
+                      opacity: isSelected ? 1 : 0.9, // Make selected text stand out more
+                    }}
+                  >
+                    {item.name}
+                  </Text>
+                </View>
+
+                {/* ✅ Checkmark Indicator (Bottom Right) */}
+                {isSelected && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      bottom: 5,
+                      right: 5,
+                      backgroundColor: theme.colors.accent,
+                      borderRadius: 20,
+                      padding: 6,
+                    }}
+                  >
+                    <FontAwesome6 name="check" size={14} color="white" />
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+        extraData={selectedCategory} // 🔹 Forces FlashList to re-render when selectedCategory changes
+        contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 15 }}
+      />
+
+      {/* Latest Articles Header */}
+      <Text style={{ fontSize: 20, fontFamily: 'Outfit_700Bold', color: theme.colors.text.primary, marginLeft: 15, marginBottom: 5 }}>
+        Latest Articles
+      </Text>
+
+      {/* Article List */}
+      <FlashList
         data={filteredArticles}
         keyExtractor={(item) => item.id}
+        estimatedItemSize={150}
         renderItem={({ item }) => (
           <Pressable
-            onPress={() => router.push({ pathname: `/articles/${item.id}`})}
+            onPress={() => router.push({ pathname: `/articles/${item.id}` })}
             style={({ pressed }) => ({
               flexDirection: 'row',
               alignItems: 'center',
@@ -102,28 +186,6 @@ const ArticlesScreen = () => {
 
             {/* Article Details */}
             <View style={{ flex: 1, marginLeft: 15 }}>
-              {/* Tags */}
-              {item.tags && (
-                <View style={{ flexDirection: 'row', marginBottom: 5 }}>
-                  {item.tags.map((tag, index) => (
-                    <Text
-                      key={index}
-                      style={{
-                        fontSize: 12,
-                        color: theme.colors.text.muted,
-                        backgroundColor: theme.colors.secondary,
-                        paddingVertical: 3,
-                        paddingHorizontal: 8,
-                        borderRadius: 15,
-                        marginRight: 5,
-                      }}
-                    >
-                      {tag}
-                    </Text>
-                  ))}
-                </View>
-              )}
-
               {/* Title */}
               <Text style={{ color: theme.colors.text.primary, fontSize: 18, fontFamily: 'Outfit_700Bold' }}>
                 {item.title}
@@ -140,7 +202,7 @@ const ArticlesScreen = () => {
 
               {/* Author & Date */}
               <Text style={{ color: theme.colors.text.muted, fontSize: 12, marginTop: 5 }}>
-                By {item.author} • {new Date(item.createdAt).toLocaleDateString()}
+                {item.author} • {new Date(item.createdAt).toLocaleDateString()}
               </Text>
             </View>
           </Pressable>
