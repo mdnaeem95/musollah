@@ -1,7 +1,7 @@
 import firestore, { query } from "@react-native-firebase/firestore";
 import { BidetLocation, MosqueLocation, MusollahLocation, Region } from "../../components/musollah/Map";
 import { getDistanceFromLatLonInKm } from "../../utils/distance";
-import { ContentData, CourseData, Doa, DoaAfterPrayer, FoodAdditive, ModuleData, Restaurant, Surah, TeacherData, UserData, Question, Answer, Vote, Comment, RestaurantReview, PrayerTimes2025, Article, ArticleContent } from "../../utils/types";
+import { ContentData, CourseData, Doa, DoaAfterPrayer, FoodAdditive, ModuleData, Restaurant, Surah, TeacherData, UserData, Question, Answer, Vote, Comment, RestaurantReview, PrayerTimes2025, Article, ArticleContent, ArticleCategory } from "../../utils/types";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PRAYER_TIMES_CACHE_KEY = 'prayerTimes2025Cache';
@@ -667,26 +667,45 @@ export const fetchPrayerTimes2025 = async (): Promise<PrayerTimes2025[]> => {
 
 export const fetchArticles = async (): Promise<Article[]> => {
     try {
-        const snapshot = await firestore()
-            .collection('articles')
-            .get();
-
-        const articlesList = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                title: data.title,
-                author: data.author,
-                createdAt: data.createdAt.toDate().toISOString(),
-                imageUrl: data.imageUrl || '',
-                tags: data.tags || [],
-                content: Array.isArray(data.content) ? (data.content as ArticleContent[]) : [], // Ensure it's an array
-            };
-        });
-
-        return articlesList;
+      const snapshot = await firestore()
+        .collection('articles')
+        .orderBy('createdAt', 'desc') // 🔹 Sort articles by latest
+        .get();
+  
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title,
+          author: data.author,
+          createdAt: data.createdAt.toDate().toISOString(), // Ensure timestamp conversion
+          category: data.category || null,
+          tags: data.tags || [],
+          imageUrl: data.imageUrl || '',
+          content: Array.isArray(data.content) ? data.content : [],
+          likes: data.likes || [],
+          bookmarks: data.bookmarks || [],
+          comments: data.comments?.map((comment: any) => ({
+            ...comment,
+            timestamp: comment.timestamp?.toDate().toISOString() || new Date().toISOString(), // 🔹 Convert Firestore timestamp
+          })) || [],
+        };
+      });
     } catch (error) {
-        console.error('Error fetching favourites:', error);
-        throw error;
+      console.error('Error fetching articles:', error);
+      throw error;
     }
-} 
+  };
+
+export const fetchCategories = async (): Promise<ArticleCategory[]> => {
+  try {
+    const snapshot = await firestore().collection('articleCategories').get();
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...(doc.data() as Omit<ArticleCategory, 'id'>), // Type-safe mapping
+    }));
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    throw error;
+  }
+};

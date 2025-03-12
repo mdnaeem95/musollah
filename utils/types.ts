@@ -9,16 +9,31 @@ export type Article = {
     author: string;
     content: ArticleContent[];
     createdAt: string; // Firestore Timestamp will be converted to Date
-    category?: string;
+    category?: ArticleCategory;
     tags?: string[];
     imageUrl?: string;
+    likes: string[];  // Stores user IDs who liked the article
+    bookmarks: string[];  // Stores user IDs who bookmarked the article
+    comments: ArticleComment[];
 };
+
+export type ArticleCategory = {
+    id: string;
+    name: string;
+    imageUrl: string;
+};  
 
 export type ArticleContent = 
  | { type: 'paragraph'; text: string }
  | { type: 'heading'; text: string }
  | { type: 'quote'; text: string }
  | { type: 'list'; text: string[] }
+
+export type ArticleComment = {
+    userId: string;
+    text: string;
+    timestamp: string; // Store as ISO string
+};
   
 export interface PrayerTimes2025 {
     date: string; // Stored as "D/M/YYYY" in Firebase

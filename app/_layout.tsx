@@ -10,6 +10,7 @@ import { ThemeProvider } from '../context/ThemeContext';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet'
 import Toast from 'react-native-toast-message'
 import { toastConfig } from '../utils/toastConfig';
+import { AuthProvider } from '../context/AuthContext';
 // import * as Sentry from '@sentry/react-native'
 // import { initSentry, useSentryNavigationConfig } from '../utils/sentry';
 
@@ -29,14 +30,16 @@ function AppLayout () {
   return (
     <Provider store={store}>
       <PersistGate persistor={persistor} loading={<LoadingScreen message='Setting up the app...' />}>
-        <ActionSheetProvider>
-          <ThemeProvider>
-            <NotificationProvider>
-                  <RootLayout />
-                  <Toast config={toastConfig} />
-            </NotificationProvider>
-          </ThemeProvider>
-        </ActionSheetProvider>
+        <AuthProvider>
+          <ActionSheetProvider>
+            <ThemeProvider>
+              <NotificationProvider>
+                    <RootLayout />
+                    <Toast config={toastConfig} />
+              </NotificationProvider>
+            </ThemeProvider>
+          </ActionSheetProvider>
+        </AuthProvider>
       </PersistGate>
     </Provider>
   )
