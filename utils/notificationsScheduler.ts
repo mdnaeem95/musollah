@@ -44,7 +44,7 @@ export const scheduleNextDaysNotifications = async (
             const [hourStr, minuteStr] = (prayerTime as string).split(":");
             const hour = parseInt(hourStr, 10);
             const minute = parseInt(minuteStr, 10);
-            const second = 30; // Add 30-second delay
+            const second = 15; // Add 30-second delay
 
             console.log(`🕒 Extracted Time for ${prayerName}:`, {
               original: prayerTime,
