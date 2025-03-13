@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { ayahList } from './constants';
 import { Animated, Dimensions } from 'react-native';
 import 'react-native-get-random-values';
@@ -22,47 +22,49 @@ export const formatIslamicDate = (hijriDate: string): string => {
     return `${day} ${monthName}, ${year} AH`
 }
 
-export const getPrayerTimesInfo  = (prayerTimes: { [key: string]: string }, currentTime: Date):
- { currentPrayer: string, nextPrayer:string, timeUntilNextPrayer: string } => {
-    const timeInMinutes = (date: Date): number => date.getHours() * 60 + date.getMinutes();
+export const getPrayerTimesInfo = (
+  prayerTimes: Record<string, string>,
+  currentTime: Date
+): { currentPrayer: string; nextPrayer: string; timeUntilNextPrayer: string } => {
+  
+  const timeInMinutes = (date: Date): number => date.getHours() * 60 + date.getMinutes();
+  const prayerNames = ["Subuh", "Syuruk", "Zohor", "Asar", "Maghrib", "Isyak"];
 
-    const prayerNames = ['Subuh', 'Syuruk', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
-    const prayerTimesInMinutes = prayerNames.map(prayer => {
-        const [hours, minutes] = prayerTimes[prayer].split(':').map(Number);
-        return hours * 60 + minutes;
-    });
+  // Convert prayer times to minutes
+  const prayerTimesInMinutes = prayerNames.map((prayer) => {
+    const [hours, minutes] = prayerTimes[prayer].split(":").map(Number);
+    return hours * 60 + minutes;
+  });
 
-    const currentMinutes = timeInMinutes(currentTime);
-    // console.log('Current Time in Minutes:', currentMinutes);
-    // console.log('Prayer Times in Minutes:', prayerTimesInMinutes);
+  const currentMinutes = timeInMinutes(currentTime);
+  let currentPrayer = "";
+  let nextPrayer = "";
+  let timeUntilNextPrayer = "";
 
-    let currentPrayer = '';
-    let nextPrayer = '';
-    let timeUntilNextPrayer = '';
-    
-    for (let i = 0; i < prayerTimesInMinutes.length; i++) {
-        if (currentMinutes < prayerTimesInMinutes[i]) {
-            currentPrayer = i === 0 ? prayerNames[prayerNames.length - 1] : prayerNames[i - 1];
-            nextPrayer = prayerNames[i];
+  for (let i = 0; i < prayerTimesInMinutes.length; i++) {
+    if (currentMinutes < prayerTimesInMinutes[i]) {
+      currentPrayer = i === 0 ? "Isyak" : prayerNames[i - 1]; // Handles midnight case correctly
+      nextPrayer = prayerNames[i];
 
-            const minutesUntilNextPrayer = prayerTimesInMinutes[i] - currentMinutes;
-            const hours = Math.floor(minutesUntilNextPrayer / 60);
-            const minutes = minutesUntilNextPrayer % 60;
-            timeUntilNextPrayer = `${hours} hr ${minutes} min`;
-            return { currentPrayer, nextPrayer, timeUntilNextPrayer}; 
-        }
+      const minutesUntilNextPrayer = prayerTimesInMinutes[i] - currentMinutes;
+      const hours = Math.floor(minutesUntilNextPrayer / 60);
+      const minutes = minutesUntilNextPrayer % 60;
+      timeUntilNextPrayer = `${hours} hr ${minutes} min`;
+
+      return { currentPrayer, nextPrayer, timeUntilNextPrayer };
     }
+  }
 
-    // If current time is > Isha, the next prayer is Fajr of the next day
-    currentPrayer = 'Isyak'
-    nextPrayer = 'Subuh'
-    const minutesUntilNextPrayer = (24 * 60 - currentMinutes) + prayerTimesInMinutes[0];
-    const hours = Math.floor(minutesUntilNextPrayer / 60);
-    const minutes = minutesUntilNextPrayer % 60;
-    timeUntilNextPrayer = `${hours} hr ${minutes} min`;
+  // If current time is after Isyak, next prayer is Subuh
+  currentPrayer = "Isyak";
+  nextPrayer = "Subuh";
+  const minutesUntilNextPrayer = 24 * 60 - currentMinutes + prayerTimesInMinutes[0]; // Wraparound to next day
+  const hours = Math.floor(minutesUntilNextPrayer / 60);
+  const minutes = minutesUntilNextPrayer % 60;
+  timeUntilNextPrayer = `${hours} hr ${minutes} min`;
 
-    return { currentPrayer, nextPrayer, timeUntilNextPrayer}; 
-}
+  return { currentPrayer, nextPrayer, timeUntilNextPrayer };
+};
 
 export const formatDateForAPI = (date: string) => {
     const [year, month, day] = date.split('-');
@@ -103,39 +105,47 @@ export const extractNextDaysPrayerTimes = (
   numDays: number
 ): Record<string, any> => {
   const today = new Date();
-  const endDate = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to midnight
+
+  const endDate = new Date(today);
   endDate.setDate(today.getDate() + numDays);
 
-  return monthlyPrayerTimes.reduce((acc: Record<string, any>, item: any) => {
+  const result: Record<string, any> = {};
+
+  monthlyPrayerTimes.forEach((item) => {
     try {
-      // Parse item.date as a day of the current month and year
-      const itemDay = parseInt(item.date, 10); // Assuming item.date is a day of the month (e.g., '31')
-      const itemDate = new Date(today.getFullYear(), today.getMonth(), itemDay);
+      console.log("Processing Prayer Data Item:", item);
 
-      // Adjust for months/years where the parsed date exceeds the current month
-      if (itemDay < today.getDate()) {
-        itemDate.setMonth(today.getMonth() + 1); // Move to the next month if the day has already passed
-        if (itemDate.getMonth() === 0) {
-          itemDate.setFullYear(today.getFullYear() + 1); // Handle year transition
-        }
-      }
+      // ✅ Correctly format the stored Firebase date format (d/M/yyyy)
+      const itemDateStr = `${item.date}/3/2025`; // Ensure it has the full year
+      const itemDate = parse(itemDateStr, "d/M/yyyy", new Date());
 
-      // Ensure itemDate is valid and within the desired range
+      itemDate.setHours(0, 0, 0, 0);
+
+      // ✅ Ensure the date is within range
       if (itemDate >= today && itemDate <= endDate) {
-        acc[itemDate.toISOString().split('T')[0]] = {
-          Subuh: item.Subuh,
-          Syuruk: item.Syuruk,
-          Zohor: item.Zohor,
-          Asar: item.Asar,
-          Maghrib: item.Maghrib,
-          Isyak: item.Isyak,
+        const dateKey = format(itemDate, "d/M/yyyy"); // Ensure it matches Firebase format
+
+        console.log("✅ Valid Date Added:", dateKey, item);
+
+        result[dateKey] = {
+          Subuh: item.subuh,
+          Syuruk: item.syuruk,
+          Zohor: item.zohor,
+          Asar: item.asar,
+          Maghrib: item.maghrib,
+          Isyak: item.isyak,
         };
+      } else {
+        console.warn("⏩ Skipping out-of-range date:", itemDate.toISOString());
       }
     } catch (error) {
-      console.error('Error processing item:', item, error);
+      console.error("❌ Error processing item:", item, error);
     }
-    return acc;
-  }, {});
+  });
+
+  console.log("🔍 Final Extracted Prayer Times:", result);
+  return result;
 };
 
 export const scaleSize = (size: number) => {

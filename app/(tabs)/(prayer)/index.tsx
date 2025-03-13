@@ -1,11 +1,11 @@
 import { View, Text, StyleSheet, ImageBackground, Platform, ScrollView, SafeAreaView } from 'react-native'
 import React, { useEffect, useMemo, useState } from 'react'
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
 
 import ExpandableButton from '../../../components/prayer/ExpandableButton';
 
-import { AppDispatch, RootState } from '../../../redux/store/store';
+import { RootState } from '../../../redux/store/store';
 import { getFormattedDate, scaleSize } from '../../../utils';
 import { usePrayerTimes } from '../../../hooks/usePrayerTimes'
 import CurrentPrayerInfo from '../../../components/prayer/CurrentPrayerInfo';
@@ -22,12 +22,8 @@ import PuasaDoaCarousel from '../../../components/prayer/PuasaDoaCarousel';
 import TerawihLocator from '../../../components/prayer/TerawihLocator';
 import LastReadQuran from '../../../components/prayer/LastReadQuran';
 
-import { fetchPrayerTimesFromFirebase } from '../../../redux/slices/prayerSlice';
-import { format } from 'date-fns';
-
 const PrayerTab = () => {
   const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const { prayerTimes, islamicDate, isLoading, selectedDate } = useSelector((state: RootState) => state.prayer);
