@@ -82,12 +82,10 @@ const RootLayout = () => {
 
     const fetchEssentialData = async () => {
       try {
-        console.log('Fetching essential data: Firebase + API Prayer Times...');
+        console.log('Fetching essential data from Firebase');
 
-        // Fetch Firebase & API in parallel
-        await Promise.all([
-          dispatch(fetchPrayerTimesFromFirebase({})).unwrap(),
-        ]);
+        const prayerData = await dispatch(fetchPrayerTimesFromFirebase({})).unwrap();
+        console.log('✅ Retrieved Prayer Times from Firebase:', JSON.stringify(prayerData, null, 2));
 
         setIsEssentialDataFetched(true);
       } catch (error) {

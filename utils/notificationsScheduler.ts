@@ -1,13 +1,14 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from "expo-notifications";
 import { RootState, store } from "../redux/store/store";
+import { parse, format } from "date-fns";
 
-const SCHEDULED_NOTIFICATIONS_KEY = 'scheduled_notifications';
+const SCHEDULED_NOTIFICATIONS_KEY = "scheduled_notifications";
 
-const adhanOptions = {
-  'Ahmad Al-Nafees': require('../assets/adhans/ahmadAlNafees.mp3'),
-  'Mishary Rashid Alafasy': require('../assets/adhans/mishary.mp3'),
-  'None': null,
+const adhanOptions: Record<string, any> = {
+  "Ahmad Al-Nafees": require("../assets/adhans/ahmadAlNafees.mp3"),
+  "Mishary Rashid Alafasy": require("../assets/adhans/mishary.mp3"),
+  None: null,
 };
 
 export const scheduleNextDaysNotifications = async (
@@ -20,7 +21,9 @@ export const scheduleNextDaysNotifications = async (
     const now = new Date();
 
     // Retrieve previously scheduled notifications
-    const storedNotifications = await AsyncStorage.getItem(SCHEDULED_NOTIFICATIONS_KEY);
+    const storedNotifications = await AsyncStorage.getItem(
+      SCHEDULED_NOTIFICATIONS_KEY
+    );
     const scheduledDays = storedNotifications ? JSON.parse(storedNotifications) : {};
 
     // Get current user preference for Adhan sound
@@ -30,146 +33,79 @@ export const scheduleNextDaysNotifications = async (
 
     let notificationsChanged = false; // Track changes for logging
 
-    for (const [date, prayerTimes] of Object.entries(prayerTimesForDays)) {
-      for (const [prayerName, prayerTime] of Object.entries(prayerTimes)) {
-        if (mutedNotifications.includes(prayerName)) {
-          console.log(`🔕 Skipping muted prayer: ${prayerName}`);
-          continue;
-        }
+    for (const [dateString, prayerTimes] of Object.entries(prayerTimesForDays)) {
+      try {
+        // Convert `d/M/yyyy` string into a proper Date object
+        const parsedDate = parse(dateString, "d/M/yyyy", new Date());
 
-        // Validate and parse prayer time string
-        //@ts-ignore
-        const timeMatch = prayerTime.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-        if (!timeMatch) {
-          console.error(`❌ Invalid time format for ${prayerName} on ${date}: ${prayerTime}`);
-          continue;
-        }
+        for (const [prayerName, prayerTime] of Object.entries(prayerTimes)) {
+          try {
+            // Extract hour & minute
+            const [hourStr, minuteStr] = (prayerTime as string).split(":");
+            const hour = parseInt(hourStr, 10);
+            const minute = parseInt(minuteStr, 10);
+            const second = 30; // Add 30-second delay
 
-        // Extract hour, minute, second
-        const [, hourStr, minuteStr, secondStr] = timeMatch;
-        const hour = parseInt(hourStr, 10);
-        const minute = parseInt(minuteStr, 10);
-        const second = secondStr ? parseInt(secondStr, 10) : 0;
-
-        console.log(`🕒 Extracted Time for ${prayerName}:`, {
-          original: prayerTime,
-          hour,
-          minute,
-          second,
-        });
-
-        // Correctly create a date object for the prayer time
-        const prayerDate = new Date(date);
-        prayerDate.setHours(hour, minute, second, 0); // Ensure exact time
-
-        console.log(`📅 Parsed Prayer Time for ${prayerName}:`, {
-          prayerName,
-          date,
-          expectedPrayerDate: prayerDate.toLocaleString(),
-          timestamp: prayerDate.getTime(),
-        });
-
-        // Ensure prayer time is in the future
-        if (prayerDate <= now) {
-          console.log(`⏩ Skipping past prayer time for ${prayerName} on ${date}.`);
-          continue;
-        }
-
-        // Handle Syuruk separately
-        if (prayerName.toLowerCase() === 'syuruk') {
-          if (scheduledDays[date]?.[prayerName]) {
-            console.log(`🌅 Notification for Syuruk on ${date} already scheduled. Skipping.`);
-            continue;
-          }
-
-          console.log(`📅 Scheduling Syuruk notification for ${date} at ${prayerDate}.`);
-          const syurukNotificationId = await Notifications.scheduleNotificationAsync({
-            content: {
-              title: `🌅 It's Sunrise`,
-              body: `The sun is rising now. Reflect and prepare for the day.`,
-              sound: true,
-            },
-            trigger: new Date(prayerDate)
-          });
-
-          scheduledDays[date] ??= {};
-          scheduledDays[date][prayerName] = [syurukNotificationId];
-          notificationsChanged = true;
-          continue;
-        }
-
-        // Check if this prayer is already scheduled and matches the correct time
-        if (scheduledDays[date]?.[prayerName]) {
-          console.log(`🔄 Checking existing notifications for ${prayerName} on ${date}...`);
-
-          // Fetch current scheduled notifications
-          const allScheduled = await Notifications.getAllScheduledNotificationsAsync();
-          const existingNotifications = scheduledDays[date][prayerName];
-
-          let isMismatched = false;
-          for (const notificationId of existingNotifications) {
-            const scheduledNotification = allScheduled.find(n => n.identifier === notificationId);
-            if (scheduledNotification) {
-              //@ts-ignore
-              const scheduledTime = new Date(scheduledNotification.trigger?.value || 0);
-
-              console.log(`🔍 Checking notification timing for ${prayerName}:`, {
-                expected: prayerDate.getTime(),
-                localScheduled: scheduledTime.toLocaleString(),
-                scheduled: scheduledTime.getTime(),
-                utcScheduled: scheduledTime.toUTCString(),
-              });
-
-              // If the scheduled time doesn't match, reschedule
-              if (scheduledTime.getTime() !== prayerDate.getTime()) {
-                isMismatched = true;
-                console.log(`⏰ Mismatch found for ${prayerName} on ${date}: Expected ${prayerDate}, Found ${scheduledTime}`);
-                await Notifications.cancelScheduledNotificationAsync(notificationId);
-              }
-            } else {
-              isMismatched = true;
-            }
-          }
-
-          if (!isMismatched) {
-            console.log(`✅ Notification for ${prayerName} on ${date} is correct. Skipping reschedule.`);
-            continue;
-          } else {
-            console.log(`🔁 Rescheduling ${prayerName} for ${date} at ${prayerDate}.`);
-            notificationsChanged = true;
-          }
-        }
-
-        // Schedule the prayer notification
-        console.log(`📅 Scheduling ${prayerName} notification for ${date} at ${prayerDate}.`);
-        const notificationId = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `Time for ${prayerName}`,
-            body: `It's time for ${prayerName} prayer.`,
-            sound: adhanAudio,
-          },
-          trigger: new Date(prayerDate)
-        });
-
-        let reminderId: string | null = null;
-        if (reminderInterval > 0) {
-          const reminderDate = new Date(prayerDate.getTime() - reminderInterval * 60 * 1000);
-          if (reminderDate > now) {
-            console.log(`🔔 Scheduling reminder for ${prayerName} ${reminderInterval} minutes before at ${reminderDate}.`);
-            reminderId = await Notifications.scheduleNotificationAsync({
-              content: {
-                title: `${reminderInterval} minutes until ${prayerName}`,
-                body: `Get ready for ${prayerName} prayer.`,
-                sound: true,
-              },
-              trigger: new Date(reminderDate)
+            console.log(`🕒 Extracted Time for ${prayerName}:`, {
+              original: prayerTime,
+              hour,
+              minute,
+              second,
             });
+
+            // 🔵 Construct the full Date object with correct time
+            const prayerDate = new Date(parsedDate);
+            prayerDate.setHours(hour, minute, second, 0);
+
+            console.log(`📅 Parsed Prayer Time for ${prayerName}:`, {
+              prayerName,
+              date: dateString,
+              expectedPrayerDate: prayerDate.toLocaleString(),
+              timestamp: prayerDate.getTime(),
+            });
+
+            // Skip past prayer times
+            if (prayerDate <= now) {
+              console.log(
+                `⏩ Skipping past prayer time for ${prayerName} on ${dateString}.`
+              );
+              continue;
+            }
+
+            // Prevent duplicate notifications
+            const existingNotification =
+              scheduledDays[dateString]?.[prayerName];
+            if (existingNotification && existingNotification === prayerDate.getTime()) {
+              console.log(
+                `🔍 Skipping duplicate notification for ${prayerName} at ${prayerDate.toLocaleString()}`
+              );
+              continue;
+            }
+
+            console.log(
+              `📅 Scheduling ${prayerName} notification for ${dateString} at ${prayerDate}.`
+            );
+            const notificationId = await Notifications.scheduleNotificationAsync({
+              content: {
+                title: `Time for ${prayerName}`,
+                body: `It's time for ${prayerName} prayer.`,
+                sound: adhanAudio,
+            },
+              trigger: new Date(prayerDate),
+            });
+
+            // Store notification time
+            if (!scheduledDays[dateString]) scheduledDays[dateString] = {};
+            scheduledDays[dateString][prayerName] = prayerDate.getTime();
+            notificationsChanged = true;
+
+            console.log(`✅ Scheduled ${prayerName} at`, prayerDate.toLocaleString());
+          } catch (error) {
+            console.error(`❌ Error scheduling ${prayerName} notification:`, error);
           }
         }
-
-        // Store notification IDs
-        scheduledDays[date] ??= {};
-        scheduledDays[date][prayerName] = [notificationId, reminderId].filter(Boolean);
+      } catch (error) {
+        console.error(`❌ Error processing prayer times for ${dateString}:`, error);
       }
     }
 
@@ -183,8 +119,8 @@ export const scheduleNextDaysNotifications = async (
 
     // Log all scheduled notifications
     const allNotifications = await Notifications.getAllScheduledNotificationsAsync();
-    console.log('📜 Currently Scheduled Notifications:', allNotifications);
+    console.log("📜 Currently Scheduled Notifications:", allNotifications);
   } catch (error) {
-    console.error('🚨 Error scheduling notifications:', error);
+    console.error("🚨 Error scheduling notifications:", error);
   }
 };
