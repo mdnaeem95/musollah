@@ -31,11 +31,6 @@ const PrayerTab = () => {
   const { currentPrayer, nextPrayerInfo, fetchAndScheduleNotifications, backgroundImage } = usePrayerTimes(prayerTimes, reminderInterval)
   const [isPrayerLocationModalVisible, setIsPrayerLocationModalVisible] = useState<boolean>(false);
 
-  // Add inside PrayerTab component
-  useEffect(() => {
-    fetchAndScheduleNotifications();
-  }, [fetchAndScheduleNotifications]);
-
   // Format the selected date
   const formattedDate = useMemo(() => {
     const date = selectedDate ? new Date(selectedDate) : new Date();

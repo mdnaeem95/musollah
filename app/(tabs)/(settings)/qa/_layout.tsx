@@ -37,6 +37,10 @@ const QALayout = () => {
         options={headerOptions('Ask Anything')}
       />
       <Stack.Screen
+        name="aiChatbot/index"
+        options={headerOptions('Ask Anything')}
+      />
+      <Stack.Screen
         name="newQuestion/index"
         options={headerOptions('Ask a Question')}
       />
