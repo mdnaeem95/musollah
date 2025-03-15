@@ -58,7 +58,8 @@ const LandingPage = () => {
       </ScrollView>
 
       {/* Fixed Ask a Question Button */}
-      <View style={styles.buttonContainer}>
+      <View style={styles.buttonRowContainer}>
+        {/* Ask a Question Button */}
         <TouchableOpacity
           style={styles.askButton}
           onPress={() => router.push('/qa/newQuestion')}
@@ -71,7 +72,22 @@ const LandingPage = () => {
           />
           <Text style={styles.askButtonText}>Ask a Question</Text>
         </TouchableOpacity>
+
+        {/* Ask AI Button */}
+        <TouchableOpacity
+          style={styles.askButton}
+          onPress={() => router.push('/qa/aiChatbot')}
+        >
+          <FontAwesome6
+            name="robot"
+            size={18}
+            color={theme.colors.text.primary}
+            style={styles.icon}
+          />
+          <Text style={styles.askButtonText}>Ask AI</Text>
+        </TouchableOpacity>
       </View>
+
     </View>
   );
 };
@@ -119,6 +135,21 @@ const createStyles = (theme: any) =>
       right: 16,
       alignItems: 'center',
     },
+    aiButtonContainer: {
+      position: 'absolute',
+      bottom: 20,
+      left: 0,
+      right: 20,
+      alignItems: 'center',
+    },
+    buttonRowContainer: {
+      flexDirection: 'row', // Aligns buttons in a row
+      justifyContent: 'space-between', // Even spacing
+      position: 'absolute',
+      bottom: 20,
+      left: 16,
+      right: 16,
+    },
     askButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -129,7 +160,9 @@ const createStyles = (theme: any) =>
       shadowOpacity: 0.3,
       shadowRadius: 5,
       elevation: 5,
-    },
+      flex: 1, // Ensures equal width
+      marginHorizontal: 5, // Adds spacing between buttons
+    },  
     icon: {
       marginRight: 8,
       color: '#000'

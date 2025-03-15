@@ -35,6 +35,14 @@ export const usePrayerTimes = (
   // Fetch and schedule notifications for the next 5 days
   const fetchAndScheduleNotifications = useCallback(async () => {
     try {
+      const now = Date.now();
+      if (lastScheduleRef.current && now - lastScheduleRef.current < 5 * 60 * 1000) {
+        console.log("⏳ Skipping duplicate scheduling within 5 minutes.");
+        return;
+      }
+  
+      lastScheduleRef.current = now; // Update last execution time
+
       console.log("🚀 Running fetchAndScheduleNotifications...");
 
       const today = new Date();
