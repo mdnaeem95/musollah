@@ -74,7 +74,7 @@ const LandingPage = () => {
         </TouchableOpacity>
 
         {/* Ask AI Button */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.askButton}
           onPress={() => router.push('/qa/aiChatbot')}
         >
@@ -85,7 +85,7 @@ const LandingPage = () => {
             style={styles.icon}
           />
           <Text style={styles.askButtonText}>Ask AI</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
     </View>
