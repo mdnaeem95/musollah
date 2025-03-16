@@ -21,9 +21,20 @@ export const usePrayerTimes = (
   const mutedNotifications = useSelector(
     (state: RootState) => state.userPreferences.mutedNotifications
   );
+  const selectedAdhan = useSelector(
+    (state: RootState) => state.userPreferences.selectedAdhan
+  );
+  const prePrayerReminder = useSelector(
+    (state: RootState) => state.userPreferences.reminderInterval
+  );
 
   // Track last schedule to prevent multiple triggers
   const lastScheduleRef = useRef<number | null>(null);
+  const lastSettingsRef = useRef({
+    mutedNotifications,
+    selectedAdhan,
+    prePrayerReminder,
+  });
 
   // Compute background image dynamically
   const backgroundImage = useMemo(() => {
@@ -36,11 +47,19 @@ export const usePrayerTimes = (
   const fetchAndScheduleNotifications = useCallback(async () => {
     try {
       const now = Date.now();
-      if (lastScheduleRef.current && now - lastScheduleRef.current < 5 * 60 * 1000) {
+      const settingsChanged =
+        lastSettingsRef.current.mutedNotifications !== mutedNotifications ||
+        lastSettingsRef.current.selectedAdhan !== selectedAdhan ||
+        lastSettingsRef.current.prePrayerReminder !== prePrayerReminder;
+
+      // **Force scheduling if user changed notification settings**
+      if (!settingsChanged && lastScheduleRef.current && now - lastScheduleRef.current < 5 * 60 * 1000) {
         console.log("⏳ Skipping duplicate scheduling within 5 minutes.");
         return;
       }
-  
+
+      // **Update last settings to prevent re-triggering unnecessarily**
+      lastSettingsRef.current = { mutedNotifications, selectedAdhan, prePrayerReminder };
       lastScheduleRef.current = now; // Update last execution time
 
       console.log("🚀 Running fetchAndScheduleNotifications...");
@@ -60,12 +79,11 @@ export const usePrayerTimes = (
       await scheduleNextDaysNotifications(
         nextDaysPrayerTimes,
         reminderInterval,
-        mutedNotifications
       );
     } catch (error) {
       console.error("❌ Error in fetchAndScheduleNotifications:", error);
     }
-  }, [reminderInterval, mutedNotifications]);
+  }, [reminderInterval, mutedNotifications, selectedAdhan, prePrayerReminder]);
 
   useEffect(() => {
     if (prayerTimes) {
