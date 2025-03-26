@@ -3,6 +3,9 @@ import { ayahList } from './constants';
 import { Animated, Dimensions } from 'react-native';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
+import * as FileSystem from "expo-file-system";
+import * as MediaLibrary from "expo-media-library";
+import { Alert } from "react-native";
 
 export const getFormattedDate = (date: Date) => {
     return format(date, "EEEE, do MMMM yyyy");
@@ -199,4 +202,31 @@ export const maskEmail = (email: string): string => {
       return `${'*'.repeat(localPart.length)}@${domain}`;
   }
   return `${'*'.repeat(5)}${localPart.slice(5)}@${domain}`;
+};
+
+export const downloadImage = async (imageUrl: string) => {
+  try {
+    // Request permission to access media library
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Please allow access to save images.");
+      return;
+    }
+
+    // Define the file path where the image will be saved
+    const fileName = imageUrl.split("/").pop(); // Extract file name
+    const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+
+    // Download the image
+    const downloadResumable = FileSystem.createDownloadResumable(imageUrl, fileUri);
+    //@ts-ignore
+    const { uri } = await downloadResumable.downloadAsync();
+
+    // Save the image to the media library
+    await MediaLibrary.saveToLibraryAsync(uri);
+    Alert.alert("Download Complete", "Image has been saved to your gallery.");
+  } catch (error) {
+    console.error("Error downloading image:", error);
+    Alert.alert("Download Failed", "An error occurred while saving the image.");
+  }
 };

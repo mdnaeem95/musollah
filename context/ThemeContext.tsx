@@ -9,6 +9,21 @@ import {
 } from '../redux/slices/userPreferencesSlice';
 import { greenTheme, blueTheme, purpleTheme } from '../theme/theme';
 
+// Types for our theme and events
+export interface ThemesType {
+  colors: {
+    primary: string;
+    secondary: string;
+    text: {
+      primary: string;
+      secondary: string;
+      muted: string;
+    };
+  };
+  spacing: {
+    small: number;
+  };
+}
 const themes = {
   green: greenTheme,
   blue: blueTheme,

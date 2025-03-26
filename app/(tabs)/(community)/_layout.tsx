@@ -53,31 +53,33 @@ const CommunityLayout = () => {
         }}
       >
         <Drawer.Screen
-          name="profile"
+          name="index"
+          options={{
+            drawerLabel: 'Dashboard',
+            title: 'Community',
+            headerStyle: { backgroundColor: theme.colors.secondary },
+            drawerIcon: ({ color }) => <FontAwesome6 name="house" color={color} />,
+          }}
+        />
+        <Drawer.Screen
+          name="(profile)"
           options={{
             headerShown: false,
             drawerLabel: 'Profile',
             title: 'Profile',
+            headerStyle: { backgroundColor: theme.colors.secondary },
             drawerIcon: ({ color }) => <FontAwesome6 name="user" solid color={color} />,
           }}
         />
         <Drawer.Screen
-          name="index"
-          options={{
-            drawerLabel: 'Events',
-            title: 'Community Events',
-            drawerIcon: ({ color }) => <FontAwesome6 name="calendar-days" color={color} />,
-          }}
-        />
-        {/* <Drawer.Screen
-          name="event-map"
+          name="(events)"
           options={{
             headerShown: false,
-            drawerLabel: 'Event Map',
-            title: 'Event Map',
-            drawerIcon: ({ color }) => <FontAwesome6 name="map" color={color} />,
+            drawerLabel: 'Events',
+            title: 'Events',
+            drawerIcon: ({ color }) => <FontAwesome6 name="ticket" solid color={color} />,
           }}
-        /> */}
+        />
       </Drawer>
     </GestureHandlerRootView>
   );

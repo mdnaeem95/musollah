@@ -1,0 +1,131 @@
+{
+  "procedure": "Muslim Marriage Registration in Singapore",
+  "steps": [
+    {
+      "step": 1,
+      "messages": [
+        { "type": "title", "content": "Step 1: Obtain Wali's Consent" },
+        {
+          "type": "description",
+          "content": "In Islam, the bride's Wali (guardian) must consent to the marriage."
+        },
+        {
+          "type": "details",
+          "content": "The Wali is typically the father, but can also be the next male guardian if the father is not present."
+        },
+        { "type": "prompt", "content": "Do you have the Wali's consent?" }
+      ],
+      "options": ["Yes", "No, I need help"],
+      "fallback": "https://www.marriage.gov.sg/muslim/marriage-process"
+    },
+    {
+      "step": 2,
+      "messages": [
+        { "type": "title", "content": "Step 2: Attend a Marriage Preparation Programme (MPP)" },
+        {
+          "type": "description",
+          "content": "MUIS recommends all couples attend an MPP, especially if you're under 21 or marrying for the first time."
+        },
+        {
+          "type": "note",
+          "content": "The MPP helps equip you with relationship and communication skills."
+        },
+        { "type": "prompt", "content": "Have you completed the MPP?" }
+      ],
+      "options": ["Yes", "Not yet"]
+    },
+    {
+      "step": 3,
+      "messages": [
+        { "type": "title", "content": "Step 3: Prepare Required Documents" },
+        {
+          "type": "description",
+          "content": "Before applying, ensure you have the following:"
+        },
+        {
+          "type": "criteria",
+          "content": [
+            "NRIC/Passport of bride and groom",
+            "Photographs (passport-sized)",
+            "Divorce/death certificate if applicable",
+            "Proof of Wali’s identity"
+          ]
+        },
+        { "type": "prompt", "content": "Are your documents ready?" }
+      ],
+      "options": ["Yes", "Still preparing"]
+    },
+    {
+      "step": 4,
+      "messages": [
+        { "type": "title", "content": "Step 4: Submit Your Application Online" },
+        {
+          "type": "description",
+          "content": "Apply online via [marriage.gov.sg](https://www.marriage.gov.sg/muslim)."
+        },
+        {
+          "type": "instructions",
+          "content": [
+            "Create an account or log in via Singpass.",
+            "Complete the Muslim marriage application form.",
+            "Upload scanned documents.",
+            "Pay the application fee (~$39)"
+          ]
+        },
+        { "type": "prompt", "content": "Have you submitted the application?" }
+      ],
+      "options": ["Yes", "Not yet"]
+    },
+    {
+      "step": 5,
+      "messages": [
+        { "type": "title", "content": "Step 5: Attend ROMM Interview" },
+        {
+          "type": "description",
+          "content": "You’ll be assigned an interview at the Registry of Muslim Marriages (ROMM)."
+        },
+        {
+          "type": "note",
+          "content": "The groom, bride, Wali and witnesses must attend this session."
+        },
+        { "type": "prompt", "content": "Have you booked your interview?" }
+      ],
+      "options": ["Yes", "I need to schedule it"]
+    },
+    {
+      "step": 6,
+      "messages": [
+        { "type": "title", "content": "Step 6: Perform the Nikah (Solemnization)" },
+        {
+          "type": "description",
+          "content": "Once approved, the solemnization (Nikah) can be held at ROMM, mosque, or an approved venue."
+        },
+        {
+          "type": "details",
+          "content": "Make sure your Kadi or Naib Kadi is confirmed for the event."
+        },
+        { "type": "prompt", "content": "Ready for solemnization?" }
+      ],
+      "options": ["Yes, Alhamdulillah", "Still planning"]
+    },
+    {
+      "step": 7,
+      "messages": [
+        { "type": "title", "content": "Step 7: Congratulations!" },
+        {
+          "type": "description",
+          "content": "You’ve completed all the steps for registering a Muslim marriage in Singapore."
+        },
+        {
+          "type": "note",
+          "content": "Remember to collect your marriage certificate and attend any post-marriage follow-up if applicable."
+        },
+        {
+          "type": "prompt",
+          "content": "Would you like to save this guide or revisit MUIS resources?"
+        }
+      ],
+      "options": ["Save as Checklist", "View MUIS Page", "Start Over"]
+    }    
+  ]
+}

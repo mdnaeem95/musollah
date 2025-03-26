@@ -695,7 +695,7 @@ export const fetchArticles = async (): Promise<Article[]> => {
       console.error('Error fetching articles:', error);
       throw error;
     }
-  };
+};
 
 export const fetchCategories = async (): Promise<ArticleCategory[]> => {
   try {
