@@ -1,0 +1,119 @@
+{
+    "procedure": "Zakat Payment in Singapore",
+    "steps": [
+      {
+        "step": 1,
+        "messages": [
+          { "type": "title", "content": "Step 1: Understand Zakat Obligations" },
+          { "type": "description", "content": "Zakat is obligatory for Muslims who meet specific wealth conditions. Make sure you fulfil the following:" },
+          {
+            "type": "criteria",
+            "content": [
+              "You are a Muslim.",
+              "You possess wealth above the Nisab threshold (approx. market value of 86 grams of gold).",
+              "You have held this wealth for one lunar year (haul)."
+            ]
+          },
+          { "type": "prompt", "content": "Do you meet these criteria?" }
+        ],
+        "options": ["Yes", "No, I need more information"],
+        "fallback": "https://www.zakat.sg/"
+      },
+      {
+        "step": 2,
+        "messages": [
+          { "type": "title", "content": "Step 2: Calculate Your Zakat" },
+          {
+            "type": "description",
+            "content": "Calculate your zakat amount accurately using trusted tools."
+          },
+          {
+            "type": "instructions",
+            "content": [
+              "Visit [Zakat.sg](https://www.zakat.sg/).",
+              "Use the Zakat calculators for Savings, Business, Gold, etc.",
+              "Ensure you input accurate figures."
+            ]
+          },
+          { "type": "prompt", "content": "Have you calculated your Zakat?" }
+        ],
+        "options": ["Yes", "I need help calculating"]
+      },
+      {
+        "step": 3,
+        "messages": [
+          { "type": "title", "content": "Step 3: Choose a Payment Method" },
+          {
+            "type": "description",
+            "content": "MUIS offers several convenient payment methods for Zakat."
+          },
+          {
+            "type": "instructions",
+            "content": [
+              "PayNow (UEN: S60MA0020B, Ref: Zakat).",
+              "Credit/Debit card via [Zakat.sg](https://www.zakat.sg/).",
+              "GIRO (for recurring payment setup).",
+              "Cheque (payable to 'MUIS Zakat')."
+            ]
+          },
+          { "type": "prompt", "content": "Which method would you like to use?" }
+        ],
+        "options": ["PayNow", "Card", "GIRO", "Cheque"]
+      },
+      {
+        "step": 4,
+        "messages": [
+          { "type": "title", "content": "Step 4: Make the Payment" },
+          {
+            "type": "description",
+            "content": "Proceed to make your Zakat payment using your chosen method."
+          },
+          {
+            "type": "note",
+            "content": "Remember to retain the receipt or screenshot of the transaction for your records."
+          },
+          { "type": "prompt", "content": "Have you completed the payment?" }
+        ],
+        "options": ["Yes", "I faced an issue"]
+      },
+      {
+        "step": 5,
+        "messages": [
+          { "type": "title", "content": "Step 5: Confirm and Track Your Zakat" },
+          {
+            "type": "description",
+            "content": "Ensure your payment went through and check your giving history."
+          },
+          {
+            "type": "instructions",
+            "content": [
+              "Check your email for an e-receipt.",
+              "Log in to [Zakat.sg](https://www.zakat.sg/) to view your zakat history.",
+              "Reach out to MUIS if you did not receive confirmation."
+            ]
+          },
+          { "type": "prompt", "content": "Did you receive confirmation?" }
+        ],
+        "options": ["Yes", "No, I need help"]
+      },
+      {
+        "step": 6,
+        "messages": [
+          { "type": "title", "content": "Step 6: Jazakumullahu Khayran!" },
+          {
+            "type": "description",
+            "content": "Thank you for fulfilling your Zakat obligation. May Allah accept it from you and bless your wealth."
+          },
+          {
+            "type": "note",
+            "content": "You can track your Zakat history, view receipts, and learn more about Zakat distribution via the MUIS Zakat portal."
+          },
+          {
+            "type": "prompt",
+            "content": "Would you like to save this guide or view more resources?"
+          }
+        ],
+        "options": ["Save as Checklist", "View MUIS Page", "Start Over"]
+      }      
+    ]
+  }  

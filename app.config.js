@@ -18,6 +18,7 @@ export default {
       "appleTeamId": "RF3P52KUZA",
       "supportsTablet": false,
       "infoPlist": {
+        "NSPhotoLibraryAddUsageDescription": "This app needs access to your photo library to save images.",
         "UIBackgroundModes": ["location", "fetch", "remote-notification", "audio"],
         "LSApplicationQueriesSchemes": ["file", "tel"],
         "ITSAppUsesNonExemptEncryption": false,

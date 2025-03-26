@@ -17,6 +17,49 @@ export type Article = {
     comments: ArticleComment[];
 };
 
+export type Event = {
+    id: string; // Unique Event ID
+    name: string;
+    date: string; // Format: "YYYY-MM-DD"
+    time: string; // e.g., "17:00 - 20:00"
+    venue: string;
+    coordinates?: {
+        latitude: number;
+        longitude: number;
+    };
+    mosque?: string; // Optional if the event is in a mosque
+    address: string;
+    organizer: string;
+    livestreamAvailable: boolean;
+    wheelchairAccessible: boolean;
+    language: string;
+    targetAudience: string; // "All", "Men", "Women", "Youth", etc.
+    description: string; // Event Description
+    image?: string; // Firebase Storage URL or external link
+    ticketPrice?: string; // Free or Price string
+    eventType: "Open" | "Registration" | "External"; // Internal tracking of event type
+    registrationLink?: string; // Only for External events
+    isExternal: boolean; // True if using an external registration system
+    externalClicks?: number; // Count of people who clicked the link
+    interestedCount?: number; // Count of users who marked as Interested
+    interested?: {
+      [userId: string]: {
+        name: string;
+        email?: string;
+        clickedRegistration: boolean;
+        timestamp: string;
+      };
+    };
+    attendees?: {
+      [userId: string]: {
+        name: string;
+        email?: string;
+        checkedIn: boolean;
+        timestamp: string;
+      };
+    };
+};  
+
 export type ArticleCategory = {
     id: string;
     name: string;
@@ -114,6 +157,8 @@ export interface UserData {
     favouriteRestaurants?: { restaurantId: string; timestamp: string }[];
     referralCode?: string;
     referralCount?: number,
+    interests?: string[];
+    aboutMe?: string
 }
 
 export interface MusollahState {

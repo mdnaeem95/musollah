@@ -32,6 +32,7 @@ const SettingsTab = () => {
           <FeatureCard icon="flask" label="Food Additives" onPress={() => router.push('/food-additives')} />
           <FeatureCard icon="hand-holding-dollar" label="Zakat Calculator" onPress={() => router.push('/zakat')} />
           <FeatureCard icon="message" label="Ask Anything" onPress={() => router.push('/qa')} />
+          <FeatureCard icon="chat" label="ProcudureBot" onPress={() => router.push('/procedureBot')} />
         </View>
       </ScrollView>
 

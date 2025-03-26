@@ -1,0 +1,114 @@
+{
+  "procedure": "Haj Registration in Singapore",
+  "steps": [
+    {
+      "step": 1,
+      "messages": [
+        { "type": "title", "content": "Step 1: Check Eligibility" },
+        { "type": "description", "content": "Before registering, ensure you meet the following conditions:" },
+        {
+          "type": "criteria",
+          "content": [
+            "You are a Singapore Citizen or Permanent Resident.",
+            "You are at least 18 years of age at the point of registration.",
+            "You are not already registered for Haj.",
+            "You have a valid NRIC and a Singpass account."
+          ]
+        },
+        { "type": "prompt", "content": "Got all that?" }
+      ],
+      "options": ["Yes", "No, I’m not sure"],
+      "fallback": "https://www.muis.gov.sg/haj"
+    },
+    {
+      "step": 2,
+      "messages": [
+        { "type": "title", "content": "Step 2: Submit a Haj Intention" },
+        {
+          "type": "description",
+          "content": "You will need to register your Haj intention on MUIS' Haj Services portal. This is not a package booking — it puts you in the national queue."
+        },
+        {
+          "type": "instructions",
+          "content": [
+            "Visit [MUIS Haj Services Portal](https://www.muis.gov.sg/haj).",
+            "Log in using your Singpass.",
+            "Select 'Register Haj Intention'.",
+            "Fill in required personal information.",
+            "Submit and wait for confirmation of your queue number."
+          ]
+        },
+        {
+          "type": "note",
+          "content": "You will receive a confirmation of your queue position. The Haj registration system works on a first-come-first-served basis."
+        },
+        { "type": "prompt", "content": "Done registering your Haj Intention?" }
+      ],
+      "options": ["Yes", "I need help"]
+    },
+    {
+      "step": 3,
+      "messages": [
+        { "type": "title", "content": "Step 3: Wait for Queue Activation & Select a Haj Package" },
+        {
+          "type": "description",
+          "content": "Once your queue number is called up, you’ll be notified to select a Haj package from a Muis-approved Haj Travel Agent (MSSA)."
+        },
+        {
+          "type": "details",
+          "content": "Each package offers different durations, accommodations, pricing, and support services. Package prices are regulated under MUIS' guidelines and include airfare, accommodation in Makkah and Madinah, meals, transport, and more."
+        },
+        {
+          "type": "note",
+          "content": "You must choose your package within a given period, or your slot may be forfeited."
+        },
+        { "type": "prompt", "content": "Ready to continue?" }
+      ],
+      "options": ["Yes", "Tell me more"]
+    },
+    {
+      "step": 4,
+      "messages": [
+        { "type": "title", "content": "Step 4: Attend Mandatory Haj Courses" },
+        {
+          "type": "description",
+          "content": "Before your departure, MUIS requires you to attend a series of Haj preparatory courses conducted by certified asatizah under the 'Kursus Bersama'."
+        },
+        {
+          "type": "details",
+          "content": "These courses prepare you spiritually, mentally, and physically. Attendance is compulsory, and your certification is required before travel."
+        },
+        {
+          "type": "instructions",
+          "content": [
+            "MUIS will assign you to a course provider.",
+            "You will receive a class schedule and attendance requirements.",
+            "Ensure full participation to obtain the Haj Certificate."
+          ]
+        },
+        { "type": "prompt", "content": "Ready for the next step?" }
+      ],
+      "options": ["Yes", "Where can I find courses?"]
+    },
+    {
+      "step": 5,
+      "messages": [
+        { "type": "title", "content": "Step 5: Final Confirmation, Payment & Pre-Departure" },
+        {
+          "type": "description",
+          "content": "You’ll confirm your selected Haj package and make payment directly with the appointed travel agent."
+        },
+        {
+          "type": "details",
+          "content": "MUIS will assist with final logistics: submission of health and travel documents, visa application, vaccination (including meningitis), and issuing your Haj Permit (Hajj Visa)."
+        },
+        {
+          "type": "note",
+          "content": "Be sure to attend the official Haj Briefing before departure. This briefing includes updates on the year’s travel regulations and safety protocols."
+        },
+        { "type": "prompt", "content": "And that’s it! You’re on your way to Makkah, insyaAllah." }
+      ],
+      "options": ["Save as Checklist", "View MUIS Page", "Start Over"]
+    }
+  ]
+}

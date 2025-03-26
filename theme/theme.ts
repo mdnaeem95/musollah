@@ -21,10 +21,10 @@ const baseTheme = {
   shadows: {
     default: {
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 6,
-      elevation: 6,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      elevation: 3,
     },
   },
 };
@@ -36,6 +36,7 @@ export const greenTheme = {
       primary: '#2E3D3A',
       secondary: '#3D4F4C',
       accent: '#F4E2C1',
+      muted: '#2B3533',
       text: {
         primary: calculateContrastColor('#2E3D3A'),
         secondary: calculateContrastColor('#3D4F4C'),
@@ -58,6 +59,7 @@ export const greenTheme = {
       primary: '#F3F5EB', // Soft, warm olive-tinged background
       secondary: '#E8ECD8', // Light sage green for secondary elements
       accent: '#A8B897', // Muted olive-green accent
+      muted: '#F7F9EF',
       text: {
         primary: '#3E5C43', // Deep olive for primary text
         secondary: '#587D5B', // Slightly lighter green for secondary text
@@ -83,6 +85,7 @@ export const blueTheme = {
       primary: '#263A50', // Muted deep blue background
       secondary: '#32485E', // Slightly lighter secondary blue
       accent: '#E1E7ED', // Soft muted accent
+      muted: '#223346',
       text: {
         primary: calculateContrastColor('#263A50'), // Contrast color for primary text
         secondary: calculateContrastColor('#32485E'), // Contrast for secondary text
@@ -105,6 +108,7 @@ export const blueTheme = {
       primary: '#E9F2F8', // Soft muted light blue background
       secondary: '#D3E2EB', // Light muted secondary blue
       accent: '#A6C2D9', // Subtle blue-gray accent
+      muted: '#EDF4FA',
       text: {
         primary: '#1C3555', // Deep muted blue for primary text
         secondary: '#2F4D6B', // Slightly lighter muted blue for secondary text
@@ -130,6 +134,7 @@ export const purpleTheme = {
       primary: '#362A47', // Muted deep purple background
       secondary: '#44385B', // Slightly lighter muted secondary purple
       accent: '#E3D0E1', // Soft muted lavender for accents
+      muted: '#2E243A',
       text: {
         primary: calculateContrastColor('#362A47'), // Optimized contrast for primary text
         secondary: calculateContrastColor('#44385B'), // Optimized contrast for secondary text
@@ -152,10 +157,11 @@ export const purpleTheme = {
       primary: '#F2EAF3', // Soft muted lavender background
       secondary: '#E5D3E9', // Light muted lavender secondary
       accent: '#C6A6CE', // Subtle purple-gray accent
+      muted: '#EDF4FA',
       text: {
         primary: '#4A2A61', // Deep muted purple for primary text
         secondary: '#62457B', // Slightly lighter muted purple for secondary text
-        muted: '#84699C', // Subtle gray-purple for muted text
+        muted: '#F5EEF7', // Subtle gray-purple for muted text
         success: '#7D5FB8', // Muted lavender-purple for success
         error: '#C26472', // Muted rose-pink for errors
       },

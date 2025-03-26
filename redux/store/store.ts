@@ -12,6 +12,7 @@ import questionsReducer from '../slices/questionSlice'
 import userPreferencesReducer from '../slices/userPreferencesSlice';
 import gamificationReducer from '../slices/gamificationSlice';
 import articleReducer from '../slices/articlesSlice'
+import eventReducer from '../slices/eventsSlice'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persistReducer, persistStore, FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
 import autoMergeLevel2 from 'redux-persist/lib/stateReconciler/autoMergeLevel2'; // For deep merging
@@ -30,7 +31,8 @@ const rootReducer = combineReducers({
   answers: answersReducer,
   questions: questionsReducer,
   gamification: gamificationReducer,
-  articles: articleReducer
+  articles: articleReducer,
+  events: eventReducer
 });
 
 // Define RootState type using ReturnType
@@ -53,7 +55,8 @@ const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER, 'events/fetchEvents/fulfilled'],
+        ignoredPaths: ['events.events.coordinates'],
       },
     }),
 });

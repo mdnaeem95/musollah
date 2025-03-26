@@ -40,6 +40,8 @@ export const signIn = createAsyncThunk(
       referralCode: userData?.referralCode || '',
       referralCount: userData?.referralCount || 0,
       createdAt: userData?.createdAt || null,
+      aboutMe: userData?.aboutMe || '',
+      interests: userData?.interest || []
     };
   }
 );
@@ -68,6 +70,8 @@ export const signUp = createAsyncThunk(
         favouriteRestaurants: [],
         referralCode,
         referralCount: 0,
+        aboutMe: '',
+        interests: [],
         createdAt: firestore.FieldValue.serverTimestamp(),
     });
 
@@ -111,6 +115,8 @@ export const fetchUser = createAsyncThunk(
         prayerLogs: userData?.prayerLogs || [],
         role: userData?.role || 'user',
         likedQuestions: userData?.likedQuestions || [],
+        aboutMe: userData?.aboutMe || '',
+        interests: userData?.interest || []
       };
     } catch (error: any) {
       console.error('Failed to fetch user data:', error);
