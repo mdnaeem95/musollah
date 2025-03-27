@@ -19,6 +19,8 @@ export type Article = {
 
 export type Event = {
     id: string; // Unique Event ID
+    category: string;
+    status: string;
     name: string;
     date: string; // Format: "YYYY-MM-DD"
     time: string; // e.g., "17:00 - 20:00"
@@ -146,7 +148,7 @@ export type UserRole = 'user' | 'admin'
 
 export interface UserData {
     id: string;
-    avatarUrl: string;
+    avatarUrl?: string;
     email: string;
     enrolledCourses: CourseAndModuleProgress[],
     prayerLogs?: { [date: string]: any },

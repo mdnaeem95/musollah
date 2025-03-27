@@ -1,20 +1,23 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, Image, ActivityIndicator, ScrollView, Dimensions } from "react-native";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useTheme } from "../../../../context/ThemeContext";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUser } from "../../../../redux/slices/userSlice";
 import { AppDispatch, RootState } from "../../../../redux/store/store";
+import { MotiView } from "moti";
+import { MotiPressable } from "moti/interactions";
+import { fadeInUp, scaleTap } from "../../../../utils/animations";
+import { useRouter } from "expo-router";
 
 const ProfileScreen = () => {
+  const router = useRouter();
+  const screenHeight = Dimensions.get("window").height;
   const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const styles = createStyles(theme, screenHeight);
   const dispatch = useDispatch<AppDispatch>();
-
-  // Get user data from Redux store
   const { user, loading } = useSelector((state: RootState) => state.user);
 
-  // Fetch user data when the profile screen mounts
   useEffect(() => {
     dispatch(fetchUser());
   }, [dispatch]);
@@ -24,63 +27,79 @@ const ProfileScreen = () => {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
       {/* Profile Image */}
-      <View style={styles.profileImageContainer}>
-        <Image source={{ uri: user?.avatarUrl }} style={styles.profileImage} />
-      </View>
-      <Text style={styles.profileName}>{user?.name || "New User"}</Text>
-
-      {/* Following & Followers (Placeholder Data) */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statsBox}>
-          <Text style={styles.statsNumber}>350</Text>
-          <Text style={styles.statsLabel}>Following</Text>
+      <MotiView {...fadeInUp}>
+        <View style={styles.profileImageContainer}>
+            <Image source={{ uri: user?.avatarUrl }} style={styles.profileImage} />
         </View>
-        <View style={styles.separator} />
-        <View style={styles.statsBox}>
-          <Text style={styles.statsNumber}>346</Text>
-          <Text style={styles.statsLabel}>Followers</Text>
+      </MotiView>
+
+      {/* Name */}
+      <MotiView {...fadeInUp} transition={{ ...fadeInUp.transition, delay: 100 }}>
+        <Text style={styles.profileName}>{user?.name || "New User"}</Text>
+      </MotiView>
+
+      {/* Stats */}
+      <MotiView {...fadeInUp} transition={{ ...fadeInUp.transition, delay: 200 }}>
+        <View style={styles.statsContainer}>
+          <View style={styles.statsBox}>
+            <Text style={styles.statsNumber}>350</Text>
+            <Text style={styles.statsLabel}>Following</Text>
+          </View>
+          <View style={styles.separator} />
+          <View style={styles.statsBox}>
+            <Text style={styles.statsNumber}>346</Text>
+            <Text style={styles.statsLabel}>Followers</Text>
+          </View>
         </View>
-      </View>
+      </MotiView>
 
-      {/* Edit Profile Button */}
-      <TouchableOpacity style={styles.editProfileButton}>
-        <FontAwesome6 name="pen" size={14} color={theme.colors.primary} />
-        <Text style={styles.editProfileText}>Edit Profile</Text>
-      </TouchableOpacity>
+      {/* Edit Profile */}
+      <MotiView {...fadeInUp} transition={{ ...fadeInUp.transition, delay: 300 }}>
+        <MotiPressable {...scaleTap} onPress={() => router.push('(profile)/edit')}>
+          <View style={styles.editProfileButton}>
+            <FontAwesome6 name="pen" size={14} color={theme.colors.primary} />
+            <Text style={styles.editProfileText}>Edit Profile</Text>
+          </View>
+        </MotiPressable>
+      </MotiView>
 
-      {/* About Me Section */}
-      <View style={styles.aboutMeContainer}>
-        <Text style={styles.sectionTitle}>About Me</Text>
-        <Text style={styles.aboutMeText}>
-          {user?.aboutMe || "Tell us something about yourself!"}
-          <Text style={styles.readMore}> Read More</Text>
-        </Text>
-      </View>
+      {/* About Me */}
+      <MotiView {...fadeInUp} transition={{ ...fadeInUp.transition, delay: 400 }}>
+        <View style={styles.aboutMeContainer}>
+          <Text style={styles.sectionTitle}>About Me</Text>
+          <Text style={styles.aboutMeText}>
+            {user?.aboutMe || "Tell us something about yourself!"}
+            <Text style={styles.readMore}> Read More</Text>
+          </Text>
+        </View>
+      </MotiView>
 
       {/* Interests */}
       {user?.interests && user.interests.length > 0 && (
-        <View style={styles.aboutMeContainer}>
-          <Text style={styles.sectionTitle}>Interests</Text>
-          <View style={styles.interestsContainer}>
-            {user.interests.map((interest: string, index: number) => (
-              <View key={index} style={[styles.interestTag, { backgroundColor: theme.colors.primary }]}>
-                <Text style={styles.interestText}>{interest}</Text>
-              </View>
-            ))}
+        <MotiView {...fadeInUp} transition={{ ...fadeInUp.transition, delay: 500 }}>
+          <View style={styles.aboutMeContainer}>
+            <Text style={styles.sectionTitle}>Interests</Text>
+            <View style={styles.interestsContainer}>
+              {user.interests.map((interest: string, index: number) => (
+                <View key={index} style={[styles.interestTag, { backgroundColor: theme.colors.primary }]}>
+                  <Text style={styles.interestText}>{interest}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
+        </MotiView>
       )}
     </ScrollView>
   );
-};
+};  
 
-const createStyles = (theme: any) =>
+const createStyles = (theme: any, screenHeight: number) =>
   StyleSheet.create({
     container: {
       flexGrow: 1,
-      backgroundColor: "#FFFFFF",
+      backgroundColor: theme.colors.primary,
       paddingHorizontal: 20,
       paddingBottom: 30,
     },
@@ -90,6 +109,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
     },
     profileImageContainer: {
+      marginTop: 20,
       alignItems: "center",
       marginBottom: 15,
     },
@@ -102,7 +122,7 @@ const createStyles = (theme: any) =>
       fontSize: 22,
       fontFamily: "Outfit_600SemiBold",
       textAlign: "center",
-      color: "#120D26",
+      color: theme.colors.text.primary,
     },
     statsContainer: {
       flexDirection: "row",
@@ -117,66 +137,160 @@ const createStyles = (theme: any) =>
     statsNumber: {
       fontSize: 16,
       fontWeight: "600",
-      color: "#120D26",
+      color: theme.colors.text.primary,
     },
     statsLabel: {
       fontSize: 14,
-      color: "#747688",
+      color: theme.colors.text.muted,
     },
     separator: {
       width: 30,
       height: 1,
-      backgroundColor: "#DDDDDD",
+      backgroundColor: theme.colors.border,
     },
     editProfileButton: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1.5,
-      borderColor: "#5669FF",
+      borderColor: theme.colors.text.primary,
       paddingVertical: 10,
       borderRadius: 10,
       marginHorizontal: 40,
       marginBottom: 20,
+      marginTop: 10
     },
     editProfileText: {
       fontSize: 16,
-      color: "#5669FF",
+      color: theme.colors.text.primary,
       marginLeft: 8,
+      fontFamily: "Outfit_500Medium",
     },
     aboutMeContainer: {
       marginBottom: 20,
     },
     sectionTitle: {
       fontSize: 18,
-      fontWeight: "500",
-      color: "#172B4D",
+      fontFamily: "Outfit_500Medium",
+      color: theme.colors.text.primary,
       marginBottom: 8,
     },
     aboutMeText: {
       fontSize: 16,
-      color: "#3C3E56",
+      color: theme.colors.text.secondary,
       lineHeight: 24,
+      fontFamily: "Outfit_400Regular",
     },
     readMore: {
-      color: "#5669FF",
-      fontWeight: "500",
-    },
-    interestsContainer: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 10,
+      color: theme.colors.primary,
+      fontFamily: "Outfit_500Medium",
     },
     interestTag: {
       paddingVertical: 7,
       paddingHorizontal: 15,
       borderRadius: 16,
     },
-    interestText: {
-      color: "#FFFFFF",
-      fontSize: 13,
-      fontWeight: "500",
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+      backgroundColor: theme.colors.primary,
     },
+    modalContent: {
+      height: screenHeight * 0.9,
+      backgroundColor: theme.colors.secondary,
+      borderTopLeftRadius: 30,
+      borderTopRightRadius: 30,
+      paddingHorizontal: 24,
+      paddingTop: 20,
+      paddingBottom: 30,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: -2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 10,
+    },    
+    dragHandle: {
+      width: 40,
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: theme.colors.muted,
+      alignSelf: "center",
+      marginBottom: 15,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontFamily: "Outfit_600SemiBold",
+      color: theme.colors.text.primary,
+      marginBottom: 20,
+    },
+    modalLabel: {
+      fontSize: 14,
+      fontFamily: "Outfit_500Medium",
+      color: theme.colors.text.secondary,
+      marginBottom: 6,
+    },
+    modalInput: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 14,
+      padding: 14,
+      marginBottom: 20,
+      fontSize: 16,
+      fontFamily: "Outfit_400Regular",
+      backgroundColor: theme.colors.secondary,
+      color: theme.colors.text.primary,
+    },    
+    modalActions: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 30,
+    },
+    cancelButton: {
+      borderColor: theme.colors.border,
+      borderWidth: 1,
+      borderRadius: 14,
+      paddingVertical: 12,
+      paddingHorizontal: 30,
+      backgroundColor: "transparent",
+    },   
+    cancelText: {
+      color: theme.colors.text.secondary,
+      fontSize: 16,
+      fontFamily: "Outfit_500Medium",
+    },    
+    saveButton: {
+      backgroundColor: theme.colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 30,
+      borderRadius: 14,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 5,
+      elevation: 4,
+    },    
+    saveText: {
+      color: theme.colors.text.primary,
+      fontSize: 16,
+      fontFamily: "Outfit_500Medium",
+    },
+    interestsContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
+      marginTop: 10,
+      marginBottom: 20,
+    },
+    interestPill: {
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: 16,
+    },
+    interestText: {
+      fontSize: 14,
+      fontFamily: "Outfit_400Regular",
+    },
+    
   });
 
 export default ProfileScreen;

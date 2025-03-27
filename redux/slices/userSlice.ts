@@ -32,7 +32,7 @@ export const signIn = createAsyncThunk(
       uid: user.uid,                      // From Firebase Auth
       email: user.email,                  // From Firebase Auth
       displayName: user.displayName,      // From Firebase Auth
-      photoURL: user.photoURL,            // From Firebase Auth
+      avatarUrl: userData?.avatarUrl || '',            // From Firebase Auth
       enrolledCourses: userData?.enrolledCourses || [],  // From Firestore
       prayerLogs: userData?.prayerLogs || [],            // From Firestore
       likedQuestions: userData?.likedQuestions || [],
@@ -110,7 +110,7 @@ export const fetchUser = createAsyncThunk(
         id: currentUser.uid,
         email: currentUser.email || '',
         name: currentUser.displayName || 'New User',
-        avatarUrl: currentUser.photoURL || 'https://via.placeholder.com/100',
+        avatarUrl: userData?.avatarUrl || 'https://via.placeholder.com/100',
         enrolledCourses: userData?.enrolledCourses || [],
         prayerLogs: userData?.prayerLogs || [],
         role: userData?.role || 'user',
@@ -205,6 +205,28 @@ export const fetchWeeklyPrayerLogs = createAsyncThunk(
     }
   }
 );
+
+export const updateUserProfile = createAsyncThunk(
+  'user/updateUserProfile',
+  async (
+    { name, aboutMe, interests, avatarUrl }: { name: string; aboutMe: string; interests: string[], avatarUrl: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const user = getAuth().currentUser;
+      if (!user) throw new Error('User not logged in');
+
+      const userRef = firestore().collection('users').doc(user.uid);
+
+      await userRef.update({ name, aboutMe, interests, avatarUrl });
+
+      return { name, aboutMe, interests, avatarUrl };
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      return rejectWithValue('Failed to update profile');
+    }
+  }
+);
    
 const userSlice = createSlice({
 name: 'user',
@@ -243,7 +265,7 @@ extraReducers: (builder) => {
     .addCase(signIn.fulfilled, (state, action) => {
       state.user = {
         id: action.payload.uid,                          // Firebase Auth UID
-        avatarUrl: action.payload.photoURL || 'https://via.placeholder.com/100',  // From Firebase Auth
+        avatarUrl: action.payload.avatarUrl || 'https://via.placeholder.com/100',  // From Firebase Auth
         email: action.payload.email || '',               // From Firebase Auth
         name: action.payload.displayName || 'New User',  // From Firebase Auth
         enrolledCourses: action.payload.enrolledCourses || [],  // From Firestore
@@ -319,6 +341,14 @@ extraReducers: (builder) => {
       state.error = 'Failed to fetch prayer log';  // Set error message
       state.loading = false;  // Stop loading
     })
+    .addCase(updateUserProfile.fulfilled, (state, action) => {
+      if (state.user) {
+        state.user.name = action.payload.name;
+        state.user.aboutMe = action.payload.aboutMe;
+        state.user.interests = action.payload.interests;
+        state.user.avatarUrl = action.payload.avatarUrl
+      }
+    })    
 },
 });
 

@@ -12,20 +12,30 @@ import {
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../../redux/store/store";
-import { fetchEvents, addInterestedUser, incrementExternalClicks } from "../../../redux/slices/eventsSlice";
+import { fetchEvents } from "../../../redux/slices/eventsSlice";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { ThemesType, useTheme } from "../../../context/ThemeContext";
 import EventCard from "../../../components/community/CommunityEventCard";
 import { useRouter } from "expo-router";
 import { Event } from "../../../utils/types";
+import { FlashList } from "@shopify/flash-list";
+import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
+import { CATEGORY_COLORS } from '../../../constants/categoryColours'
 
 // Category data extracted to a constant
 const CATEGORIES = [
-  { name: "Religious Talks", icon: "chalkboard" },
+  { name: "Religious Talks", icon: "chalkboard-user" },
   { name: "Qur'an Recitation", icon: "book-quran" },
-  { name: "Islamic Workshops", icon: "people-group" },
-  { name: "Charity & Volunteering", icon: "hand-holding-heart" },
-  { name: "Community Gatherings", icon: "users" }
+  { name: "Tahajjud & Qiyam", icon: "mosque" },
+  { name: "Maulid & Khatam", icon: "star-and-crescent" },
+  { name: "Charity & Volunteering", icon: "hands-holding" },
+  { name: "Workshops & Learning", icon: "people-group" },
+  { name: "Arabic & Tajweed", icon: "language" },
+  { name: "Youth Events", icon: "user-graduate" },
+  { name: "Mental Wellness", icon: "brain" },
+  { name: "Converts & Reverts", icon: "handshake" },
+  { name: "Interfaith & Outreach", icon: "globe" },
+  { name: "Community Iftar", icon: "utensils" }
 ];
 
 /**
@@ -48,10 +58,10 @@ const Category = memo(({ name, icon, color, onPress }: {
       <FontAwesome6 
         name={icon} 
         size={16} 
-        color={theme.colors.text.primary} 
+        color="#000" 
         style={styles.categoryIcon}
       />
-      <Text style={styles.categoryText}>{name}</Text>
+      <Text style={[styles.categoryText, { color: '#000' }]}>{name}</Text>
     </TouchableOpacity>
   );
 });
@@ -105,12 +115,12 @@ const EventsList = memo(({
   }
   
   return (
-    <FlatList
+    <FlashList
       data={events}
       horizontal
       showsHorizontalScrollIndicator={false}
       keyExtractor={(item) => item.id}
-      contentContainerStyle={styles.eventsListContainer}
+      estimatedItemSize={218}
       renderItem={({ item }) => (
         <EventCard
           id={item.id}
@@ -144,19 +154,28 @@ const CommunityHome = () => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
+  const [activeCategories, setActiveCategories] = useState<string[]>(
+    CATEGORIES.map(category => category.name)
+  ); 
 
   // Retrieve events from Redux state
   const { events, loading, error } = useSelector((state: RootState) => state.events);
-  
-  // Implement handlers for Redux actions
-  const handleInterestClick = useCallback((eventId: string) => {
-    dispatch(addInterestedUser(eventId));
-  }, [dispatch]);
-  
-  const handleExternalLinkClick = useCallback((eventId: string) => {
-    dispatch(incrementExternalClicks(eventId));
-  }, [dispatch]);
 
+  const filteredEvents = events.filter(event => {
+    const isActiveCategory = activeCategories.includes(event.category);
+    const isRelevantStatus = event.status === "upcoming" || event.status === "ongoing";
+  
+    const matchesSearch =
+      debouncedSearch.trim() === "" ||
+      event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.venue.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.organizer.toLowerCase().includes(searchQuery.toLowerCase());
+  
+    return isActiveCategory && isRelevantStatus && matchesSearch;
+  });  
+  
   // Fetch events on mount
   useEffect(() => {
     dispatch(fetchEvents());
@@ -164,9 +183,12 @@ const CommunityHome = () => {
 
   // Callback handlers
   const handleCategoryPress = useCallback((category: string) => {
-    console.log(`Category pressed: ${category}`);
-    // Implementation for category filter
-  }, []);
+    setActiveCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category) // Remove if already selected
+        : [...prev, category]                // Add if not selected
+    );
+  }, []);  
 
   const handleSeeAllUpcoming = useCallback(() => {
     router.push('/(events)');
@@ -199,6 +221,8 @@ const CommunityHome = () => {
             placeholder="Search..."
             placeholderTextColor={theme.colors.text.primary}
             style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
             accessibilityLabel="Search events"
           />
           <TouchableOpacity 
@@ -227,50 +251,32 @@ const CommunityHome = () => {
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesContainer}
           data={CATEGORIES}
           keyExtractor={(item) => item.name}
-          renderItem={({ item }) => (
-            <Category
-              name={item.name}
-              icon={item.icon}
-              color={theme.colors.secondary}
-              onPress={() => handleCategoryPress(item.name)}
-            />
-          )}
+          renderItem={({ item, index }) => {
+            const isActive = activeCategories.includes(item.name);
+            const pastelColor = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+            const backgroundColor = isActive ? pastelColor : theme.colors.secondary;
+
+            return (
+              <Category
+                name={item.name}
+                icon={item.icon}
+                color={backgroundColor}
+                onPress={() => handleCategoryPress(item.name)}
+              />
+            );
+          }}
+          contentContainerStyle={styles.categoriesContainer}
         />
-        
+
         {/* Upcoming Events - Filtered for future dates */}
         <SectionHeader 
           title="Upcoming Events" 
           onSeeAll={handleSeeAllUpcoming} 
         />
         <EventsList 
-          events={events.filter(event => {
-            // Handle date format 'DD Month YYYY'
-            try {
-              const parts = event.date.split(' ');
-              const day = parseInt(parts[0], 10);
-              const month = ['January', 'February', 'March', 'April', 'May', 'June', 
-                            'July', 'August', 'September', 'October', 'November', 'December']
-                            .indexOf(parts[1]);
-              const year = parseInt(parts[2], 10);
-              
-              if (isNaN(day) || month === -1 || isNaN(year)) {
-                console.warn(`Invalid date format for event ${event.id}: ${event.date}`);
-                return true; // Include events with invalid dates rather than filtering them out
-              }
-              
-              const eventDate = new Date(year, month, day);
-              const today = new Date();
-              today.setHours(0, 0, 0, 0); // Reset time to start of day
-              
-              return eventDate >= today;
-            } catch (error) {
-              console.warn(`Error parsing date for event ${event.id}: ${error}`);
-              return true; // Include events with parsing errors
-            }
-          })} 
+          events={filteredEvents}
           loading={loading} 
           error={error} 
         />
@@ -281,10 +287,7 @@ const CommunityHome = () => {
           onSeeAll={handleSeeAllNearby} 
         />
         <EventsList 
-          events={events.filter(event => 
-            // Filter for events with coordinates when available
-            event.coordinates !== undefined
-          )} 
+          events={filteredEvents} 
           loading={loading} 
           error={error} 
         />
@@ -338,14 +341,19 @@ const createStyles = (theme: ThemesType) =>
       paddingTop: 5, 
       marginBottom: 20 
     },
-    category: { 
-      flexDirection: "row", 
-      alignItems: "center", 
-      paddingVertical: 12, 
-      paddingHorizontal: 15, 
-      borderRadius: 20, 
-      marginRight: 10 
-    },
+    category: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 12,
+      paddingHorizontal: 15,
+      borderRadius: 20,
+      marginRight: 10,
+      elevation: 2, // Android
+      shadowColor: "#000", // iOS
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    },    
     categoryIcon: { 
       marginRight: theme.spacing.small 
     },
