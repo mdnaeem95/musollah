@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { fetchEventsFromFirebase } from "../../api/firebase/events/index";
+import { fetchEventsFromFirebase, markExternalInterest } from "../../api/firebase/events/index";
 import { Event } from "../../utils/types"; // Ensure correct import
 
 // **Async Thunk to Fetch Events**
@@ -12,6 +12,19 @@ export const fetchEvents = createAsyncThunk<Event[], void>(
     } catch (error) {
       console.error("Error fetching events:", error);
       return rejectWithValue("Failed to fetch events.");
+    }
+  }
+);
+
+export const markExternalRSVP = createAsyncThunk(
+  'events/markExternalRSVP',
+  async (eventId: string, { rejectWithValue }) => {
+    try {
+      await markExternalInterest(eventId);
+      return eventId;
+    } catch (error) {
+      console.error("Error marking external RSVP:", error);
+      return rejectWithValue("Failed to register interest.");
     }
   }
 );
@@ -67,6 +80,13 @@ const eventsSlice = createSlice({
       .addCase(fetchEvents.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      });
+      builder.addCase(markExternalRSVP.fulfilled, (state, action) => {
+        const event = state.events.find(e => e.id === action.payload);
+        if (event) {
+          event.externalClicks = (event.externalClicks || 0) + 1;
+          event.interestedCount = (event.interestedCount || 0) + 1;
+        }
       });
   },
 });

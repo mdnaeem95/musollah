@@ -52,6 +52,22 @@ const CoursesLayout = () => {
           ),
         }}
       />
+      <Stack.Screen
+        name="edit"
+        options={{
+          ...sharedScreenOptions,
+          headerTitle: 'Edit Profile',
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 6, marginRight: Platform.OS === 'android' ? 10 : 0, justifyContent: 'center', alignItems: 'center' }}>
+              <FontAwesome6
+                name="arrow-left"
+                size={Platform.OS === 'android' ? 20 : 24}
+                color={theme.colors.text.primary}
+              />
+            </TouchableOpacity>
+          ),
+        }}
+      />
     </Stack>
   );
 };

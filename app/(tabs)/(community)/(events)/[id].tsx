@@ -7,12 +7,18 @@ import { CircleButton } from "../../(food)/_layout";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../../redux/store/store";
 import { downloadImage } from "../../../../utils";
+import { MotiView } from "moti";
+import { fadeInUp } from "../../../../utils/animations";
+import { markExternalInterest } from "../../../../api/firebase/events";
+import { useAuth } from "../../../../context/AuthContext";
 
 const HERO_IMAGE_HEIGHT = 250;
 const HEADER_HEIGHT = 60;
 const statusBarHeight = (StatusBar.currentHeight || 24) + 20;
 
 const EventDetails = () => {
+  const { user } = useAuth();
+  const userId = user?.uid!;
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const router = useRouter();
@@ -39,6 +45,17 @@ const EventDetails = () => {
       message: `Check out ${event.name} on ${event.date} at ${event.venue}. ${event.registrationLink || ''}`
     });
   };
+
+  const handleExternalRegister = async () => {
+    if (event?.registrationLink) {
+      try {
+        await markExternalInterest(event.id);
+        Linking.openURL(event.registrationLink);
+      } catch (error) {
+        Alert.alert("Error", "Failed to register interest.");
+      }
+    }
+  };  
 
   const heroImageHeight = scrollY.interpolate({
     inputRange: [-HERO_IMAGE_HEIGHT, 0, HERO_IMAGE_HEIGHT],
@@ -88,134 +105,129 @@ const EventDetails = () => {
             </Animated.View>
             
             {/* Floating Going Info */}
-            <View style={styles.goingContainer}>
-                <View style={styles.goingTextContainer}>
-                <Image source={{ uri: "https://randomuser.me/api/portraits/women/44.jpg" }} style={styles.avatar} />
-                <Image source={{ uri: "https://randomuser.me/api/portraits/men/45.jpg" }} style={styles.avatar} />
-                <Text style={styles.goingText}>+{totalEngaged} Going</Text>
-                </View>
-                <TouchableOpacity style={styles.inviteButton} onPress={shareEvent}>
-                <Text style={styles.inviteText}>Invite</Text>
-                </TouchableOpacity>
-            </View>
+            <MotiView {...fadeInUp}>
+              <View style={styles.goingContainer}>
+                  <View style={styles.goingTextContainer}>
+                  <Image source={{ uri: "https://randomuser.me/api/portraits/women/44.jpg" }} style={styles.avatar} />
+                  <Image source={{ uri: "https://randomuser.me/api/portraits/men/45.jpg" }} style={styles.avatar} />
+                  <Text style={styles.goingText}>+{totalEngaged} Going</Text>
+                  </View>
+                  <TouchableOpacity style={styles.inviteButton} onPress={shareEvent}>
+                  <Text style={styles.inviteText}>Invite</Text>
+                  </TouchableOpacity>
+              </View>
+            </MotiView>
 
             {/* Event Details */}
-            <View style={styles.detailsContainer}>
-                <Text style={styles.eventTitle}>{event?.name}</Text>
-                
-                {/* Date & Time */}
-                <View style={styles.detailRow}>
-                    <View style={styles.detailsIconContainer}>
-                        <FontAwesome6 name="calendar" size={25} color={theme.colors.text.primary} />
-                    </View>
-                    <View style={{ gap: 10 }}>
-                        <Text style={styles.detailTextTop}>{event?.date}</Text>
-                        <Text style={styles.detailTextBottom}>{event?.time}</Text>
-                    </View>
-                </View>
-                
-                {/* Location */}
-                <View style={styles.detailRow}>
-                    <View style={styles.detailsIconContainer}>
-                        <FontAwesome6 name="location-dot" size={25} color={theme.colors.text.primary} />
-                    </View>
-                    <View style={{ gap: 10 }}>
-                        <Text style={styles.detailTextTop}>{event?.venue}</Text>
-                        <Text style={styles.detailTextBottom}>{event?.address}</Text>
-                    </View>
-                    {event?.coordinates ? (
-                      <TouchableOpacity 
-                        style={styles.mapButton}
-                        onPress={() => {
-                          const { latitude, longitude } = event.coordinates!;
-                          const url = `https://maps.google.com/?q=${latitude},${longitude}`;
-                          Linking.openURL(url);
-                        }}
-                      >
-                        <Text style={styles.mapButtonText}>Map</Text>
-                      </TouchableOpacity>
+            <MotiView {...fadeInUp}>
+              <View style={styles.detailsContainer}>
+                  <Text style={styles.eventTitle}>{event?.name}</Text>
+                  
+                  {/* Date & Time */}
+                  <View style={styles.detailRow}>
+                      <View style={styles.detailsIconContainer}>
+                          <FontAwesome6 name="calendar" size={25} color={theme.colors.text.primary} />
+                      </View>
+                      <View style={{ gap: 10 }}>
+                          <Text style={styles.detailTextTop}>{event?.date}</Text>
+                          <Text style={styles.detailTextBottom}>{event?.time}</Text>
+                      </View>
+                  </View>
+                  
+                  {/* Location */}
+                  <View style={styles.detailRow}>
+                      <View style={styles.detailsIconContainer}>
+                          <FontAwesome6 name="location-dot" size={25} color={theme.colors.text.primary} />
+                      </View>
+                      <View style={{ gap: 10 }}>
+                          <Text style={styles.detailTextTop}>{event?.venue}</Text>
+                          <Text style={styles.detailTextBottom}>{event?.address}</Text>
+                      </View>
+                  </View>
+                  
+                  {/* Event Features */}
+                  <View style={styles.featuresContainer}>
+                    {event?.wheelchairAccessible ? (
+                      <View style={styles.featureItem}>
+                        <FontAwesome6 name="wheelchair" size={14} color={theme.colors.text.primary} />
+                        <Text style={styles.featureText}>Accessible</Text>
+                      </View>
                     ) : null }
-                </View>
-                
-                {/* Event Features */}
-                <View style={styles.featuresContainer}>
-                  {event?.wheelchairAccessible ? (
-                    <View style={styles.featureItem}>
-                      <FontAwesome6 name="wheelchair" size={14} color={theme.colors.text.primary} />
-                      <Text style={styles.featureText}>Accessible</Text>
-                    </View>
-                  ) : null }
+                    
+                    {event?.livestreamAvailable ? (
+                      <View style={styles.featureItem}>
+                        <FontAwesome6 name="video" size={14} color={theme.colors.text.primary} />
+                        <Text style={styles.featureText}>Livestream</Text>
+                      </View>
+                    ) : null }
+                    
+                    {event?.language ? (
+                      <View style={styles.featureItem}>
+                        <FontAwesome6 name="language" size={14} color={theme.colors.text.primary} />
+                        <Text style={styles.featureText}>{event.language}</Text>
+                      </View>
+                    ) : null }
+                    
+                    {event?.ticketPrice ? (
+                      <View style={styles.featureItem}>
+                        <FontAwesome6 name="ticket" size={14} color={theme.colors.text.primary} />
+                        <Text style={styles.featureText}>
+                          {event.ticketPrice === "Free" ? "Free" : event.ticketPrice}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
                   
-                  {event?.livestreamAvailable ? (
-                    <View style={styles.featureItem}>
-                      <FontAwesome6 name="video" size={14} color={theme.colors.text.primary} />
-                      <Text style={styles.featureText}>Livestream</Text>
-                    </View>
-                  ) : null }
-                  
-                  {event?.language ? (
-                    <View style={styles.featureItem}>
-                      <FontAwesome6 name="language" size={14} color={theme.colors.text.primary} />
-                      <Text style={styles.featureText}>{event.language}</Text>
-                    </View>
-                  ) : null }
-                  
-                  {event?.ticketPrice ? (
-                    <View style={styles.featureItem}>
-                      <FontAwesome6 name="ticket" size={14} color={theme.colors.text.primary} />
-                      <Text style={styles.featureText}>
-                        {event.ticketPrice === "Free" ? "Free" : event.ticketPrice}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-                
-                {/* Organizer */}
-                <View style={styles.detailRow}>
-                    <Image source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }} style={styles.organizerAvatar} />
-                    <View>
-                        <Text style={styles.organizerName}>{event?.organizer}</Text>
-                        <Text style={styles.organizer}>Organizer</Text>
-                    </View>
-                    <TouchableOpacity style={styles.followButton}>
-                        <Text style={styles.followText}>Follow</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
+                  {/* Organizer */}
+                  <View style={styles.detailRow}>
+                      <Image source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }} style={styles.organizerAvatar} />
+                      <View>
+                          <Text style={styles.organizerName}>{event?.organizer}</Text>
+                          <Text style={styles.organizer}>Organizer</Text>
+                      </View>
+                      <TouchableOpacity style={styles.followButton}>
+                          <Text style={styles.followText}>Follow</Text>
+                      </TouchableOpacity>
+                  </View>
+              </View>
+            </MotiView>
 
             {/* About Event */}
-            <View style={styles.aboutContainer}>
-                <Text style={styles.sectionTitle}>About Event</Text>
-                <Text style={styles.aboutText}>
-                {event?.description}
-                </Text>
-            </View>
+            <MotiView {...fadeInUp}>
+              <View style={styles.aboutContainer}>
+                  <Text style={styles.sectionTitle}>About Event</Text>
+                  <Text style={styles.aboutText}>
+                  {event?.description}
+                  </Text>
+              </View>
+            </MotiView>
             
             {/* Target Audience */}
             {event?.targetAudience ? event.targetAudience !== "All" && (
-              <View style={styles.aboutContainer}>
-                <Text style={styles.sectionTitle}>Target Audience</Text>
-                <Text style={styles.aboutText}>
-                  This event is specifically designed for {event.targetAudience.toLowerCase()}.
-                </Text>
-              </View>
+              <MotiView {...fadeInUp}>
+                <View style={styles.aboutContainer}>
+                  <Text style={styles.sectionTitle}>Target Audience</Text>
+                  <Text style={styles.aboutText}>
+                    This event is specifically designed for {event.targetAudience.toLowerCase()}.
+                  </Text>
+                </View>
+              </MotiView>
             ) : null }
 
             {/* Buy Ticket Button */}
-            <View style={{ alignItems: "center", justifyContent: "center", }}>
-                <TouchableOpacity 
-                  style={styles.buyButton} 
-                  onPress={() => {
-                    if (event?.registrationLink) {
-                      Linking.openURL(event.registrationLink);
-                    }
-                  }}
-                >
-                    <Text style={styles.buyButtonText}>
-                      {event?.isExternal ? "Register" : "RSVP"}
-                    </Text>
-                </TouchableOpacity>
-            </View>
+            <MotiView {...fadeInUp}>
+              <View style={{ alignItems: "center", justifyContent: "center", }}>
+              <TouchableOpacity
+                style={[styles.buyButton, event?.interested?.[userId]?.clickedRegistration && { opacity: 0.6 }]}
+                disabled={!!event?.interested?.[userId]?.clickedRegistration}
+                onPress={handleExternalRegister}
+              >
+                <Text style={styles.buyButtonText}>
+                  {event?.interested?.[userId]?.clickedRegistration ? "You've Registered" : "Register"}
+                </Text>
+              </TouchableOpacity>
+              </View>
+            </MotiView>
         </Animated.ScrollView>
 
       {/* Fullscreen Image Viewer */}
@@ -297,18 +309,6 @@ const createStyles = (theme: any) =>
     detailText: { marginLeft: 10, fontSize: 16, color: theme.colors.text.secondary },
     detailTextTop: { marginLeft: 10, fontSize: 16, color: theme.colors.text.primary, fontFamily: 'Outfit_400Regular' },
     detailTextBottom: { marginLeft: 10, fontSize: 12, color: theme.colors.text.muted, fontFamily: 'Outfit_400Regular'  },
-    mapButton: { 
-      marginLeft: "auto",
-      backgroundColor: theme.colors.primary,
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      borderRadius: 8,
-    },
-    mapButtonText: {
-      color: theme.colors.text.primary,
-      fontSize: 12,
-      fontFamily: 'Outfit_400Regular',
-    },
     featuresContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',

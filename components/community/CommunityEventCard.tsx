@@ -2,9 +2,8 @@ import React from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useSelector } from "react-redux";
-import { RootState } from "../../redux/store/store";
+import { useRouter } from "expo-router";
+import { MotiView } from "moti";
 
 export type EventCardProps = {
   image: string;
@@ -21,32 +20,48 @@ const EventCard: React.FC<EventCardProps> = ({ id, image, title, date, location,
   const router = useRouter()
 
   return (
-    <TouchableOpacity style={styles.eventCard} onPress={() => router.push(`/(events)/${id}`)}>
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: image }} style={styles.eventImage} />
-        
-        {/* Date Badge */}
-        <View style={styles.dateBadge}>
-        <Text style={styles.dateNumber}>{date.split(" ")[0]}</Text>
-        <Text style={styles.dateMonth}>{date.split(" ")[1]}</Text>
+    <MotiView
+      from={{
+        opacity: 0,
+        translateY: 20,
+      }}
+      animate={{
+        opacity: 1,
+        translateY: 0,
+      }}
+      transition={{
+        type: "timing",
+        duration: 400,
+        delay: Math.random() * 200, // slight randomness to stagger naturally
+      }}
+    >
+      <TouchableOpacity style={styles.eventCard} onPress={() => router.push(`/(events)/${id}`)}>
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: image }} style={styles.eventImage} />
+          
+          {/* Date Badge */}
+          <View style={styles.dateBadge}>
+          <Text style={styles.dateNumber}>{date.split(" ")[0]}</Text>
+          <Text style={styles.dateMonth}>{date.split(" ")[1]}</Text>
+          </View>
+
+
+          {/* Bookmark Icon */}
+          <TouchableOpacity style={styles.bookmarkContainer}>
+            <FontAwesome6 name="bookmark" size={16} color={theme.colors.accent} solid />
+          </TouchableOpacity>
         </View>
 
-
-        {/* Bookmark Icon */}
-        <TouchableOpacity style={styles.bookmarkContainer}>
-          <FontAwesome6 name="bookmark" size={16} color={theme.colors.accent} solid />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.eventDetails}>
-        <Text style={styles.eventTitle} numberOfLines={1} ellipsizeMode="tail">{title}</Text>
-        <Text style={styles.goingText}>+{goingCount} Going</Text>
-        <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center', marginTop: 10 }}>
-            <FontAwesome6 name="location-dot" size={18} color={theme.colors.text.muted} />
-            <Text style={styles.eventLocation}>{location}</Text>
+        <View style={styles.eventDetails}>
+          <Text style={styles.eventTitle} numberOfLines={1} ellipsizeMode="tail">{title}</Text>
+          <Text style={styles.goingText}>+{goingCount} Going</Text>
+          <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center', marginTop: 10 }}>
+              <FontAwesome6 name="location-dot" size={18} color={theme.colors.text.muted} />
+              <Text style={styles.eventLocation}>{location}</Text>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </MotiView>
   );
 };
 
@@ -55,9 +70,9 @@ const createStyles = (theme: any) =>
     eventCard: {
       backgroundColor: theme.colors.secondary,
       borderRadius: theme.borderRadius.large,
-      padding: theme.spacing.medium,
-      width: "90%",
-      maxWidth: 260,
+      padding: theme.spacing.small,
+      width: 280,
+      marginLeft: 5,
       alignSelf: "center", 
       marginBottom: theme.spacing.large,
       ...theme.shadows.default,
@@ -112,6 +127,7 @@ const createStyles = (theme: any) =>
     },
     eventDetails: {
       marginTop: theme.spacing.medium,
+      margin: theme.spacing.small
     },
     eventTitle: {
       fontSize: theme.fontSizes.large,
