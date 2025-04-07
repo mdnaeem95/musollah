@@ -13,6 +13,7 @@ interface FirebaseEventData {
   venue: string;
   address: string;
   organizer: string;
+  organizerId?: string;
   description: string;
   status?: EventStatus;
   lastStatusUpdate?: number;
@@ -186,7 +187,66 @@ function parseDateString(dateString: string): Date {
 }
 
 export const markExternalInterest = async (eventId: string) => {
-  const { user } = useAuth();
+  try {
+    const user = getAuth().currentUser;
+    if (!user) throw new Error("User not logged in");
+
+    const userRef = firestore().collection("users").doc(user.uid);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+
+    const eventRef = firestore().collection("events").doc(eventId);
+
+    await eventRef.update({
+      [`interested.${user.uid}.clickedRegistration`]: true,
+      externalClicks: firestore.FieldValue.increment(1),
+    });
+
+    console.log("External interest registered successfully");
+  } catch (error) {
+    console.error("Error in markExternalInterest:", error);
+    throw error;
+  }
+};
+
+export const toggleEventInterest = async (eventId: string) => {
+  const user = getAuth().currentUser;
+  if (!user) throw new Error("User not logged in");
+
+  const userRef = firestore().collection("users").doc(user.uid);
+  const userDoc = await userRef.get();
+  const userData = userDoc.data();
+
+  const eventRef = firestore().collection("events").doc(eventId);
+  const eventDoc = await eventRef.get();
+  const eventData = eventDoc.data();
+
+  const isInterested = eventData?.interested?.[user.uid];
+
+  if (isInterested) {
+    // Remove interest
+    await eventRef.update({
+      [`interested.${user.uid}`]: firestore.FieldValue.delete(),
+      interestedCount: firestore.FieldValue.increment(-1),
+    });
+  } else {
+    // Add interest
+    await eventRef.update({
+      [`interested.${user.uid}`]: {
+        name: userData?.name || user.displayName || "Anonymous",
+        email: user.email || "",
+        clickedRegistration: false,
+        timestamp: new Date().toISOString(),
+      },
+      interestedCount: firestore.FieldValue.increment(1),
+    });
+  }
+
+  return !isInterested;
+};
+
+export const confirmExternalAttendance = async (eventId: string) => {
+  const user = getAuth().currentUser;
   if (!user) throw new Error("User not logged in");
 
   const userRef = firestore().collection("users").doc(user.uid);
@@ -196,13 +256,12 @@ export const markExternalInterest = async (eventId: string) => {
   const eventRef = firestore().collection("events").doc(eventId);
 
   await eventRef.update({
-    [`interested.${user.uid}`]: {
+    [`attendees.${user.uid}`]: {
       name: userData?.name || user.displayName || "Anonymous",
+      avatarUrl: userData?.avatarUrl || "",
       email: user.email || "",
-      clickedRegistration: true,
+      checkedIn: false,
       timestamp: new Date().toISOString()
-    },
-    externalClicks: firestore.FieldValue.increment(1),
-    interestedCount: firestore.FieldValue.increment(1),
+    }
   });
 };

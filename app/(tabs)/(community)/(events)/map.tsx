@@ -18,6 +18,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../../../redux/store/store";
 import { fetchUserLocation } from "../../../../redux/slices/userLocationSlice";
 import { Event } from "../../../../utils/types";
+import { haversineDistance } from "../../../../utils/distance";
 
 const EventsMap = () => {
   const { theme } = useTheme();
@@ -37,10 +38,25 @@ const EventsMap = () => {
   const [cardWidth, setCardWidth] = useState(340); // Default card width
   const cardGap = 15; // Gap between cards
   
-  // Get events with valid coordinates
-  const eventsWithCoordinates = events.filter(event => 
-    event.coordinates && event.coordinates.latitude && event.coordinates.longitude
-  );
+  const eventsWithCoordinates = events
+  .filter(event =>
+    event.status === "upcoming" &&
+    event.coordinates?.latitude &&
+    event.coordinates?.longitude
+  )
+  .map(event => {
+    const distance = userLocation?.coords
+      ? haversineDistance(userLocation.coords, event.coordinates!).toFixed(1)
+      : null;
+
+    return { ...event, distance };
+  })
+  .sort((a, b) => {
+    if (!userLocation?.coords) return 0;
+    const distA = haversineDistance(userLocation.coords, a.coordinates!);
+    const distB = haversineDistance(userLocation.coords, b.coordinates!);
+    return distA - distB;
+  });
 
   // Calculate card width based on screen size
   useEffect(() => {
@@ -169,7 +185,10 @@ const EventsMap = () => {
         <Text style={styles.eventTitle} numberOfLines={1}>{item.name}</Text>
         <View style={styles.eventLocationContainer}>
           <FontAwesome6 name="location-dot" size={12} color={theme.colors.text.muted} />
-          <Text style={styles.eventLocation} numberOfLines={1}>{item.venue}</Text>
+          <Text style={styles.eventLocation} numberOfLines={1}>
+            {item.venue}
+            {item.distance ? ` • ${item.distance} km away` : ""}
+          </Text>
         </View>
       </View>
 

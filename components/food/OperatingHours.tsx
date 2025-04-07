@@ -1,37 +1,31 @@
-import { FontAwesome6 } from '@expo/vector-icons';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
+import { MotiView } from 'moti';
 
-const OperatingHours = ({ hoursString }: { hoursString: string }) => {
-  const { theme } = useTheme()
+interface Props {
+  hoursString: string;
+}
 
+const OperatingHours: React.FC<Props> = ({ hoursString }) => {
+  const { theme } = useTheme();
   const parsedHours = parseOperatingHours(hoursString);
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
 
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-  const isOpen = (hours: string) => {
-    if (hours.toLowerCase() === "closed") return false;
-
-    const timeRanges = hours.split("&").map((range) => range.trim());
-
-    return timeRanges.some((range) => {
-      const [start, end] = range.split("-").map((time) => {
-        const [hour, minute] = time.split(":").map(Number);
-        return hour * 60 + (minute || 0);
-      });
-
-      return currentMinutes >= start && currentMinutes < end;
-    });
-  };
-
   const todayEntry = parsedHours.find((entry) => entry.day.includes(today));
-  const shopIsOpen = todayEntry ? isOpen(todayEntry.hours) : false;
+  const shopIsOpen = todayEntry ? isOpen(todayEntry.hours, currentMinutes) : false;
 
   return (
-    <View style={styles.container}>
+    <MotiView
+      from={{ opacity: 0, translateY: 6 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{ type: 'timing', duration: 400 }}
+      style={styles.container}
+    >
       {parsedHours.map((entry, index) => {
         const isToday = entry.day.includes(today);
         return (
@@ -39,7 +33,11 @@ const OperatingHours = ({ hoursString }: { hoursString: string }) => {
             key={index}
             style={[
               styles.entry,
-              isToday && { backgroundColor: theme.colors.accent, borderRadius: theme.borderRadius.medium, padding: theme.spacing.small },
+              isToday && {
+                backgroundColor: theme.colors.accent,
+                borderRadius: theme.borderRadius.medium,
+                padding: theme.spacing.small,
+              },
             ]}
           >
             <Text style={[styles.day, isToday && { color: theme.colors.text.primary }]}>
@@ -54,8 +52,8 @@ const OperatingHours = ({ hoursString }: { hoursString: string }) => {
 
       {todayEntry && (
         <View style={styles.statusContainer}>
-          <FontAwesome6 
-            name={shopIsOpen ? 'check-circle' : 'times-circle'} 
+          <FontAwesome6
+            name={shopIsOpen ? 'check-circle' : 'times-circle'}
             size={16}
             color={shopIsOpen ? theme.colors.text.success : theme.colors.text.error}
             style={styles.statusIcon}
@@ -70,21 +68,42 @@ const OperatingHours = ({ hoursString }: { hoursString: string }) => {
           </Text>
         </View>
       )}
-    </View>
+    </MotiView>
   );
 };
 
-const parseOperatingHours = (hoursString: string) => {
-  const days = hoursString.split(',');
+// --- Utilities ---
 
-  return days.map((day) => {
-    const [dayName, ...hoursParts] = day.split(':');
+const parseOperatingHours = (hoursString: string) => {
+  if (!hoursString) return [];
+
+  return hoursString.split(',').map((entry) => {
+    const [dayName, ...rest] = entry.split(':');
     return {
       day: dayName.trim(),
-      hours: hoursParts.join(':').trim(),
+      hours: rest.join(':').trim(),
     };
   });
 };
+
+const isOpen = (hours: string, currentMinutes: number): boolean => {
+  if (!hours || hours.toLowerCase() === 'closed') return false;
+
+  return hours.split('&').some((range) => {
+    const [start, end] = range.trim().split('-');
+    if (!start || !end) return false;
+
+    const [startHour, startMin = '0'] = start.split(':');
+    const [endHour, endMin = '0'] = end.split(':');
+
+    const startMinutes = parseInt(startHour) * 60 + parseInt(startMin);
+    const endMinutes = parseInt(endHour) * 60 + parseInt(endMin);
+
+    return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+  });
+};
+
+// --- Styles ---
 
 const styles = StyleSheet.create({
   container: {
@@ -98,24 +117,24 @@ const styles = StyleSheet.create({
   },
   day: {
     fontSize: 14,
-    fontFamily: "Outfit_600SemiBold",
+    fontFamily: 'Outfit_600SemiBold',
   },
   hours: {
     fontSize: 14,
-    fontFamily: "Outfit_400Regular",
+    fontFamily: 'Outfit_400Regular',
   },
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 12,
+    paddingVertical: 4,
   },
   statusIcon: {
     marginRight: 8,
   },
   status: {
     fontSize: 14,
-    fontFamily: 'Outfit_400Regular',
-    marginLeft: 10,
+    fontFamily: 'Outfit_500Medium',
   },
 });
 

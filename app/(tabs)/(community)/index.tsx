@@ -21,6 +21,8 @@ import { Event } from "../../../utils/types";
 import { FlashList } from "@shopify/flash-list";
 import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
 import { CATEGORY_COLORS } from '../../../constants/categoryColours'
+import { haversineDistance } from "../../../utils/distance";
+import { useAuth } from "../../../context/AuthContext";
 
 // Category data extracted to a constant
 const CATEGORIES = [
@@ -93,11 +95,15 @@ const SectionHeader = memo(({ title, onSeeAll }: {
 const EventsList = memo(({ 
   events, 
   loading, 
-  error 
+  error,
+  showDistance = false,
+  userCoords,
 }: { 
   events: Event[]; 
   loading: boolean; 
   error: string | null;
+  showDistance?: boolean;
+  userCoords?: { latitude: number; longitude: number };
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -121,16 +127,26 @@ const EventsList = memo(({
       showsHorizontalScrollIndicator={false}
       keyExtractor={(item) => item.id}
       estimatedItemSize={218}
-      renderItem={({ item }) => (
-        <EventCard
-          id={item.id}
-          image={item.image || ''}
-          title={item.name}
-          date={item.date}
-          location={item.venue}
-          goingCount={item.interestedCount || 0}
-        />
-      )}
+      renderItem={({ item }) => {
+        const distanceKm =
+        showDistance && item.coordinates && userCoords
+          ? haversineDistance(userCoords, item.coordinates).toFixed(1)
+          : undefined;
+      
+        return (
+          <EventCard
+            id={item.id}
+            image={item.image || ''}
+            title={item.name}
+            date={item.date}
+            location={item.venue}
+            goingCount={Object.keys(item.attendees || {}).length}
+            attendees={item.attendees || {}}
+            distance={distanceKm}
+            
+          />
+        )
+      }}
       ItemSeparatorComponent={() => <View style={{ width: 25 }} />}
     />
   );
@@ -148,7 +164,7 @@ const EventsList = memo(({
  * 
  * @returns React component
  */
-const CommunityHome = () => {
+const CommunityHome = () => { 
   const { theme } = useTheme() as { theme: ThemesType };
   const styles = createStyles(theme);
   const router = useRouter();
@@ -162,6 +178,7 @@ const CommunityHome = () => {
 
   // Retrieve events from Redux state
   const { events, loading, error } = useSelector((state: RootState) => state.events);
+  const userLocation = useSelector((state: RootState) => state.location.userLocation);
 
   const filteredEvents = events.filter(event => {
     const isActiveCategory = activeCategories.includes(event.category);
@@ -174,7 +191,22 @@ const CommunityHome = () => {
       event.organizer.toLowerCase().includes(searchQuery.toLowerCase());
   
     return isActiveCategory && isRelevantStatus && matchesSearch;
-  });  
+  });
+
+  const upcomingEvents = [...filteredEvents].sort((a, b) =>
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  const nearbyEvents =
+  userLocation && userLocation.coords
+    ? [...filteredEvents]
+        .filter((e) => e.coordinates?.latitude && e.coordinates?.longitude)
+        .sort((a, b) => {
+          const distA = haversineDistance(userLocation.coords, a.coordinates!);
+          const distB = haversineDistance(userLocation.coords, b.coordinates!);
+          return distA - distB;
+        })
+    : [...filteredEvents]; // fallback
   
   // Fetch events on mount
   useEffect(() => {
@@ -276,7 +308,7 @@ const CommunityHome = () => {
           onSeeAll={handleSeeAllUpcoming} 
         />
         <EventsList 
-          events={filteredEvents}
+          events={upcomingEvents}
           loading={loading} 
           error={error} 
         />
@@ -287,9 +319,11 @@ const CommunityHome = () => {
           onSeeAll={handleSeeAllNearby} 
         />
         <EventsList 
-          events={filteredEvents} 
+          events={nearbyEvents} 
           loading={loading} 
-          error={error} 
+          error={error}
+          showDistance
+          userCoords={userLocation?.coords}
         />
       </ScrollView>
     </View>

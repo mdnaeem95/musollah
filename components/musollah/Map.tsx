@@ -1,4 +1,4 @@
-import { View, TouchableOpacity, Platform } from 'react-native'
+import { View, TouchableOpacity, Platform, StyleSheet } from 'react-native'
 import React from 'react'
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
@@ -82,9 +82,9 @@ const Map = ({ region, markerLocations, onMarkerPress, onRegionChangeComplete, s
   
 
   return (
-    <View>
+    <View style={StyleSheet.absoluteFill}>
       <MapView 
-        style={{ width: '100%', height: '100%' }}
+        style={StyleSheet.absoluteFill}
         initialRegion={region}
         showsUserLocation
         followsUserLocation={shouldFollowUserLocation}

@@ -9,6 +9,7 @@ import { getAuth } from '@react-native-firebase/auth';
 import { CourseAndModuleProgress, CourseData, ModuleData } from '../../utils/types';
 import SignInModal from '../SignInModal';
 import { useTheme } from '../../context/ThemeContext';
+import { MotiView } from 'moti';
 
 const OnlineCourseDetails = ({
   course,
@@ -72,24 +73,32 @@ const OnlineCourseDetails = ({
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>      
       <ScrollView contentContainerStyle={{ gap: 5, paddingBottom: 50 }} showsVerticalScrollIndicator={false}>
-        {/* Author Information */}
-        <View style={[styles.authorContainer, { backgroundColor: theme.colors.secondary }]}>
+
+        <MotiView
+          from={{ opacity: 0, translateY: -10 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'timing', duration: 400 }}
+          style={[styles.authorContainer, { backgroundColor: theme.colors.secondary }]}
+        >
           <Image source={{ uri: teacherImage }} style={styles.authorAvatar} />
           <View style={{ marginLeft: 10, justifyContent: 'center' }}>
             <Text style={[styles.subText, { color: theme.colors.text.secondary }]}>Author</Text>
             <Text style={[styles.mainText, { color: theme.colors.text.primary }]}>{teacherName}</Text>
           </View>
-        </View>
+        </MotiView>
 
-        {/* Course Details */}
-        <View style={styles.section}>
+        <MotiView
+          from={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 150 }}
+          style={styles.section}
+        >
           <Text style={[styles.subText, { color: theme.colors.text.secondary }]}>Description</Text>
           <Text style={[styles.contentText, { color: theme.colors.text.muted }]}>{course.description}</Text>
-        </View>
+        </MotiView>
 
-        {/* Modules */}
         <View style={styles.section}>
           <Text style={[styles.subText, { color: theme.colors.text.secondary }]}>Modules</Text>
           {course.modules.map((module: ModuleData, index: number) => {
@@ -97,31 +106,40 @@ const OnlineCourseDetails = ({
             const isLocked = !userProgress || moduleProgress === 'locked';
 
             return (
-              <TouchableOpacity
+              <MotiView
                 key={index}
-                style={[
-                  styles.module,
-                  { backgroundColor: isLocked ? theme.colors.text.muted : theme.colors.secondary },
-                ]}
-                disabled={isLocked}
-                onPress={() => router.push(`/courses/${course.id}/modules/${module.moduleId}`)}
+                from={{ opacity: 0, translateY: 10 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                transition={{ delay: index * 100 }}
               >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <View>
-                    <Text style={[styles.subText, { color: isLocked ? "#000" : theme.colors.text.primary }]}>
-                      {`${index + 1}. ${module.title}`}
-                    </Text>
-                    <Text style={[styles.contentText, { color: isLocked ? "#000" : theme.colors.text.secondary }]}>1 hour</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.module,
+                    { backgroundColor: isLocked ? theme.colors.text.muted : theme.colors.secondary },
+                  ]}
+                  disabled={isLocked}
+                  onPress={() => router.push(`/courses/${course.id}/modules/${module.moduleId}`)}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View>
+                      <Text style={[styles.subText, { color: isLocked ? "#000" : theme.colors.text.primary }]}>                      
+                        {`${index + 1}. ${module.title}`}
+                      </Text>
+                      <Text style={[styles.contentText, { color: isLocked ? "#000" : theme.colors.text.secondary }]}>1 hour</Text>
+                    </View>
+                    {isLocked && <FontAwesome6 name="lock" size={20} color={theme.colors.text.muted} />}
                   </View>
-                  {isLocked && <FontAwesome6 name="lock" size={20} color={theme.colors.text.muted} />}
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </MotiView>
             );
           })}
         </View>
 
-        {/* Start Learning Button */}
-        <View>
+        <MotiView
+          from={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 250 }}
+        >
           <TouchableOpacity
             style={[
               styles.learningBtn,
@@ -132,13 +150,12 @@ const OnlineCourseDetails = ({
             onPress={handleStartLearning}
             disabled={!!userProgress || isEnrolling}
           >
-            <Text style={[styles.btnText, { color: theme.colors.text.primary }]}>
+            <Text style={[styles.btnText, { color: theme.colors.text.primary }]}>              
               {isEnrolling ? 'Enrolling...' : userProgress ? 'Enrolled' : 'Start Learning'}
             </Text>
           </TouchableOpacity>
-        </View>
+        </MotiView>
 
-        {/* Sign In Modal */}
         <SignInModal isVisible={isAuthModalVisible} onClose={() => setIsAuthModalVisible(false)} />
       </ScrollView>
     </View>

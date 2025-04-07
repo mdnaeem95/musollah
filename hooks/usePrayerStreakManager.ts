@@ -5,7 +5,7 @@ import { useStreakCalculator } from './usePrayerStreakCalculator';
 import { updatePrayerStreak } from '../redux/slices/gamificationSlice';
 
 export const usePrayerStreakManager = (prayerLogs: { [date: string]: any }, userId: string | null) => {
-    console.log('prayerLogs: ', prayerLogs)
+    // console.log('prayerLogs: ', prayerLogs)
     const { current, highest } = useStreakCalculator(prayerLogs);
     const dispatch = useDispatch<AppDispatch>();
     const [streakInfo, setStreakInfo] = useState({

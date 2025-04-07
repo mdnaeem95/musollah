@@ -54,7 +54,7 @@ export const usePrayerTimes = (
 
       // **Force scheduling if user changed notification settings**
       if (!settingsChanged && lastScheduleRef.current && now - lastScheduleRef.current < 5 * 60 * 1000) {
-        console.log("⏳ Skipping duplicate scheduling within 5 minutes.");
+        // console.log("⏳ Skipping duplicate scheduling within 5 minutes.");
         return;
       }
 
@@ -62,7 +62,7 @@ export const usePrayerTimes = (
       lastSettingsRef.current = { mutedNotifications, selectedAdhan, prePrayerReminder };
       lastScheduleRef.current = now; // Update last execution time
 
-      console.log("🚀 Running fetchAndScheduleNotifications...");
+      // console.log("🚀 Running fetchAndScheduleNotifications...");
 
       const today = new Date();
       const year = today.getFullYear();
@@ -74,7 +74,7 @@ export const usePrayerTimes = (
 
       // Extract next 5 days' prayer times
       const nextDaysPrayerTimes = extractNextDaysPrayerTimes(monthlyPrayerTimes, numDays);
-      console.log("🔍 Extracted Next 5 Days Prayer Times:", nextDaysPrayerTimes);
+      // console.log("🔍 Extracted Next 5 Days Prayer Times:", nextDaysPrayerTimes);
 
       await scheduleNextDaysNotifications(
         nextDaysPrayerTimes,
@@ -87,17 +87,17 @@ export const usePrayerTimes = (
 
   useEffect(() => {
     if (prayerTimes) {
-      console.log("🔍 usePrayerTimes - Received Prayer Times:", prayerTimes);
+      // console.log("🔍 usePrayerTimes - Received Prayer Times:", prayerTimes);
 
       const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes, new Date());
       setCurrentPrayer(currentPrayer);
       setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
 
-      console.log("📌 usePrayerTimes - Parsed Values:", {
-        currentPrayer,
-        nextPrayer,
-        timeUntilNextPrayer,
-      });
+      // console.log("📌 usePrayerTimes - Parsed Values:", {
+      //   currentPrayer,
+      //   nextPrayer,
+      //   timeUntilNextPrayer,
+      // });
     }
   }, [prayerTimes]);
 

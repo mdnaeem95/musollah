@@ -37,7 +37,7 @@ const TabLayout = () => {
             case "(food)":
               iconName = "utensils";
               break;
-            case "musollah":
+            case "(musollah)":
               iconName = "location-dot";
               break;
             case "(quran)":
@@ -60,7 +60,7 @@ const TabLayout = () => {
       <Tabs.Screen name="(prayer)" options={{ title: "Prayers", headerShown: false }} />
       <Tabs.Screen name="(education)" options={{ title: "Education", headerShown: false }} />
       <Tabs.Screen name="(food)" options={{ title: "Halal Food", headerShown: false }} />
-      <Tabs.Screen name="musollah" options={{ title: "Musollah", headerShown: false }} />
+      <Tabs.Screen name="(musollah)" options={{ title: "Musollah", headerShown: false }} />
       <Tabs.Screen name="(quran)" options={{ title: "Quran", headerShown: false }} />
       <Tabs.Screen name="(community)" options={{ title: "Community", headerShown: false  }} />
       <Tabs.Screen name="(settings)" options={{ title: "Settings", headerShown: false }} />

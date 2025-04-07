@@ -1,11 +1,10 @@
-import { FontAwesome6 } from "@expo/vector-icons";
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import React from 'react';
-import { TouchableOpacity, Platform } from "react-native";
+import { Platform } from "react-native";
 import { useTheme } from '../../../../context/ThemeContext';
+import BackButton from '../../../../components/BackButton'
 
-const CoursesLayout = () => {
-  const router = useRouter();
+const ProfileLayout = () => {
   const { theme } = useTheme();
 
   const sharedScreenOptions = {
@@ -19,57 +18,17 @@ const CoursesLayout = () => {
       fontSize: Platform.OS === 'android' ? 18 : 20,
       color: theme.colors.text.primary,
     },
-    headerLeft: ({ canGoBack }: { canGoBack: boolean }) => (
-      canGoBack && (
-        <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 6, marginRight: Platform.OS === 'android' ? 10 : 0, justifyContent: 'center', alignItems: 'center' }}>
-          <FontAwesome6
-            name="arrow-left"
-            size={Platform.OS === 'android' ? 20 : 24}
-            color={theme.colors.text.primary}
-          />
-        </TouchableOpacity>
-      )
-    ),
+    headerLeft: () => <BackButton />,
   };
 
   return (
-    <Stack screenOptions={{
-      headerShown: false,
-    }}>
-      <Stack.Screen
-        name="index"
-        options={{
-          ...sharedScreenOptions,
-          headerTitle: 'Profile',
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 6, marginRight: Platform.OS === 'android' ? 10 : 0, justifyContent: 'center', alignItems: 'center' }}>
-              <FontAwesome6
-                name="arrow-left"
-                size={Platform.OS === 'android' ? 20 : 24}
-                color={theme.colors.text.primary}
-              />
-            </TouchableOpacity>
-          ),
-        }}
-      />
-      <Stack.Screen
-        name="edit"
-        options={{
-          ...sharedScreenOptions,
-          headerTitle: 'Edit Profile',
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 6, marginRight: Platform.OS === 'android' ? 10 : 0, justifyContent: 'center', alignItems: 'center' }}>
-              <FontAwesome6
-                name="arrow-left"
-                size={Platform.OS === 'android' ? 20 : 24}
-                color={theme.colors.text.primary}
-              />
-            </TouchableOpacity>
-          ),
-        }}
-      />
+    <Stack screenOptions={sharedScreenOptions}>
+      <Stack.Screen name="index" options={{ headerTitle: "Profile" }} />
+      <Stack.Screen name="edit" options={{ headerTitle: "Edit Profile" }} />
+      <Stack.Screen name="users" options={{ headerTitle: "Find People" }} />
+      <Stack.Screen name="[uid]" options={{ headerTitle: "Profile" }} />
     </Stack>
   );
 };
 
-export default CoursesLayout;
+export default ProfileLayout;

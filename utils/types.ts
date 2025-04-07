@@ -1,7 +1,22 @@
+import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { LocationObject } from 'expo-location';
 
 export type CourseStatus = 'completed' | 'in progress' | 'unenrolled';
 export type ModuleStatus = 'completed' | 'in progress' | 'locked';
+
+export type Language = 'English' | 'Malay' | 'Tamil';
+
+export type Khutbah = {
+  id: string; // unique identifier
+  title: string;
+  date: string; // ISO format preferred (e.g. 2025-04-01)
+  links: {
+    [lang in Language]?: string; // language-specific PDF links
+  };
+  tags?: string[]; // Optional: For future filtering/search
+  speaker?: string; // Optional: If provided by MUIS
+  summary?: string;
+};
 
 export type Article = {
     id: string;
@@ -32,6 +47,7 @@ export type Event = {
     mosque?: string; // Optional if the event is in a mosque
     address: string;
     organizer: string;
+    organizerId?: string;
     livestreamAvailable: boolean;
     wheelchairAccessible: boolean;
     language: string;
@@ -58,6 +74,7 @@ export type Event = {
         email?: string;
         checkedIn: boolean;
         timestamp: string;
+        avatarUrl?: string;
       };
     };
 };  
@@ -144,7 +161,7 @@ export interface TeacherData {
     courses: string[];
 }
 
-export type UserRole = 'user' | 'admin'
+export type UserRole = 'user' | 'admin' | 'organizer'
 
 export interface UserData {
     id: string;
@@ -161,7 +178,21 @@ export interface UserData {
     referralCount?: number,
     interests?: string[];
     aboutMe?: string
+    followers?: { [userId: string]: boolean };
+    following?: { [userId: string]: boolean };
+    savedEvents?: string[];
 }
+
+export type Notification = {
+    id: string;
+    type: 'follow' | 'event_rsvp' | 'like' | 'comment'; // Customize as needed
+    message: string;
+    fromUserId: string;
+    senderName?: string;
+    avatarUrl?: string;
+    createdAt: FirebaseFirestoreTypes.Timestamp; // or firebase.firestore.Timestamp
+    read?: boolean;
+};
 
 export interface MusollahState {
     bidetLocations: BidetLocation[];
