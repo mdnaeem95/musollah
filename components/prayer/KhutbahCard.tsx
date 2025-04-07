@@ -103,6 +103,7 @@ const KhutbahCard = ({ khutbah }: Props) => {
 const createStyles = (theme: any) =>
   StyleSheet.create({
     card: {
+      marginHorizontal: 3,
       backgroundColor: theme.colors.secondary,
       borderRadius: theme.borderRadius.medium,
       padding: theme.spacing.medium,
