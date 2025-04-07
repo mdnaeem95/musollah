@@ -1,34 +1,57 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
+import { DrawerContentScrollView, DrawerItemList, DrawerItem } from '@react-navigation/drawer';
 import { Drawer } from 'expo-router/drawer';
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
+import { useAuth } from '../../../context/AuthContext';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../redux/store/store';
+import { useRouter } from 'expo-router';
+import { useNotification } from '../../../context/NotificationContext';
+import { CommonActions } from '@react-navigation/native';
 
 const CustomDrawerContent = (props: any) => {
   const { theme } = useTheme();
+  const { user: authUser } = useAuth();
+  const userState = useSelector((state: RootState) => state.user.user);
 
-  // Static user data for now (replace with dynamic user data later)
-  const user = {
-    name: "Naeem Sani",
-    avatar: `https://ui-avatars.com/api/?name=Naeem+Sani`,
-  };
+  const name = userState?.name || authUser?.displayName || "Guest";
+  const avatar = userState?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
 
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={{ flex: 1 }}>
       <View style={styles.profileContainer}>
-        <Image source={{ uri: user.avatar }} style={styles.avatar} />
-        <Text style={[styles.userName, { color: theme.colors.text.primary }]}>{user.name}</Text>
+        <Image source={{ uri: avatar }} style={styles.avatar} />
+        <Text style={[styles.userName, { color: theme.colors.text.primary }]}>{name}</Text>
       </View>
 
+      {/* Default drawer items */}
       <DrawerItemList {...props} />
+
+      {/* Force Events to reset to index */}
+      <DrawerItem
+        label="Events"
+        icon={({ color }) => <FontAwesome6 name="ticket" solid color={color} />}
+        onPress={() => {
+          props.navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: '(events)' }],
+            })
+          );
+        }}
+        labelStyle={{ color: theme.colors.text.primary }}
+      />
     </DrawerContentScrollView>
   );
 };
 
 const CommunityLayout = () => {
   const { theme } = useTheme();
+  const router = useRouter();
+  const { unreadCount } = useNotification();
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.colors.primary }}>
@@ -58,6 +81,30 @@ const CommunityLayout = () => {
             drawerLabel: 'Dashboard',
             title: 'Community',
             headerStyle: { backgroundColor: theme.colors.secondary },
+            headerRight: () => (
+              <TouchableOpacity onPress={() => router.push('/(community)/(events)/notifications')} style={{ marginRight: 16 }}>
+                <View>
+                  <FontAwesome6 name="bell" size={20} color={theme.colors.text.primary} />
+                  {unreadCount > 0 && (
+                    <View
+                      style={{
+                        position: 'absolute',
+                        right: -6,
+                        top: -4,
+                        backgroundColor: theme.colors.accent || 'red',
+                        width: 16,
+                        height: 16,
+                        borderRadius: 8,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ color: 'white', fontSize: 10, fontFamily: 'Outfit_700Bold' }}>{unreadCount}</Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ),
             drawerIcon: ({ color }) => <FontAwesome6 name="house" color={color} />,
           }}
         />
@@ -75,9 +122,9 @@ const CommunityLayout = () => {
           name="(events)"
           options={{
             headerShown: false,
-            drawerLabel: 'Events',
+            drawerLabel: () => null, // hide from default drawer since we added custom item
             title: 'Events',
-            drawerIcon: ({ color }) => <FontAwesome6 name="ticket" solid color={color} />,
+            drawerItemStyle: { height: 0 }, // also hide from layout
           }}
         />
       </Drawer>
@@ -86,20 +133,20 @@ const CommunityLayout = () => {
 };
 
 const styles = StyleSheet.create({
-    profileContainer: {
-        alignItems: 'center',
-        paddingVertical: 30,
-    },
-        avatar: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        marginBottom: 10,
-    },
-        userName: {
-        fontSize: 18,
-        fontFamily: 'Outfit_700Bold',
-    },
+  profileContainer: {
+    alignItems: 'center',
+    paddingVertical: 30,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 10,
+  },
+  userName: {
+    fontSize: 18,
+    fontFamily: 'Outfit_700Bold',
+  },
 });
 
 export default CommunityLayout;

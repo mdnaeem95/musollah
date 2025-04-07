@@ -64,12 +64,12 @@ const EducationLayout = () => {
           }}
         />
         <Drawer.Screen
-          name="profile"
+          name="bookmarks"
           options={{
             headerShown: false,
-            drawerLabel: 'Profile',
-            title: 'Profile',
-            drawerIcon: ({ color }) => <FontAwesome6 name="user" solid color={color} />,
+            drawerLabel: 'Bookmarks',
+            title: 'Bookmarks',
+            drawerIcon: ({ color }) => <FontAwesome6 name="bookmark" color={color} />,
           }}
         />
       </Drawer>

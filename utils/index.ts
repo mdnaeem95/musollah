@@ -117,7 +117,7 @@ export const extractNextDaysPrayerTimes = (
 
   monthlyPrayerTimes.forEach((item) => {
     try {
-      console.log("Processing Prayer Data Item:", item);
+      // console.log("Processing Prayer Data Item:", item);
 
       // ✅ Correctly format the stored Firebase date format (d/M/yyyy)
       const itemDateStr = `${item.date}/3/2025`; // Ensure it has the full year
@@ -129,7 +129,7 @@ export const extractNextDaysPrayerTimes = (
       if (itemDate >= today && itemDate <= endDate) {
         const dateKey = format(itemDate, "d/M/yyyy"); // Ensure it matches Firebase format
 
-        console.log("✅ Valid Date Added:", dateKey, item);
+        // console.log("✅ Valid Date Added:", dateKey, item);
 
         result[dateKey] = {
           Subuh: item.subuh,
@@ -140,14 +140,14 @@ export const extractNextDaysPrayerTimes = (
           Isyak: item.isyak,
         };
       } else {
-        console.warn("⏩ Skipping out-of-range date:", itemDate.toISOString());
+        // console.warn("⏩ Skipping out-of-range date:", itemDate.toISOString());
       }
     } catch (error) {
       console.error("❌ Error processing item:", item, error);
     }
   });
 
-  console.log("🔍 Final Extracted Prayer Times:", result);
+  // console.log("🔍 Final Extracted Prayer Times:", result);
   return result;
 };
 

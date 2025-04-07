@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Alert } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../../../redux/store/store';
 import { useFocusEffect } from 'expo-router';
@@ -8,11 +8,15 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { startOfWeek, format, subDays, addDays } from 'date-fns';
 import SignInModal from '../../../../components/SignInModal';
 import { getAuth } from '@react-native-firebase/auth';
-import { getShortFormattedDate, shakeButton } from '../../../../utils';
+import { shakeButton } from '../../../../utils';
 import { usePrayerStreakManager } from '../../../../hooks/usePrayerStreakManager'
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Skeleton } from 'moti/skeleton';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../../../../context/ThemeContext';
+import { getCurrentDayIndex, goToPreviousDay, goToNextDay, isToday, isSameDate } from '../../../../utils/prayers/dates';
+import { getPrayerAvailability } from '../../../../utils/prayers/logging';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../../redux/store/store';
 
 export type PrayerLog = {
   Subuh: boolean;
@@ -22,8 +26,33 @@ export type PrayerLog = {
   Isyak: boolean;
 };
 
+const prayerColors = {
+  Subuh: {
+    light: '#DCEFFB',
+    dark: '#1E2A36', // dark navy blue
+  },
+  Zohor: {
+    light: '#FFF4D6',
+    dark: '#332B1E', // earthy brown
+  },
+  Asar: {
+    light: '#FFE3C8',
+    dark: '#3A2A22', // warm amber-brown
+  },
+  Maghrib: {
+    light: '#F9D0D3',
+    dark: '#3A1F24', // dusky rose
+  },
+  Isyak: {
+    light: '#D7D3F9',
+    dark: '#272547', // deep indigo
+  },
+};
+
+
 const PrayersDashboard = () => {
-  const { theme } = useTheme();
+  const { prayerTimes } = useSelector((state: RootState) => state.prayer);
+  const { theme, isDarkMode } = useTheme();
   const styles = createStyles(theme);
 
   // State and Redux
@@ -47,12 +76,28 @@ const PrayersDashboard = () => {
 
   // animations
   const shakeAnimation = useRef(new Animated.Value(0)).current;
+  const toggleScale = useRef(new Animated.Value(1)).current;
+
+  const playToggleAnimation = () => {
+    toggleScale.setValue(1);
+    Animated.sequence([
+      Animated.timing(toggleScale, {
+        toValue: 1.4,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(toggleScale, {
+        toValue: 1,
+        friction: 4,
+        tension: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };  
 
   // constants
   const prayerSessions = ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const currentDate = new Date();
-  const shortFormattedDate = getShortFormattedDate(currentDate);
 
   // streak hook
   const streakInfo = usePrayerStreakManager(weeklyLogs, currentUser?.uid!);
@@ -64,42 +109,23 @@ const PrayersDashboard = () => {
     return weeklyLogs[date]?.[session] || false;
   };
 
-  const getCurrentDayIndex = () => {
-    const today = new Date();
-    const dayIndex = today.getDay() - 1; // Adjust so that 0 = Monday
-    return dayIndex < 0 ? 6 : dayIndex; // Wrap around for Sunday as the last index
-  };
-
   const currentDayIndex = getCurrentDayIndex();
+  console.log(selectedDate, new Date())
 
-  // fetch prayer session avalability
-  const checkPrayerPassed = async () => {
-    try {
-
-      const prayerSessionTimes = await AsyncStorage.getItem(`prayers_${shortFormattedDate}`);
-      const prayerSessionTimesData = JSON.parse(prayerSessionTimes!);
-      
-      if (!prayerSessionTimesData) return;
-      
-      const currentTime = new Date();  
-      // Convert prayer times to comparable Date objects
-      return Object.entries(prayerSessionTimesData.prayerTimes).map(([prayer, time]) => {
-        //@ts-ignore
-        const [hour, minute] = time.split(":").map(Number);
-        const prayerDate = new Date();
-        prayerDate.setHours(hour, minute, 0, 0);
-        return { prayer, isAvailable: currentTime >= prayerDate };
-      });
-    } catch (error) {
-      console.error('Error checking prayer availability: ', error);
-      return [];
+  useEffect(() => {
+    if (prayerTimes && isSameDate(selectedDate, new Date())) {
+      const availability = getPrayerAvailability(prayerTimes);
+      setToggablePrayers(availability);
+    } else {
+      // 🧼 Clear it out to avoid stale toggles affecting other days
+      setToggablePrayers(undefined);
     }
-  };
+  }, [prayerTimes, selectedDate]);
+   
   
   // useFocusEffect to fetch logs whenever the page is focused
   useFocusEffect(
     useCallback(() => {
-      checkPrayerPassed();
       if (currentUser) {
         fetchLogsForDate(selectedDate);
         // dispatch(fetchGamificationState(currentUser.uid))
@@ -117,14 +143,17 @@ const PrayersDashboard = () => {
         dispatch(fetchWeeklyPrayerLogs({ startDate, endDate }))
           .unwrap()
           .then(setWeeklyLogs)
-          .catch((error) => console.error('Error fetching weekly prayer logs:', error));
+          .catch((error) => {
+            console.error('Error fetching weekly prayer logs:', error)
+            Toast.show({
+              type: 'error',
+              text1: 'Failed to fetch weekly prayer logs.',
+              text2: 'Please check your connection or try again later.',
+            });
+          })
       }
     }, [dispatch])
   );
-
-  useEffect(() => {
-    checkPrayerPassed().then(setToggablePrayers);
-  }, []);
 
   // Update this function to fetch logs for a specific date
   const fetchLogsForDate = async (date: Date) => {
@@ -133,15 +162,20 @@ const PrayersDashboard = () => {
       setTodayLogs(result.prayerLog || {})
     } catch (error) {
       console.error('Error fetching prayer logs for selected date:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to load logs for this date.',
+      });
     }
   };
 
   const handleTogglePrayer = async (prayer: string) => {
     const auth = getAuth();
     const currentUser = auth.currentUser;
+    const isTodaySelected = isSameDate(selectedDate, new Date());
 
     // Check if prayer is available
-    const isAvailable = toggablePrayers?.find((item) => item.prayer === prayer)?.isAvailable;
+    const isAvailable = !isTodaySelected || toggablePrayers?.find((item) => item.prayer === prayer)?.isAvailable;
     if (!isAvailable) { 
       shakeButton(shakeAnimation);
 
@@ -170,6 +204,7 @@ const PrayersDashboard = () => {
         [formattedDate]: updatedLogs,
       }));
 
+      playToggleAnimation();
       setTodayLogs(updatedLogs);
       try {
         await dispatch(
@@ -181,7 +216,11 @@ const PrayersDashboard = () => {
         ).unwrap();
       } catch (error) {
         console.error('Error saving prayer log:', error);
-        Alert.alert('Error', 'Failed to save prayer log. Please try again.');
+        Toast.show({
+          type: 'error',
+          text1: `Couldn’t save log for ${prayer}`,
+          text2: 'Please try again shortly.',
+        });
       }
     } else {
       Alert.alert(
@@ -195,28 +234,24 @@ const PrayersDashboard = () => {
     }
   };
 
-  // Function to navigate to the previous day
   const handlePreviousDay = () => {
-    const newDate = subDays(selectedDate, 1);
+    const newDate = goToPreviousDay(selectedDate);
     setSelectedDate(newDate);
     fetchLogsForDate(newDate);
   };
-
-  // Function to navigate to the next day
+  
   const handleNextDay = () => {
-    if (selectedDate.toDateString() === currentDate.toDateString()) {
-      return; // Prevent navigating beyond today
-    }
-    const newDate = addDays(selectedDate, 1);
+    if (isToday(selectedDate)) return;
+    const newDate = goToNextDay(selectedDate);
     setSelectedDate(newDate);
     fetchLogsForDate(newDate);
-  };
+  };  
 
   const renderFlames = () => {
     const { current } = streakInfo;
-    console.log('Current streak: ', current);
+    // console.log('Current streak: ', current);
     const flames = Array.from({ length: 7 }, (_, index) => (
-      <FontAwesome6 
+      <FontAwesome6
         key={index}
         name="person-praying"
         size={24}
@@ -231,7 +266,32 @@ const PrayersDashboard = () => {
   return (
     <View style={[styles.safeArea, { backgroundColor: theme.colors.primary }]}>
       {loading ? (
-        <ActivityIndicator size="large" color={theme.colors.text.muted} />
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 24 }}>
+        {/* Date skeletons */}
+        <Skeleton width="60%" height={24} radius="round" colorMode={isDarkMode ? 'dark' : 'light'} />
+        <Skeleton width="40%" height={18} radius="round" colorMode={isDarkMode ? 'dark' : 'light'} />
+
+        {/* Prayer toggle rows */}
+        {['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'].map((_, i) => (
+          <Skeleton key={i} height={48} radius={12} colorMode={isDarkMode ? 'dark' : 'light'} />
+        ))}
+
+        {/* Weekly Log header */}
+        <Skeleton width="50%" height={20} radius="round" colorMode={isDarkMode ? 'dark' : 'light'} />
+
+        {/* Calendar rows */}
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} height={20} radius="round" colorMode={isDarkMode ? 'dark' : 'light'} />
+        ))}
+
+        {/* Streak section */}
+        <Skeleton width="40%" height={20} radius="round" colorMode={isDarkMode ? 'dark' : 'light'} />
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10 }}>
+          {Array.from({ length: 7 }).map((_, i) => (
+            <Skeleton key={i} width={30} height={30} radius="round" colorMode={isDarkMode ? 'dark' : 'light'} />
+          ))}
+        </View>
+        </ScrollView>
       ) : (
         <>
           <ScrollView showsVerticalScrollIndicator={false}>
@@ -256,11 +316,18 @@ const PrayersDashboard = () => {
 
               {/* Display each prayer session in its own container */}
               {prayerSessions.map((prayer) => {
+                //@ts-ignore
+                const bgColor = prayerColors[prayer][isDarkMode ? 'dark' : 'light'];
+                const isAvailable = toggablePrayers?.find(p => p.prayer === prayer)?.isAvailable;
                 return (
                   <View 
                     key={prayer}
-                    //@ts-ignore
-                    style={[styles.prayerContainer, { backgroundColor: theme.colors.secondary }, !todayLogs[prayer] && styles.inactivePrayerContainer ]}
+                    style={[
+                      styles.prayerContainer,
+                      {backgroundColor: isAvailable ? bgColor : `${bgColor}99` },
+                      //@ts-ignore
+                      !todayLogs[prayer] && styles.inactivePrayerContainer,
+                    ]}                    
                   >
                     <Text
                       //@ts-ignore
@@ -268,7 +335,7 @@ const PrayersDashboard = () => {
                     >
                       {prayer}
                     </Text>
-                    <Animated.View style={{ transform: [{ translateX: shakeAnimation }] }}>
+                    <Animated.View style={{ transform: [{ scale: toggleScale }, { translateX: shakeAnimation }] }}>
                       <TouchableOpacity onPress={() => handleTogglePrayer(prayer)}>
                         {todayLogs[prayer] ? (
                           <FontAwesome6 name="check" color="#A3C0BB" size={22} />
@@ -407,7 +474,7 @@ const createStyles = (theme: any) =>
     width: 60, // Fixed width for alignment with daily columns
     fontSize: 14,
     fontFamily: 'Outfit_600SemiBold',
-    color: '#ECDFCC',
+    color: theme.colors.text.primary,
     textAlign: 'center',
   },
   cell: {

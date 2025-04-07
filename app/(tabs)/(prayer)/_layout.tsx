@@ -62,6 +62,12 @@ const PrayerLayout = () => {
           title: 'Prayer Dashboard',
         }}
       />
+      <Stack.Screen
+        name="khutbah/index"
+        options={{
+          title: 'Friday Prayer Sermons',
+        }}
+      />
     </Stack>
   );
 };

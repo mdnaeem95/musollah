@@ -98,7 +98,8 @@ const ArticleDetailScreen = () => {
             <FontAwesome6 
               name="heart" 
               size={20} 
-              color={user && article.likes.includes(user.uid) ? 'red' : theme.colors.text.muted} 
+              color={user && article.likes.includes(user.uid) ? 'red' : theme.colors.text.muted}
+              solid={user && article.likes.includes(user.uid)}
             />
             <Text style={{ color: theme.colors.text.muted, marginLeft: 6, fontSize: 14 }}>{article.likes.length}</Text>
           </TouchableOpacity>
@@ -108,7 +109,8 @@ const ArticleDetailScreen = () => {
             <FontAwesome6 
               name="bookmark" 
               size={20} 
-              color={user && article.bookmarks.includes(user.uid) ? theme.colors.accent : theme.colors.text.muted} 
+              color={user && article.bookmarks.includes(user.uid) ? theme.colors.accent : theme.colors.text.muted}
+              solid={user && article.bookmarks.includes(user.uid)}
             />
             <Text style={{ color: theme.colors.text.muted, marginLeft: 6, fontSize: 14 }}>Bookmark</Text>
           </TouchableOpacity>

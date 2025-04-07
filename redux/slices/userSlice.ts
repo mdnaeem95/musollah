@@ -72,6 +72,9 @@ export const signUp = createAsyncThunk(
         referralCount: 0,
         aboutMe: '',
         interests: [],
+        followers: {},
+        following: {},
+        savedEvents: [],
         createdAt: firestore.FieldValue.serverTimestamp(),
     });
 
@@ -116,7 +119,10 @@ export const fetchUser = createAsyncThunk(
         role: userData?.role || 'user',
         likedQuestions: userData?.likedQuestions || [],
         aboutMe: userData?.aboutMe || '',
-        interests: userData?.interest || []
+        interests: userData?.interests || [],
+        followers: userData?.followers || {},
+        following: userData?.following || {},
+        savedEvents: userData?.savedEvents || []
       };
     } catch (error: any) {
       console.error('Failed to fetch user data:', error);

@@ -105,7 +105,7 @@ const Appearance = () => {
         </View>
 
         {/* Ramadan Mode Toggle */}
-        <View style={styles.settingsField}>
+        {/* <View style={styles.settingsField}>
           <Text style={styles.darkModeLabel}>Ramadan Mode</Text>
           <Switch
             value={isRamadanMode}
@@ -116,7 +116,7 @@ const Appearance = () => {
             }}
             thumbColor={isRamadanMode ? theme.colors.primary : theme.colors.secondary}
           />
-        </View>
+        </View> */}
       </View>
     </View>
   );

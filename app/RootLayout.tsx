@@ -20,6 +20,7 @@ import { playbackService } from '../constants/playbackService';
 import mobileAds from 'react-native-google-mobile-ads';
 import { getTrackingPermissionsAsync, PermissionStatus, requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import { registerForPushNotificationsAsync } from '../utils/registerForPushNotificationsAsync';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 if (AppState.currentState === 'active') {
   SplashScreen.preventAutoHideAsync();
@@ -155,13 +156,15 @@ const RootLayout = () => {
   
   // Main app layout after authentication and data fetch
   return (
-    <View style={{ flex: 1 }}>
-      {/* SplashScreen */}
-      <Animated.View style={[styles.splashScreen, animatedSplashStyle]} />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
-      </Stack>
-    </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
+        {/* SplashScreen */}
+        <Animated.View style={[styles.splashScreen, animatedSplashStyle]} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
+        </Stack>
+      </View>
+    </GestureHandlerRootView>
   );
 }
 

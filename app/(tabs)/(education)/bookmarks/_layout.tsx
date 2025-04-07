@@ -4,7 +4,7 @@ import React from "react";
 import { TouchableOpacity } from "react-native";
 import { useTheme } from "../../../../context/ThemeContext";
 
-const ProfileLayout = () => {
+const BookmarksLayout = () => {
   const router = useRouter();
   const { theme } = useTheme();
 
@@ -18,18 +18,17 @@ const ProfileLayout = () => {
         name="index"
         options={{
           headerShown: true,
-          headerTitle: "Profile",
+          headerTitle: "Bookmarks",
           headerStyle: {
             backgroundColor: theme.colors.primary,
           },
-          headerTintColor: theme.colors.text.primary,
           headerTitleStyle: {
             fontFamily: "Outfit_700Bold",
             fontSize: 20,
             color: theme.colors.text.primary,
           },
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 6 }}>
+            <TouchableOpacity onPress={() => router.push('/dashboard')} style={{ paddingLeft: 8 }}>
               <FontAwesome6
                 name="arrow-left"
                 size={24}
@@ -43,4 +42,4 @@ const ProfileLayout = () => {
   );
 };
 
-export default ProfileLayout;
+export default BookmarksLayout;

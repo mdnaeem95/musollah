@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../../../redux/store/store';
@@ -8,16 +8,12 @@ import { getAuth } from '@react-native-firebase/auth';
 import { CourseAndModuleProgress, CourseData, ModuleData } from '../../../../../../utils/types';
 import PagerView from 'react-native-pager-view';
 import { useTheme } from '../../../../../../context/ThemeContext';
-
-type Params = {
-  courseId: string;
-  moduleId: string;
-};
+import { MotiView } from 'moti';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const ModuleDetails = () => {
-  const { courseId, moduleId } = useLocalSearchParams<Params>();
+  const { courseId, moduleId } = useLocalSearchParams();
   const router = useRouter();
   const navigation = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
@@ -37,13 +33,9 @@ const ModuleDetails = () => {
     state.dashboard.user?.enrolledCourses.find((p) => p.courseId === courseId),
   );
 
-  const onPageSelected = (event: any) => {
-    setCurrentIndex(event.nativeEvent.position);
-  };
-
   useEffect(() => {
     if (course) {
-      const module = course.modules.find((m: any) => m.moduleId === moduleId);
+      const module = course.modules.find((m) => m.moduleId === moduleId);
       if (module) {
         setModuleData(module);
       }
@@ -59,14 +51,14 @@ const ModuleDetails = () => {
   const handleCompleteModule = async () => {
     if (courseId && moduleId && userId && userProgress) {
       try {
+        //@ts-ignore
         const moduleProgress = userProgress.status.modules[moduleId];
-        if (!moduleProgress) {
-          throw new Error('Module progress not found.');
-        }
+        if (!moduleProgress) throw new Error('Module progress not found.');
 
+        //@ts-ignore
         await dispatch(completeModule({ courseId, moduleId, userId })).unwrap();
 
-        const currentModuleIndex = course?.modules.findIndex((m: any) => m.moduleId === moduleId);
+        const currentModuleIndex = course?.modules.findIndex((m) => m.moduleId === moduleId);
 
         if (currentModuleIndex !== undefined && currentModuleIndex < course!.modules.length - 1) {
           const nextModule = course!.modules[currentModuleIndex + 1];
@@ -83,34 +75,26 @@ const ModuleDetails = () => {
 
   if (!moduleData) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.primary }]}>
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.primary }]}>        
         <Text style={{ color: theme.colors.text.primary }}>Loading...</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
-      <PagerView
-        style={styles.pagerView}
-        initialPage={0}
-        onPageSelected={onPageSelected}
-      >
+    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>      
+      <PagerView style={styles.pagerView} initialPage={0} onPageSelected={(e) => setCurrentIndex(e.nativeEvent.position)}>
         {moduleData.content.map((contentItem, index) => (
-          <View
+          <MotiView
             key={index}
-            style={[
-              styles.page,
-              { backgroundColor: theme.colors.primary },
-            ]}
+            from={{ opacity: 0, translateY: 15 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ delay: 50 * index }}
+            style={[styles.page, { backgroundColor: theme.colors.primary }]}
           >
-            <Text style={[styles.contentTitle, { color: theme.colors.text.primary }]}>
-              {contentItem.title}
-            </Text>
-            <Text style={[styles.textContent, { color: theme.colors.text.secondary }]}>
-              {contentItem.data}
-            </Text>
-          </View>
+            <Text style={[styles.contentTitle, { color: theme.colors.text.primary }]}>{contentItem.title}</Text>
+            <Text style={[styles.textContent, { color: theme.colors.text.secondary }]}>{contentItem.data}</Text>
+          </MotiView>
         ))}
       </PagerView>
 
@@ -126,17 +110,18 @@ const ModuleDetails = () => {
         ))}
       </View>
 
-      <TouchableOpacity
-        style={[
-          styles.completeButton,
-          { backgroundColor: theme.colors.text.success },
-        ]}
-        onPress={handleCompleteModule}
+      <MotiView
+        from={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: 'timing', delay: 100 }}
       >
-        <Text style={[styles.completeButtonText, { color: theme.colors.text.primary }]}>
-          Complete Module
-        </Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.completeButton, { backgroundColor: theme.colors.text.success }]}
+          onPress={handleCompleteModule}
+        >
+          <Text style={[styles.completeButtonText, { color: theme.colors.text.primary }]}>Complete Module</Text>
+        </TouchableOpacity>
+      </MotiView>
     </View>
   );
 };

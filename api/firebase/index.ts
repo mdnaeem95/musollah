@@ -633,11 +633,11 @@ export const fetchPrayerTimes2025 = async (): Promise<PrayerTimes2025[]> => {
         // Check if already cached
         const cachedData = await AsyncStorage.getItem(PRAYER_TIMES_CACHE_KEY);
         if (cachedData) {
-            console.log('✅ Using cached prayer times list...');
+            // console.log('✅ Using cached prayer times list...');
             return JSON.parse(cachedData);
         }
 
-        console.log('🔥 Fetching full prayer list from Firebase...');
+        // console.log('🔥 Fetching full prayer list from Firebase...');
         const prayerTimesSnapshot = await firestore().collection('prayerTimes2025').get();
       
         const prayerTimesList = prayerTimesSnapshot.docs.map(doc => {

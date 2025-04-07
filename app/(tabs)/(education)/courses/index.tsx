@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  TextInput
+} from 'react-native';
 import { Divider } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../../redux/store/store';
@@ -9,6 +16,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { CheckBox } from '@rneui/base';
 import { FlashList } from '@shopify/flash-list';
 import { useTheme } from '../../../../context/ThemeContext';
+import { MotiView, AnimatePresence } from 'moti';
 
 const categories = [
   { title: 'All Courses' },
@@ -21,16 +29,13 @@ const categories = [
 
 const Courses = () => {
   const { theme } = useTheme();
-
   const { courses } = useSelector((state: RootState) => state.dashboard);
-  const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
-  const [isFilterModalVisible, setIsFilterModalVisible] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
-  const [selectedTypes, setSelectedTypes] = useState({
-    'Online': true,
-    'Physical': false,
-  });
+
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debounceQuery, setDebounceQuery] = useState(searchQuery);
+  const [selectedTypes, setSelectedTypes] = useState({ Online: true, Physical: false });
   const [selectedCategories, setSelectedCategories] = useState({
     'All Courses': true,
     'Prayers': false,
@@ -41,24 +46,13 @@ const Courses = () => {
   });
 
   const handleTypeSelection = (type: string) => {
-    setSelectedTypes((prev: any) => ({
-      ...prev,
-      [type]: !prev[type],
-    }));
+    //@ts-ignore
+    setSelectedTypes((prev) => ({ ...prev, [type]: !prev[type] }));
   };
 
   const handleCategorySelection = (category: string) => {
-    setSelectedCategories((prev: any) => ({
-      ...prev,
-      [category]: !prev[category],
-    }));
-  };
-
-  const handleSearchChange = (query: string) => setSearchQuery(query);
-
-  const toggleSearch = () => {
-    setIsSearchExpanded(!isSearchExpanded);
-    if (isSearchExpanded) setSearchQuery('');
+    //@ts-ignore
+    setSelectedCategories((prev) => ({ ...prev, [category]: !prev[category] }));
   };
 
   useEffect(() => {
@@ -66,41 +60,44 @@ const Courses = () => {
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
+  const toggleSearch = () => {
+    setIsSearchExpanded(!isSearchExpanded);
+    if (isSearchExpanded) setSearchQuery('');
+  };
+
   const toggleFilterModal = () => setIsFilterModalVisible(!isFilterModalVisible);
 
   const filteredCourses = courses.filter((course) => {
     //@ts-ignore
     const matchesCategory = selectedCategories['All Courses'] || selectedCategories[course.category];
     const matchesType = selectedTypes[course.type === 'online' ? 'Online' : 'Physical'];
-    const matchesSearchQuery =
-      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.description.toLowerCase().includes(searchQuery.toLowerCase());
-
-    return matchesCategory && matchesType && matchesSearchQuery;
+    const matchesSearch =
+      course.title.toLowerCase().includes(debounceQuery.toLowerCase()) ||
+      course.description.toLowerCase().includes(debounceQuery.toLowerCase());
+    return matchesCategory && matchesType && matchesSearch;
   });
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>      
       <View style={styles.headerContainer}>
-        {isSearchExpanded && (
-          <View
-            style={[
-              styles.searchBarContainer,
-              { backgroundColor: theme.colors.secondary },
-            ]}
-          >
-            <TextInput
-              placeholder="Search Course"
-              placeholderTextColor={theme.colors.text.secondary}
-              style={[
-                styles.searchInput,
-                { color: theme.colors.text.primary },
-              ]}
-              value={searchQuery}
-              onChangeText={handleSearchChange}
-            />
-          </View>
-        )}
+        <AnimatePresence>
+          {isSearchExpanded && (
+            <MotiView
+              from={{ opacity: 0, translateY: -10 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              exit={{ opacity: 0, translateY: -10 }}
+              style={[styles.searchBarContainer, { backgroundColor: theme.colors.secondary }]}
+            >
+              <TextInput
+                placeholder="Search Course"
+                placeholderTextColor={theme.colors.text.secondary}
+                style={[styles.searchInput, { color: theme.colors.text.primary }]}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </MotiView>
+          )}
+        </AnimatePresence>
         <TouchableOpacity onPress={toggleSearch} style={styles.searchIconContainer}>
           <FontAwesome6
             name={isSearchExpanded ? 'xmark' : 'magnifying-glass'}
@@ -114,47 +111,31 @@ const Courses = () => {
         style={[styles.filterButton, { backgroundColor: theme.colors.accent }]}
         onPress={toggleFilterModal}
       >
-        <Text
-          style={[
-            styles.filterButtonText,
-            { color: theme.colors.text.primary },
-          ]}
-        >
-          Filter Courses
-        </Text>
+        <Text style={[styles.filterButtonText, { color: theme.colors.text.primary }]}>Filter Courses</Text>
       </TouchableOpacity>
 
-      <Modal visible={isFilterModalVisible} transparent animationType="slide">
-        <View
-          style={[
-            styles.modalContainer,
-            { backgroundColor: theme.colors.modalBackground },
-          ]}
+      <Modal visible={isFilterModalVisible} transparent animationType="fade">
+        <MotiView
+          from={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={[styles.modalContainer, { backgroundColor: theme.colors.modalBackground }]}
         >
-          <View
-            style={[
-              styles.modalContent,
-              { backgroundColor: theme.colors.secondary },
-            ]}
+          <MotiView
+            from={{ opacity: 0, translateY: 30 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            exit={{ opacity: 0, translateY: 30 }}
+            style={[styles.modalContent, { backgroundColor: theme.colors.secondary }]}
           >
             <View style={styles.modalHeaderContainer}>
               <TouchableOpacity onPress={toggleFilterModal}>
                 <FontAwesome6 name="xmark" size={20} color={theme.colors.text.primary} />
               </TouchableOpacity>
-              <Text
-                style={[
-                  styles.modalHeader,
-                  { color: theme.colors.text.primary },
-                ]}
-              >
-                Filter Courses
-              </Text>
+              <Text style={[styles.modalHeader, { color: theme.colors.text.primary }]}>Filter Courses</Text>
               <View style={{ width: 20, height: 20 }} />
             </View>
 
-            <Text style={[styles.filterLabel, { color: theme.colors.text.primary }]}>
-              Course Type
-            </Text>
+            <Text style={[styles.filterLabel, { color: theme.colors.text.primary }]}>Course Type</Text>
             <View style={styles.optionContainer}>
               <CheckBox
                 title="Online"
@@ -172,41 +153,29 @@ const Courses = () => {
               />
             </View>
 
-            <Text style={[styles.filterLabel, { color: theme.colors.text.primary }]}>
-              Category
-            </Text>
+            <Text style={[styles.filterLabel, { color: theme.colors.text.primary }]}>Category</Text>
             <View style={styles.optionContainer}>
-              {categories.map((category: any) => (
+              {categories.map(({ title }) => (
                 <CheckBox
-                  key={category.title}
-                  title={category.title}
+                  key={title}
                   //@ts-ignore
-                  checked={selectedCategories[category.title]}
+                  checked={selectedCategories[title]}
+                  title={title}
                   containerStyle={{ backgroundColor: theme.colors.secondary }}
                   textStyle={{ color: theme.colors.text.primary }}
-                  onPress={() => handleCategorySelection(category.title)}
+                  onPress={() => handleCategorySelection(title)}
                 />
               ))}
             </View>
 
             <TouchableOpacity
-              style={[
-                styles.applyButton,
-                { backgroundColor: theme.colors.accent },
-              ]}
+              style={[styles.applyButton, { backgroundColor: theme.colors.accent }]}
               onPress={() => setIsFilterModalVisible(false)}
             >
-              <Text
-                style={[
-                  styles.applyButtonText,
-                  { color: theme.colors.text.primary },
-                ]}
-              >
-                Apply Filters
-              </Text>
+              <Text style={[styles.applyButtonText, { color: theme.colors.text.primary }]}>Apply Filters</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </MotiView>
+        </MotiView>
       </Modal>
 
       <Divider style={{ marginVertical: 10 }} />
@@ -214,15 +183,21 @@ const Courses = () => {
       <FlashList
         estimatedItemSize={108}
         data={filteredCourses}
-        renderItem={({ item }: { item: CourseData }) => (
-          <CourseCard
-            id={item.id}
-            title={item.title}
-            description={item.description}
-            category={item.category}
-            icon={item.icon}
-            backgroundColour={item.backgroundColour}
-          />
+        renderItem={({ item, index }) => (
+          <MotiView
+            from={{ opacity: 0, translateY: 20 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ delay: index * 50 }}
+          >
+            <CourseCard
+              id={item.id}
+              title={item.title}
+              description={item.description}
+              category={item.category}
+              icon={item.icon}
+              backgroundColour={item.backgroundColour}
+            />
+          </MotiView>
         )}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
@@ -313,6 +288,5 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_400Regular',
   },
 });
-
 
 export default Courses;

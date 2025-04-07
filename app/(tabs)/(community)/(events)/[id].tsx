@@ -1,16 +1,23 @@
 import React, { useRef, useState } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, StatusBar, Animated, Modal, Linking, Alert, ActivityIndicator, Share } from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity, StatusBar, Animated, Modal, Linking, Alert, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useTheme } from "../../../../context/ThemeContext";
 import { CircleButton } from "../../(food)/_layout";
-import { useSelector } from "react-redux";
-import { RootState } from "../../../../redux/store/store";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../../../../redux/store/store";
 import { downloadImage } from "../../../../utils";
 import { MotiView } from "moti";
 import { fadeInUp } from "../../../../utils/animations";
-import { markExternalInterest } from "../../../../api/firebase/events";
+import { confirmExternalAttendance, markExternalInterest, toggleEventInterest } from "../../../../api/firebase/events";
 import { useAuth } from "../../../../context/AuthContext";
+import { fetchEvents } from "../../../../redux/slices/eventsSlice";
+import SignInModal from "../../../../components/SignInModal";
+import InviteFriendsModal from "../../../../components/community/InviteModal";
+import Toast from "react-native-toast-message";
+import { inviteUsersToEvent } from "../../../../api/firebase/community";
+import { UserData } from "../../../../utils/types";
+import OrganizerSection from "../../../../components/community/OrganizerSection";
 
 const HERO_IMAGE_HEIGHT = 250;
 const HEADER_HEIGHT = 60;
@@ -18,16 +25,41 @@ const statusBarHeight = (StatusBar.currentHeight || 24) + 20;
 
 const EventDetails = () => {
   const { user } = useAuth();
-  const userId = user?.uid!;
+  const currentUser = useSelector((state: RootState) => state.user.user);
   const { theme } = useTheme();
-  const styles = createStyles(theme);
-  const router = useRouter();
   const { id } = useLocalSearchParams();
+
+  const styles = createStyles(theme);
+  const dispatch = useDispatch<AppDispatch>()
+  const router = useRouter();
   const event = useSelector((state: RootState) => state.events.events.find(e => e.id === id));
   const scrollY = useRef(new Animated.Value(0)).current
+  const userId = user?.uid!;
+
+  const hasClickedRegister = !!event?.interested?.[userId]?.clickedRegistration;
+  const isExternalOpen = event?.isExternal && event?.eventType === "Open" && event?.registrationLink === "";
+  const isRegistrationEvent = event?.eventType === "Registration" && !(event?.registrationLink === "")
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [clickedRegister, setClickedRegister] = useState(hasClickedRegister);
+  const [localConfirmed, setLocalConfirmed] = useState(
+    !!event?.attendees?.[userId]
+  );
   const [isDownloading, setIsDownloading] = useState(false);
+  const [interested, setInterested] = useState<boolean>(!!event?.interested?.[userId]);
+  const [isAuthModalVisible, setIsAuthModalVisible] = useState(false)
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
+
+  const handleConfirmAttendance = async () => {
+    try {
+      await confirmExternalAttendance(event!.id);
+      setLocalConfirmed(true);         // ✅ Instant UI feedback
+      dispatch(fetchEvents());         // 🔁 Refresh backend snapshot
+      Alert.alert("🎉 You're marked as attending!");
+    } catch {
+      Alert.alert("Error", "Failed to confirm registration.");
+    }
+  };  
 
   const openImageViewer = (images: string) => {
     setSelectedImage(images);
@@ -37,23 +69,81 @@ const EventDetails = () => {
     setSelectedImage(null);
   };
 
-  const shareEvent = () => {
-    if (!event) return;
+  const handleInterestToggle = async () => {
+    if (!user) {
+      Alert.alert(
+          'Sign In Required',
+          'You need to sign in to save favourites.',
+          [
+              { text: 'Cancel', style: 'cancel'},
+              {
+                  text: 'Sign In',
+                  onPress: () => setIsAuthModalVisible(true)
+              }
+          ]
+      );
+      return;
+    }
 
-    Share.share({
-      title: event.name,
-      message: `Check out ${event.name} on ${event.date} at ${event.venue}. ${event.registrationLink || ''}`
-    });
-  };
+    const updatedInterest = await toggleEventInterest(event!.id);
+    setInterested(updatedInterest);
+  }
 
   const handleExternalRegister = async () => {
+    if (!user) {
+      Alert.alert(
+          'Sign In Required',
+          'You need to sign in to register for events.',
+          [
+              { text: 'Cancel', style: 'cancel'},
+              {
+                  text: 'Sign In',
+                  onPress: () => setIsAuthModalVisible(true)
+              }
+          ]
+      );
+      return;
+    }
+
     if (event?.registrationLink) {
       try {
         await markExternalInterest(event.id);
+        setClickedRegister(true); 
         Linking.openURL(event.registrationLink);
       } catch (error) {
         Alert.alert("Error", "Failed to register interest.");
       }
+    }
+  };
+
+  const handleInvite = async (selectedUsers: UserData[]) => {
+    if (!user) {
+      Alert.alert(
+        'Sign In Required',
+        'You need to sign in to save favourites.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign In', onPress: () => setIsAuthModalVisible(true) }
+        ]
+      );
+      return;
+    }
+  
+    try {
+      await inviteUsersToEvent({
+        inviterId: currentUser!.id,
+        inviterName: currentUser!.name,
+        inviterAvatarUrl: currentUser!.avatarUrl,
+        targetUserIds: selectedUsers.map(u => u.id),
+        eventId: event!.id,
+        eventTitle: event!.name,
+      });
+  
+      Toast.show({ type: "success", text1: "Invites sent!" });
+      setIsInviteModalOpen(false);
+    } catch (error) {
+      console.error("Failed to invite friends:", error);
+      Toast.show({ type: "error", text1: "Failed to send invites" });
     }
   };  
 
@@ -75,18 +165,16 @@ const EventDetails = () => {
     extrapolate: 'clamp'
   })
 
-  // Calculate attendees and interested count
-  const attendeesCount = event?.attendees ? Object.keys(event.attendees).length : 0;
-  const interestedCount = event?.interested ? Object.keys(event.interested).length : 0;
-  const totalEngaged = attendeesCount + interestedCount || 20; // Fallback to 20 if both are 0
+  const attendees = event?.attendees ? Object.values(event.attendees) : [];
+
+  if (!id || Array.isArray(id)) {
+    return null; // Or a fallback screen, or use router.replace("/(events)")
+  }
 
   return (
     <View style={styles.container}>
         <Animated.View style={[styles.header, { backgroundColor: headerBackground, paddingTop: statusBarHeight }]}>
             <CircleButton onPress={() => router.back()} />
-            <TouchableOpacity style={styles.shareButton} onPress={shareEvent}>
-              <FontAwesome6 name="share" size={18} color={theme.colors.text.primary} />
-            </TouchableOpacity>
         </Animated.View>
 
         <Animated.ScrollView
@@ -105,23 +193,40 @@ const EventDetails = () => {
             </Animated.View>
             
             {/* Floating Going Info */}
-            <MotiView {...fadeInUp}>
+            <MotiView {...fadeInUp} style={{ zIndex: 1 }}>
               <View style={styles.goingContainer}>
-                  <View style={styles.goingTextContainer}>
-                  <Image source={{ uri: "https://randomuser.me/api/portraits/women/44.jpg" }} style={styles.avatar} />
-                  <Image source={{ uri: "https://randomuser.me/api/portraits/men/45.jpg" }} style={styles.avatar} />
-                  <Text style={styles.goingText}>+{totalEngaged} Going</Text>
-                  </View>
-                  <TouchableOpacity style={styles.inviteButton} onPress={shareEvent}>
+                <View style={styles.goingTextContainer}>
+                  {attendees.slice(0, 3).map((person: any, index: number) => (
+                    <Image
+                      key={index}
+                      source={{ uri: person.avatarUrl || "https://via.placeholder.com/100" }}
+                      style={[styles.avatar, { marginLeft: index === 0 ? 0 : -10 }]}
+                    />
+                  ))}
+                  <Text style={styles.goingText}>+{attendees.length} Going</Text>
+                </View>
+                <TouchableOpacity style={styles.inviteButton} onPress={() => setIsInviteModalOpen(true)}>
                   <Text style={styles.inviteText}>Invite</Text>
-                  </TouchableOpacity>
+                </TouchableOpacity>
               </View>
             </MotiView>
 
             {/* Event Details */}
             <MotiView {...fadeInUp}>
               <View style={styles.detailsContainer}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={styles.eventTitle}>{event?.name}</Text>
+                  <TouchableOpacity
+                    onPress={handleInterestToggle}
+                    style={{ padding: 10, marginLeft: 70 }}
+                  >
+                    <FontAwesome6
+                      name={interested ? "heart-circle-check" : "heart"}
+                      size={26}
+                      color={interested ? theme.colors.text.primary : theme.colors.text.primary }
+                    />
+                  </TouchableOpacity>
+                </View>
                   
                   {/* Date & Time */}
                   <View style={styles.detailRow}>
@@ -179,16 +284,7 @@ const EventDetails = () => {
                   </View>
                   
                   {/* Organizer */}
-                  <View style={styles.detailRow}>
-                      <Image source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }} style={styles.organizerAvatar} />
-                      <View>
-                          <Text style={styles.organizerName}>{event?.organizer}</Text>
-                          <Text style={styles.organizer}>Organizer</Text>
-                      </View>
-                      <TouchableOpacity style={styles.followButton}>
-                          <Text style={styles.followText}>Follow</Text>
-                      </TouchableOpacity>
-                  </View>
+                  <OrganizerSection event={event!} />
               </View>
             </MotiView>
 
@@ -214,18 +310,55 @@ const EventDetails = () => {
               </MotiView>
             ) : null }
 
-            {/* Buy Ticket Button */}
             <MotiView {...fadeInUp}>
-              <View style={{ alignItems: "center", justifyContent: "center", }}>
-              <TouchableOpacity
-                style={[styles.buyButton, event?.interested?.[userId]?.clickedRegistration && { opacity: 0.6 }]}
-                disabled={!!event?.interested?.[userId]?.clickedRegistration}
-                onPress={handleExternalRegister}
-              >
-                <Text style={styles.buyButtonText}>
-                  {event?.interested?.[userId]?.clickedRegistration ? "You've Registered" : "Register"}
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.actionRow}>
+                {/* Register Button */}
+                {isRegistrationEvent && (<TouchableOpacity
+                  style={styles.buyButton}
+                  onPress={handleExternalRegister}
+                >
+                  <Text style={styles.buyButtonText}>
+                      Register
+                  </Text>
+                </TouchableOpacity>)}
+
+                {/* Confirm Attendance Button */}
+                {clickedRegister && !localConfirmed && (
+                  <TouchableOpacity
+                    style={styles.confirmButton}
+                    onPress={handleConfirmAttendance}
+                  >
+                    <Text style={styles.confirmText}>I’ve Registered</Text>
+                  </TouchableOpacity>
+                )}
+
+                {clickedRegister && localConfirmed && (
+                  <View style={[styles.confirmButton, { opacity: 0.6 }]}>
+                    <Text style={styles.confirmText}>You're Going</Text>
+                  </View>
+                )}
+
+                {isExternalOpen && (
+                  <MotiView {...fadeInUp}>
+                    <View style={styles.actionRow}>
+                      {/* "I'm Going" button */}
+                      {!localConfirmed && interested && (
+                        <TouchableOpacity
+                          style={styles.confirmButton}
+                          onPress={handleConfirmAttendance}
+                        >
+                          <Text style={styles.confirmText}>I'm Going</Text>
+                        </TouchableOpacity>
+                      )}
+
+                      {localConfirmed && (
+                        <View style={[styles.confirmButton, { opacity: 0.6 }]}>
+                          <Text style={styles.confirmText}>You're Going</Text>
+                        </View>
+                      )}
+                    </View>
+                  </MotiView>
+                )}
               </View>
             </MotiView>
         </Animated.ScrollView>
@@ -269,6 +402,11 @@ const EventDetails = () => {
             ) : null }
           </View>
       </Modal>
+
+      {/* Sign In Modal */}
+      <SignInModal isVisible={isAuthModalVisible} onClose={() => setIsAuthModalVisible(false)} />
+
+      <InviteFriendsModal visible={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} onInvite={handleInvite} />
     </View>
   );
 };
@@ -295,12 +433,12 @@ const createStyles = (theme: any) =>
       position: "absolute", top: 220, left: "50%", width: 250, transform: [{ translateX: -125 }],
       flexDirection: "row", justifyContent: "space-between", alignItems: "center",
       backgroundColor: theme.colors.primary, borderRadius: 20, padding: 10, paddingHorizontal: 10,
-      ...theme.shadows.default,
+      ...theme.shadows.default, zIndex: 1, elevation: 10
     },
     goingTextContainer: { flexDirection: "row", alignItems: "center", paddingHorizontal: 10 },
     avatar: { width: 30, height: 30, borderRadius: 15, marginLeft: -10, borderWidth: 2, borderColor: "white" },
     goingText: { marginLeft: 10, fontSize: 14, color: theme.colors.text.primary, fontFamily: 'Outfit_700Bold' },
-    inviteButton: { backgroundColor: theme.colors.secondary, borderRadius: 10, padding: 8 },
+    inviteButton: { backgroundColor: theme.colors.secondary, borderRadius: 10, padding: 8, zIndex: 9999 },
     inviteText: { color: theme.colors.text.primary, fontSize: 14, fontFamily: "Outfit_400Regular" },
     detailsContainer: { marginTop: HERO_IMAGE_HEIGHT + 30, padding: 20, marginBottom: 10, gap: 16 },
     detailsIconContainer: { height: 48, width: 48, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.muted, borderRadius: 10 },
@@ -329,21 +467,49 @@ const createStyles = (theme: any) =>
       color: theme.colors.text.primary,
       fontFamily: 'Outfit_400Regular',
     },
-    organizerAvatar: { width: 44, height: 44, borderRadius: 15 },
-    organizerName: { marginLeft: 10, fontSize: 15, color: theme.colors.text.primary, fontFamily: 'Outfit_400Regular' },
-    organizer: { marginLeft: 10, fontSize: 12, color: theme.colors.text.muted, fontFamily: 'Outfit_400Regular' },
-    followButton: { marginLeft: "auto", backgroundColor: theme.colors.muted, padding: 10, borderRadius: 10 },
-    followText: { color: theme.colors.text.primary, fontSize: 14, fontFamily: 'Outfit_400Regular' },
     aboutContainer: { padding: 20 },
     sectionTitle: { fontSize: 18, fontFamily: 'Outfit_500Medium', color: theme.colors.text.primary, marginBottom: 10 },
     aboutText: { fontSize: 16, lineHeight: 28, color: theme.colors.text.secondary, fontFamily: 'Outfit_400Regular' },
-    buyButton: { backgroundColor: theme.colors.primary, padding: 15, borderRadius: 15, margin: 20, width: 250,},
+    buyButton: {
+      backgroundColor: theme.colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 14,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 5,
+      elevation: 4,
+    },
     buyButtonText: { color: theme.colors.text.primary, fontSize: 16, textAlign: 'center', fontFamily: 'Outfit_400Regular' },
     modalContainer: { flex: 1, backgroundColor: "rgba(0,0,0,0.9)", justifyContent: "center", alignItems: "center", },
     fullScreenImage: { width: "90%", height: "70%", resizeMode: "contain", },
     closeButton: { position: "absolute", top: 40, right: 20, zIndex: 10, },
     downloadButton: { position: "absolute", bottom: 40, flexDirection: "row", alignItems: "center", backgroundColor: "rgba(0, 0, 0, 0.6)", paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10,},
     downloadText: { color: "white", fontSize: 16, marginLeft: 10, fontFamily: "Outfit_400Regular" },
+    confirmButton: {
+      backgroundColor: theme.colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 14,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 5,
+      elevation: 4,
+    },
+    confirmText: {
+      color: theme.colors.text.primary,
+      fontSize: 15,
+      fontFamily: 'Outfit_500Medium',
+    },
+    actionRow: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 10,
+      marginVertical: 20,
+    },
   });
 
 export default EventDetails;
