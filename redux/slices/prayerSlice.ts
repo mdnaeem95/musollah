@@ -5,6 +5,8 @@ import { PrayerState } from '../../utils/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchPrayerTimes2025 } from '../../api/firebase';
 import { format, parse, subDays } from 'date-fns';
+import { ExtensionStorage } from "@bacons/apple-targets";
+import { Platform } from 'react-native';
 
 const initialState: PrayerState = {
   prayerTimes: null,
@@ -14,6 +16,21 @@ const initialState: PrayerState = {
   isLoading: true,
   error: null,
   selectedDate: null,
+};
+
+const widgetStorage = new ExtensionStorage("group.com.rihlah.prayerTimesWidget");
+
+export const savePrayerTimesToWidget = async (prayerTimes: Record<string, string>) => {
+  try {
+    await widgetStorage.set("prayerTimes", JSON.stringify(prayerTimes));
+    console.log("💾 Writing prayer times to widget:", JSON.stringify(prayerTimes));
+    console.log("✅ Prayer times saved to widget storage");
+
+    ExtensionStorage.reloadWidget();
+    console.log("🔁 Widget reload triggered");
+  } catch (error) {
+    console.error("❌ Failed to save to widget:", error);
+  }
 };
 
 // Utility to cache the prayer data
@@ -106,6 +123,10 @@ export const fetchPrayerTimesFromFirebase = createAsyncThunk(
       };
 
       console.log("📌 Retrieved Prayer Times:", newPrayerTimes);
+
+      if (Platform.OS === "ios") {
+        await savePrayerTimesToWidget(newPrayerTimes);
+      }
 
       // 🔹 Fetch Islamic Date (Minus One Day Fix)
       const shortFormattedDate = format(subDays(parsedDate, 1), 'dd-MM-yyyy');
