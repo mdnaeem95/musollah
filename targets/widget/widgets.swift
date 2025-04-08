@@ -73,32 +73,63 @@ struct Provider: TimelineProvider {
 // MARK: - Widget View
 struct PrayerTimesWidgetView: View {
     let entry: PrayerTimesEntry
+    let context: WidgetContent.Context
 
     var body: some View {
+        switch context.family {
+        case .accessoryRectangular:
+            lockScreenView
+        default:
+            homeScreenView
+        }
+    }
+
+    // MARK: - Home Screen Layout (Grid)
+    private var homeScreenView: some View {
         let columns = [
             GridItem(.flexible(), spacing: 8),
             GridItem(.flexible())
         ]
 
-        LazyVGrid(columns: columns, spacing: 8) {
-            ForEach(["Subuh", "Syuruk", "Zohor", "Asar", "Maghrib", "Isyak"], id: \.self) { prayer in
-                let isPast = hasPrayerPassed(prayerName: prayer, prayerTimes: entry.prayerTimes, now: entry.date)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(prayer)
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(isPast ? .secondary : .primary)
-
-                    Text(entry.prayerTimes[prayer] ?? "--:--")
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundStyle(isPast ? .secondary : .primary)
-                        .strikethrough(isPast, color: .secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+        return LazyVGrid(columns: columns, spacing: 8) {
+            ForEach(prayers, id: \.self) { prayer in
+                prayerBlock(prayer)
             }
         }
-        .padding(8) // Compact padding
+        .padding(8)
+    }
+
+    // MARK: - Lock Screen Layout (Stacked)
+    private var lockScreenView: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(prayers, id: \.self) { prayer in
+                prayerBlock(prayer)
+            }
+        }
+    }
+
+    // MARK: - Shared Prayer Block
+    private func prayerBlock(_ prayer: String) -> some View {
+        let isPast = hasPrayerPassed(prayerName: prayer, prayerTimes: entry.prayerTimes, now: entry.date)
+
+        return HStack {
+            Text(prayer)
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundStyle(isPast ? .secondary : .primary)
+
+            Spacer(minLength: 6)
+
+            Text(entry.prayerTimes[prayer] ?? "--:--")
+                .font(.system(size: 12, design: .monospaced))
+                .foregroundStyle(isPast ? .secondary : .primary)
+                .strikethrough(isPast, color: .secondary)
+        }
+    }
+
+    // MARK: - Helper
+    private var prayers: [String] {
+        ["Subuh", "Syuruk", "Zohor", "Asar", "Maghrib", "Isyak"]
     }
 
     private func hasPrayerPassed(prayerName: String, prayerTimes: [String: String], now: Date) -> Bool {
@@ -122,19 +153,18 @@ struct PrayerTimesWidgetView: View {
     }
 }
 
-
 // MARK: - Widget Declaration
 struct PrayerTimesWidget: Widget {
     let kind: String = "PrayerTimesWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            PrayerTimesWidgetView(entry: entry)
-                .containerBackground(.clear, for: .widget)
+        StaticConfiguration(kind: kind, provider: Provider()) { entry, context in
+            PrayerTimesWidgetView(entry: entry, context: context)
+                .containerBackground(.widgetBackground, for: .widget)
         }
         .configurationDisplayName("Prayer Times")
         .description("Displays today's six daily prayer times.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular])
     }
 }
 
