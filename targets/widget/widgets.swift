@@ -75,23 +75,53 @@ struct PrayerTimesWidgetView: View {
     let entry: PrayerTimesEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        let columns = [
+            GridItem(.flexible(), spacing: 8),
+            GridItem(.flexible())
+        ]
+
+        LazyVGrid(columns: columns, spacing: 8) {
             ForEach(["Subuh", "Syuruk", "Zohor", "Asar", "Maghrib", "Isyak"], id: \.self) { prayer in
-                HStack {
+                let isPast = hasPrayerPassed(prayerName: prayer, prayerTimes: entry.prayerTimes, now: entry.date)
+
+                VStack(alignment: .leading, spacing: 2) {
                     Text(prayer)
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.green)
-                    Spacer()
-                    Text(entry.prayerTimes[prayer] ?? "--:--")
                         .font(.caption2)
-                        .foregroundColor(.primary)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(isPast ? .secondary : .primary)
+
+                    Text(entry.prayerTimes[prayer] ?? "--:--")
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundStyle(isPast ? .secondary : .primary)
+                        .strikethrough(isPast, color: .secondary)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding()
+        .padding(8) // Compact padding
+    }
+
+    private func hasPrayerPassed(prayerName: String, prayerTimes: [String: String], now: Date) -> Bool {
+        guard let timeString = prayerTimes[prayerName],
+              let prayerDate = timeStringToDate(timeString, now: now) else {
+            return false
+        }
+        return now >= prayerDate
+    }
+
+    private func timeStringToDate(_ time: String, now: Date) -> Date? {
+        let calendar = Calendar.current
+        var components = calendar.dateComponents([.year, .month, .day], from: now)
+        let parts = time.split(separator: ":").compactMap { Int($0) }
+        if parts.count == 2 {
+            components.hour = parts[0]
+            components.minute = parts[1]
+            return calendar.date(from: components)
+        }
+        return nil
     }
 }
+
 
 // MARK: - Widget Declaration
 struct PrayerTimesWidget: Widget {
@@ -100,7 +130,7 @@ struct PrayerTimesWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             PrayerTimesWidgetView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(.clear, for: .widget)
         }
         .configurationDisplayName("Prayer Times")
         .description("Displays today's six daily prayer times.")
@@ -110,6 +140,19 @@ struct PrayerTimesWidget: Widget {
 
 // MARK: - Widget Preview
 #Preview(as: .systemMedium) {
+    PrayerTimesWidget()
+} timeline: {
+    PrayerTimesEntry(date: .now, prayerTimes: [
+        "Subuh": "05:40",
+        "Syuruk": "07:01",
+        "Zohor": "13:02",
+        "Asar": "16:26",
+        "Maghrib": "19:05",
+        "Isyak": "20:18"
+    ])
+}
+
+#Preview(as: .systemSmall) {
     PrayerTimesWidget()
 } timeline: {
     PrayerTimesEntry(date: .now, prayerTimes: [
