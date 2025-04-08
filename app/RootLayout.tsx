@@ -87,6 +87,7 @@ const RootLayout = () => {
         console.log('Fetching essential data from Firebase');
 
         const prayerData = await dispatch(fetchPrayerTimesFromFirebase({})).unwrap();
+        seedPrayerTimesToWidget();
         console.log('✅ Retrieved Prayer Times from Firebase:', JSON.stringify(prayerData, null, 2));
 
         setIsEssentialDataFetched(true);
@@ -108,7 +109,6 @@ const RootLayout = () => {
           console.log('Fetching non-essential data (surahs)...');
           await dispatch(fetchSurahsData()).unwrap();
           await dispatch(fetchDailyDoasData()).unwrap();
-          seedPrayerTimesToWidget()
           setIsNonEssentialDataFetched(true);
         } catch (error) {
           console.error('Error fetching non-essential data:', error);

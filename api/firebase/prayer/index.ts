@@ -39,6 +39,7 @@ export const seedPrayerTimesToWidget = async () => {
     const prayerTimesList = await fetchPrayerTimes2025();
 
     // Save to shared widget storage
+    console.log(JSON.stringify(prayerTimesList))
     await widgetStorage.set("prayerTimes2025", JSON.stringify(prayerTimesList));
 
     // Reload widget to apply today's data
