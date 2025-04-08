@@ -116,6 +116,7 @@ struct PrayerTimesWidgetView: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
                             .foregroundStyle(isPast ? .secondary : .primary)
+                            .strikethrough(isPast, color: .secondary)
 
                         Text(time)
                             .font(.system(size: 12, design: .monospaced))
@@ -143,17 +144,17 @@ struct LeftPrayerTimesWidgetView: View {
 
                 HStack {
                     Text(prayer)
-                        .font(.system(size: 12, weight: .semibold))
-                        .frame(width: 48, alignment: .leading) // Increase width for longer names like "Maghrib"
+                        .font(.system(size: 13, weight: .semibold))
+                        .frame(width: 50, alignment: .leading) // Increase width for longer names like "Maghrib"
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8) // Less aggressive scaling
-                        .foregroundStyle(isPast ? .secondary : .primary)
+                        .minimumScaleFactor(0.9) // Less aggressive scaling
+                        .foregroundColor(isPast ? .gray : .white)
                         .strikethrough(isPast, color: .secondary)
 
 
                     Text(time)
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundStyle(isPast ? .secondary : .primary)
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(isPast ? .gray : .white)
                         .strikethrough(isPast, color: .secondary)
                 }
             }
@@ -174,16 +175,16 @@ struct RightPrayerTimesWidgetView: View {
 
                 HStack {
                     Text(prayer)
-                        .font(.system(size: 12, weight: .semibold))
-                        .frame(width: 48, alignment: .leading) // Increase width for longer names like "Maghrib"
+                        .font(.system(size: 13, weight: .semibold))
+                        .frame(width: 50, alignment: .leading) // Increase width for longer names like "Maghrib"
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8) // Less aggressive scaling
-                        .foregroundStyle(isPast ? .secondary : .primary)
+                        .minimumScaleFactor(0.9) // Less aggressive scaling
+                        .foregroundColor(isPast ? .gray : .white)
                         .strikethrough(isPast, color: .secondary)
 
                     Text(time)
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundStyle(isPast ? .secondary : .primary)
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .foregroundColor(isPast ? .gray : .white)
                         .strikethrough(isPast, color: .secondary)
                 }
             }
