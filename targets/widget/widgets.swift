@@ -158,9 +158,9 @@ struct PrayerTimesWidget: Widget {
     let kind: String = "PrayerTimesWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: Provider()) { entry, context in
-            PrayerTimesWidgetView(entry: entry, context: context)
-                .containerBackground(.widgetBackground, for: .widget)
+        StaticConfiguration(kind: kind, provider: Provider()) { entry in
+            PrayerTimesWidgetView(entry: entry)
+                .containerBackground(.ultraThinMaterial, for: .widget)
         }
         .configurationDisplayName("Prayer Times")
         .description("Displays today's six daily prayer times.")
