@@ -29,6 +29,9 @@ export default {
       "bundleIdentifier": "com.naeemsani95.rihlah",
       "runtimeVersion": "1.0.0",
       "privacyManifests": applePrivacyManifest,
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.rihlah.prayerTimesWidget"]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -113,6 +116,9 @@ export default {
       ],
       "@react-native-firebase/auth",
       "@react-native-firebase/app",
+      [
+        "@bacons/apple-targets"
+      ],
       [
         "expo-build-properties",
         {
