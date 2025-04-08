@@ -124,10 +124,6 @@ export const fetchPrayerTimesFromFirebase = createAsyncThunk(
 
       console.log("📌 Retrieved Prayer Times:", newPrayerTimes);
 
-      if (Platform.OS === "ios") {
-        await savePrayerTimesToWidget(newPrayerTimes);
-      }
-
       // 🔹 Fetch Islamic Date (Minus One Day Fix)
       const shortFormattedDate = format(subDays(parsedDate, 1), 'dd-MM-yyyy');
       const islamicDateData = await fetchIslamicDate(shortFormattedDate);

@@ -1,5 +1,7 @@
 import firestore from '@react-native-firebase/firestore';
 import { Khutbah } from '../../../utils/types';
+import { ExtensionStorage } from '@bacons/apple-targets';
+import { fetchPrayerTimes2025 } from '..';
 
 export const fetchKhutbahs = async (): Promise<Khutbah[]> => {
   try {
@@ -26,5 +28,24 @@ export const fetchKhutbahs = async (): Promise<Khutbah[]> => {
   } catch (error) {
     console.error('❌ Error fetching khutbahs:', error);
     throw new Error('Failed to fetch khutbahs');
+  }
+};
+
+export const seedPrayerTimesToWidget = async () => {
+  try {
+    const widgetStorage = new ExtensionStorage("group.com.rihlah.prayerTimesWidget");
+
+    // Fetch from Firebase or cache
+    const prayerTimesList = await fetchPrayerTimes2025();
+
+    // Save to shared widget storage
+    await widgetStorage.set("prayerTimes2025", JSON.stringify(prayerTimesList));
+
+    // Reload widget to apply today's data
+    ExtensionStorage.reloadWidget();
+
+    console.log("✅ Seeded widget with full 2025 prayer times.");
+  } catch (err) {
+    console.error("❌ Failed to seed widget prayer times:", err);
   }
 };
