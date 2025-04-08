@@ -72,11 +72,11 @@ struct Provider: TimelineProvider {
 
 // MARK: - Widget View
 struct PrayerTimesWidgetView: View {
+    @Environment(\.widgetFamily) var family
     let entry: PrayerTimesEntry
-    let context: WidgetContent.Context
 
     var body: some View {
-        switch context.family {
+        switch family {
         case .accessoryRectangular:
             lockScreenView
         default:
