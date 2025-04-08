@@ -21,6 +21,7 @@ import mobileAds from 'react-native-google-mobile-ads';
 import { getTrackingPermissionsAsync, PermissionStatus, requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import { registerForPushNotificationsAsync } from '../utils/registerForPushNotificationsAsync';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { seedPrayerTimesToWidget } from '../api/firebase/prayer';
 
 if (AppState.currentState === 'active') {
   SplashScreen.preventAutoHideAsync();
@@ -107,6 +108,7 @@ const RootLayout = () => {
           console.log('Fetching non-essential data (surahs)...');
           await dispatch(fetchSurahsData()).unwrap();
           await dispatch(fetchDailyDoasData()).unwrap();
+          seedPrayerTimesToWidget()
           setIsNonEssentialDataFetched(true);
         } catch (error) {
           console.error('Error fetching non-essential data:', error);

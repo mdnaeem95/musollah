@@ -1,58 +1,61 @@
 import WidgetKit
 import SwiftUI
 
+// MARK: - Model
+struct PrayerDay: Codable {
+    let date: String // "d/M/yyyy"
+    let time: [String: String]
+}
+
 // MARK: - Timeline Entry
 struct PrayerTimesEntry: TimelineEntry {
     let date: Date
     let prayerTimes: [String: String]
 }
 
-// MARK: - Timeline Provider
+// MARK: - Provider
 struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> PrayerTimesEntry {
         PrayerTimesEntry(date: Date(), prayerTimes: samplePrayerTimes())
     }
 
     func getSnapshot(in context: Context, completion: @escaping (PrayerTimesEntry) -> Void) {
-        let entry = PrayerTimesEntry(date: Date(), prayerTimes: loadPrayerTimes())
+        let entry = PrayerTimesEntry(date: Date(), prayerTimes: loadPrayerTimesForToday())
         completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PrayerTimesEntry>) -> Void) {
-        let entry = PrayerTimesEntry(date: Date(), prayerTimes: loadPrayerTimes())
+        let entry = PrayerTimesEntry(date: Date(), prayerTimes: loadPrayerTimesForToday())
 
-        // Update hourly (you can change this to .atEnd if you'd rather refresh once a day)
-        let nextUpdate = Calendar.current.date(byAdding: .hour, value: 1, to: Date())!
-        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
+        // Refresh at midnight
+        let tomorrow = Calendar.current.startOfDay(for: Date().addingTimeInterval(86400))
+        let timeline = Timeline(entries: [entry], policy: .after(tomorrow))
         completion(timeline)
     }
 
-    private func loadPrayerTimes() -> [String: String] {
+    private func loadPrayerTimesForToday() -> [String: String] {
         let suiteName = "group.com.rihlah.prayerTimesWidget"
-        guard let userDefaults = UserDefaults(suiteName: suiteName) else {
-            print("❌ Could not access UserDefaults for suite:", suiteName)
+        guard let userDefaults = UserDefaults(suiteName: suiteName),
+              let jsonString = userDefaults.string(forKey: "prayerTimes2025"),
+              let jsonData = jsonString.data(using: .utf8) else {
+            print("❌ Could not load prayerTimes2025 from UserDefaults")
             return samplePrayerTimes()
         }
 
-        let keys = userDefaults.dictionaryRepresentation().keys
-        print("🔍 UserDefaults keys:", keys)
+        do {
+            let prayerList = try JSONDecoder().decode([PrayerDay].self, from: jsonData)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "d/M/yyyy"
+            let todayKey = formatter.string(from: Date())
 
-        if let jsonString = userDefaults.string(forKey: "prayerTimes") {
-            print("📦 Widget received JSON string:", jsonString)
-
-            if let jsonData = jsonString.data(using: .utf8) {
-                do {
-                    let decoded = try JSONDecoder().decode([String: String].self, from: jsonData)
-                    print("✅ Successfully decoded prayer times:", decoded)
-                    return decoded
-                } catch {
-                    print("❌ JSON decode error:", error.localizedDescription)
-                }
+            if let todayData = prayerList.first(where: { $0.date == todayKey }) {
+                print("✅ Loaded prayer times for \(todayKey)")
+                return todayData.time
             } else {
-                print("❌ Failed to convert JSON string to Data")
+                print("❌ No data found for today's date: \(todayKey)")
             }
-        } else {
-            print("❌ No value found for key: 'prayerTimes'")
+        } catch {
+            print("❌ JSON decode error:", error.localizedDescription)
         }
 
         return samplePrayerTimes()
@@ -77,6 +80,8 @@ struct PrayerTimesWidgetView: View {
 
     var body: some View {
         switch family {
+        case .systemSmall:
+            smallWidgetView
         case .accessoryRectangular:
             lockScreenView
         default:
@@ -84,12 +89,32 @@ struct PrayerTimesWidgetView: View {
         }
     }
 
+    // MARK: - Small Widget (next prayer)
+    private var smallWidgetView: some View {
+        if let next = getNextPrayer() {
+            VStack(alignment: .center, spacing: 4) {
+                Text("Next")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+
+                Text(next.name)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+
+                Text(next.time)
+                    .font(.system(.body, design: .monospaced))
+                    .foregroundStyle(.primary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(8)
+        } else {
+            Text("No Data")
+        }
+    }
+
     // MARK: - Home Screen Layout (Grid)
     private var homeScreenView: some View {
-        let columns = [
-            GridItem(.flexible(), spacing: 8),
-            GridItem(.flexible())
-        ]
+        let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible())]
 
         return LazyVGrid(columns: columns, spacing: 8) {
             ForEach(prayers, id: \.self) { prayer in
@@ -99,18 +124,31 @@ struct PrayerTimesWidgetView: View {
         .padding(8)
     }
 
-    // MARK: - Lock Screen Layout (Stacked)
+    // MARK: - Lock Screen Layout (Mini-grid)
     private var lockScreenView: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        let columns = [GridItem(.flexible()), GridItem(.flexible())]
+
+        return LazyVGrid(columns: columns, spacing: 4) {
             ForEach(prayers, id: \.self) { prayer in
-                prayerBlock(prayer)
+                let isPast = hasPrayerPassed(prayer, now: entry.date)
+
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(prayer.prefix(3))
+                        .font(.caption2)
+                        .foregroundStyle(isPast ? .secondary : .primary)
+
+                    Text(entry.prayerTimes[prayer] ?? "--:--")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(isPast ? .secondary : .primary)
+                        .strikethrough(isPast, color: .secondary)
+                }
             }
         }
     }
 
     // MARK: - Shared Prayer Block
     private func prayerBlock(_ prayer: String) -> some View {
-        let isPast = hasPrayerPassed(prayerName: prayer, prayerTimes: entry.prayerTimes, now: entry.date)
+        let isPast = hasPrayerPassed(prayer, now: entry.date)
 
         return HStack {
             Text(prayer)
@@ -127,13 +165,23 @@ struct PrayerTimesWidgetView: View {
         }
     }
 
-    // MARK: - Helper
+    // MARK: - Helpers
     private var prayers: [String] {
         ["Subuh", "Syuruk", "Zohor", "Asar", "Maghrib", "Isyak"]
     }
 
-    private func hasPrayerPassed(prayerName: String, prayerTimes: [String: String], now: Date) -> Bool {
-        guard let timeString = prayerTimes[prayerName],
+    private func getNextPrayer() -> (name: String, time: String)? {
+        for prayer in prayers {
+            if !hasPrayerPassed(prayer, now: entry.date),
+               let time = entry.prayerTimes[prayer] {
+                return (prayer, time)
+            }
+        }
+        return nil
+    }
+
+    private func hasPrayerPassed(_ prayer: String, now: Date) -> Bool {
+        guard let timeString = entry.prayerTimes[prayer],
               let prayerDate = timeStringToDate(timeString, now: now) else {
             return false
         }
