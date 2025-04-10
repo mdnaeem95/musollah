@@ -62,10 +62,11 @@ export const usePrayerTimes = (
       lastSettingsRef.current = { mutedNotifications, selectedAdhan, prePrayerReminder };
       lastScheduleRef.current = now; // Update last execution time
 
-      // console.log("🚀 Running fetchAndScheduleNotifications...");
+      console.log("🚀 Running fetchAndScheduleNotifications...");
 
       const today = new Date();
       const year = today.getFullYear();
+      console.log('Year', year)
       const month = today.getMonth() + 1;
       const numDays = 5;
 
@@ -73,8 +74,8 @@ export const usePrayerTimes = (
       const monthlyPrayerTimes = await fetchMonthlyPrayerTimesFromFirebase(year, month);
 
       // Extract next 5 days' prayer times
-      const nextDaysPrayerTimes = extractNextDaysPrayerTimes(monthlyPrayerTimes, numDays);
-      // console.log("🔍 Extracted Next 5 Days Prayer Times:", nextDaysPrayerTimes);
+      const nextDaysPrayerTimes = extractNextDaysPrayerTimes(monthlyPrayerTimes, numDays, month, year);
+      console.log("🔍 Extracted Next 5 Days Prayer Times:", nextDaysPrayerTimes);
 
       await scheduleNextDaysNotifications(
         nextDaysPrayerTimes,
@@ -87,17 +88,17 @@ export const usePrayerTimes = (
 
   useEffect(() => {
     if (prayerTimes) {
-      // console.log("🔍 usePrayerTimes - Received Prayer Times:", prayerTimes);
+      console.log("🔍 usePrayerTimes - Received Prayer Times:", prayerTimes);
 
       const { currentPrayer, nextPrayer, timeUntilNextPrayer } = getPrayerTimesInfo(prayerTimes, new Date());
       setCurrentPrayer(currentPrayer);
       setNextPrayerInfo({ nextPrayer, timeUntilNextPrayer });
 
-      // console.log("📌 usePrayerTimes - Parsed Values:", {
-      //   currentPrayer,
-      //   nextPrayer,
-      //   timeUntilNextPrayer,
-      // });
+      console.log("📌 usePrayerTimes - Parsed Values:", {
+        currentPrayer,
+        nextPrayer,
+        timeUntilNextPrayer,
+      });
     }
   }, [prayerTimes]);
 

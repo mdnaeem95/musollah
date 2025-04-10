@@ -1,7 +1,5 @@
-import { Redirect } from "expo-router";
+import { Redirect } from 'expo-router';
 
-const Index = () => {
-    return <Redirect href="/(prayer)" />;
+export default function TabIndex() {
+  return <Redirect href='/(prayer)' />;
 }
-
-export default Index

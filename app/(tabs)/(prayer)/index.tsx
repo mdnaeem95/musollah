@@ -26,12 +26,19 @@ import PrayerLocationModal from '../../../components/prayer/PrayerLocationModal'
 import CustomClock from '../../../components/prayer/CustomClock';
 import { useTheme } from '../../../context/ThemeContext';
 import { fetchPrayerTimesFromFirebase, setSelectedDate } from '../../../redux/slices/prayerSlice';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import PrayerTimesSkeleton from '../../../components/prayer/PrayerTimesSkeleton';
 
 const PrayerTab = () => {
   const router = useRouter();
   const { theme } = useTheme();
   const dispatch = useDispatch<AppDispatch>();
   const styles = createStyles(theme);
+
+  const resetOnboarding = async () => {
+    await AsyncStorage.removeItem('hasSeenOnboarding');
+    alert('Onboarding has been reset.');
+  };
 
   const [isActionsModalVisible, setIsActionsModalVisible] = useState(false);
 
@@ -111,7 +118,7 @@ const PrayerTab = () => {
         </View>
 
         {isLoading ? (
-          <ActivityIndicator size="large" color={theme.colors.text.primary} />
+          <PrayerTimesSkeleton />
         ) : (
           <MotiView
             key={formattedFirebaseDate}
@@ -137,6 +144,10 @@ const PrayerTab = () => {
       <TouchableOpacity onPress={() => setIsActionsModalVisible(true)} style={styles.fab}>
         <FontAwesome6 name="plus" size={18} color="#fff" />
       </TouchableOpacity>
+
+      {/* <TouchableOpacity onPress={resetOnboarding}>
+        <Text style={{ color: 'red' }}>Reset Onboarding</Text>
+      </TouchableOpacity> */}
 
       <PrayerActionsModal
         visible={isActionsModalVisible}

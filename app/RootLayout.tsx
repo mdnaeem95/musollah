@@ -14,7 +14,7 @@ import { fetchSurahsData } from '../redux/slices/quranSlice';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import { fetchDailyDoasData } from '../redux/slices/doasSlice';
 import LoadingScreen from '../components/LoadingScreen';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming, runOnJS } from 'react-native-reanimated';
 import TrackPlayer from 'react-native-track-player';
 import { playbackService } from '../constants/playbackService';
 import mobileAds from 'react-native-google-mobile-ads';
@@ -22,6 +22,7 @@ import { getTrackingPermissionsAsync, PermissionStatus, requestTrackingPermissio
 import { registerForPushNotificationsAsync } from '../utils/registerForPushNotificationsAsync';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { seedPrayerTimesToWidget } from '../api/firebase/prayer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 if (AppState.currentState === 'active') {
   SplashScreen.preventAutoHideAsync();
@@ -46,9 +47,11 @@ const RootLayout = () => {
   const isRehydrated = persistor.getState().bootstrapped;
   const translateY = useSharedValue(0);
   const hideSplashScreen = useCallback(() => {
-    translateY.value = withTiming(1000, { duration: 300, easing: Easing.inOut(Easing.ease) })
-  }, [])
-  // Monitor Authentication State
+    translateY.value = withTiming(1000, { duration: 300, easing: Easing.inOut(Easing.ease) }, () => {
+      runOnJS(SplashScreen.hideAsync)();
+    });
+  }, []);
+
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (user: any) => {
@@ -57,7 +60,6 @@ const RootLayout = () => {
     return () => unsubscribe();
   }, []);
 
-  // Initialize AdMob SDK
   useEffect(() => {
     const initializeAdMob = async () => {
       try {
@@ -78,75 +80,58 @@ const RootLayout = () => {
     registerForPushNotificationsAsync();
   }, []);
 
-  // Fetch only essential data (Prayer Times) first
   useEffect(() => {
     if (!isRehydrated) return;
-
     const fetchEssentialData = async () => {
       try {
         console.log('Fetching essential data from Firebase');
-
         const prayerData = await dispatch(fetchPrayerTimesFromFirebase({})).unwrap();
         seedPrayerTimesToWidget();
         console.log('✅ Retrieved Prayer Times from Firebase:', JSON.stringify(prayerData, null, 2));
-
         setIsEssentialDataFetched(true);
       } catch (error) {
         console.error('Error fetching essential data:', error);
         setIsEssentialDataFetched(true);
       }
     };
-
     if (!isEssentialDataFetched) {
       fetchEssentialData();
     }
   }, [dispatch, isEssentialDataFetched, isRehydrated]);
 
-  // Fetch some non-essential data (surahs) after the app has loaded but defer fetching user location and musollah data until necessary
   useEffect(() => {
-      const fetchNonEssentialData = async () => {
-        try {
-          console.log('Fetching non-essential data (surahs)...');
-          await dispatch(fetchSurahsData()).unwrap();
-          await dispatch(fetchDailyDoasData()).unwrap();
-          setIsNonEssentialDataFetched(true);
-        } catch (error) {
-          console.error('Error fetching non-essential data:', error);
-        }
-      };
-
-      if (!isNonEssentialDataFetched) {
-        fetchNonEssentialData();
+    const fetchNonEssentialData = async () => {
+      try {
+        console.log('Fetching non-essential data (surahs)...');
+        await dispatch(fetchSurahsData()).unwrap();
+        await dispatch(fetchDailyDoasData()).unwrap();
+        setIsNonEssentialDataFetched(true);
+      } catch (error) {
+        console.error('Error fetching non-essential data:', error);
       }
+    };
+    if (!isNonEssentialDataFetched) {
+      fetchNonEssentialData();
+    }
   }, [dispatch, isNonEssentialDataFetched]);
 
   const handleTrackPlayerLoaded = useCallback(() => {
     setIsTrackPlayerSetup(true);
   }, [])
-  useSetupTrackPlayer({
-    onLoad: handleTrackPlayerLoaded
-  })
+  useSetupTrackPlayer({ onLoad: handleTrackPlayerLoaded });
   useLogTrackPlayerState();
-  // Hide the splash screen once fonts and essential data are ready
+
   useEffect(() => {
-    const hideSplashScreenandAnimate = async () => {
-      try {
-        hideSplashScreen();
-        await SplashScreen.hideAsync();
-      } catch (error) {
-        console.error('Error hiding SplashScreen:', error);
-      }
-    };
-    if (isFontsLoaded && isEssentialDataFetched && isTrackPlayerSetup && isAdMobInitialized)  {
-      hideSplashScreenandAnimate();
+    if (isFontsLoaded && isEssentialDataFetched && isTrackPlayerSetup && isAdMobInitialized) {
+      hideSplashScreen();
     }
   }, [isFontsLoaded, isEssentialDataFetched, hideSplashScreen, isTrackPlayerSetup, isAdMobInitialized]);
-  // reanimated style for splash screen sliding animation
+
   const animatedSplashStyle = useAnimatedStyle(() => {
     return {
       transform: [{ translateY: translateY.value }],
     }
-  })
+  });
 
   if (!isFontsLoaded || !isEssentialDataFetched || !isRehydrated || !isAdMobInitialized) {
     return (
@@ -155,14 +140,12 @@ const RootLayout = () => {
       </View>
     );
   }
-  
-  // Main app layout after authentication and data fetch
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
-        {/* SplashScreen */}
         <Animated.View style={[styles.splashScreen, animatedSplashStyle]} />
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
         </Stack>
       </View>

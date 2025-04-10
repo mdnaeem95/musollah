@@ -27,15 +27,15 @@ export const scheduleNextDaysNotifications = async (
     const mutedNotifications = state.userPreferences.mutedNotifications || [];
     const prePrayerReminder = state.userPreferences.reminderInterval || 0;
 
-    // console.log("🔄 User Settings:", {
-    //   selectedAdhan,
-    //   mutedNotifications,
-    //   prePrayerReminder,
-    // });
+    console.log("🔄 User Settings:", {
+      selectedAdhan,
+      mutedNotifications,
+      prePrayerReminder,
+    });
 
     // **Step 2: Clear Existing Notifications**
     await Notifications.cancelAllScheduledNotificationsAsync();
-    // console.log("🗑 Cleared all previously scheduled notifications.");
+    console.log("🗑 Cleared all previously scheduled notifications.");
 
     const now = new Date();
 
@@ -118,7 +118,7 @@ export const scheduleNextDaysNotifications = async (
             scheduledDays[dateString][prayerName] = prayerDate.getTime();
             notificationsChanged = true;
 
-            // console.log(`✅ Scheduled ${prayerName} at ${formattedPrayerDate}`);
+            console.log(`✅ Scheduled ${prayerName} at ${formattedPrayerDate}`);
           } catch (error) {
             console.error(`❌ Error scheduling ${prayerName} notification:`, error);
           }
@@ -131,15 +131,15 @@ export const scheduleNextDaysNotifications = async (
     // **Step 4: Save Updated Notifications**
     if (notificationsChanged) {
       await AsyncStorage.setItem(SCHEDULED_NOTIFICATIONS_KEY, JSON.stringify(scheduledDays));
-      // console.log(`✅ Updated scheduled notifications saved.`);
+      console.log(`✅ Updated scheduled notifications saved.`);
     } else {
-      // console.log(`🔍 No changes detected. Notifications remain the same.`);
+      console.log(`🔍 No changes detected. Notifications remain the same.`);
     }
 
     // **Final Log: Verify All Scheduled Notifications**
     const allUpdatedNotifications = await Notifications.getAllScheduledNotificationsAsync();
-    // console.log("📜 Currently Scheduled Notifications:", allUpdatedNotifications);
+    console.log("📜 Currently Scheduled Notifications:", allUpdatedNotifications);
   } catch (error) {
-    // console.error("🚨 Error scheduling notifications:", error);
+    console.error("🚨 Error scheduling notifications:", error);
   }
 };

@@ -24,9 +24,23 @@ struct Provider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PrayerTimesEntry>) -> Void) {
-        let entry = PrayerTimesEntry(date: Date(), prayerTimes: loadPrayerTimesForToday())
-        let tomorrow = Calendar.current.startOfDay(for: Date().addingTimeInterval(86400))
-        completion(Timeline(entries: [entry], policy: .after(tomorrow)))
+        let prayerTimes = loadPrayerTimesForToday()
+        var entries: [PrayerTimesEntry] = []
+
+        let calendar = Calendar.current
+        let currentDate = Date()
+
+        for hourOffset in 0..<24 {
+            if let entryDate = calendar.date(byAdding: .hour, value: hourOffset, to: currentDate) {
+                let entry = PrayerTimesEntry(date: entryDate, prayerTimes: prayerTimes)
+                entries.append(entry)
+            }
+        }
+
+        // End of day fallback
+        let midnight = calendar.startOfDay(for: currentDate.addingTimeInterval(86400))
+        let timeline = Timeline(entries: entries, policy: .after(midnight))
+        completion(timeline)
     }
 
     private func loadPrayerTimesForToday() -> [String: String] {
@@ -149,13 +163,13 @@ struct LeftPrayerTimesWidgetView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.9) // Less aggressive scaling
                         .foregroundColor(isPast ? .gray : .white)
-                        .strikethrough(isPast, color: .secondary)
+                        .scaleEffect(isPast ? 0.95 : 1)
 
 
                     Text(time)
                         .font(.system(size: 14, weight: .semibold, design: .monospaced))
                         .foregroundStyle(isPast ? .gray : .white)
-                        .strikethrough(isPast, color: .secondary)
+                        .scaleEffect(isPast ? 0.95 : 1)
                 }
             }
         }
