@@ -1,6 +1,42 @@
 import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { LocationObject } from 'expo-location';
 
+type Procedure = {
+    procedure: string;
+    steps: ProcedureStep[];
+  };
+  
+  type ProcedureStep = {
+    id: string; // unique identifier (e.g., 'step-1', 'eligibility', etc)
+    messages: Message[];
+    options?: Option[];
+    fallback?: string; // optional global fallback for link actions
+  };
+  
+  type Message = {
+    type: 
+      | 'title'
+      | 'description'
+      | 'criteria'
+      | 'instructions'
+      | 'details'
+      | 'note'
+      | 'prompt';
+    content: string | string[];
+  };
+  
+  type Option = {
+    label: string;
+    nextStep?: string;       // reference to another step by id
+    action?: 
+      | 'startOver'
+      | 'openLink'
+      | 'saveChecklist'
+      | 'showTooltip'
+      | 'connectSupport';
+    link?: string;           // only used for openLink
+  };  
+
 export type CourseStatus = 'completed' | 'in progress' | 'unenrolled';
 export type ModuleStatus = 'completed' | 'in progress' | 'locked';
 

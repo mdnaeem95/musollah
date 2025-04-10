@@ -37,10 +37,6 @@ const QALayout = () => {
         options={headerOptions('Procedure Bot')}
       />
       <Stack.Screen
-        name="[slug]"
-        options={headerOptions('')}
-      />
-      <Stack.Screen
         name="checklist"
         options={headerOptions('Checklist')}
       />

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, TextInput, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { useTheme } from "../../../../context/ThemeContext";
 import { useAuth } from "../../../../context/AuthContext";
 import firestore from "@react-native-firebase/firestore";
@@ -9,6 +9,8 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { followUser, unfollowUser } from "../../../../api/firebase/community";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../../redux/store/store";
+import SignInModal from "../../../../components/SignInModal";
+import { FontAwesome6 } from "@expo/vector-icons";
 
 const UsersScreen = () => {
   const { theme } = useTheme();
@@ -22,46 +24,64 @@ const UsersScreen = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [following, setFollowing] = useState<{ [key: string]: boolean }>({});
+  const [authModalVisible, setAuthModalVisible] = useState(false);
+  const [lastVisibleUser, setLastVisibleUser] = useState<any>(null);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+
+  const showAuthAlert = () => {
+    Alert.alert(
+      "Sign in Required",
+      "You need to be signed in to follow others.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Sign In", onPress: () => setAuthModalVisible(true) } // Redirect to login
+      ]
+    );
+  };
+
+  const fetchUsers = async (loadMore = false) => {
+    try {
+      setLoading(!loadMore);
+      setIsFetchingMore(loadMore);
+  
+      let query = firestore().collection("users").orderBy("name").limit(20);
+  
+      if (loadMore && lastVisibleUser) {
+        query = query.startAfter(lastVisibleUser);
+      }
+  
+      const snapshot = await query.get();
+  
+      if (!snapshot.empty) {
+        const newUsers = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.name || "Anonymous",
+            avatarUrl: data.avatarUrl || null,
+            ...data,
+          } as UserData;
+        });
+  
+        setUsers((prev) => {
+          const existingIds = new Set(prev.map((u) => u.id));
+          const merged = [...prev, ...newUsers.filter((u) => !existingIds.has(u.id))];
+          return merged;
+        });
+        
+        setLastVisibleUser(snapshot.docs[snapshot.docs.length - 1]);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setLoading(false);
+      setIsFetchingMore(false);
+    }
+  };  
 
   useEffect(() => {
-    if (!firebaseUser?.uid) return;
-
-    const fetchUsers = async () => {
-      try {
-        const snapshot = await firestore().collection("users").limit(20).get();
-
-        const usersData = snapshot.docs
-          .map((doc) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              name: data.name || "Anonymous",
-              email: data.email || "",
-              avatarUrl: data.avatarUrl || null,
-              enrolledCourses: data.enrolledCourses || [],
-              likedQuestions: data.likedQuestions || [],
-              role: data.role || "user",
-              aboutMe: data.aboutMe || "",
-              interests: data.interests || [],
-            } as UserData;
-          })
-          .filter((u) => u.id !== firebaseUser.uid);
-
-        setUsers(usersData);
-
-        const currentUserDoc = await firestore().collection("users").doc(firebaseUser.uid).get();
-        const currentUserData = currentUserDoc.data();
-        const currentFollowing = currentUserData?.following || {};
-        setFollowing(currentFollowing);
-      } catch (error) {
-        console.error("Failed to fetch users:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
-  }, [firebaseUser?.uid]);
+  }, [firebaseUser?.uid, searchQuery]);   
 
   const filteredUsers = users.filter((u) =>
     u.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -90,7 +110,7 @@ const UsersScreen = () => {
 
   const handleFollowToggle = async (targetUserId: string, targetUserName: string) => {
     if (!firebaseUser?.uid || !currentUser) {
-      console.error("Missing current user info for follow");
+      showAuthAlert();
       return;
     }
 
@@ -112,7 +132,15 @@ const UsersScreen = () => {
     }
   };
 
-  const renderUser = ({ item, index }: { item: UserData; index: number }) => (
+  const renderUser = ({ item, index }: { item: UserData; index: number }) => {
+    const hasAvatar =
+    item.avatarUrl &&
+    item.avatarUrl.trim() !== "" &&
+    !item.avatarUrl.includes("via.placeholder.com");
+  
+    console.log(hasAvatar, item.avatarUrl)
+    
+    return (
     <MotiView
       from={{ opacity: 0, translateY: 10 }}
       animate={{ opacity: 1, translateY: 0 }}
@@ -120,10 +148,17 @@ const UsersScreen = () => {
     >
       <View style={styles.userCard}>
         <TouchableOpacity style={styles.userInfoContainer} onPress={() => router.push(`/(profile)/${item.id}`)}>
-          <Image
-            source={{ uri: item.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}` }}
-            style={styles.avatar}
-          />
+          {hasAvatar ? (
+            <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, {
+              backgroundColor: theme.colors.secondary,
+              justifyContent: 'center',
+              alignItems: 'center'
+            }]}>
+              <FontAwesome6 name="user" size={24} color={theme.colors.text.primary} />
+            </View>
+          )}
           <Text style={styles.name}>{item.name}</Text>
         </TouchableOpacity>
 
@@ -137,7 +172,8 @@ const UsersScreen = () => {
         </TouchableOpacity>
       </View>
     </MotiView>
-  );
+    )
+  };
 
   return (
     <View style={styles.container}>
@@ -160,8 +196,17 @@ const UsersScreen = () => {
           renderItem={renderUser}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
+          onEndReachedThreshold={0.6}
+          onEndReached={() => {
+            if (!isFetchingMore && searchQuery.length === 0) {
+              fetchUsers(true);
+            }
+          }}          
         />
       )}
+
+      {/* Sign In Modal */}
+      <SignInModal isVisible={authModalVisible} onClose={() => setAuthModalVisible(false)} />
     </View>
   );
 };

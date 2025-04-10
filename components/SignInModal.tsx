@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, TextInput, Animated } from 'react-native';
+import React, { useState } from 'react';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../redux/store/store';
@@ -11,34 +11,32 @@ import { useRouter, useSegments } from 'expo-router';
 interface SignInModalProps {
   isVisible: boolean;
   onClose: () => void;
+  allowGuest?: boolean;
 }
 
-const SignInModal: React.FC<SignInModalProps> = ({ isVisible, onClose }) => {
+const SignInModal: React.FC<SignInModalProps> = ({ isVisible, onClose, allowGuest = false }) => {
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
   const dispatch = useDispatch<AppDispatch>();
-  const router = useRouter()
+  const router = useRouter();
   const segments = useSegments();
 
   const { control, handleSubmit, formState: { errors }, reset } = useForm<UserInfo>();
 
-  // Handle form submission for sign-up
   const onSignUpSubmit: SubmitHandler<UserInfo> = async ({ email, password }) => {
     try {
       await dispatch(signUp({ email, password })).unwrap();
-      handleModalClose(); // Close modal after successful sign-up
-      router.replace(segments.join('/'));
+      handleModalClose();
+      router.replace('/(tabs)');
     } catch (error) {
-      console.log('Error, ', error)
       alert('Error: Failed to sign up. Please try again.');
     }
   };
 
-  // Handle form submission for sign-in
   const onSignInSubmit: SubmitHandler<UserInfo> = async ({ email, password }) => {
     try {
       await dispatch(signIn({ email, password })).unwrap();
-      handleModalClose(); // Close modal after successful sign-in
-      router.replace(segments.join('/'));
+      handleModalClose();
+      router.replace('/(tabs)');
     } catch (error) {
       alert('Error: Failed to sign in. Please try again.');
     }
@@ -46,26 +44,28 @@ const SignInModal: React.FC<SignInModalProps> = ({ isVisible, onClose }) => {
 
   const toggleMode = () => {
     setIsSignUp(!isSignUp);
-    reset(); // Reset form fields when toggling between Sign Up and Sign In
+    reset();
   };
 
-  // Modified onClose to reset the modal state when closed
   const handleModalClose = () => {
-    reset(); // Reset the form fields when the modal closes
-    onClose(); // Trigger the original close action
+    reset();
+    onClose();
+  };
+
+  const handleContinueAsGuest = () => {
+    handleModalClose();
+    router.replace('/(tabs)');
   };
 
   return (
     <Modal transparent={true} visible={isVisible} onRequestClose={handleModalClose} animationType="slide">
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
-          {/* Form Header */}
           <Text style={styles.headerText}>{isSignUp ? 'Create an account' : 'Sign in'}</Text>
           <Text style={styles.privacyText}>
             {isSignUp ? 'By creating an account, you agree to our Terms of Service and Privacy Policy.' : 'By signing in, you agree to our Terms of Service and Privacy Policy.'}
           </Text>
 
-          {/* Email Form */}
           <View style={styles.formContainer}>
             <Controller
               control={control}
@@ -107,9 +107,17 @@ const SignInModal: React.FC<SignInModalProps> = ({ isVisible, onClose }) => {
             >
               <Text style={styles.submitButtonText}>{isSignUp ? 'Create account' : 'Sign in'}</Text>
             </TouchableOpacity>
+
+            {allowGuest && (
+              <TouchableOpacity
+                style={[styles.submitButton, { backgroundColor: '#6c757d' }]}
+                onPress={handleContinueAsGuest}
+              >
+                <Text style={styles.submitButtonText}>Continue as Guest</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-          {/* Footer Link for toggling between Sign In and Sign Up */}
           <TouchableOpacity style={styles.footerLink} onPress={toggleMode}>
             <Text style={styles.footerText}>
               {isSignUp ? 'Have an account? ' : 'New here? '}
@@ -117,7 +125,6 @@ const SignInModal: React.FC<SignInModalProps> = ({ isVisible, onClose }) => {
             </Text>
           </TouchableOpacity>
 
-          {/* Close Button */}
           <TouchableOpacity style={styles.closeButton} onPress={handleModalClose}>
             <FontAwesome6 name="xmark" size={24} color="#FFFFFF" />
           </TouchableOpacity>
@@ -141,7 +148,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     height: '90%',
     width: '100%',
-    justifyContent: 'center', // Ensure the form is centered
+    justifyContent: 'center',
     position: 'relative',
   },
   formContainer: {

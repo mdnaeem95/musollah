@@ -105,7 +105,9 @@ export const generateTracksListId = (trackListName: string, search?: string) => 
 
 export const extractNextDaysPrayerTimes = (
   monthlyPrayerTimes: any[],
-  numDays: number
+  numDays: number,
+  month: number,
+  year: number,
 ): Record<string, any> => {
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Reset time to midnight
@@ -117,19 +119,20 @@ export const extractNextDaysPrayerTimes = (
 
   monthlyPrayerTimes.forEach((item) => {
     try {
-      // console.log("Processing Prayer Data Item:", item);
+      console.log("Processing Prayer Data Item:", item);
 
       // ✅ Correctly format the stored Firebase date format (d/M/yyyy)
-      const itemDateStr = `${item.date}/3/2025`; // Ensure it has the full year
+      console.log(item.date, month, year)
+      const itemDateStr = `${Number(item.date)}/${month}/${year}`;
       const itemDate = parse(itemDateStr, "d/M/yyyy", new Date());
-
+      
       itemDate.setHours(0, 0, 0, 0);
 
       // ✅ Ensure the date is within range
       if (itemDate >= today && itemDate <= endDate) {
         const dateKey = format(itemDate, "d/M/yyyy"); // Ensure it matches Firebase format
 
-        // console.log("✅ Valid Date Added:", dateKey, item);
+        console.log("✅ Valid Date Added:", dateKey, item);
 
         result[dateKey] = {
           Subuh: item.subuh,
@@ -140,7 +143,7 @@ export const extractNextDaysPrayerTimes = (
           Isyak: item.isyak,
         };
       } else {
-        // console.warn("⏩ Skipping out-of-range date:", itemDate.toISOString());
+        console.warn("⏩ Skipping out-of-range date:", itemDate.toISOString());
       }
     } catch (error) {
       console.error("❌ Error processing item:", item, error);
