@@ -1,6 +1,6 @@
-import { FlatList, ActivityIndicator, View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { FlatList, ActivityIndicator, View, TextInput, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { FontAwesome6 } from '@expo/vector-icons';
 import SurahItem from '../../../../components/quran/SurahItem';
@@ -8,6 +8,10 @@ import { RootState } from '../../../../redux/store/store';
 import { Surah } from '../../../../utils/types';
 import { useTheme } from '../../../../context/ThemeContext';
 import { FlashList } from '@shopify/flash-list';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import JuzItem from '../../../../components/quran/JuzItem';
+import { JuzMeta, juzMeta } from '../../../../data/juzMeta';
+import { calculateTotalAyahs, countReadAyahsInJuz } from '../../../../utils/quran';
 
 const Surahs = () => {
   const { theme } = useTheme();
@@ -19,6 +23,45 @@ const Surahs = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
   const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
+  const [readAyahsMap, setReadAyahsMap] = useState<Record<number, number>>({});
+  const [juzProgressMap, setJuzProgressMap] = useState<Record<number, { read: number; total: number }>>({});
+  const [mode, setMode] = useState<'surah' | 'juz'>('surah');
+  const [renderMode, setRenderMode] = useState<'surah' | 'juz'>('surah');
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setRenderMode(mode), 100); // 100–200ms works well
+    return () => clearTimeout(timeout);
+  }, [mode]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadProgress = async () => {
+        const data = await AsyncStorage.getItem('readAyahsOverall');
+        if (!data) return;
+  
+        const readKeys: string[] = JSON.parse(data);
+        const countMap: Record<number, number> = {};
+        const juzMap: Record<number, { read: number; total: number }> = {};
+  
+        for (const key of readKeys) {
+          const [s] = key.split(':');
+          const surahNum = parseInt(s, 10);
+          countMap[surahNum] = (countMap[surahNum] || 0) + 1;
+        }
+  
+        for (const juz of juzMeta) {
+          const total = calculateTotalAyahs(juz);
+          const read = countReadAyahsInJuz(juz, readKeys);
+          juzMap[juz.number] = { total, read };
+        }
+  
+        setReadAyahsMap(countMap);
+        setJuzProgressMap(juzMap);
+      };
+  
+      loadProgress();
+    }, [])
+  );  
 
   const toggleSearch = () => {
     setIsSearchExpanded(!isSearchExpanded);
@@ -26,15 +69,6 @@ const Surahs = () => {
       setSearchQuery('');
     }
   };
-
-  const handleSurahPress = useCallback((surah: Surah) => {
-    router.push(`/surahs/${surah.number}`);
-  }, [router]);
-
-  const renderSurahItem = useCallback(
-    ({ item }: { item: Surah }) => <SurahItem key={item.id} surah={item} onPress={handleSurahPress} />,
-    [handleSurahPress]
-  );
 
   const filteredSurahs = useMemo(() => {
     return surahs.filter(
@@ -54,6 +88,33 @@ const Surahs = () => {
 
   return (
     <View style={styles.mainContainer}>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 12 }}>
+        <TouchableOpacity
+          onPress={() => setMode('surah')}
+          style={{
+            paddingVertical: 8,
+            paddingHorizontal: 20,
+            backgroundColor: mode === 'surah' ? theme.colors.muted : theme.colors.secondary,
+            borderRadius: 10,
+            marginRight: 8,
+          }}
+        >
+          <Text style={{ color: theme.colors.text.primary, fontFamily: 'Outfit_600SemiBold' }}>Surahs</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setMode('juz')}
+          style={{
+            paddingVertical: 8,
+            paddingHorizontal: 20,
+            backgroundColor: mode === 'juz' ? theme.colors.muted : theme.colors.secondary,
+            borderRadius: 10,
+          }}
+        >
+          <Text style={{ color: theme.colors.text.primary, fontFamily: 'Outfit_600SemiBold' }}>Juz</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Header with Search Bar */}
       <View style={styles.headerContainer}>
         {isSearchExpanded && (
@@ -87,14 +148,38 @@ const Surahs = () => {
       </View>
 
       {/* Surah List or Loading Indicator */}
-      {isLoading ? (
-        <ActivityIndicator style={styles.loadingIndicator} color={theme.colors.text.primary} size="large" />
+      {mode === 'surah' ? (
+        <FlashList
+          data={filteredSurahs}
+          estimatedItemSize={75}
+          renderItem={({ item, index }) => (
+            <SurahItem
+              index={index}
+              surah={item}
+              onPress={(s) => router.push(`/surahs/${s.number}`)}
+              readCount={readAyahsMap[item.number] || 0}
+            />
+          )}          
+          keyExtractor={(item) => `surah-${item.number}`}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContainer}
+        />
       ) : (
         <FlashList
+          data={juzMeta}
           estimatedItemSize={75}
-          data={filteredSurahs}
-          renderItem={renderSurahItem}
-          keyExtractor={(item) => item.number.toString()}
+          renderItem={({ item, index }) => (
+            <JuzItem
+              number={item.number}
+              index={index}
+              start={item.start}
+              end={item.end}
+              readCount={juzProgressMap[item.number]?.read || 0}
+              totalAyahs={juzProgressMap[item.number]?.total || calculateTotalAyahs(item)}
+              onPress={() => console.log('Tapped Juz', item.number)}
+            />
+          )}          
+          keyExtractor={(item) => `juz-${item.number}`}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
         />

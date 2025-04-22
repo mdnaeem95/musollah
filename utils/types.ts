@@ -263,6 +263,14 @@ export interface QuranState {
     bookmarks: Bookmark[];
     isLoading: boolean;
     error: string | null;
+    recitationPlan?: {
+        planType: 'ayahs' | 'surahs' | 'juz',
+        daysToFinish: number,
+        startDate: string,
+        dailyTarget: number,
+        completedAyahKeys: string[],
+        lastReadAyah: string,
+    }
 }
 
 export interface LocationState {

@@ -8,6 +8,7 @@ const initialState: QuranState = {
   bookmarks: [],
   isLoading: false,
   error: null,
+  recitationPlan: undefined
 };
 
 // Save Quran data to AsyncStorage
@@ -87,6 +88,19 @@ export const loadBookmarks = createAsyncThunk(
   }
 )
 
+export const loadRecitationPlan = createAsyncThunk(
+  'quran/loadRecitationPlan',
+  async (_, { rejectWithValue }) => {
+    try {
+      const savedPlan = await AsyncStorage.getItem('recitationPlan');
+      return savedPlan ? JSON.parse(savedPlan) : null;
+    } catch (error) {
+      console.error('Failed to load recitation plan, ', error);
+      return rejectWithValue('Failed to load plan');
+    }
+  }
+)
+
 const quranSlice = createSlice({
   name: 'quran',
   initialState,
@@ -102,6 +116,23 @@ const quranSlice = createSlice({
           bookmark.ayahNumber !== action.payload.ayahNumber
       );
       saveBookmarksToLocal(state.bookmarks)
+    },
+    setRecitationPlan: (state, action: PayloadAction<QuranState['recitationPlan']>) => {
+      state.recitationPlan = action.payload;
+      AsyncStorage.setItem('recitationPlan', JSON.stringify(action.payload));
+    },
+    updateRecitationProgress: (state, action: PayloadAction<string>) => {
+      if (!state.recitationPlan) return;
+      const ayahKey = action.payload;
+      if (!state.recitationPlan.completedAyahKeys.includes(ayahKey)) {
+        state.recitationPlan.completedAyahKeys.push(ayahKey);
+        state.recitationPlan.lastReadAyah = ayahKey;
+        AsyncStorage.setItem('recitationPlan', JSON.stringify(state.recitationPlan));
+      }
+    },
+    clearRecitatonPlan: (state) => {
+      state.recitationPlan = undefined;
+      AsyncStorage.removeItem('recitationPlan');
     }
   },
   extraReducers: (builder) => {
@@ -124,9 +155,12 @@ const quranSlice = createSlice({
       .addCase(loadBookmarks.rejected, (state, action) => {
         state.error = action.payload as string;
       })
+      .addCase(loadRecitationPlan.fulfilled, (state, action) => {
+        state.recitationPlan = action.payload
+      })
   },
 });
 
-export const { addBookmark, removeBookmark } = quranSlice.actions;
+export const { addBookmark, removeBookmark, setRecitationPlan, clearRecitatonPlan, updateRecitationProgress  } = quranSlice.actions;
 
 export default quranSlice.reducer;
