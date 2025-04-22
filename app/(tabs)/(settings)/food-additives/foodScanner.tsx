@@ -1,43 +1,31 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View, Text, StyleSheet, Image, ActivityIndicator, Alert,
-  TouchableOpacity, Modal, Dimensions,
-  Platform
+  TouchableOpacity, Modal, FlatList
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { FontAwesome } from '@expo/vector-icons';
 import { FAB } from '@rneui/base';
 import { useTheme } from '../../../../context/ThemeContext';
-
-const screenHeight = Dimensions.get('window').height;
+import { AnimatedIngredientCard } from '../../../../components/foodScanner/AnimatedIngredientCard';
 
 const ScannerScreen = () => {
   const { theme } = useTheme();
-  const router = useRouter();
+  const [imageUri, setImageUri] = React.useState<string | null>(null);
+  const [ingredients, setIngredients] = React.useState<any[]>([]);
+  const [overallStatus, setOverallStatus] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [photoOptionsVisible, setPhotoOptionsVisible] = React.useState(false);
 
-  const [imageUri, setImageUri] = useState<string | null>(null);
-  const [ingredients, setIngredients] = useState<any[]>([]);
-  const [overallStatus, setOverallStatus] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [photoOptionsVisible, setPhotoOptionsVisible] = useState(false);
-
-  const handleScan = async (uri: string) => {
+  const handleScan = async (base64Image: string) => {
     setIsLoading(true);
     setIngredients([]);
     setOverallStatus(null);
 
     try {
-      const formData = new FormData();
-      formData.append('image', {
-        uri,
-        name: 'image.jpg',
-        type: 'image/jpeg',
-      } as any);
-
-      const response = await axios.post('https://your-backend.com/api/scan-ingredients', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const response = await axios.post('https://your-backend.com/api/scan-ingredients', {
+        image: base64Image,
       });
 
       setIngredients(response.data.ingredients);
@@ -52,11 +40,22 @@ const ScannerScreen = () => {
 
   const handleChooseFromLibrary = async () => {
     setPhotoOptionsVisible(false);
-    const result = await ImagePicker.launchImageLibraryAsync({ quality: 1 });
-    if (!result.canceled && result.assets.length > 0) {
-      const uri = result.assets[0].uri;
-      setImageUri(uri);
-      handleScan(uri);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      quality: 1,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const base64Image = asset.base64;
+      const uri = asset.uri;
+
+      if (base64Image && uri) {
+        setImageUri(uri);
+        handleScan(base64Image);
+      } else {
+        Alert.alert('Error', 'Failed to retrieve image data.');
+      }
     }
   };
 
@@ -68,11 +67,22 @@ const ScannerScreen = () => {
       return;
     }
 
-    const result = await ImagePicker.launchCameraAsync({ quality: 1 });
-    if (!result.canceled && result.assets.length > 0) {
-      const uri = result.assets[0].uri;
-      setImageUri(uri);
-      handleScan(uri);
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 1,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const base64Image = asset.base64;
+      const uri = asset.uri;
+
+      if (base64Image && uri) {
+        setImageUri(uri);
+        handleScan(base64Image);
+      } else {
+        Alert.alert('Error', 'Failed to retrieve image data.');
+      }
     }
   };
 
@@ -94,30 +104,20 @@ const ScannerScreen = () => {
       {isLoading && <ActivityIndicator size="large" color={theme.colors.text.primary} style={{ marginTop: 16 }} />}
 
       {!isLoading && ingredients.length > 0 && (
-        <View style={styles.results}>
-          <Text style={[styles.statusHeader, { color: getStatusColor(overallStatus || '') }]}>
-            Overall: {overallStatus}
-          </Text>
-
-          {ingredients.map((ing, index) => (
-            <View
-              key={index}
-              style={[styles.ingredientCard, { backgroundColor: theme.colors.secondary }]}
-            >
-              <Text style={[styles.ingredientName, { color: theme.colors.text.primary }]}>
-                {ing.name}
-              </Text>
-              <Text style={{ color: getStatusColor(ing.status), fontWeight: 'bold' }}>
-                {ing.status}
-              </Text>
-              {ing.description && (
-                <Text style={[styles.ingredientDesc, { color: theme.colors.text.secondary }]}>
-                  {ing.description}
-                </Text>
-              )}
-            </View>
-          ))}
-        </View>
+        <FlatList
+          style={styles.results}
+          data={ingredients}
+          keyExtractor={(item, index) => item.name + index}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <Text style={[styles.statusHeader, { color: getStatusColor(overallStatus || '') }]}>
+              Overall: {overallStatus}
+            </Text>
+          }
+          renderItem={({ item, index }) => (
+            <AnimatedIngredientCard ingredient={item} index={index} theme={theme} />
+          )}
+        />
       )}
 
       <FAB
@@ -165,17 +165,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
   imagePreview: { width: '100%', height: 300, borderRadius: 16, marginBottom: 20 },
   results: { marginTop: 24 },
-  ingredientCard: {
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 12,
-    ...Platform.select({ ios: { shadowOpacity: 0.1 }, android: { elevation: 3 } }),
-  },
-  ingredientName: { fontSize: 18 },
-  ingredientDesc: { marginTop: 6, fontSize: 13 },
   statusHeader: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: 'Outfit_600SemiBold',
     marginBottom: 12,
   },
   modalOverlay: {
