@@ -7,17 +7,24 @@ import {
   Animated,
   Easing,
   Switch,
+  StyleSheet as RNStyleSheet,
 } from 'react-native';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../../../redux/store/store';
 import { toggleRamadanMode } from '../../../../redux/slices/userPreferencesSlice';
+import { LinearGradient } from 'expo-linear-gradient';
+import { greenTheme, blueTheme, purpleTheme } from '../../../../theme/theme';
+import { useThemeTransition } from '../../../../hooks/useThemeTransition'; // ✅ Shared hook
 
 const Appearance = () => {
   const { theme, currentTheme, switchTheme, isDarkMode, toggleDarkMode } = useTheme();
   const dispatch = useDispatch();
-  const isRamadanMode = useSelector((state: RootState) => state.userPreferences.ramadanMode) 
-  const themes = ['green', 'blue', 'purple']; // Available themes
+  const { themeTransitionAnim, triggerThemeTransition } = useThemeTransition(); // ✅ Shared value
+  const isRamadanMode = useSelector((state: RootState) => state.userPreferences.ramadanMode);
+  const themes = ['green', 'blue', 'purple'];
+
+  const [transitionColor, setTransitionColor] = useState(theme.colors.primary);
 
   const [animatedValues, setAnimatedValues] = useState(() =>
     themes.reduce((acc, themeName) => {
@@ -28,19 +35,29 @@ const Appearance = () => {
   );
 
   const handleThemeChange = (themeName: any) => {
+    //@ts-ignore
+    const nextColor = themes[themeName]?.light?.colors?.primary ?? theme.colors.primary;
+    setTransitionColor(nextColor);
+
+    triggerThemeTransition(() => switchTheme(themeName));
+
     Object.keys(animatedValues).forEach((key) => {
       //@ts-ignore
       Animated.timing(animatedValues[key], {
         toValue: key === themeName ? 1 : 0,
-        duration: 300, // Smooth transition
+        duration: 300,
         easing: Easing.inOut(Easing.ease),
         useNativeDriver: false,
       }).start();
     });
-    switchTheme(themeName);
   };
 
-  // Ramadan Mode state & toggle function
+  const handleDarkModeToggle = () => {
+    const nextColor = isDarkMode ? theme.colors.primary : theme.colors.primary;
+    setTransitionColor(nextColor);
+    triggerThemeTransition(toggleDarkMode);
+  };
+
   const toggleRamadanModeHandler = () => {
     dispatch(toggleRamadanMode());
   };
@@ -49,6 +66,36 @@ const Appearance = () => {
 
   return (
     <View style={styles.mainContainer}>
+      {/* Gradient overlay synced with header */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          RNStyleSheet.absoluteFillObject,
+          {
+            zIndex: 100,
+            elevation: 20,
+            opacity: themeTransitionAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 1],
+            }),
+            transform: [
+              {
+                scale: themeTransitionAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 1.05],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <LinearGradient
+          colors={[transitionColor, `${transitionColor}99`, `${transitionColor}00`]}
+          locations={[0, 0.4, 1]}
+          style={{ flex: 1 }}
+        />
+      </Animated.View>
+
       <View style={styles.settingsContainer}>
         <Text style={styles.title}>Theme</Text>
 
@@ -58,10 +105,7 @@ const Appearance = () => {
             //@ts-ignore
             const animatedColor = animatedValues[themeName].interpolate({
               inputRange: [0, 1],
-              outputRange: [
-                theme.colors.text.muted,
-                theme.colors.accent,
-              ],
+              outputRange: [theme.colors.text.muted, theme.colors.accent],
             });
 
             return (
@@ -91,20 +135,16 @@ const Appearance = () => {
           <Text style={styles.darkModeLabel}>Dark Mode</Text>
           <Switch
             value={isDarkMode}
-            onValueChange={toggleDarkMode}
+            onValueChange={handleDarkModeToggle}
             trackColor={{
               false: theme.colors.text.muted,
               true: theme.colors.accent,
             }}
-            thumbColor={
-              isDarkMode
-                ? theme.colors.primary
-                : theme.colors.secondary
-            }
+            thumbColor={isDarkMode ? theme.colors.primary : theme.colors.secondary}
           />
         </View>
 
-        {/* Ramadan Mode Toggle */}
+        {/* Ramadan Mode Toggle (Optional) */}
         {/* <View style={styles.settingsField}>
           <Text style={styles.darkModeLabel}>Ramadan Mode</Text>
           <Switch

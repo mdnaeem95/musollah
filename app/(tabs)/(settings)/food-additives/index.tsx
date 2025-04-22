@@ -6,6 +6,8 @@ import { fetchFoodAdditives } from '../../../../api/firebase';
 import { FoodAdditive } from '../../../../utils/types';
 import { useTheme } from '../../../../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FAB } from '@rneui/base'
+import { useRouter } from 'expo-router';
 
 const CACHE_KEY = 'foodAdditivesCache';
 const CACHE_TTL = 24 * 60 * 60 * 1000; // Cache TTL set to 24 hours (in milliseconds)
@@ -13,6 +15,7 @@ const CACHE_TTL = 24 * 60 * 60 * 1000; // Cache TTL set to 24 hours (in millisec
 const FoodAdditivesPage = () => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const router = useRouter();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [foodAdditives, setFoodAdditives] = useState<FoodAdditive[]>([]);
@@ -111,6 +114,14 @@ const FoodAdditivesPage = () => {
           </Text>
         </View>
       )}
+
+      <FAB
+        placement="right"
+        color={theme.colors.muted}
+        icon={{ name: 'camera-alt', type: 'material', color: theme.colors.text.primary }}
+        onPress={() => router.push('/(settings)/food-additives/foodScanner')} // You’ll create this screen
+        style={{ position: 'absolute', bottom: 30, right: 20 }}
+      />
     </View>
   );
 };
@@ -141,7 +152,8 @@ const createStyles = (theme: any) =>
     additiveContainer: {
       padding: theme.spacing.medium,
       borderRadius: theme.borderRadius.medium,
-      marginBottom: theme.spacing.small,
+      marginBottom: theme.spacing.medium,
+      marginHorizontal: 3,
       ...theme.shadows.default,
     },
     eCode: {

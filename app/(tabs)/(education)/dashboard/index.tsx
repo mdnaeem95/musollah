@@ -1,6 +1,6 @@
-// Refactored Education Dashboard Screen with AuthContext, UserData separation, and animations
+// Refactored Education Dashboard Screen with High & Medium priority improvements
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import { AppDispatch, RootState } from '../../../../redux/store/store';
 import {
   fetchCoursesAndTeachers,
   fetchDashboardData,
+  resetDashboardState,
 } from '../../../../redux/slices/dashboardSlice';
 import { useTheme } from '../../../../context/ThemeContext';
 import CourseCardShort from '../../../../components/education/CourseCardShort';
@@ -27,6 +28,13 @@ import { MotiView } from 'moti';
 import { useAuth } from '../../../../context/AuthContext';
 
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
+const useShouldFetchDashboard = (lastFetched: number | null) => {
+  return useCallback(() => {
+    if (!lastFetched) return true;
+    return Date.now() - lastFetched > CACHE_DURATION;
+  }, [lastFetched]);
+};
 
 const TeacherCard = React.memo(({ teacher }: { teacher: any }) => {
   const { theme } = useTheme();
@@ -46,12 +54,8 @@ const TeacherCard = React.memo(({ teacher }: { teacher: any }) => {
       >
         <Image source={{ uri: teacher.imagePath }} style={styles.teacherImage} />
         <View style={styles.textContentContainer}>
-          <Text style={[styles.courseHeaderText, { color: theme.colors.text.primary }]}>
-            {teacher.name}
-          </Text>
-          <Text style={[styles.courseCategoryText, { color: theme.colors.text.muted }]}>
-            {teacher.expertise}
-          </Text>
+          <Text style={[styles.courseHeaderText, { color: theme.colors.text.primary }]}> {teacher.name} </Text>
+          <Text style={[styles.courseCategoryText, { color: theme.colors.text.muted }]}> {teacher.expertise} </Text>
         </View>
       </TouchableOpacity>
     </MotiView>
@@ -81,14 +85,17 @@ const Dashboard = () => {
     (state: RootState) => state.dashboard
   );
 
-  const inProgressCourses = userData?.enrolledCourses?.filter(
-    (course) => course.status.courseStatus !== 'completed'
-  ) || [];
+  const shouldFetchData = useShouldFetchDashboard(lastFetched);
 
-  const shouldFetchData = useCallback(() => {
-    if (!lastFetched) return true;
-    return Date.now() - lastFetched > CACHE_DURATION;
-  }, [lastFetched]);
+  const inProgressCourses = useMemo(() => userData?.enrolledCourses?.filter(
+    (course) => course.status.courseStatus !== 'completed') || [],
+  [userData?.enrolledCourses]);
+
+  useEffect(() => {
+    if (!user && userData?.id) {
+      dispatch(resetDashboardState());
+    }
+  }, [user, userData?.id, dispatch]);
 
   useEffect(() => {
     if (!isUnauthenticatedDataFetched && shouldFetchData()) {
@@ -269,7 +276,7 @@ const createStyles = (theme: any) =>
       height: 250,
       width: 160,
       marginLeft: 3,
-      marginBottom: 3
+      marginBottom: 3,
     },
     teacherCardShadow: {
       borderRadius: 10,

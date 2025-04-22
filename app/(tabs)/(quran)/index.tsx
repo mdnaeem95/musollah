@@ -7,6 +7,7 @@ import DailyAyah from '../../../components/quran/DailyAyah';
 import DailyGoalTracker from '../../../components/quran/DailyGoalTracker';
 import OverallProgressTracker from '../../../components/quran/OverallProgressTracker';
 import { useTheme } from '../../../context/ThemeContext';
+import RecitationProgress from '../../../components/quran/RecitationProgress';
 
 const QuranDashboard = () => {
   const { theme } = useTheme();
@@ -60,7 +61,27 @@ const QuranDashboard = () => {
     <View style={styles.mainContainer}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.gridContainer}>
-          {['/surahs', '/doas', '/bookmarks'].map((route, index) => (
+        {[
+          {
+            label: 'Quran',
+            icon: 'book-quran',
+            route: '/surahs',
+          },
+          {
+            label: 'Duas',
+            icon: 'hands-praying',
+            route: '/doas',
+          },
+          {
+            label: 'Bookmarks',
+            icon: 'bookmark',
+            route: '/bookmarks',
+          },
+          {
+            label: 'Recitation Plan',
+            icon: 'calendar-check',
+            route: '/recitationPlan',
+          }].map(({ label, icon, route }, index) => (
             <TouchableOpacity
               key={index}
               style={styles.gridItem}
@@ -71,13 +92,13 @@ const QuranDashboard = () => {
             >
               <Animated.View style={{ transform: [{ scale: scaleAnim }], alignItems: 'center' }}>
                 <FontAwesome6
-                  name={index === 0 ? 'book-quran' : index === 1 ? 'hands-praying' : 'bookmark'}
+                  name={icon}
                   size={28}
                   color={theme.colors.text.primary}
                   solid
                 />
                 <Text style={styles.iconLabel}>
-                  {index === 0 ? 'Quran' : index === 1 ? 'Duas' : 'Bookmarks'}
+                  {label}
                 </Text>
               </Animated.View>
             </TouchableOpacity>
@@ -85,8 +106,7 @@ const QuranDashboard = () => {
         </View>
 
         <DailyAyah />
-        <DailyGoalTracker />
-        <OverallProgressTracker />
+        <RecitationProgress />
 
         {lastListenedAyah.surahNumber > 0 && (
           <TouchableOpacity
