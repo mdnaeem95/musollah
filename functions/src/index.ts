@@ -11,28 +11,35 @@ initializeApp();
 const db = getFirestore();
 const visionClient = new vision.ImageAnnotatorClient();
 
+function looksGibberish(word: string): boolean {
+  if (word.length > 60) return true;
+  if (word.split(" ").length > 6) return true;
+  if (/[^a-z0-9\s\-.,()]/gi.test(word) && !word.includes("e")) return true;
+  if (word.match(/[a-z]{5,}[a-z]{5,}/gi)) return true;
+  return false;
+}
+
 function parseIngredients(text: string): string[] {
-  const start = text.toLowerCase().indexOf("ingredients:");
-  if (start === -1) return [];
+  const lowerText = text.toLowerCase();
+  const startIndex = lowerText.indexOf("ingredients");
+  const start = startIndex !== -1 ? startIndex + "ingredients".length : 0;
 
-  const endKeywords = ["phenylketonurics", "warning", "use by", "allergy"];
-  const rest = text.slice(start);
-
-  let endIndex = rest.length;
+  const endKeywords = ["phenylketonurics", "warning", "use by", "allergy", "contains", "store", "best before"];
+  let endIndex = text.length;
   for (const keyword of endKeywords) {
-    const i = rest.toLowerCase().indexOf(keyword);
+    const i = lowerText.indexOf(keyword, start);
     if (i !== -1 && i < endIndex) endIndex = i;
   }
 
-  const rawBlock = rest.slice(12, endIndex).trim();
+  const rest = text.slice(start, endIndex).trim();
 
-  const nestedMatches = [...rawBlock.matchAll(/\(([^)]+)\)/g)].map((m) => m[1]);
+  const nestedMatches = [...rest.matchAll(/\(([^)]+)\)/g)].map((m) => m[1]);
   const nestedItems = nestedMatches
-    .flatMap((str) => str.split(/,|and/i))
+    .flatMap((str) => str.split(/,|and|&/i))
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
 
-  const cleaned = rawBlock
+  const cleaned = rest
     .replace(/\([^)]*\)/g, "")
     .replace(/\n|\r/g, " ")
     .replace(/[^a-zA-Z0-9,.\s]/g, "")
@@ -41,11 +48,12 @@ function parseIngredients(text: string): string[] {
 
   const rawItems = cleaned
     .split(",")
+    .flatMap((i) => i.split("&"))
     .map((i) => i.trim().toLowerCase().replace(/\.+$/, ""))
     .map((i) => [...new Set(i.split(" "))].join(" "))
     .filter(Boolean);
 
-  const allIngredients = [...rawItems, ...nestedItems];
+  const allIngredients = [...rawItems, ...nestedItems].filter((i) => !looksGibberish(i));
   return [...new Set(allIngredients)];
 }
 
@@ -106,11 +114,23 @@ export const scanIngredients = onRequest(async (req, res) => {
 
     const [result] = await visionClient.textDetection(tmpFilePath);
     const detections = result.textAnnotations;
-    const fullText = detections?.[0]?.description || "";
+    const fullText = detections?.[0]?.description
+      ?.replace(/[{}[\]<>]/g, "")
+      ?.replace(/\r?\n/g, " ")
+      ?.replace(/\s{2,}/g, " ")
+      ?.trim() || "";
 
     logger.info("📄 OCR Extracted Text:", fullText);
 
     const parsedIngredients = parseIngredients(fullText);
+    const gibberishRatio = parsedIngredients.filter(looksGibberish).length / parsedIngredients.length;
+    if (gibberishRatio > 0.4) {
+      logger.warn("High gibberish ratio detected:", gibberishRatio);
+      res.status(400).json({
+        error: "Image too unclear. Please retake the photo with better lighting and focus.",
+      });
+    }
+
     logger.info("🧪 Parsed Ingredients:", parsedIngredients);
 
     const snapshot = await db.collection("foodAdditives").get();
@@ -122,7 +142,8 @@ export const scanIngredients = onRequest(async (req, res) => {
       const found = additives.find((item) =>
         item.chemicalName.toLowerCase() === name.toLowerCase() ||
         name.includes(item.chemicalName.toLowerCase()) ||
-        item.chemicalName.toLowerCase().includes(name)
+        item.chemicalName.toLowerCase().includes(name) ||
+        (item.eCode === name.toLowerCase())
       );
 
       if (found) {
@@ -145,7 +166,6 @@ export const scanIngredients = onRequest(async (req, res) => {
       }
     });
 
-    // Upload any unmatched ingredients to the coreIngredients collection
     const uploads = await Promise.all(
       newIngredients.map(async (ingredient) => {
         const existing = await db
