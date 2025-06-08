@@ -85,6 +85,7 @@ const SettingsLayout = () => {
     { name: "referral/index", title: "Referral" },
     { name: "referral/leaderboard", title: "Leaderboard" },
     { name: "procedureBot/index", title: "Procuedure Bot" },
+    { name: "moe/index", title: "Muslim-Owned Businesses" },
   ];
 
   return (

@@ -13,7 +13,7 @@ import { fetchUserLocation } from '../../../redux/slices/userLocationSlice';
 import { fetchMusollahData } from '../../../redux/slices/musollahSlice';
 import BidetSheet from './BidetSheet';
 import MosqueSheet from './MosqueSheet';
-import MusollahSheet from '../../../components/musollah/MusollahSheet';
+import MusollahSheet from './MusollahSheet';
 
 const locationTypes = ['Bidets', 'Musollahs', 'Mosques'];
 
@@ -154,7 +154,7 @@ export default function MusollahScreen() {
 
         {selectedIndex === 0 && selectedLocation && (
           <BidetSheet
-            location={selectedLocation as BidetLocation}
+            locationId={selectedLocation?.id || null}
             visible={isSheetVisible}
             onClose={handleCloseSheet}
           />
@@ -162,7 +162,7 @@ export default function MusollahScreen() {
 
         {selectedIndex === 1 && selectedLocation && (
           <MusollahSheet
-            location={selectedLocation as MusollahLocation}
+            locationId={selectedLocation?.id || null}
             visible={isSheetVisible}
             onClose={handleCloseSheet}
           />

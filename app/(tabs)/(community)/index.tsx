@@ -37,7 +37,7 @@ const CATEGORIES = [
   { name: "Mental Wellness", icon: "brain" },
   { name: "Converts & Reverts", icon: "handshake" },
   { name: "Interfaith & Outreach", icon: "globe" },
-  { name: "Community Iftar", icon: "utensils" }
+  { name: "Doas", icon: "hands-praying" }
 ];
 
 /**

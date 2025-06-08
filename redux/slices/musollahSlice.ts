@@ -55,6 +55,31 @@ const musollahSlice = createSlice({
     setError(state, action) {
       state.error = action.payload;
     },
+    updateLocationStatusInState(
+      state,
+      action: {
+        payload: {
+          type: 'bidet' | 'musollah';
+          id: string;
+          status: 'Available' | 'Unavailable' | 'Unknown';
+          lastUpdated: number;
+        };
+      }
+    ) {
+      const { type, id, status, lastUpdated } = action.payload;
+    
+      const targetArray =
+        type === 'bidet' ? state.bidetLocations : state.musollahLocations;
+    
+      const index = targetArray.findIndex((loc) => loc.id === id);
+      if (index !== -1) {
+        targetArray[index] = {
+          ...targetArray[index],
+          status,
+          lastUpdated,
+        };
+      }
+    }    
   },
   extraReducers: (builder) => {
     builder
@@ -75,5 +100,5 @@ const musollahSlice = createSlice({
   },
 });
 
-export const { setBidetLocations, setMosqueLocations, setMusollahLocations, setLoading, setError } = musollahSlice.actions;
+export const { setBidetLocations, setMosqueLocations, setMusollahLocations, setLoading, setError, updateLocationStatusInState, } = musollahSlice.actions;
 export default musollahSlice.reducer;

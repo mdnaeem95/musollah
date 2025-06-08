@@ -1,70 +1,72 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
+import { MotiView } from 'moti';
 import { scaleSize } from '../../utils';
 import { useTheme } from '../../context/ThemeContext';
+import { PrayerName } from '../../utils/types/prayer.types';
 
 interface CurrentPrayerInfoProps {
-  currentPrayer: string;
+  currentPrayer: PrayerName | null;
   nextPrayerInfo: {
-    nextPrayer: string;
+    nextPrayer: PrayerName;
     timeUntilNextPrayer: string;
   } | null;
-  isRamadanMode?: boolean;
 }
 
-const CurrentPrayerInfo: React.FC<CurrentPrayerInfoProps> = ({
+const CurrentPrayerInfo: React.FC<CurrentPrayerInfoProps> = memo(({
   currentPrayer,
   nextPrayerInfo,
-  isRamadanMode = false,
 }) => {
   const { theme } = useTheme();
-  const styles = createStyles(theme, isRamadanMode);
+  const styles = createStyles(theme);
 
   if (!currentPrayer || !nextPrayerInfo) {
-    return null; // Render nothing if data is missing
+    return null;
   }
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.currentPrayerText, isRamadanMode && styles.currentPrayerTextRamadan]}>
-        {currentPrayer}
-      </Text>
-      <Text style={[styles.nextPrayerText, isRamadanMode && styles.nextPrayerTextRamadan]}>
-        {nextPrayerInfo.timeUntilNextPrayer} until {nextPrayerInfo.nextPrayer}
-      </Text>
+      <MotiView
+        from={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: 'spring', damping: 15 }}
+      >
+        <Text style={styles.currentPrayerText}>
+          {currentPrayer}
+        </Text>
+      </MotiView>
+      
+      <MotiView
+        from={{ opacity: 0, translateY: 10 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ delay: 100 }}
+      >
+        <Text style={styles.nextPrayerText}>
+          {nextPrayerInfo.timeUntilNextPrayer} until {nextPrayerInfo.nextPrayer}
+        </Text>
+      </MotiView>
     </View>
   );
-};
+});
 
-const createStyles = (theme: any, isRamadanMode: boolean) =>
-  StyleSheet.create({
-    container: {
-      alignItems: 'center',
-      marginVertical: 10,
-    },
-    currentPrayerText: {
-      fontFamily: 'Outfit_500Medium',
-      fontSize: scaleSize(24),
-      lineHeight: 30,
-      color: isRamadanMode ? theme.colors.text.primary : "#000000",
-      textAlign: 'center',
-    },
-    nextPrayerText: {
-      fontFamily: 'Outfit_400Regular',
-      fontSize: scaleSize(14),
-      color: isRamadanMode ? theme.colors.text.primary : "#000000",
-      textAlign: 'center',
-      marginTop: 5,
-    },
-    // Smaller font sizes for Ramadan mode
-    currentPrayerTextRamadan: {
-      fontSize: scaleSize(18),
-      lineHeight: scaleSize(22),
-    },
-    nextPrayerTextRamadan: {
-      fontSize: scaleSize(10),
-      marginTop: 3,
-    },
-  });
+const createStyles = (theme: any) => StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  currentPrayerText: {
+    fontFamily: 'Outfit_600SemiBold',
+    fontSize: scaleSize(28),
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  nextPrayerText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: scaleSize(16),
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+  },
+});
 
 export default CurrentPrayerInfo;

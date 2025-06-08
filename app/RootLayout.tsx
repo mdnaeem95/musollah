@@ -9,7 +9,7 @@ import { useFonts } from 'expo-font';
 import { AppDispatch, persistor } from '../redux/store/store';
 import { useLogTrackPlayerState } from '../hooks/useLogTrackPlayerState'
 import { useSetupTrackPlayer } from "../hooks/useSetupTrackPlayer"
-import { fetchPrayerTimesFromFirebase } from '../redux/slices/prayerSlice';
+import { fetchPrayerTimesForDate } from '../redux/slices/prayerSlice'; // Use existing function
 import { fetchSurahsData } from '../redux/slices/quranSlice';
 import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
 import { fetchDailyDoasData } from '../redux/slices/doasSlice';
@@ -23,11 +23,26 @@ import { registerForPushNotificationsAsync } from '../utils/registerForPushNotif
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { seedPrayerTimesToWidget } from '../api/firebase/prayer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { format } from 'date-fns';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 if (AppState.currentState === 'active') {
   SplashScreen.preventAutoHideAsync();
 }
 TrackPlayer.registerPlaybackService(() => playbackService)
+
+// Create QueryClient for React Query
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: 'always',
+    },
+  },
+});
 
 const RootLayout = () => {
   const dispatch = useDispatch<AppDispatch>();  
@@ -74,6 +89,7 @@ const RootLayout = () => {
         setIsAdMobInitialized(true);
       } catch (error) {
         console.error('Error initializing AdMob:', error);
+        setIsAdMobInitialized(true); // Continue even if AdMob fails
       }
     };
     initializeAdMob();
@@ -85,13 +101,22 @@ const RootLayout = () => {
     const fetchEssentialData = async () => {
       try {
         console.log('Fetching essential data from Firebase');
-        const prayerData = await dispatch(fetchPrayerTimesFromFirebase({})).unwrap();
-        seedPrayerTimesToWidget();
-        console.log('✅ Retrieved Prayer Times from Firebase:', JSON.stringify(prayerData, null, 2));
+        
+        // Use the existing fetchPrayerTimesByDate function with today's date
+        const todayFormatted = format(new Date(), 'dd/MM/yyyy');
+        const prayerData = await dispatch(fetchPrayerTimesForDate(todayFormatted)).unwrap();
+        
+        console.log('✅ Retrieved Prayer Times:', JSON.stringify(prayerData, null, 2));
+        
+        // Seed to widget if function exists
+        if (typeof seedPrayerTimesToWidget === 'function') {
+          seedPrayerTimesToWidget().catch(console.error);
+        }
+        
         setIsEssentialDataFetched(true);
       } catch (error) {
         console.error('Error fetching essential data:', error);
-        setIsEssentialDataFetched(true);
+        setIsEssentialDataFetched(true); // Continue even if fetch fails
       }
     };
     if (!isEssentialDataFetched) {
@@ -108,6 +133,7 @@ const RootLayout = () => {
         setIsNonEssentialDataFetched(true);
       } catch (error) {
         console.error('Error fetching non-essential data:', error);
+        setIsNonEssentialDataFetched(true); // Continue even if fetch fails
       }
     };
     if (!isNonEssentialDataFetched) {
@@ -142,14 +168,16 @@ const RootLayout = () => {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={{ flex: 1 }}>
-        <Animated.View style={[styles.splashScreen, animatedSplashStyle]} />
-        <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
-        </Stack>
-      </View>
-    </GestureHandlerRootView>
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={{ flex: 1 }}>
+          <Animated.View style={[styles.splashScreen, animatedSplashStyle]} />
+          <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
+          </Stack>
+        </View>
+      </GestureHandlerRootView>
+    </QueryClientProvider>
   );
 }
 
