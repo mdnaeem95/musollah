@@ -5,7 +5,7 @@ import { RootState } from '../../redux/store/store';
 import { format, parse } from 'date-fns';
 
 const screenWidth = Dimensions.get('window').width;
-const containerWidth = screenWidth * 0.75;
+const containerWidth = screenWidth * 0.8; // Just slightly wider than original 0.75
 
 interface PrayerTimeItemProps {
     name: string;
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
       shadowOffset: { width: 0, height: Platform.OS === 'android' ? 0 : 4 },
       shadowOpacity: 0.2,
       shadowRadius: Platform.OS === 'android' ? 0 : 6,
-      elevation: Platform.OS === 'android' ? 0 : 4, // Shadow for Android
+      elevation: Platform.OS === 'android' ? 0 : 4,
     },
     prayerName: {
       fontFamily: 'Outfit_500Medium',
