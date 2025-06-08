@@ -10,7 +10,7 @@ import { PrayerName } from '../../utils/types/prayer.types';
 import { RootState, AppDispatch } from '../../redux/store/store';
 import { selectPrayerLog, savePrayerLog } from '../../redux/slices/prayerSlice';
 import { isPrayerAvailable } from '../../utils/prayers/prayerTimeUtils';
-import { PRAYER_NAMES, LOGGABLE_PRAYERS } from '../..//constants/prayer.constants';
+import { PRAYER_NAMES, LOGGABLE_PRAYERS } from '../../constants/prayer.constants';
 import { getAuth } from '@react-native-firebase/auth';
 import Toast from 'react-native-toast-message';
 

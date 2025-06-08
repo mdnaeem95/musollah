@@ -360,6 +360,8 @@ export interface BidetLocation {
     handicap: string;
     male: string;
     distance?: number;
+    status?: 'Available' | 'Unavailable' | 'Unknown';
+    lastUpdated?: number; // timestamp  
 }
   
 export interface MosqueLocation {
@@ -390,6 +392,8 @@ export interface MusollahLocation {
     telekung: string;
     directions: string;
     distance?: number;
+    status?: 'Available' | 'Unavailable' | 'Unknown';
+    lastUpdated?: number; // timestamp  
 }
 
 export interface FoodAdditive {

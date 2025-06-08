@@ -3,20 +3,56 @@ import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native'
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { ListItem } from '@rneui/themed';
-import { useTheme } from '../../context/ThemeContext';
-import { MusollahLocation } from './Map';
+import { useTheme } from '../../../context/ThemeContext';
+import { MusollahLocation } from '../../../utils/types';
+import firestore from '@react-native-firebase/firestore';
 
 interface MusollahSheetProps {
-  location: MusollahLocation | null;
+  locationId: string | null;
   visible: boolean;
   onClose: () => void;
 }
 
-export default function MusollahSheet({ location, visible, onClose }: MusollahSheetProps) {
+export default function MusollahSheet({ locationId, visible, onClose }: MusollahSheetProps) {
   const { theme } = useTheme();
   const sheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => ['40%', '80%'], []);
+  const snapPoints = useMemo(() => ['60%', '80%'], []);
   const [expanded, setExpanded] = useState(false);
+  const [location, setLocation] = useState<MusollahLocation | null>(null);
+
+  useEffect(() => {
+    if (!locationId || !visible) return;
+  
+    const unsubscribe = firestore()
+      .collection('Musollahs') // lowercase unless your Firestore collection is named differently
+      .doc(locationId)
+      .onSnapshot((doc) => {
+        if (doc.exists) {
+          const data = doc.data();
+          if (!data) return;
+          const normalized: MusollahLocation = {
+            id: doc.id,
+            building: data.Building || '',
+            address: data.Address || '',
+            segregated: data.Segregated || 'No',
+            airConditioned: data.AirConditioned || 'No',
+            ablutionArea: data.AblutionArea || 'No',
+            slippers: data.Slippers || 'No',
+            prayerMats: data.PrayerMats || 'No',
+            telekung: data.Telekung || 'No',
+            directions: data.Directions || '',
+            coordinates: data.Coordinates || { latitude: 0, longitude: 0 },
+            status: data.status || 'Unknown',
+            lastUpdated: data.lastUpdated || null,
+          };
+          setLocation(normalized);
+        } else {
+          setLocation(null);
+        }
+      });
+  
+    return () => unsubscribe();
+  }, [locationId, visible]);  
 
   useEffect(() => {
     if (!sheetRef.current) return;
