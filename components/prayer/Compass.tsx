@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
+  Image,
   Dimensions,
   Vibration,
   Animated,
@@ -35,7 +36,14 @@ const Compass: React.FC<CompassProps> = ({
   enablePulseAnimation = true,
 }) => {
   const { theme } = useTheme();
-  const { userHeading, qiblaAzimuth, loading, error, retryInitialization } = useCompass();
+  const { 
+    userHeading, 
+    qiblaAzimuth, 
+    loading, 
+    error, 
+    distanceToMecca,
+    retryInitialization,
+  } = useCompass();
   
   // Animation values
   const backgroundColorAnimation = useRef(new Animated.Value(0)).current;
@@ -71,6 +79,16 @@ const Compass: React.FC<CompassProps> = ({
 
     return { angle, proximityToQibla, isClose };
   }, [userHeading, qiblaAzimuth]);
+
+  // Format distance for display
+  const formattedDistance = useMemo(() => {
+    if (!distanceToMecca) return null;
+    
+    const km = Math.round(distanceToMecca);
+    const miles = Math.round(distanceToMecca * 0.621371);
+    
+    return { km, miles };
+  }, [distanceToMecca]);
 
   // Handle Qibla proximity feedback
   const handleQiblaProximity = useCallback((isClose: boolean) => {
@@ -210,6 +228,19 @@ const Compass: React.FC<CompassProps> = ({
         >
           Qibla heading: {Math.round(qiblaAzimuth || 0)}°
         </Text>
+        
+        {/* Distance Display */}
+        {formattedDistance && (
+          <View style={styles.distanceContainer}>
+            <Text style={[styles.distanceText, { color: theme.colors.text.primary }]}>
+              Distance to Mecca
+            </Text>
+            <Text style={[styles.distanceValue, { color: theme.colors.accent }]}>
+              {formattedDistance.km.toLocaleString()} km ({formattedDistance.miles.toLocaleString()} mi)
+            </Text>
+          </View>
+        )}
+
         <Text
           style={[styles.instructionText, { color: theme.colors.text.secondary }]}
           accessibilityRole="text"
@@ -288,7 +319,7 @@ const Compass: React.FC<CompassProps> = ({
   );
 };
 
-// Styles will be provided in the next message due to length
+// Styles
 const styles = {
   container: {
     flex: 1,
@@ -344,6 +375,25 @@ const styles = {
     fontFamily: 'Outfit_400Regular',
     fontSize: 16,
     textAlign: 'center' as const,
+  },
+  distanceContainer: {
+    alignItems: 'center' as const,
+    marginVertical: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  distanceText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+    textAlign: 'center' as const,
+  },
+  distanceValue: {
+    fontFamily: 'Outfit_600SemiBold',
+    fontSize: 18,
+    textAlign: 'center' as const,
+    marginTop: 4,
   },
   instructionText: {
     fontFamily: 'Outfit_400Regular',
