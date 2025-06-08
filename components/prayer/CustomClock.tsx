@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, StyleProp, TextStyle } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store/store';
 

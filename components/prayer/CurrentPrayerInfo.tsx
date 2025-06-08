@@ -57,14 +57,14 @@ const createStyles = (theme: any) => StyleSheet.create({
   currentPrayerText: {
     fontFamily: 'Outfit_600SemiBold',
     fontSize: scaleSize(28),
-    color: theme.colors.text.primary,
+    color: 'black',
     textAlign: 'center',
     marginBottom: 8,
   },
   nextPrayerText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: scaleSize(16),
-    color: theme.colors.text.secondary,
+    color: 'black',
     textAlign: 'center',
   },
 });

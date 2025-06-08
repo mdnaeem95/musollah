@@ -2,29 +2,29 @@ import { StyleSheet, View } from 'react-native';
 import React from 'react';
 import { useTheme } from '../../../../context/ThemeContext';
 import Compass from '../../../../components/prayer/Compass';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const QiblatTab = () => {
   const { theme } = useTheme();
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
-      <View style={styles.compassContainer}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+      <View style={styles.content}>
         <Compass />
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  compassContainer: {
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    flex: 1, 
-    marginBottom: 200,
-  },
-  mainContainer: {
-    padding: 16,
+  container: {
     flex: 1,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
   },
 });
 
