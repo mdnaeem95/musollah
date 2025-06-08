@@ -17,6 +17,8 @@ interface CompassState {
   loading: boolean;
   error: string | null;
   permissionStatus: Location.PermissionStatus | null;
+  distanceToMecca: number | null; // in kilometers
+  userLocation: LocationCoordinates | null;
 }
 
 interface LocationCoordinates {
@@ -32,6 +34,8 @@ const useCompass = () => {
     loading: true,
     error: null,
     permissionStatus: null,
+    distanceToMecca: null,
+    userLocation: null,
   });
 
   const headingSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
@@ -62,6 +66,27 @@ const useCompass = () => {
     azimuth = (azimuth + 360) % 360;
     
     return azimuth;
+  }, []);
+
+  /**
+   * Calculate distance to Mecca using Haversine formula
+   */
+  const calculateDistanceToMecca = useCallback((userCoordinates: LocationCoordinates): number => {
+    const { latitude: userLat, longitude: userLon } = userCoordinates;
+    const { latitude: kaabaLat, longitude: kaabaLon } = KAABA_COORDINATES;
+
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = ((kaabaLat - userLat) * Math.PI) / 180;
+    const dLon = ((kaabaLon - userLon) * Math.PI) / 180;
+
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos((userLat * Math.PI) / 180) * Math.cos((kaabaLat * Math.PI) / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+
+    return distance;
   }, []);
 
   /**
@@ -111,11 +136,15 @@ const useCompass = () => {
       });
 
       const { latitude, longitude } = location.coords;
-      const qiblaDirection = calculateQiblaAzimuth({ latitude, longitude });
+      const userCoordinates = { latitude, longitude };
+      const qiblaDirection = calculateQiblaAzimuth(userCoordinates);
+      const distanceToMecca = calculateDistanceToMecca(userCoordinates);
 
       setState(prev => ({
         ...prev,
         qiblaAzimuth: qiblaDirection,
+        distanceToMecca: distanceToMecca,
+        userLocation: userCoordinates,
         loading: false,
         error: null,
       }));
@@ -133,7 +162,7 @@ const useCompass = () => {
         error: error instanceof Error ? error.message : 'Failed to access location or compass',
       }));
     }
-  }, [calculateQiblaAzimuth, updateHeading]);
+  }, [calculateQiblaAzimuth, calculateDistanceToMecca, updateHeading]);
 
   /**
    * Retry initialization after error
