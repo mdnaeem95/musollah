@@ -13,9 +13,9 @@ import userPreferencesReducer from '../slices/userPreferencesSlice';
 import gamificationReducer from '../slices/gamificationSlice';
 import articleReducer from '../slices/articlesSlice'
 import eventReducer from '../slices/eventsSlice'
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persistReducer, persistStore, FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
 import autoMergeLevel2 from 'redux-persist/lib/stateReconciler/autoMergeLevel2'; // For deep merging
+import { MMKVStorage } from '../../utils/storage';
 
 // Define RootState type based on your reducers
 const rootReducer = combineReducers({
@@ -41,7 +41,7 @@ export type RootState = ReturnType<typeof rootReducer>;
 // Redux Persist configuration
 const persistConfig = {
   key: 'root',
-  storage: AsyncStorage,
+  storage: MMKVStorage,
   stateReconciler: autoMergeLevel2, // Ensures deep merging
   whitelist: ['userPreferences', 'user'],  // Only persist certain reducers
 };

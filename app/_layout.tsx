@@ -12,8 +12,6 @@ import Toast from 'react-native-toast-message'
 import { toastConfig } from '../utils/toastConfig';
 import { AuthProvider } from '../context/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-// import * as Sentry from '@sentry/react-native'
-// import { initSentry, useSentryNavigationConfig } from '../utils/sentry';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -25,11 +23,7 @@ Notifications.setNotificationHandler({
 
 const queryClient = new QueryClient();
 
-// initSentry();
-
 function AppLayout () {
-  // useSentryNavigationConfig()
-
   return (
     <QueryClientProvider client={queryClient}>
     <Provider store={store}>
