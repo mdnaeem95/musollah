@@ -31,9 +31,6 @@ const TabLayout = () => {
             case "(prayer)":
               iconName = "person-praying";
               break;
-            case "(education)":
-              iconName = "book-open-reader";
-              break;
             case "(food)":
               iconName = "utensils";
               break;
@@ -42,9 +39,6 @@ const TabLayout = () => {
               break;
             case "(quran)":
               iconName = "book-quran";
-              break;
-            case "(community)":
-              iconName = "users";
               break;
             case "(settings)":
               iconName = "bars";
@@ -58,11 +52,9 @@ const TabLayout = () => {
     >
       <Tabs.Screen name="index" options={{ href: null, title: "Prayers", headerShown: false }} />
       <Tabs.Screen name="(prayer)" options={{ title: "Prayers", headerShown: false }} />
-      <Tabs.Screen name="(education)" options={{ title: "Education", headerShown: false }} />
       <Tabs.Screen name="(food)" options={{ title: "Halal Food", headerShown: false }} />
       <Tabs.Screen name="(musollah)" options={{ title: "Musollah", headerShown: false }} />
       <Tabs.Screen name="(quran)" options={{ title: "Quran", headerShown: false }} />
-      <Tabs.Screen name="(community)" options={{ title: "Community", headerShown: false  }} />
       <Tabs.Screen name="(settings)" options={{ title: "Settings", headerShown: false }} />
     </Tabs>
   );

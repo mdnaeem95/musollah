@@ -1,7 +1,6 @@
 import { StyleSheet, View } from 'react-native';
-import React from 'react';
 import { useTheme } from '../../../../context/ThemeContext';
-import Compass from '../../../../components/prayer/Compass';
+import Compass from '../../../../components/prayer/qiblat/Compass';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const QiblatTab = () => {

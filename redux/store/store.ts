@@ -4,15 +4,9 @@ import prayerReducer from '../slices/prayerSlice';
 import musollahReducer from '../slices/musollahSlice';
 import quranReducer from '../slices/quranSlice';
 import userReducer from '../slices/userSlice';
-import dashboardReducer from '../slices/dashboardSlice';
-import courseReducer from '../slices/courseSlice';
 import doasReducer from '../slices/doasSlice'
-import answersReducer from '../slices/answerSlice'
-import questionsReducer from '../slices/questionSlice'
 import userPreferencesReducer from '../slices/userPreferencesSlice';
 import gamificationReducer from '../slices/gamificationSlice';
-import articleReducer from '../slices/articlesSlice'
-import eventReducer from '../slices/eventsSlice'
 import { persistReducer, persistStore, FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
 import autoMergeLevel2 from 'redux-persist/lib/stateReconciler/autoMergeLevel2'; // For deep merging
 import { MMKVStorage } from '../../utils/storage';
@@ -25,14 +19,8 @@ const rootReducer = combineReducers({
   musollah: musollahReducer,
   quran: quranReducer,
   user: userReducer,
-  dashboard: dashboardReducer,
-  course: courseReducer,
   doas: doasReducer,
-  answers: answersReducer,
-  questions: questionsReducer,
   gamification: gamificationReducer,
-  articles: articleReducer,
-  events: eventReducer
 });
 
 // Define RootState type using ReturnType

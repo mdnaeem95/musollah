@@ -12,7 +12,10 @@
     "api/**/*.ts",
     "app/**/*.tsx",
     "components/**/*.tsx",
-    "utils/**/*.ts", "utils/toastConfig.tsx",
+    "utils/**/*.ts", 
+    "utils/toastConfig.tsx",
+    "types/images.d.ts",
+    "types/*.types.ts"
   ],
   "exclude": [
     "node_modules"

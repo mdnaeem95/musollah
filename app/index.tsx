@@ -1,48 +1,25 @@
-import { useEffect, useState } from 'react';
-import { View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
-import LoadingScreen from '../components/LoadingScreen';
-import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
+import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
+import { storage } from '../utils/storage';
 
 export default function Index() {
-  const [isReady, setIsReady] = useState(false);
   const router = useRouter();
+  const segments = useSegments();
+  const navState = useRootNavigationState(); // ✅ tells us when the root nav is ready
 
   useEffect(() => {
-    const auth = getAuth();
+    // Wait until the root navigator is mounted
+    if (!navState?.key) return;
 
-    const unsubscribe = onAuthStateChanged(auth, async (user: any) => {
-      try {
-        const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+    // Only redirect if we're actually on the index route
+    const inTabsGroup = segments?.[0] === '(tabs)';
+    if (inTabsGroup) return;
 
-        const destination = user || hasSeenOnboarding === 'true'
-          ? '/(tabs)'
-          : '/onboarding/AssistantOnboardingScreen';
+    const hasSeenOnboarding = storage.getBoolean('hasSeenOnboarding');
+    const destination = hasSeenOnboarding ? '/(tabs)' : '/onboarding/AssistantOnboardingScreen';
 
-        // Delay to smooth the transition (prevents white flash)
-        setTimeout(() => {
-          router.replace(destination);
-        }, 200); // 200–300ms is a sweet spot
-      } catch (error) {
-        console.error('Auth/onboarding check failed:', error);
-        router.replace('/(tabs)');
-      } finally {
-        setIsReady(true);
-      }
-    });
+    router.replace(destination);
+  }, [navState?.key, segments, router]);
 
-    return () => unsubscribe();
-  }, []);
-
-  if (!isReady) {
-    return (
-      <View style={{ flex: 1 }}>
-        <LoadingScreen message="Preparing your Rihlah..." />
-      </View>
-    );
-  }
-
-  // Don’t render anything once redirect is scheduled
   return null;
 }

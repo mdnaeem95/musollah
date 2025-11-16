@@ -1,44 +1,38 @@
-// services/prayer.service.ts
 import { format, parse, subDays, isValid } from 'date-fns';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import firestore from '@react-native-firebase/firestore';
 import * as Location from 'expo-location';
+import { storage } from '../utils/storage'; // Your MMKV storage
 
-import {
-  DailyPrayerTimes,
-  PrayerName,
-  IslamicDate,
-  PrayerLog,
-} from '../utils/types/prayer.types';
-import {
-  DATE_FORMATS,
-  CACHE_KEYS,
-  CACHE_DURATION,
-} from '../constants/prayer.constants';
+import { DailyPrayerTimes, PrayerName, PrayerLog } from '../utils/types/prayer.types';
+import { DATE_FORMATS, CACHE_KEYS, CACHE_DURATION } from '../constants/prayer.constants';
 import { ApiError, NetworkError, ValidationError } from '../utils/errors';
 
-interface CachedData<T> {
-  data: T;
-  timestamp: number;
-  version: string;
-}
+interface CachedData<T> { data: T; timestamp: number; version: string;}
 
-class PrayerService {
+/**
+ * Modern Prayer Service with MMKV storage
+ * Follows Single Responsibility Principle
+ * Handles prayer times, caching, and Firebase interactions
+ */
+class ModernPrayerService {
   private readonly API_BASE_URL = 'https://api.aladhan.com/v1';
-  private readonly CACHE_VERSION = '1.0.0';
+  private readonly CACHE_VERSION = '2.0.0'; // Incremented for MMKV migration
+  private readonly STALE_CACHE_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-  // Cache management
-  private async getCachedData<T>(key: string): Promise<T | null> {
+  /**
+   * Get cached data from MMKV (synchronous!)
+   */
+  private getCachedData<T>(key: string): T | null {
     try {
-      const cached = await AsyncStorage.getItem(key);
+      const cached = storage.getString(key);
       if (!cached) return null;
 
       const parsedCache: CachedData<T> = JSON.parse(cached);
       
       // Check version compatibility
       if (parsedCache.version !== this.CACHE_VERSION) {
-        await AsyncStorage.removeItem(key);
+        storage.delete(key);
         return null;
       }
 
@@ -57,26 +51,56 @@ class PrayerService {
     }
   }
 
-  private async setCachedData<T>(key: string, data: T): Promise<void> {
+  /**
+   * Get stale cache (up to 7 days old) as fallback
+   */
+  private getStaleCachedData<T>(key: string): T | null {
+    try {
+      const cached = storage.getString(key);
+      if (!cached) return null;
+
+      const parsedCache: CachedData<T> = JSON.parse(cached);
+      const now = Date.now();
+      const cacheAge = now - parsedCache.timestamp;
+
+      // Return stale cache only if it's not too old
+      if (cacheAge < this.STALE_CACHE_THRESHOLD) {
+        return parsedCache.data;
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Set cached data in MMKV (synchronous!)
+   */
+  private setCachedData<T>(key: string, data: T): void {
     try {
       const cacheData: CachedData<T> = {
         data,
         timestamp: Date.now(),
         version: this.CACHE_VERSION,
       };
-      await AsyncStorage.setItem(key, JSON.stringify(cacheData));
+      storage.set(key, JSON.stringify(cacheData));
     } catch (error) {
       console.error('Cache write error:', error);
     }
   }
 
-  // Network check
+  /**
+   * Check network connection
+   */
   private async checkNetworkConnection(): Promise<boolean> {
     const netInfo = await NetInfo.fetch();
     return netInfo.isConnected ?? false;
   }
 
-  // Date validation and formatting
+  /**
+   * Validate and format date
+   */
   private validateAndFormatDate(dateString: string, inputFormat: string): string {
     const parsedDate = parse(dateString, inputFormat, new Date());
     
@@ -87,27 +111,36 @@ class PrayerService {
     return format(parsedDate, DATE_FORMATS.API);
   }
 
-  // Fetch prayer times from Firebase
+  /**
+   * Fetch prayer times for a specific date
+   * Cache-first strategy with stale-while-revalidate
+   */
   async fetchPrayerTimesForDate(date: string): Promise<DailyPrayerTimes> {
+    const cacheKey = `${CACHE_KEYS.PRAYER_TIMES}_${date}`;
+
     try {
-      // Check cache first
-      const cacheKey = `${CACHE_KEYS.PRAYER_TIMES}_${date}`;
-      const cached = await this.getCachedData<DailyPrayerTimes>(cacheKey);
-      
+      // 1. Check fresh cache first (synchronous!)
+      const cached = this.getCachedData<DailyPrayerTimes>(cacheKey);
       if (cached) {
-        console.log('✅ Returning cached prayer times for:', date);
+        console.log('✅ Cache hit (fresh):', date);
         return cached;
       }
 
-      // Check network
+      // 2. Check network
       const isOnline = await this.checkNetworkConnection();
+      
       if (!isOnline) {
-        throw new NetworkError('No internet connection');
+        // Try stale cache as fallback
+        const staleCache = this.getStaleCachedData<DailyPrayerTimes>(cacheKey);
+        if (staleCache) {
+          console.log('⚠️ Using stale cache (offline):', date);
+          return staleCache;
+        }
+        throw new NetworkError('No internet connection and no cached data');
       }
 
-      console.log('🔍 Fetching prayer times from Firebase for:', date);
-
-      // Query Firebase
+      // 3. Fetch from Firebase
+      console.log('🔄 Fetching from Firebase:', date);
       const snapshot = await firestore()
         .collection('prayerTimes2025')
         .where('date', '==', date)
@@ -115,13 +148,19 @@ class PrayerService {
         .get();
 
       if (snapshot.empty) {
+        // Try stale cache as fallback
+        const staleCache = this.getStaleCachedData<DailyPrayerTimes>(cacheKey);
+        if (staleCache) {
+          console.log('⚠️ Using stale cache (no data):', date);
+          return staleCache;
+        }
         throw new ApiError(`No prayer times found for date: ${date}`);
       }
 
       const doc = snapshot.docs[0];
       const data = doc.data();
 
-      // Transform Firebase data to our format
+      // 4. Transform and validate data
       const prayerTimes: DailyPrayerTimes = {
         date: this.validateAndFormatDate(date, DATE_FORMATS.FIREBASE),
         hijriDate: await this.fetchIslamicDate(date),
@@ -135,40 +174,43 @@ class PrayerService {
         },
       };
 
-      // Cache the result
-      await this.setCachedData(cacheKey, prayerTimes);
+      // 5. Cache the result (synchronous!)
+      this.setCachedData(cacheKey, prayerTimes);
+      console.log('✅ Cached successfully:', date);
 
       return prayerTimes;
     } catch (error) {
       console.error('❌ Error fetching prayer times:', error);
       
-      // Try to return stale cache if available
-      const cacheKey = `${CACHE_KEYS.PRAYER_TIMES}_${date}`;
-      const staleCache = await AsyncStorage.getItem(cacheKey);
-      
+      // Last resort: try stale cache
+      const staleCache = this.getStaleCachedData<DailyPrayerTimes>(cacheKey);
       if (staleCache) {
-        console.log('⚠️ Returning stale cache due to error');
-        const parsed = JSON.parse(staleCache);
-        return parsed.data;
+        console.log('⚠️ Using stale cache (error):', date);
+        return staleCache;
       }
 
       throw error;
     }
   }
 
-  // Fetch prayer times by location
+  /**
+   * Fetch prayer times by location
+   */
   async fetchPrayerTimesByLocation(
     latitude: number,
     longitude: number,
     date?: string
   ): Promise<DailyPrayerTimes> {
+    const targetDate = date || format(new Date(), DATE_FORMATS.API);
+    const cacheKey = `${CACHE_KEYS.PRAYER_TIMES}_${latitude}_${longitude}_${targetDate}`;
+    
     try {
-      const targetDate = date || format(new Date(), DATE_FORMATS.API);
-      const cacheKey = `${CACHE_KEYS.PRAYER_TIMES}_${latitude}_${longitude}_${targetDate}`;
-      
       // Check cache
-      const cached = await this.getCachedData<DailyPrayerTimes>(cacheKey);
-      if (cached) return cached;
+      const cached = this.getCachedData<DailyPrayerTimes>(cacheKey);
+      if (cached) {
+        console.log('✅ Cache hit (location):', targetDate);
+        return cached;
+      }
 
       // Fetch from API
       const response = await fetch(
@@ -208,19 +250,28 @@ class PrayerService {
       };
 
       // Cache result
-      await this.setCachedData(cacheKey, prayerTimes);
+      this.setCachedData(cacheKey, prayerTimes);
 
       return prayerTimes;
     } catch (error) {
-      console.error('❌ Error fetching prayer times by location:', error);
+      console.error('❌ Error fetching by location:', error);
+      
+      // Try stale cache
+      const staleCache = this.getStaleCachedData<DailyPrayerTimes>(cacheKey);
+      if (staleCache) {
+        console.log('⚠️ Using stale cache (location error)');
+        return staleCache;
+      }
+
       throw error;
     }
   }
 
-  // Fetch Islamic date
+  /**
+   * Fetch Islamic date
+   */
   private async fetchIslamicDate(gregorianDate: string): Promise<string> {
     try {
-      // Format date for API (subtract one day for accurate Islamic date)
       const adjustedDate = subDays(
         parse(gregorianDate, DATE_FORMATS.FIREBASE, new Date()),
         1
@@ -243,7 +294,9 @@ class PrayerService {
     }
   }
 
-  // Format Islamic date
+  /**
+   * Format Islamic date
+   */
   private formatIslamicDate(hijriData: any): string {
     try {
       const { day, month, year } = hijriData;
@@ -253,7 +306,9 @@ class PrayerService {
     }
   }
 
-  // Reverse geocoding for location
+  /**
+   * Reverse geocode coordinates to location
+   */
   private async reverseGeocode(
     latitude: number,
     longitude: number
@@ -276,21 +331,26 @@ class PrayerService {
     }
   }
 
-  // Fetch monthly prayer times
+  /**
+   * Fetch monthly prayer times
+   */
   async fetchMonthlyPrayerTimes(
     year: number,
     month: number
   ): Promise<DailyPrayerTimes[]> {
+    const cacheKey = `${CACHE_KEYS.MONTHLY_TIMES}_${year}_${month}`;
+    
     try {
-      const cacheKey = `${CACHE_KEYS.MONTHLY_TIMES}_${year}_${month}`;
-      
       // Check cache
-      const cached = await this.getCachedData<DailyPrayerTimes[]>(cacheKey);
-      if (cached) return cached;
+      const cached = this.getCachedData<DailyPrayerTimes[]>(cacheKey);
+      if (cached) {
+        console.log('✅ Cache hit (monthly):', `${month}/${year}`);
+        return cached;
+      }
 
-      console.log(`📅 Fetching monthly prayer times for ${month}/${year}`);
+      console.log(`📅 Fetching monthly times: ${month}/${year}`);
 
-      // Query Firebase for the entire month
+      // Query Firebase
       const snapshot = await firestore()
         .collection('prayerTimes2025')
         .get();
@@ -304,7 +364,7 @@ class PrayerService {
         if (docMonth === month && docYear === year) {
           monthlyData.push({
             date: format(new Date(year, month - 1, day), DATE_FORMATS.API),
-            hijriDate: '', // Will be filled if needed
+            hijriDate: '',
             prayers: {
               [PrayerName.SUBUH]: data.time.subuh,
               [PrayerName.SYURUK]: data.time.syuruk,
@@ -322,17 +382,27 @@ class PrayerService {
         new Date(a.date).getTime() - new Date(b.date).getTime()
       );
 
-      // Cache with longer duration for monthly data
-      await this.setCachedData(cacheKey, monthlyData);
+      // Cache
+      this.setCachedData(cacheKey, monthlyData);
 
       return monthlyData;
     } catch (error) {
-      console.error('❌ Error fetching monthly prayer times:', error);
+      console.error('❌ Error fetching monthly times:', error);
+      
+      // Try stale cache
+      const staleCache = this.getStaleCachedData<DailyPrayerTimes[]>(cacheKey);
+      if (staleCache) {
+        console.log('⚠️ Using stale cache (monthly error)');
+        return staleCache;
+      }
+
       throw error;
     }
   }
 
-  // Save prayer log
+  /**
+   * Save prayer log to Firebase
+   */
   async savePrayerLog(log: Omit<PrayerLog, 'createdAt' | 'updatedAt'>): Promise<void> {
     try {
       const now = new Date().toISOString();
@@ -349,20 +419,24 @@ class PrayerService {
 
       // Invalidate cache
       const cacheKey = `${CACHE_KEYS.PRAYER_LOGS}_${log.userId}_${log.date}`;
-      await AsyncStorage.removeItem(cacheKey);
+      storage.delete(cacheKey);
+      
+      console.log('✅ Prayer log saved');
     } catch (error) {
       console.error('❌ Error saving prayer log:', error);
       throw error;
     }
   }
 
-  // Fetch prayer log
+  /**
+   * Fetch prayer log from Firebase
+   */
   async fetchPrayerLog(userId: string, date: string): Promise<PrayerLog | null> {
+    const cacheKey = `${CACHE_KEYS.PRAYER_LOGS}_${userId}_${date}`;
+    
     try {
-      const cacheKey = `${CACHE_KEYS.PRAYER_LOGS}_${userId}_${date}`;
-      
       // Check cache
-      const cached = await this.getCachedData<PrayerLog>(cacheKey);
+      const cached = this.getCachedData<PrayerLog>(cacheKey);
       if (cached) return cached;
 
       const doc = await firestore()
@@ -374,8 +448,8 @@ class PrayerService {
 
       const log = doc.data() as PrayerLog;
       
-      // Cache the result
-      await this.setCachedData(cacheKey, log);
+      // Cache result
+      this.setCachedData(cacheKey, log);
 
       return log;
     } catch (error) {
@@ -384,20 +458,40 @@ class PrayerService {
     }
   }
 
-  // Clear all caches
-  async clearCache(): Promise<void> {
+  /**
+   * Clear all prayer caches
+   */
+  clearCache(): void {
     try {
-      const keys = await AsyncStorage.getAllKeys();
+      const keys = storage.getAllKeys();
       const prayerKeys = keys.filter(key => 
-        Object.values(CACHE_KEYS).some(cacheKey=> key.includes(cacheKey))
+        Object.values(CACHE_KEYS).some(cacheKey => key.includes(cacheKey))
       );
       
-      await AsyncStorage.multiRemove(prayerKeys);
+      prayerKeys.forEach(key => storage.delete(key));
       console.log('✅ Prayer cache cleared');
     } catch (error) {
       console.error('❌ Error clearing cache:', error);
     }
   }
+
+  /**
+   * Prefetch prayer times for multiple dates
+   * Useful for offline support
+   */
+  async prefetchPrayerTimes(dates: string[]): Promise<void> {
+    console.log('🔄 Prefetching prayer times...');
+    
+    const promises = dates.map(date => 
+      this.fetchPrayerTimesForDate(date).catch(err => {
+        console.warn(`Failed to prefetch ${date}:`, err);
+        return null;
+      })
+    );
+
+    await Promise.all(promises);
+    console.log('✅ Prefetch complete');
+  }
 }
 
-export const prayerService = new PrayerService();
+export const modernPrayerService = new ModernPrayerService();

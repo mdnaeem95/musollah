@@ -31,9 +31,6 @@ const SettingsTab = () => {
         <View style={styles.gridContainer}>
           <FeatureCard icon="flask" label="Food Additives" onPress={() => router.push('/food-additives')} />
           <FeatureCard icon="hand-holding-dollar" label="Zakat Calculator" onPress={() => router.push('/zakat')} />
-          <FeatureCard icon="briefcase" label="Muslim-Owned Businesses" onPress={() => router.push('/moe')} />
-          {/* <FeatureCard icon="message" label="Ask Anything" onPress={() => router.push('/qa')} />
-          <FeatureCard icon="chat" label="ProcudureBot" onPress={() => router.push('/procedureBot')} /> */}
         </View>
       </ScrollView>
 
