@@ -39,13 +39,13 @@ export interface SurahDetail extends Surah {
   ayahs: Ayah[];
 }
 
-interface SurahsAPIResponse {
+export interface SurahsAPIResponse {
   code: number;
   status: string;
   data: Surah[];
 }
 
-interface SurahDetailAPIResponse {
+export interface SurahDetailAPIResponse {
   code: number;
   status: string;
   data: SurahDetail;
@@ -68,7 +68,7 @@ export const EDITIONS = {
 /**
  * Fetch all surahs (chapters) of the Quran
  */
-async function fetchSurahs(): Promise<Surah[]> {
+export async function fetchSurahs(): Promise<Surah[]> {
   try {
     const response = await quranClient.get<SurahsAPIResponse>('/surah');
     return response.data.data;
@@ -83,7 +83,7 @@ async function fetchSurahs(): Promise<Surah[]> {
  * @param surahNumber - Surah number (1-114)
  * @param edition - Language/edition identifier
  */
-async function fetchSurahDetail(
+export async function fetchSurahDetail(
   surahNumber: number,
   edition: string = EDITIONS.ARABIC
 ): Promise<SurahDetail> {
@@ -100,7 +100,7 @@ async function fetchSurahDetail(
 /**
  * Fetch multiple editions of a surah (Arabic + Translation)
  */
-async function fetchSurahWithTranslation(
+export async function fetchSurahWithTranslation(
   surahNumber: number
 ): Promise<{
   arabic: SurahDetail;
@@ -122,7 +122,7 @@ async function fetchSurahWithTranslation(
 // QUERY KEYS
 // ============================================================================
 
-const QURAN_QUERY_KEYS = {
+export const QURAN_QUERY_KEYS = {
   all: ['quran'] as const,
   surahs: ['quran', 'surahs'] as const,
   surah: (number: number, edition: string) =>

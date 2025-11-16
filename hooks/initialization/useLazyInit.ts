@@ -1,35 +1,41 @@
-import { useEffect, useRef } from 'react';
-import { useDispatch } from 'react-redux';
-import auth from '@react-native-firebase/auth';
-import mobileAds from 'react-native-google-mobile-ads';
-import {
-  getTrackingPermissionsAsync,
-  requestTrackingPermissionsAsync,
-  PermissionStatus,
-} from 'expo-tracking-transparency';
-import { registerForPushNotificationsAsync } from '../../utils/registerForPushNotificationsAsync';
-import { fetchSurahsData } from '../../redux/slices/quranSlice';
-import { fetchDailyDoasData } from '../../redux/slices/doasSlice';
-import { storage } from '../../utils/storage';
-import type { AppDispatch } from '../../redux/store/store';
-
 /**
- * Lazy initialization hook - runs AFTER app is ready
- * Handles all non-critical background tasks:
- * - Auth state monitoring
+ * Lazy Initialization Hook
+ * 
+ * Runs AFTER app is ready - handles non-critical background tasks:
+ * - Auth state monitoring (from useAuthStore)
  * - AdMob initialization
  * - Push notifications
  * - Quran/Duas data preloading
+ * - TrackPlayer registration
+ */
+
+import { useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import mobileAds from 'react-native-google-mobile-ads';
+import { getTrackingPermissionsAsync, requestTrackingPermissionsAsync, PermissionStatus } from 'expo-tracking-transparency';
+import { registerForPushNotificationsAsync } from '../../utils/registerForPushNotificationsAsync';
+import { initializeAuthListener } from '../../stores/useAuthStore';
+import { cache } from '../../api/client/storage';
+import { fetchSurahs } from '../../api/services/quran';
+import { QURAN_QUERY_KEYS } from '../../api/services/quran';
+
+// Track if lazy init has run
+let hasInitialized = false;
+
+/**
+ * Lazy initialization hook - runs AFTER app is ready
  * 
  * @param isReady - Whether the app has completed critical initialization
  */
 export const useLazyInit = (isReady: boolean) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const hasRun = useRef(false);
+  const queryClient = useQueryClient();
+  const initStartedRef = useRef(false);
 
   useEffect(() => {
-    if (!isReady || hasRun.current) return;
-    hasRun.current = true;
+    if (!isReady || hasInitialized || initStartedRef.current) return;
+    
+    initStartedRef.current = true;
+    hasInitialized = true;
 
     // Small delay to prioritize UI rendering
     const timeoutId = setTimeout(() => {
@@ -37,12 +43,12 @@ export const useLazyInit = (isReady: boolean) => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [isReady]);
+  }, [isReady, queryClient]);
 
   const initializeNonCriticalFeatures = async () => {
     console.log('🔧 Starting lazy initialization...');
 
-    // 1. Auth State Monitoring (async, doesn't block)
+    // 1. Auth State Monitoring (from Zustand store)
     initAuthMonitoring();
 
     // 2. AdMob (async, doesn't block)
@@ -51,21 +57,17 @@ export const useLazyInit = (isReady: boolean) => {
     // 3. Push Notifications (async, doesn't block)
     initPushNotifications();
 
-    // 4. Preload Quran/Duas data (async, doesn't block)
-    preloadData();
+    // 4. Preload Quran data (async, doesn't block)
+    preloadQuranData();
   };
 
   const initAuthMonitoring = () => {
     try {
-      const unsubscribe = auth().onAuthStateChanged((user) => {
-        if (user) {
-          console.log('✅ User authenticated:', user.uid);
-        } else {
-          console.log('ℹ️ Guest mode');
-        }
-      });
+      // Initialize Firebase auth listener (from useAuthStore)
+      const unsubscribe = initializeAuthListener();
+      console.log('✅ Auth monitoring initialized');
 
-      // Cleanup on unmount (though this hook rarely unmounts)
+      // Cleanup function (though this hook rarely unmounts)
       return unsubscribe;
     } catch (err) {
       console.warn('⚠️ Auth monitoring failed:', err);
@@ -99,24 +101,31 @@ export const useLazyInit = (isReady: boolean) => {
     }
   };
 
-  const preloadData = async () => {
+  const preloadQuranData = async () => {
     try {
-      console.log('📚 Preloading data...');
+      console.log('📚 Preloading Quran data...');
 
-      // Check cache for Quran data
-      const cachedSurahs = storage.getString('cached_surahs');
-      if (!cachedSurahs) {
-        await dispatch(fetchSurahsData()).unwrap();
-        console.log('✅ Quran data loaded');
-      } else {
+      // Check cache first
+      const cacheKey = 'quran-surahs';
+      const cached = cache.get(cacheKey);
+      
+      if (cached) {
         console.log('✅ Using cached Quran data');
+        // Seed cache into QueryClient
+        queryClient.setQueryData(QURAN_QUERY_KEYS.surahs, cached);
+        return;
       }
 
-      // Fetch daily duas
-      await dispatch(fetchDailyDoasData()).unwrap();
-      console.log('✅ Daily duas loaded');
+      // Prefetch surahs
+      await queryClient.prefetchQuery({
+        queryKey: QURAN_QUERY_KEYS.surahs,
+        queryFn: fetchSurahs,
+        staleTime: Infinity, // Quran data never changes
+      });
+
+      console.log('✅ Quran data loaded');
     } catch (err) {
-      console.warn('⚠️ Data preloading failed:', err);
+      console.warn('⚠️ Quran data preloading failed:', err);
     }
   };
 };

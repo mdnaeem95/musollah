@@ -1,18 +1,24 @@
+/**
+ * Root Layout Component
+ * 
+ * Handles app initialization and splash screen display.
+ * Uses modern Zustand + TanStack Query architecture.
+ */
+
 import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
-import { persistor } from '../redux/store/store';
 import { useAppInit } from '../hooks/initialization/useAppInitialization';
 import { useLazyInit } from '../hooks/initialization/useLazyInit';
 import { ModernSplash } from '../components/ModernSplash';
 
+// Prevent auto-hide of native splash screen
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  const isRehydrated = persistor.getState().bootstrapped;
-  const { isReady, progress, error } = useAppInit(isRehydrated);
+  const { isReady, progress, error } = useAppInit();
 
   // Lazy-load non-critical features after app is ready
   useLazyInit(isReady);
@@ -24,7 +30,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.container}>
       <View style={styles.container}>
-        {/* Navigator - always mounted */}
+        {/* Navigator - always mounted for better performance */}
         <Stack
           screenOptions={{
             headerShown: false,
@@ -41,10 +47,11 @@ export default function RootLayout() {
           />
         </Stack>
 
-        {/* Splash overlay - only shows until ready */}
+        {/* Custom splash overlay - shows until ready */}
         {!isReady && (
           <ModernSplash
             progress={progress}
+            error={error}
             onAnimationComplete={handleSplashComplete}
           />
         )}

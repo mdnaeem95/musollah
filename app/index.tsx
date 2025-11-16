@@ -1,11 +1,18 @@
+/**
+ * Index Route
+ * 
+ * Handles initial navigation based on onboarding status.
+ * Uses MMKV storage for fast synchronous reads.
+ */
+
 import { useEffect } from 'react';
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
-import { storage } from '../utils/storage';
+import { defaultStorage } from '../api/client/storage';
 
 export default function Index() {
   const router = useRouter();
   const segments = useSegments();
-  const navState = useRootNavigationState(); // ✅ tells us when the root nav is ready
+  const navState = useRootNavigationState();
 
   useEffect(() => {
     // Wait until the root navigator is mounted
@@ -15,8 +22,12 @@ export default function Index() {
     const inTabsGroup = segments?.[0] === '(tabs)';
     if (inTabsGroup) return;
 
-    const hasSeenOnboarding = storage.getBoolean('hasSeenOnboarding');
-    const destination = hasSeenOnboarding ? '/(tabs)' : '/onboarding/AssistantOnboardingScreen';
+    // Check if user has seen onboarding (synchronous read from MMKV)
+    const hasSeenOnboarding = defaultStorage.getBoolean('hasSeenOnboarding');
+    
+    const destination = hasSeenOnboarding 
+      ? '/(tabs)' 
+      : '/onboarding/AssistantOnboardingScreen';
 
     router.replace(destination);
   }, [navState?.key, segments, router]);
