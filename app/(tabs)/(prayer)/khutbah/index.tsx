@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useTheme } from '../../../../context/ThemeContext';
 import { Khutbah } from '../../../../utils/types';
 import { fetchKhutbahs } from '../../../../api/firebase/prayer';

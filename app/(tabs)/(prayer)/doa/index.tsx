@@ -1,156 +1,107 @@
-import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, ActivityIndicator } from 'react-native';
-import React, { useEffect, useState } from 'react';
-import { getDoaAfterPrayer } from '../../../../api/firebase';
-import { FontAwesome6 } from '@expo/vector-icons';
-import { DoaAfterPrayer } from '../../../../utils/types';
+import React, { useState, useCallback } from 'react';
+import { View, FlatList, StyleSheet } from 'react-native';
 import { useTheme } from '../../../../context/ThemeContext';
+import { useDoa } from '../../../../hooks/prayer/doa/useDoa';
+import DoaItem from '../../../../components/prayer/doa/DoaItem';
+import DoaListHeader from '../../../../components/prayer/doa/DoaListHeader';
+import DoaInfoModal from '../../../../components/prayer/doa/DoaInfoModal';
+import { LoadingState, ErrorState } from '../../../../components/prayer/doa/DoaStates';
+import type { DoaAfterPrayer } from '../../../../types/doa.types';
 
-const Doa = () => {
+/**
+ * Main Doa component
+ * Displays list of duas to recite after prayer
+ * 
+ * Features:
+ * - Fetches duas from Firebase
+ * - Displays Arabic text, romanization, and translation
+ * - Info modal with guidance
+ * - Error handling and retry
+ * - Optimized FlatList rendering
+ */
+const Doa: React.FC = () => {
   const { theme } = useTheme();
+  const { doas, loading, error, refetch } = useDoa();
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
 
-  const [doas, setDoas] = useState<DoaAfterPrayer[]>([]);
-  const [tooltipVisible, setTooltipVisible] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    const fetchdoasData = async () => {
-      try {
-        const data = await getDoaAfterPrayer();
-        setDoas(data);
-      } catch (error) {
-        console.error("Error fetching doas: ", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchdoasData();
+  const handleInfoPress = useCallback(() => {
+    setModalVisible(true);
   }, []);
 
-  return (
-    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
-      {loading ? (
-        <ActivityIndicator size="large" color={theme.colors.text.muted} style={{ marginTop: 20 }} />
-      ) : (
-        <FlatList
-          data={doas}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={[styles.doaContainer, { borderBottomColor: theme.colors.text.muted }]}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={[styles.doaHeaderText, { color: theme.colors.text.primary }]}>
-                  {item.step}. {item.title}
-                </Text>
-              </View>
-              <Text style={[styles.doaText, { color: theme.colors.text.primary }]}>{item.arabicText}</Text>
-              <Text style={[styles.romanizedText, { color: theme.colors.text.secondary }]}>{item.romanized}</Text>
-              <Text style={[styles.englishText, { color: theme.colors.text.muted }]}>{item.englishTranslation}</Text>
-            </View>
-          )}
-          ListHeaderComponent={(
-            <TouchableOpacity
-              style={[styles.tooltipIcon, { backgroundColor: theme.colors.secondary }]}
-              onPress={() => setTooltipVisible(true)}
-            >
-              <FontAwesome6 name="circle-info" size={15} color={theme.colors.text.primary} />
-            </TouchableOpacity>
-          )}
-          initialNumToRender={10}
-          removeClippedSubviews={true}
-        />
-      )}
+  const handleModalClose = useCallback(() => {
+    setModalVisible(false);
+  }, []);
 
-      {tooltipVisible && (
-        <Modal
-          transparent={true}
-          animationType="fade"
-          visible={tooltipVisible}
-          onRequestClose={() => setTooltipVisible(false)}
-        >
-          <View style={styles.tooltipContainer}>
-            <View style={[styles.tooltip, { backgroundColor: theme.colors.secondary }]}>
-              <TouchableOpacity onPress={() => setTooltipVisible(false)} style={{ width: '100%', marginBottom: 10 }}>
-                <FontAwesome6 name="xmark" size={20} color={theme.colors.text.primary} />
-              </TouchableOpacity>
-              <Text style={[styles.tooltipText, { color: theme.colors.text.primary }]}>
-                There are many Duas/Zikirs that we can recite. We may recite any heartfelt Dua, in any language that we
-                know, either out loud or silently. This is just a guide for those who are unsure of what to ask for.
-              </Text>
-              <Text style={[styles.tooltipText, { color: theme.colors.text.primary }]}>
-                May Allah s.w.t guide us to all that which pleases Him and accept all our prayers.
-              </Text>
-            </View>
-          </View>
-        </Modal>
-      )}
+  const renderItem = useCallback(({ item }: { item: DoaAfterPrayer }) => (
+    <DoaItem
+      item={item}
+      textColor={theme.colors.text.primary}
+      secondaryColor={theme.colors.text.secondary}
+      mutedColor={theme.colors.text.muted}
+    />
+  ), [theme.colors.text]);
+
+  const renderHeader = useCallback(() => (
+    <DoaListHeader
+      onInfoPress={handleInfoPress}
+      backgroundColor={theme.colors.secondary}
+      iconColor={theme.colors.text.primary}
+    />
+  ), [handleInfoPress, theme.colors.secondary, theme.colors.text.primary]);
+
+  const keyExtractor = useCallback((item: DoaAfterPrayer) => item.id, []);
+
+  // Loading state
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+        <LoadingState color={theme.colors.text.muted} />
+      </View>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+        <ErrorState
+          error={error}
+          onRetry={refetch}
+          textColor={theme.colors.text.primary}
+          buttonColor={theme.colors.secondary}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+      <FlatList
+        data={doas}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        ListHeaderComponent={renderHeader}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews
+        updateCellsBatchingPeriod={50}
+      />
+
+      <DoaInfoModal
+        visible={modalVisible}
+        onClose={handleModalClose}
+        backgroundColor={theme.colors.secondary}
+        textColor={theme.colors.text.primary}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  mainContainer: {
+  container: {
     flex: 1,
     paddingVertical: 16,
-  },
-  tooltipIcon: {
-    marginTop: 20,
-    alignSelf: 'center', // Center the icon horizontally
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 3,
-  },  
-  doaContainer: {
-    padding: 20,
-    borderBottomWidth: 1,
-  },
-  doaHeaderText: {
-    fontFamily: 'Outfit_500Medium',
-    fontSize: 20,
-    lineHeight: 25,
-    marginBottom: 20,
-  },
-  doaText: {
-    fontFamily: 'Amiri_400Regular',
-    fontSize: 26,
-    lineHeight: 48,
-    textAlign: 'right',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  romanizedText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 14,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  englishText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 12,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-    fontStyle: 'italic',
-  },
-  tooltipContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  tooltip: {
-    width: 250,
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-
-  },
-  tooltipText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 16,
-    marginBottom: 10,
   },
 });
 
