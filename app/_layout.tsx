@@ -1,19 +1,25 @@
-import { Provider } from 'react-redux';
+/**
+ * App Layout Component
+ * 
+ * Root provider setup for the app.
+ * Uses modern state management: Zustand (client) + TanStack Query (server)
+ */
+
 import * as Notifications from 'expo-notifications';
-import { PersistGate } from 'redux-persist/integration/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import Toast from 'react-native-toast-message';
 import TrackPlayer from 'react-native-track-player';
-import { store, persistor } from '../redux/store/store';
 import { NotificationProvider } from '../context/NotificationContext';
 import { ThemeProvider } from '../context/ThemeContext';
-import { AuthProvider } from '../context/AuthContext';
 import { toastConfig } from '../utils/toastConfig';
 import { playbackService } from '../constants/playbackService';
 import RootLayout from './RootLayout';
 
-// Configure notifications (silent by default)
+// ============================================================================
+// NOTIFICATIONS SETUP
+// ============================================================================
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: false,
@@ -22,19 +28,38 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Register TrackPlayer playback service (lazy initialization)
+// ============================================================================
+// TRACKPLAYER SETUP
+// ============================================================================
+
+// Register playback service (lazy initialization happens in useTrackPlayerSetup)
 TrackPlayer.registerPlaybackService(() => playbackService);
 
-// Single QueryClient instance with optimized defaults
+// ============================================================================
+// REACT QUERY SETUP
+// ============================================================================
+
+/**
+ * QueryClient with optimized defaults for offline-first experience
+ */
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      // Retry failed requests
       retry: 3,
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 60 * 24, // 24 hours
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: 'always',
-      networkMode: 'offlineFirst',
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      
+      // Caching strategy
+      staleTime: 1000 * 60 * 5, // 5 minutes - data stays fresh
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours - keep in memory
+      
+      // Refetching behavior
+      refetchOnWindowFocus: false, // Don't refetch on every focus
+      refetchOnReconnect: 'always', // Refetch when internet reconnects
+      refetchOnMount: true, // Refetch on component mount if stale
+      
+      // Offline-first
+      networkMode: 'offlineFirst', // Use cache first, then network
     },
     mutations: {
       retry: 1,
@@ -43,23 +68,21 @@ const queryClient = new QueryClient({
   },
 });
 
+// ============================================================================
+// APP LAYOUT
+// ============================================================================
+
 export default function AppLayout() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Provider store={store}>
-        <PersistGate persistor={persistor} loading={null}>
-          <AuthProvider>
-            <ActionSheetProvider>
-              <ThemeProvider>
-                <NotificationProvider>
-                  <RootLayout />
-                  <Toast config={toastConfig} />
-                </NotificationProvider>
-              </ThemeProvider>
-            </ActionSheetProvider>
-          </AuthProvider>
-        </PersistGate>
-      </Provider>
+      <ActionSheetProvider>
+        <ThemeProvider>
+          <NotificationProvider>
+            <RootLayout />
+            <Toast config={toastConfig} />
+          </NotificationProvider>
+        </ThemeProvider>
+      </ActionSheetProvider>
     </QueryClientProvider>
   );
 }

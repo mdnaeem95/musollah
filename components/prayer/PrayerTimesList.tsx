@@ -2,47 +2,83 @@ import React, { memo, useCallback } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { MotiView } from 'moti';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { useTheme } from '../../context/ThemeContext';
-import { useSelector, useDispatch } from 'react-redux';
 import { format } from 'date-fns';
+import Toast from 'react-native-toast-message';
+import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../stores/useAuthStore';
+import { useTodayPrayerLog, usePrayerLog, useSavePrayerLog } from '../../api/services/prayer/logs';
 import PrayerTimeItem from './PrayerTimeItem';
 import { PrayerName } from '../../utils/types/prayer.types';
-import { AppDispatch } from '../../redux/store/store';
-import { selectPrayerLog, savePrayerLog } from '../../redux/slices/prayerSlice';
 import { isPrayerAvailable } from '../../utils/prayers/prayerTimeUtils';
-import { PRAYER_NAMES } from '../..//constants/prayer.constants';
-import { getAuth } from '@react-native-firebase/auth';
-import Toast from 'react-native-toast-message';
+import { PRAYER_NAMES } from '../../constants/prayer.constants';
 
 interface PrayerTimesListProps {
   prayerTimes: Record<PrayerName, string> | null;
   selectedDate: Date;
 }
 
+/** Fixed-shape expected by savePrayerLog */
+type PrayersPayload = {
+  Subuh: boolean;
+  Zohor: boolean;
+  Asar: boolean;
+  Maghrib: boolean;
+  Isyak: boolean;
+};
+
+const EMPTY_PRAYERS: PrayersPayload = {
+  Subuh: false,
+  Zohor: false,
+  Asar: false,
+  Maghrib: false,
+  Isyak: false,
+};
+
+/** Convenience type: only loggable prayers (exclude Syuruk) */
+type LoggablePrayer = Exclude<PrayerName, PrayerName.SYURUK>;
+
+/**
+ * Prayer Times List with Prayer Logging
+ * 
+ * Improvements over Redux version:
+ * - Uses TanStack Query for prayer logs
+ * - Better error handling with Toast
+ * - Optimistic updates
+ * - Type-safe with proper hooks
+ * - Cleaner separation of concerns
+ */
 const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({ 
   prayerTimes, 
   selectedDate 
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
-  const dispatch = useDispatch<AppDispatch>();
-  const auth = getAuth();
-  const currentUser = auth.currentUser;
+  const { userId } = useAuth();
   
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
-  const prayerLog = useSelector(selectPrayerLog(dateStr));
   const isToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
 
-  const handlePrayerToggle = useCallback(async (prayerName: PrayerName) => {
-    if (!currentUser) {
+  // Fetch prayer log for selected date
+  const { data: prayerLog } = isToday 
+    ? useTodayPrayerLog(userId)
+    : usePrayerLog(userId, dateStr);
+
+  // Mutation for saving prayer log
+  const { mutate: savePrayerLog } = useSavePrayerLog();
+
+  // Handle prayer toggle
+  const handlePrayerToggle = useCallback((prayerName: PrayerName) => {
+    if (!userId) {
       Toast.show({
         type: 'info',
         text1: 'Sign in required',
         text2: 'Please sign in to log your prayers',
+        position: 'bottom',
       });
       return;
     }
 
+    // Skip Syuruk (sunrise)
     if (prayerName === PrayerName.SYURUK) return;
 
     // Check if prayer time has passed (only for today)
@@ -53,24 +89,32 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
           type: 'error',
           text1: 'Prayer time not reached',
           text2: `You can log ${prayerName} after its prayer time`,
+          position: 'bottom',
         });
         return;
       }
     }
 
-    const currentPrayers = prayerLog?.prayers || {};
-    const updatedPrayers = {
+    // Always start from a full, fixed-shape object
+    const currentPrayers: PrayersPayload =
+      (prayerLog?.prayers as PrayersPayload | undefined) ?? EMPTY_PRAYERS;
+
+    // Toggle with strong typing (exclude Syuruk)
+    const key = prayerName as keyof PrayersPayload; // Subuh | Zohor | Asar | Maghrib | Isyak
+    const updatedPrayers: PrayersPayload = {
       ...currentPrayers,
-      [prayerName]: !currentPrayers[prayerName as keyof typeof currentPrayers],
+      [key]: !currentPrayers[key],
     };
 
-    dispatch(savePrayerLog({
-      userId: currentUser.uid,
+    // Save with optimistic update (mutation handles it)
+    savePrayerLog({
+      userId,
       date: dateStr,
       prayers: updatedPrayers,
-    }));
-  }, [currentUser, dispatch, dateStr, prayerLog, isToday, prayerTimes]);
+    });
+  }, [userId, dateStr, prayerLog, isToday, prayerTimes, savePrayerLog]);
 
+  // Empty state
   if (!prayerTimes) {
     return (
       <View style={styles.emptyContainer}>
@@ -83,7 +127,8 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
     <View style={styles.container}>
       {PRAYER_NAMES.map((prayerName, index) => {
         const isLoggable = prayerName !== PrayerName.SYURUK;
-        const isLogged = prayerLog?.prayers[prayerName as keyof typeof prayerLog.prayers] || false;
+        const loggedMap = (prayerLog?.prayers as PrayersPayload | undefined);
+        const isLogged = isLoggable ? (loggedMap?.[prayerName as keyof PrayersPayload] ?? false) : false;
         
         return (
           <MotiView
@@ -97,7 +142,7 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
                 name={prayerName}
                 time={prayerTimes[prayerName]}
               />
-              {isLoggable && currentUser && (
+              {isLoggable && userId && (
                 <TouchableOpacity
                   onPress={() => handlePrayerToggle(prayerName)}
                   style={styles.checkButton}
@@ -146,5 +191,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     padding: 5,
   },
 });
+
+PrayerTimesList.displayName = 'PrayerTimesList';
 
 export default PrayerTimesList;

@@ -1,93 +1,104 @@
-import React, { createContext, useContext } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../redux/store/store';
-import {
-  toggleDarkMode,
-  setTheme,
-  setTextSize,
-  setReciter,
-} from '../redux/slices/userPreferencesSlice';
+import React, { createContext, useContext, useMemo } from 'react';
+import { usePreferencesStore } from '../stores/userPreferencesStore';
 import { greenTheme, blueTheme, purpleTheme } from '../theme/theme';
 
-// Types for our theme and events
-export interface ThemesType {
-  colors: {
-    primary: string;
-    secondary: string;
-    text: {
-      primary: string;
-      secondary: string;
-      muted: string;
-    };
-  };
-  spacing: {
-    small: number;
-  };
-}
+// Theme object mapping
 const themes = {
   green: greenTheme,
   blue: blueTheme,
   purple: purpleTheme,
 };
 
+// Types
 export type ThemeType = typeof greenTheme['light'] | typeof greenTheme['dark'];
+export type ThemeColor = 'green' | 'blue' | 'purple';
 
-export const ThemeContext = createContext({
-  theme: greenTheme.light, // Default theme (light mode of greenTheme)
+interface ThemeContextValue {
+  theme: ThemeType;
+  currentTheme: ThemeColor;
+  isDarkMode: boolean;
+  switchTheme: (themeName: ThemeColor) => void;
+  toggleDarkMode: () => void;
+  textSize: number;
+  setTextSize: (size: number) => void;
+  reciter: string;
+  setReciter: (reciter: string) => void;
+}
+
+// Context with default values
+const ThemeContext = createContext<ThemeContextValue>({
+  theme: greenTheme.light,
   currentTheme: 'green',
   isDarkMode: false,
-  switchTheme: (themeName: string) => {},
+  switchTheme: () => {},
   toggleDarkMode: () => {},
   textSize: 30,
-  setTextSize: (size: number) => {},
+  setTextSize: () => {},
   reciter: 'ar.alafasy',
-  setReciter: (reciter: string) => {},
+  setReciter: () => {},
 });
 
+/**
+ * Theme Provider using Zustand
+ * 
+ * Improvements over Redux version:
+ * - No Redux dependency
+ * - Simpler implementation
+ * - Better performance with selective subscriptions
+ * - Memoized theme object
+ */
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { theme: currentThemeName, isDarkMode, textSize, reciter } = useSelector(
-    (state: RootState) => state.userPreferences
+  // Selective subscriptions for performance
+  const currentThemeName = usePreferencesStore(state => state.theme);
+  const isDarkMode = usePreferencesStore(state => state.isDarkMode);
+  const textSize = usePreferencesStore(state => state.textSize);
+  const reciter = usePreferencesStore(state => state.reciter);
+  
+  // Actions
+  const setTheme = usePreferencesStore(state => state.setTheme);
+  const toggleDarkMode = usePreferencesStore(state => state.toggleDarkMode);
+  const setTextSize = usePreferencesStore(state => state.setTextSize);
+  const setReciter = usePreferencesStore(state => state.setReciter);
+
+  // Memoized theme object
+  const theme = useMemo(
+    () => isDarkMode ? themes[currentThemeName].dark : themes[currentThemeName].light,
+    [currentThemeName, isDarkMode]
   );
 
-  const theme = isDarkMode ? themes[currentThemeName].dark : themes[currentThemeName].light;
-
-  const switchTheme = (themeName: string) => {
-    //@ts-ignore
-    if (themes[themeName]) {
-      dispatch(setTheme(themeName));
-    }
-  };
-
-  const toggleThemeMode = () => {
-    dispatch(toggleDarkMode());
-  };
-
-  const updateTextSize = (size: number) => {
-    dispatch(setTextSize(size));
-  };
-
-  const updateReciter = (newReciter: string) => {
-    dispatch(setReciter(newReciter));
-  };
+  // Memoized context value
+  const value = useMemo<ThemeContextValue>(
+    () => ({
+      theme,
+      currentTheme: currentThemeName,
+      isDarkMode,
+      switchTheme: setTheme,
+      toggleDarkMode,
+      textSize,
+      setTextSize,
+      reciter,
+      setReciter,
+    }),
+    [theme, currentThemeName, isDarkMode, setTheme, toggleDarkMode, textSize, setTextSize, reciter, setReciter]
+  );
 
   return (
-    <ThemeContext.Provider
-      value={{
-        theme,
-        currentTheme: currentThemeName,
-        isDarkMode,
-        switchTheme,
-        toggleDarkMode: toggleThemeMode,
-        textSize,
-        setTextSize: updateTextSize,
-        reciter,
-        setReciter: updateReciter,
-      }}
-    >
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-export const useTheme = () => useContext(ThemeContext);
+/**
+ * Hook to access theme context
+ */
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within ThemeProvider');
+  }
+  return context;
+};
+
+// Export for backwards compatibility
+export { themes };

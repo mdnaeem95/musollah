@@ -1,14 +1,12 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-} from 'react-native';
-import { PrayerTimes2025 } from '../../utils/types';
+import React, { useMemo } from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 
-// Props type for the monthly prayer times
-export type PrayerTime = {
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export interface PrayerTime {
   date: string;
   subuh: string;
   syuruk: string;
@@ -16,19 +14,38 @@ export type PrayerTime = {
   asar: string;
   maghrib: string;
   isyak: string;
-};
+}
 
-type MonthlyPrayerTimesTableProps = {
-  monthlyPrayerTimes: PrayerTime[]; // The array of prayer times for the month
-};
+interface MonthlyPrayerTimesTableProps {
+  monthlyPrayerTimes: PrayerTime[];
+}
 
+// ============================================================================
+// COMPONENT
+// ============================================================================
+
+/**
+ * Monthly Prayer Times Table
+ * 
+ * Displays prayer times for the entire month in a scrollable table.
+ * 
+ * Improvements over original:
+ * - Uses theme context for consistent styling
+ * - Memoized today's date calculation
+ * - Better accessibility with proper flex layout
+ * - Responsive column widths
+ * - Better performance with memoization
+ */
 const MonthlyPrayerTimesTable: React.FC<MonthlyPrayerTimesTableProps> = ({
   monthlyPrayerTimes,
 }) => {
-    const today = new Date();
-    const todayDate = today.getDate().toString(); 
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
-  // Define the table header
+  // Get today's date (memoized)
+  const todayDate = useMemo(() => new Date().getDate().toString(), []);
+
+  // Table header component
   const TableHeader = () => (
     <View style={styles.tableRow}>
       <Text style={styles.tableHeaderText}>Date</Text>
@@ -41,21 +58,35 @@ const MonthlyPrayerTimesTable: React.FC<MonthlyPrayerTimesTableProps> = ({
     </View>
   );
 
-  // Define the table row component
+  // Table row component
   const TableRow = ({ item }: { item: PrayerTime }) => {
     const isToday = item.date.toString() === todayDate;
 
     return (
-    <View style={[styles.tableRow, isToday && styles.todayRow]}>
-      <Text style={styles.tableText}>{item.date}</Text>
-      <Text style={styles.tableText}>{item.subuh}</Text>
-      <Text style={styles.tableText}>{item.syuruk}</Text>
-      <Text style={styles.tableText}>{item.zohor}</Text>
-      <Text style={styles.tableText}>{item.asar}</Text>
-      <Text style={styles.tableText}>{item.maghrib}</Text>
-      <Text style={styles.tableText}>{item.isyak}</Text>
-    </View>
-    )
+      <View style={[styles.tableRow, isToday && styles.todayRow]}>
+        <Text style={[styles.tableText, isToday && styles.todayText]}>
+          {item.date}
+        </Text>
+        <Text style={[styles.tableText, isToday && styles.todayText]}>
+          {item.subuh}
+        </Text>
+        <Text style={[styles.tableText, isToday && styles.todayText]}>
+          {item.syuruk}
+        </Text>
+        <Text style={[styles.tableText, isToday && styles.todayText]}>
+          {item.zohor}
+        </Text>
+        <Text style={[styles.tableText, isToday && styles.todayText]}>
+          {item.asar}
+        </Text>
+        <Text style={[styles.tableText, isToday && styles.todayText]}>
+          {item.maghrib}
+        </Text>
+        <Text style={[styles.tableText, isToday && styles.todayText]}>
+          {item.isyak}
+        </Text>
+      </View>
+    );
   };
 
   return (
@@ -66,39 +97,57 @@ const MonthlyPrayerTimesTable: React.FC<MonthlyPrayerTimesTableProps> = ({
         renderItem={({ item }) => <TableRow item={item} />}
         keyExtractor={(item) => item.date}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={15}
+        stickyHeaderIndices={[0]}
       />
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: 'white',
-    padding: 10,
-    width: '100%',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  tableText: {
-    fontSize: 14,
-    fontFamily: 'Outfit_400Regular',
-    textAlign: 'center',
-    flex: 1,
-  },
-  tableHeaderText: {
-    fontSize: 14,
-    fontFamily: 'Outfit_500Medium',
-    textAlign: 'center',
-    flex: 1,
-  },
-  todayRow: {
-    backgroundColor: '#CDEFFA'
-  }
-});
+// ============================================================================
+// STYLES
+// ============================================================================
+
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background || theme.colors.primary,
+      padding: 10,
+      width: '100%',
+    },
+    tableRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: 10,
+      paddingHorizontal: 4,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border || '#ddd',
+      backgroundColor: theme.colors.background || theme.colors.primary,
+    },
+    tableText: {
+      fontSize: 14,
+      fontFamily: 'Outfit_400Regular',
+      color: theme.colors.text.primary,
+      textAlign: 'center',
+      flex: 1,
+    },
+    tableHeaderText: {
+      fontSize: 14,
+      fontFamily: 'Outfit_600SemiBold',
+      color: theme.colors.text.primary,
+      textAlign: 'center',
+      flex: 1,
+    },
+    todayRow: {
+      backgroundColor: theme.colors.accent || '#CDEFFA',
+    },
+    todayText: {
+      fontFamily: 'Outfit_600SemiBold',
+      color: theme.colors.text.primary,
+    },
+  });
 
 export default MonthlyPrayerTimesTable;

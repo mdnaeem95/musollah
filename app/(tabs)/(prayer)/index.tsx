@@ -18,7 +18,7 @@ import { PrayerErrorFallback } from '../../../components/prayer/PrayerErrorFallb
 
 // Hooks
 import { usePrayerTimesOptimized } from '../../../hooks/prayer/usePrayerTimesOptimized';
-import { usePrayerNotifications } from '../../../hooks/usePrayerNotifications';
+import { usePrayerNotifications } from '../../../hooks/prayer/usePrayerNotifications';
 import { usePrayerDateNavigation } from '../../../hooks/prayer/usePrayerDateNavigation';
 import { usePrayerModals } from '../../../hooks/prayer/usePrayerModals';
 import { usePrayerActions } from '../../../hooks/prayer/usePrayerActions';

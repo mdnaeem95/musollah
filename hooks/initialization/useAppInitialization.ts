@@ -1,19 +1,22 @@
+/**
+ * App Initialization Hook
+ * 
+ * Handles ONLY critical startup tasks that block app rendering:
+ * - Font loading
+ * - Prayer times prefetch (cache-first)
+ * 
+ * Non-critical tasks are handled by useLazyInit
+ */
+
 import { useEffect, useState, useCallback } from 'react';
-import { useDispatch } from 'react-redux';
+import { useQueryClient } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from '@expo-google-fonts/outfit';
 import { Amiri_400Regular } from '@expo-google-fonts/amiri';
-import { storage } from '../../utils/storage';
-import { migrateFromAsyncStorage } from '../../utils/storageMigration';
-import { fetchPrayerTimesForDate } from '../../redux/slices/prayerSlice';
-import { seedPrayerTimesToWidget } from '../../api/firebase/prayer';
-import { todayKeySGT } from '../../utils/dateKey';
-import type { AppDispatch } from '../../redux/store/store';
-
-const MIGRATION_KEY = 'mmkv_migration_completed';
-const PRAYER_CACHE_KEY = 'cached_prayer_times';
-const PRAYER_TIMESTAMP_KEY = 'prayer_times_timestamp';
-const CACHE_DURATION_MS = 3600000; // 1 hour
+import { cache, TTL } from '../../api/client/storage';
+import { useLocationStore } from '../../stores/useLocationStore';
+import { fetchTodayPrayerTimes } from '../../api/services/prayer/api';
+import { PRAYER_QUERY_KEYS } from '../../api/services/prayer/types';
 
 interface InitState {
   isReady: boolean;
@@ -22,23 +25,11 @@ interface InitState {
 }
 
 /**
- * Consolidated initialization hook - handles ONLY critical startup tasks
- * 
- * Critical (blocks app):
- * - Storage migration (one-time)
- * - Font loading
- * - Prayer times (cache-first)
- * 
- * Non-critical (lazy/background):
- * - Auth monitoring
- * - AdMob
- * - Push notifications
- * - Quran data
- * - Duas
- * - TrackPlayer
+ * Critical initialization - blocks app rendering
  */
-export const useAppInit = (isRehydrated: boolean): InitState => {
-  const dispatch = useDispatch<AppDispatch>();
+export const useAppInit = (): InitState => {
+  const queryClient = useQueryClient();
+  const { userLocation, fetchLocation } = useLocationStore();
 
   // 1. Font Loading
   const [fontsLoaded, fontError] = useFonts({
@@ -51,7 +42,7 @@ export const useAppInit = (isRehydrated: boolean): InitState => {
   });
 
   // 2. Critical Task States
-  const [migrationDone, setMigrationDone] = useState(false);
+  const [locationDone, setLocationDone] = useState(false);
   const [prayerTimesDone, setPrayerTimesDone] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<Error | null>(null);
@@ -59,110 +50,112 @@ export const useAppInit = (isRehydrated: boolean): InitState => {
   // Calculate overall progress
   const calculateProgress = useCallback(() => {
     let completed = 0;
-    if (migrationDone) completed += 33;
-    if (fontsLoaded) completed += 33;
-    if (prayerTimesDone) completed += 34;
+    if (fontsLoaded) completed += 40;
+    if (locationDone) completed += 30;
+    if (prayerTimesDone) completed += 30;
     return completed;
-  }, [migrationDone, fontsLoaded, prayerTimesDone]);
+  }, [fontsLoaded, locationDone, prayerTimesDone]);
 
   // Update progress
   useEffect(() => {
     setProgress(calculateProgress());
   }, [calculateProgress]);
 
-  // STEP 1: Storage Migration (runs immediately, one-time only)
+  // STEP 1: Get Location (cached or fetch)
   useEffect(() => {
-    const runMigration = async () => {
+    const getLocation = async () => {
       try {
-        const alreadyMigrated = storage.getBoolean(MIGRATION_KEY);
-        if (alreadyMigrated) {
-          setMigrationDone(true);
+        console.log('📍 Getting location...');
+
+        // Use cached location if available
+        if (userLocation) {
+          console.log('✅ Using cached location');
+          setLocationDone(true);
           return;
         }
 
-        console.log('🔄 Starting storage migration...');
-        const start = Date.now();
-
+        // Fetch location with timeout
         await Promise.race([
-          migrateFromAsyncStorage(),
+          fetchLocation(),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Migration timeout')), 5000)
+            setTimeout(() => reject(new Error('Location timeout')), 3000)
           ),
         ]);
 
-        storage.set(MIGRATION_KEY, true);
-        console.log(`✅ Migration completed in ${Date.now() - start}ms`);
-        setMigrationDone(true);
+        console.log('✅ Location obtained');
+        setLocationDone(true);
       } catch (err) {
-        console.warn('⚠️ Migration failed, continuing anyway:', err);
-        setMigrationDone(true); // Don't block app
+        console.warn('⚠️ Location failed, using default Singapore location');
+        // Default location is already set in store
+        setLocationDone(true);
       }
     };
 
-    runMigration();
-  }, []);
+    getLocation();
+  }, [userLocation, fetchLocation]);
 
-  // STEP 2: Load Prayer Times (cache-first, after migration + rehydration)
+  // STEP 2: Prefetch Prayer Times (cache-first, after location)
   useEffect(() => {
-    if (!migrationDone || !isRehydrated) return;
+    if (!locationDone || !userLocation) return;
 
-    const loadPrayerTimes = async () => {
+    const prefetchPrayerTimes = async () => {
       try {
-        console.log('📱 Loading prayer times...');
+        console.log('🕌 Prefetching prayer times...');
 
-        // Cache-first strategy
-        const cached = storage.getString(PRAYER_CACHE_KEY);
-        const timestamp = storage.getNumber(PRAYER_TIMESTAMP_KEY);
-        const isCacheValid = cached && timestamp && Date.now() - timestamp < CACHE_DURATION_MS;
+        const location = {
+          latitude: userLocation.coords.latitude,
+          longitude: userLocation.coords.longitude,
+        };
 
-        if (isCacheValid) {
+        // Check MMKV cache first
+        const today = new Date().toISOString().split('T')[0];
+        const cacheKey = `prayer-times-today-${location.latitude}-${location.longitude}`;
+        const cached = cache.get(cacheKey);
+
+        if (cached) {
           console.log('✅ Using cached prayer times');
-          seedPrayerTimesToWidget().catch(console.warn);
+          // Seed cache into QueryClient
+          queryClient.setQueryData(
+            PRAYER_QUERY_KEYS.daily(today, location),
+            cached
+          );
           setPrayerTimesDone(true);
           return;
         }
 
-        // Fetch fresh data
-        const dateKey = todayKeySGT();
-        console.log(`🔎 Fetching fresh prayer times for ${dateKey}`);
+        // Prefetch from API
+        console.log('🌐 Fetching prayer times from API');
+        
+        await queryClient.prefetchQuery({
+          queryKey: PRAYER_QUERY_KEYS.daily(today, location),
+          queryFn: () => fetchTodayPrayerTimes(location.latitude, location.longitude),
+          staleTime: TTL.ONE_HOUR,
+        });
 
-        const prayerData = await Promise.race([
-          dispatch(fetchPrayerTimesForDate(dateKey)).unwrap(),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Prayer fetch timeout')), 8000)
-          ),
-        ]);
-
-        // Cache fresh data
-        storage.set(PRAYER_CACHE_KEY, JSON.stringify(prayerData));
-        storage.set(PRAYER_TIMESTAMP_KEY, Date.now());
-        seedPrayerTimesToWidget().catch(console.warn);
-
-        console.log('✅ Prayer times loaded');
+        console.log('✅ Prayer times prefetched');
         setPrayerTimesDone(true);
       } catch (err) {
-        console.error('❌ Prayer times error:', err);
+        console.error('❌ Prayer times prefetch error:', err);
 
-        // Fallback to stale cache
-        const staleCache = storage.getString(PRAYER_CACHE_KEY);
+        // Try to use any stale cache
+        const staleCache = cache.get('prayer-times-stale-fallback');
         if (staleCache) {
           console.log('⚠️ Using stale cache');
-          seedPrayerTimesToWidget().catch(console.warn);
           setPrayerTimesDone(true);
           return;
         }
 
-        // Last resort: mark done but surface error
+        // Surface error but don't block app
         setError(err instanceof Error ? err : new Error('Failed to load prayer times'));
         setPrayerTimesDone(true);
       }
     };
 
-    loadPrayerTimes();
-  }, [migrationDone, isRehydrated, dispatch]);
+    prefetchPrayerTimes();
+  }, [locationDone, userLocation, queryClient]);
 
   // Determine if app is ready
-  const isReady = migrationDone && fontsLoaded && prayerTimesDone;
+  const isReady = fontsLoaded && locationDone && prayerTimesDone;
 
   return {
     isReady,
