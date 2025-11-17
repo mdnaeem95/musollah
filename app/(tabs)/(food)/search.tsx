@@ -1,108 +1,26 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import {
-  View,
-  TextInput,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Text,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import React from 'react';
+import { View, TextInput, StyleSheet, TouchableOpacity, Text, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Restaurant } from '../../../utils/types';
-import useAutoFocus from '../../../hooks/useAutoFocus';
-import { FontAwesome6 } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fetchRestaurants } from '../../../api/firebase';
 import { FlashList } from '@shopify/flash-list';
+import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
+import useAutoFocus from '../../../hooks/useAutoFocus';
+import { useRestaurantSearch } from '../../../hooks/food/useRestaurantSearch';
 
 const SearchPage = () => {
-  const { theme } = useTheme()
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
+  const { theme } = useTheme();
   const router = useRouter();
   const inputRef = useAutoFocus();
 
-  const RECENT_SEARCHES_KEY = 'recentSearches';
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const savedSearches = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
-        if (savedSearches) {
-          setRecentSearches(JSON.parse(savedSearches));
-        }
-
-        const data = await fetchRestaurants();
-        setRestaurants(data);
-      } catch (error) {
-        console.error('Failed to load recent searches', error);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebounceQuery(searchQuery);
-    }, 300);
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
-
-  const saveRecentSearches = async (searches: string[]) => {
-    try {
-      await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
-    } catch (error) {
-      console.error('Failed to save recent searches', error);
-    }
-  };
-
-  const handleSearch = useCallback(
-    (query: string) => {
-      const lowerCaseQuery = query.toLowerCase();
-      const filtered = restaurants.filter((restaurant) => {
-        const name = restaurant.name?.toLowerCase() || '';
-        const address = restaurant.address?.toLowerCase() || '';
-        const categories = restaurant.categories || [];
-
-        return (
-          name.includes(lowerCaseQuery) ||
-          address.includes(lowerCaseQuery) ||
-          categories.some((cat) => cat?.toLowerCase().includes(lowerCaseQuery))
-        );
-      });
-      setFilteredRestaurants(filtered);
-    },
-    [restaurants]
-  );
-
-  const handleSubmit = async () => {
-    if (searchQuery.trim() && !recentSearches.includes(searchQuery)) {
-      const updatedSearches = [searchQuery, ...recentSearches].slice(0, 3);
-      setRecentSearches(updatedSearches);
-      await saveRecentSearches(updatedSearches);
-    }
-
-    handleSearch(debounceQuery);
-  };
-
-  const handleRecentSearchTap = (query: string) => {
-    setSearchQuery(query);
-    handleSearch(query);
-  };
-
-  const handleRemoveSearch = async (searchToRemove: string) => {
-    const updatedSearches = recentSearches.filter((search) => search !== searchToRemove);
-    setRecentSearches(updatedSearches);
-    await saveRecentSearches(updatedSearches);
-  };
+  const {
+    searchQuery,
+    filteredRestaurants,
+    recentSearches,
+    handleSearchChange,
+    handleSearchSubmit,
+    handleRecentSearchTap,
+    handleRemoveSearch,
+  } = useRestaurantSearch();
 
   return (
     <KeyboardAvoidingView
@@ -121,11 +39,8 @@ const SearchPage = () => {
         placeholder="Search restaurants or categories..."
         placeholderTextColor={theme.colors.text.muted}
         value={searchQuery}
-        onChangeText={(text) => {
-          setSearchQuery(text);
-          handleSearch(text);
-        }}
-        onSubmitEditing={handleSubmit}
+        onChangeText={handleSearchChange}
+        onSubmitEditing={handleSearchSubmit}
       />
 
       {recentSearches.length > 0 && (

@@ -1,69 +1,74 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
-  Image,
-  Modal,
-} from "react-native";
-import { useLocalSearchParams } from "expo-router";
-import { fetchReviews } from "../../../../api/firebase";
-import { FontAwesome6 } from "@expo/vector-icons";
-import { RestaurantReview } from "../../../../utils/types";
-import { AirbnbRating } from "react-native-ratings";
-import { FlashList } from "@shopify/flash-list";
-import { useTheme } from "../../../../context/ThemeContext";
+import React from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Image, Modal } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { FontAwesome6 } from '@expo/vector-icons';
+import { AirbnbRating } from 'react-native-ratings';
+import { FlashList } from '@shopify/flash-list';
+import { useTheme } from '../../../../context/ThemeContext';
+import { useRestaurantReviews } from '../../../../api/services/food';
+import type { RestaurantReview as UIReview } from '../../../../utils/types';
+
+function toIsoStringTimestamp(ts: unknown): string {
+  if (ts && typeof ts === 'object' && typeof (ts as any).toDate === 'function') {
+    return (ts as any).toDate().toISOString();
+  }
+  if (typeof ts === 'number') return new Date(ts).toISOString();
+  if (typeof ts === 'string') return ts;
+  return new Date().toISOString();
+}
 
 const AllReviews = () => {
-  const { id } = useLocalSearchParams(); // Restaurant ID
-  const [reviews, setReviews] = useState<RestaurantReview[]>([]);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
-
+  const { id } = useLocalSearchParams();
   const { theme } = useTheme();
 
-  useEffect(() => {
-    const loadReviews = async () => {
-      try {
-        const data = await fetchReviews(id as string);
-        setReviews(data);
-      } catch (error) {
-        console.error("Failed to load reviews:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = React.useState<number>(0);
+  const [currentImages, setCurrentImages] = React.useState<string[]>([]);
 
-    loadReviews();
-  }, [id]);
+  const { data: reviews = [], isLoading } = useRestaurantReviews(id as string);
+
+  const uiReviews: UIReview[] = React.useMemo(() => {
+    const restaurantId = (id as string) ?? '';
+    return reviews.map((r: any) => ({
+      id: r.id,
+      restaurantId,
+      userId: r.userId,
+      rating: r.rating ?? 0,
+      review: r.review ?? r.comment ?? '',          // 👈 support legacy `comment`
+      timestamp: toIsoStringTimestamp(r.timestamp), // 👈 ensure ISO string
+      images: Array.isArray(r.images) ? r.images : [],
+    }));
+  }, [reviews, id]);
 
   const openImageViewer = (images: string[], index: number) => {
-    setSelectedImage(images[index]);
+    setCurrentImages(images);
     setCurrentImageIndex(index);
+    setSelectedImage(images[index]);
   };
 
   const closeImageViewer = () => {
     setSelectedImage(null);
+    setCurrentImages([]);
+    setCurrentImageIndex(0);
   };
 
-  const nextImage = (images: string[]) => {
-    if (currentImageIndex < images.length - 1) {
-      setCurrentImageIndex((prevIndex) => prevIndex + 1);
-      setSelectedImage(images[currentImageIndex + 1]);
+  const nextImage = () => {
+    if (currentImageIndex < currentImages.length - 1) {
+      const newIndex = currentImageIndex + 1;
+      setCurrentImageIndex(newIndex);
+      setSelectedImage(currentImages[newIndex]);
     }
   };
 
-  const prevImage = (images: string[]) => {
+  const prevImage = () => {
     if (currentImageIndex > 0) {
-      setCurrentImageIndex((prevIndex) => prevIndex - 1);
-      setSelectedImage(images[currentImageIndex - 1]);
+      const newIndex = currentImageIndex - 1;
+      setCurrentImageIndex(newIndex);
+      setSelectedImage(currentImages[newIndex]);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
         <ActivityIndicator size="large" color={theme.colors.text.primary} />
@@ -71,7 +76,7 @@ const AllReviews = () => {
     );
   }
 
-  if (!reviews.length) {
+  if (!uiReviews.length) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
         <Text style={[styles.emptyText, { color: theme.colors.text.primary }]}>
@@ -85,7 +90,7 @@ const AllReviews = () => {
     <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
       <FlashList
         estimatedItemSize={138}
-        data={reviews}
+        data={uiReviews}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={[styles.reviewCard, { backgroundColor: theme.colors.secondary }]}>
@@ -105,7 +110,7 @@ const AllReviews = () => {
               </View>
             )}
             <View style={styles.reviewFooter}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                 <AirbnbRating
                   isDisabled
                   showRating={false}
@@ -113,7 +118,7 @@ const AllReviews = () => {
                   size={14}
                 />
                 <Text style={[styles.reviewRating, { color: theme.colors.text.primary }]}>
-                  {item.rating > 1 ? `${item.rating}` : `${item.rating}`}
+                  {item.rating}
                 </Text>
               </View>
               <Text style={[styles.reviewTimestamp, { color: theme.colors.text.muted }]}>
@@ -124,7 +129,6 @@ const AllReviews = () => {
         )}
       />
 
-      {/* Fullscreen Image Viewer */}
       <Modal visible={!!selectedImage} transparent={true}>
         <View style={styles.modalContainer}>
           <TouchableOpacity onPress={closeImageViewer} style={styles.closeButton}>
@@ -135,9 +139,7 @@ const AllReviews = () => {
           )}
           <View style={styles.navigationButtons}>
             <TouchableOpacity
-              onPress={() =>
-                prevImage(reviews.find((r) => r.images?.includes(selectedImage!))?.images || [])
-              }
+              onPress={prevImage}
               disabled={currentImageIndex === 0}
             >
               <FontAwesome6
@@ -147,20 +149,14 @@ const AllReviews = () => {
               />
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() =>
-                nextImage(reviews.find((r) => r.images?.includes(selectedImage!))?.images || [])
-              }
-              disabled={
-                currentImageIndex ===
-                (reviews.find((r) => r.images?.includes(selectedImage!))?.images || []).length - 1
-              }
+              onPress={nextImage}
+              disabled={currentImageIndex === currentImages.length - 1}
             >
               <FontAwesome6
                 name="chevron-right"
                 size={36}
                 color={
-                  currentImageIndex ===
-                  (reviews.find((r) => r.images?.includes(selectedImage!))?.images || []).length - 1
+                  currentImageIndex === currentImages.length - 1
                     ? theme.colors.text.muted
                     : theme.colors.text.primary
                 }
@@ -185,12 +181,12 @@ const styles = StyleSheet.create({
   },
   reviewText: {
     fontSize: 14,
-    fontFamily: "Outfit_400Regular",
+    fontFamily: 'Outfit_400Regular',
     marginBottom: 8,
   },
   imagesContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     marginTop: 8,
   },
@@ -200,46 +196,46 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   reviewFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   reviewRating: {
     fontSize: 14,
-    fontFamily: "Outfit_600SemiBold",
+    fontFamily: 'Outfit_600SemiBold',
   },
   reviewTimestamp: {
     fontSize: 12,
-    fontFamily: "Outfit_400Regular",
+    fontFamily: 'Outfit_400Regular',
   },
   emptyText: {
     fontSize: 16,
-    fontFamily: "Outfit_400Regular",
+    fontFamily: 'Outfit_400Regular',
     marginBottom: 16,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.9)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   fullScreenImage: {
-    width: "90%",
-    height: "70%",
-    resizeMode: "contain",
+    width: '90%',
+    height: '70%',
+    resizeMode: 'contain',
   },
   closeButton: {
-    position: "absolute",
+    position: 'absolute',
     top: 40,
     right: 20,
     zIndex: 10,
   },
   navigationButtons: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 40,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "80%",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '80%',
   },
 });
 
