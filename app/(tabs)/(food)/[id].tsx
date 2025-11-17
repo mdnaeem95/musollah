@@ -1,42 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  ActivityIndicator,
-  TouchableOpacity,
-} from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, StatusBar, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { getAuth } from '@react-native-firebase/auth';
 import { useTheme } from '../../../context/ThemeContext';
-import {
-  fetchRestaurantById,
-  fetchReviews,
-  fetchFavourites,
-  addToFavourites,
-  removeFromFavourites,
-} from '../../../api/firebase';
-import { Restaurant, RestaurantReview } from '../../../utils/types';
+import { AirbnbRating } from 'react-native-ratings';
+import { FontAwesome6 } from '@expo/vector-icons';
+import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedStyle, interpolate } from 'react-native-reanimated';
 
 import HeroImage from '../../../components/food/HeroImage';
 import ReviewPreviewCarousel from '../../../components/food/ReviewPreviewCarousel';
 import SocialIcons from '../../../components/food/SocialIcons';
 import ActionButtons from '../../../components/food/ActionButtons';
-
 import FavoriteButton from '../../../components/FavouriteButton';
 import OperatingHours from '../../../components/food/OperatingHours';
 import SignInModal from '../../../components/SignInModal';
-import { AirbnbRating } from 'react-native-ratings';
-import { FontAwesome6 } from '@expo/vector-icons';
 import { CircleButton } from './_layout';
 
-import Animated, {
-  useSharedValue,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  interpolate,
-} from 'react-native-reanimated';
+import { useRestaurantDetails } from '../../../hooks/food/useRestaurantDetails';
 
 const HERO_IMAGE_HEIGHT = 250;
 const HEADER_HEIGHT = 60;
@@ -48,17 +27,21 @@ const RestaurantDetails = () => {
   const { id } = useLocalSearchParams();
   const scrollY = useSharedValue(0);
 
-  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [reviews, setReviews] = useState<RestaurantReview[]>([]);
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [isAuthModalVisible, setIsAuthModalVisible] = useState(false);
-  const [showHours, setShowHours] = useState(false);
-  const [showSocials, setShowSocials] = useState(false);
-
-  const auth = getAuth();
-  const currentUser = auth.currentUser;
-  const currentUserId = currentUser?.uid;
+  const {
+    restaurant,
+    reviews,
+    averageRating,
+    isFavorited,
+    isLoading,
+    error,
+    showHours,
+    showSocials,
+    isAuthModalVisible,
+    toggleFavorite,
+    toggleHours,
+    toggleSocials,
+    closeAuthModal,
+  } = useRestaurantDetails(id as string);
 
   const scrollHandler = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
@@ -93,48 +76,7 @@ const RestaurantDetails = () => {
     };
   });
 
-  useEffect(() => {
-    if (!id) return;
-
-    const loadData = async () => {
-      try {
-        const data = await fetchRestaurantById(id as string);
-        setRestaurant(data);
-
-        const reviewsData = await fetchReviews(id as string);
-        setReviews(reviewsData);
-
-        const favs = await fetchFavourites(currentUserId!);
-        setIsFavorited(favs.includes(id as string));
-      } catch (err) {
-        console.error('Error loading details:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [id]);
-
-  const toggleFavorite = async () => {
-    if (!currentUser) {
-      setIsAuthModalVisible(true);
-      return;
-    }
-
-    try {
-      if (isFavorited) {
-        await removeFromFavourites(currentUserId!, restaurant!.id);
-      } else {
-        await addToFavourites(currentUserId!, restaurant!.id);
-      }
-      setIsFavorited(!isFavorited);
-    } catch (err) {
-      console.error('Favorite toggle failed:', err);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.colors.primary }]}>
         <ActivityIndicator size="large" color={theme.colors.accent} />
@@ -142,21 +84,18 @@ const RestaurantDetails = () => {
     );
   }
 
-  if (!restaurant) {
+  if (error || !restaurant) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.colors.primary }]}>
-        <Text style={{ color: theme.colors.text.primary }}>Failed to load restaurant details.</Text>
+        <Text style={{ color: theme.colors.text.primary }}>
+          Failed to load restaurant details.
+        </Text>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={{ color: theme.colors.accent, marginTop: 10 }}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
   }
-
-  const averageRating =
-    reviews.length > 0
-      ? Number((reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1))
-      : 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.primary }}>
@@ -172,12 +111,14 @@ const RestaurantDetails = () => {
         showsVerticalScrollIndicator={false}
         onScroll={scrollHandler}
       >
-        <HeroImage imageUrl={restaurant.image} animatedStyle={heroImageStyle} />
+        <HeroImage imageUrl={restaurant.image!} animatedStyle={heroImageStyle} />
 
         <View style={{ height: HERO_IMAGE_HEIGHT }} />
 
         <View style={[styles.section, { backgroundColor: theme.colors.secondary }]}>
-          <Text style={[styles.name, { color: theme.colors.text.primary }]}>{restaurant.name}</Text>
+          <Text style={[styles.name, { color: theme.colors.text.primary }]}>
+            {restaurant.name}
+          </Text>
           <Text style={[styles.categories, { color: theme.colors.text.secondary }]}>
             {restaurant.categories.join(' • ')}
           </Text>
@@ -200,7 +141,7 @@ const RestaurantDetails = () => {
         <View style={styles.section}>
           <TouchableOpacity
             style={[styles.expandable, { borderBottomColor: theme.colors.muted }]}
-            onPress={() => setShowHours(!showHours)}
+            onPress={toggleHours}
           >
             <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
               Operating Hours
@@ -211,13 +152,13 @@ const RestaurantDetails = () => {
               color={theme.colors.text.primary}
             />
           </TouchableOpacity>
-          {showHours && <OperatingHours hoursString={restaurant.hours} />}
+          {showHours && <OperatingHours hoursString={restaurant.hours!} />}
         </View>
 
         <View style={styles.section}>
           <TouchableOpacity
             style={[styles.expandable, { borderBottomColor: theme.colors.muted }]}
-            onPress={() => setShowSocials(!showSocials)}
+            onPress={toggleSocials}
           >
             <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
               Socials
@@ -241,14 +182,14 @@ const RestaurantDetails = () => {
         <View style={[styles.section, { marginBottom: 40 }]}>
           <ActionButtons
             restaurantId={restaurant.id}
-            address={restaurant.address}
+            address={restaurant.address!}
             name={restaurant.name}
             website={restaurant.website}
           />
         </View>
       </Animated.ScrollView>
 
-      <SignInModal isVisible={isAuthModalVisible} onClose={() => setIsAuthModalVisible(false)} />
+      <SignInModal isVisible={isAuthModalVisible} onClose={closeAuthModal} />
     </View>
   );
 };

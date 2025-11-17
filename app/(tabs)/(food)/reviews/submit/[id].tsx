@@ -1,96 +1,36 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  View, Text, TextInput, StyleSheet, Alert,
+  View, Text, TextInput, StyleSheet,
   TouchableOpacity, ActivityIndicator, Image,
   ScrollView, TouchableWithoutFeedback, Keyboard,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { AirbnbRating } from 'react-native-ratings';
-import { getAuth } from '@react-native-firebase/auth';
-import * as ImagePicker from 'expo-image-picker';
 import { MotiView } from 'moti';
-
 import { useTheme } from '../../../../../context/ThemeContext';
-import { submitReview } from '../../../../../api/firebase';
-import { uploadImageToFirebase } from '../../../../../api/storage/uploadImage';
 import SignInModal from '../../../../../components/SignInModal';
-
-const MAX_REVIEW_LENGTH = 500;
-const MAX_IMAGES = 5;
+import { useSubmitReviewPage } from '../../../../../hooks/food/useSubmitReview';
 
 const SubmitReview = () => {
-  const [rating, setRating] = useState<number>(5);
-  const [reviewText, setReviewText] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  const [authModalVisible, setAuthModalVisible] = useState(false);
-
-  const user = getAuth();
-  const currentUser = user.currentUser;
-  const { id } = useLocalSearchParams(); // Restaurant ID
-  const router = useRouter();
+  const { id } = useLocalSearchParams();
   const { theme } = useTheme();
 
-  const showAuthAlert = () => {
-    Alert.alert(
-      "Sign in Required",
-      "You need to be signed in to write a review.",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Sign In", onPress: () => setAuthModalVisible(true) } // Redirect to login
-      ]
-    );
-  };
-
-  const handleImagePicker = async () => {
-    if (selectedImages.length >= MAX_IMAGES) return;
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled && result.assets?.length > 0) {
-      setSelectedImages((prev) => [...prev, result.assets[0].uri]);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!currentUser) {
-      showAuthAlert();
-      return;
-    }
-
-    if (!reviewText.trim()) {
-      Alert.alert('Error', 'Please write something before submitting.');
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const uploadedImageUrls = await Promise.all(
-        selectedImages.map((uri, idx) =>
-          uploadImageToFirebase(uri, `reviews/${id}/image_${idx}.jpg`)
-        )
-      );
-
-      await submitReview(id as string, currentUser.uid, rating, reviewText, uploadedImageUrls);
-      Alert.alert('Success', 'Review submitted successfully!');
-      router.back();
-    } catch (error) {
-      console.error('Error submitting review:', error);
-      Alert.alert('Error', 'Failed to submit the review.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const removeImage = (uri: string) => {
-    setSelectedImages((prev) => prev.filter((img) => img !== uri));
-  };
+  const {
+    rating,
+    reviewText,
+    selectedImages,
+    isSubmitting,
+    authModalVisible,
+    canSubmit,
+    MAX_REVIEW_LENGTH,
+    MAX_IMAGES,
+    setRating,
+    handleReviewTextChange,
+    handleImagePicker,
+    handleSubmit,
+    removeImage,
+    setAuthModalVisible,
+  } = useSubmitReviewPage(id as string);
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -117,9 +57,7 @@ const SubmitReview = () => {
             ]}
             multiline
             value={reviewText}
-            onChangeText={(text) => {
-              if (text.length <= MAX_REVIEW_LENGTH) setReviewText(text);
-            }}
+            onChangeText={handleReviewTextChange}
             placeholder="Write your review here..."
             placeholderTextColor={theme.colors.text.muted}
           />
@@ -158,12 +96,12 @@ const SubmitReview = () => {
             onPress={handleSubmit}
             style={[
               styles.button,
-              (reviewText.trim() === '' || rating === 0) && styles.disabled,
+              !canSubmit && styles.disabled,
               { backgroundColor: theme.colors.accent },
             ]}
-            disabled={loading || reviewText.trim() === '' || rating === 0}
+            disabled={!canSubmit}
           >
-            {loading ? (
+            {isSubmitting ? (
               <ActivityIndicator size="small" color={theme.colors.text.primary} />
             ) : (
               <Text style={[styles.buttonText, { color: theme.colors.text.primary }]}>
@@ -172,6 +110,7 @@ const SubmitReview = () => {
             )}
           </TouchableOpacity>
         </MotiView>
+        
         <SignInModal isVisible={authModalVisible} onClose={() => setAuthModalVisible(false)} />
       </ScrollView>
     </TouchableWithoutFeedback>
