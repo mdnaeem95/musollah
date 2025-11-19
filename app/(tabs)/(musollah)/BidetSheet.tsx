@@ -29,7 +29,7 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
       .collection('Bidets')
       .doc(locationId)
       .onSnapshot((doc) => {
-        if (doc.exists) {
+        if ((doc.exists())) {
           const data = doc.data();
           if (!data) return;
           const normalized: BidetLocation = {

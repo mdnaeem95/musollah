@@ -27,7 +27,7 @@ export default function MusollahSheet({ locationId, visible, onClose }: Musollah
       .collection('Musollahs') // lowercase unless your Firestore collection is named differently
       .doc(locationId)
       .onSnapshot((doc) => {
-        if (doc.exists) {
+        if (doc.exists()) {
           const data = doc.data();
           if (!data) return;
           const normalized: MusollahLocation = {

@@ -19,20 +19,52 @@ export interface Region {
   longitudeDelta: number;
 }
 
-export interface Location {
+export interface BidetLocation {
   id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  address?: string;
+  address: string;
+  building: string;
+  postal: number;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  female: string;
+  handicap: string;
+  male: string;
+  distance?: number;
   status?: 'Available' | 'Unavailable' | 'Unknown';
   lastUpdated?: number;
+}
+
+export interface MosqueLocation {
+  id: string;
+  building: string;
+  address: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  shia: string;
   distance?: number;
 }
 
-export interface BidetLocation extends Location {}
-export interface MosqueLocation extends Location {}
-export interface MusollahLocation extends Location {}
+export interface MusollahLocation {
+  id: string;
+  building: string;
+  address: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  segregated: string;
+  airConditioned: string;
+  ablutionArea: string;
+  slippers: string;
+  prayerMats: string;
+  telekung: string;
+  directions: string;
+  distance?: number;
+}
 
 // ============================================================================
 // API FUNCTIONS
@@ -41,8 +73,8 @@ export interface MusollahLocation extends Location {}
 async function getBidetLocations(region: Region): Promise<BidetLocation[]> {
   const snapshot = await db
     .collection('bidetLocations')
-    .where('latitude', '>=', region.latitude - region.latitudeDelta)
-    .where('latitude', '<=', region.latitude + region.latitudeDelta)
+    .where('coordinates.latitude', '>=', region.latitude - region.latitudeDelta)
+    .where('coordinates.latitude', '<=', region.latitude + region.latitudeDelta)
     .get();
   
   return snapshot.docs.map(doc => ({
@@ -54,8 +86,8 @@ async function getBidetLocations(region: Region): Promise<BidetLocation[]> {
 async function getMosqueLocations(region: Region): Promise<MosqueLocation[]> {
   const snapshot = await db
     .collection('mosqueLocations')
-    .where('latitude', '>=', region.latitude - region.latitudeDelta)
-    .where('latitude', '<=', region.latitude + region.latitudeDelta)
+    .where('coordinates.latitude', '>=', region.latitude - region.latitudeDelta)
+    .where('coordinates.latitude', '<=', region.latitude + region.latitudeDelta)
     .get();
   
   return snapshot.docs.map(doc => ({
@@ -67,8 +99,8 @@ async function getMosqueLocations(region: Region): Promise<MosqueLocation[]> {
 async function getMusollahsLocations(region: Region): Promise<MusollahLocation[]> {
   const snapshot = await db
     .collection('musollahLocations')
-    .where('latitude', '>=', region.latitude - region.latitudeDelta)
-    .where('latitude', '<=', region.latitude + region.latitudeDelta)
+    .where('coordinates.latitude', '>=', region.latitude - region.latitudeDelta)
+    .where('coordinates.latitude', '<=', region.latitude + region.latitudeDelta)
     .get();
   
   return snapshot.docs.map(doc => ({
