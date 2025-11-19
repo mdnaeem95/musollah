@@ -2,8 +2,8 @@ import React, { useMemo, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { MosqueLocation } from '../../../components/musollah/Map';
 import { useTheme } from '../../../context/ThemeContext';
+import { MosqueLocation } from '../../../api/services/musollah';
 
 interface MosqueSheetProps {
   location: MosqueLocation | null;

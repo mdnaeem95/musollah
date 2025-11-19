@@ -2,17 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../../../context/ThemeContext';
-import { updateLocationStatusInState } from '../../../redux/slices/musollahSlice';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../../redux/store/store';
+import { useUpdateLocationStatus } from '../../../api/services/musollah';
 import Modal from 'react-native-modal';
-import { updateLocationStatusFirestore } from '../../../api/firebase/musollah';
 
 interface ReportStatusSheetProps {
   visible: boolean;
   onClose: () => void;
   type: 'bidet' | 'musollah';
   locationId: string;
+  currentStatus?: 'Available' | 'Unavailable' | 'Unknown';
 }
 
 const statusOptions: ('Available' | 'Unavailable' | 'Unknown')[] = [
@@ -26,43 +24,52 @@ export default function ReportStatusSheet({
   onClose,
   type,
   locationId,
+  currentStatus = 'Unknown',
 }: ReportStatusSheetProps) {
-  const dispatch = useDispatch<AppDispatch>();
   const { theme } = useTheme();
-  const locationData = useSelector((state: RootState) =>
-    type === 'bidet'
-      ? state.musollah.bidetLocations.find((loc) => loc.id === locationId)
-      : state.musollah.musollahLocations.find((loc) => loc.id === locationId)
+  const { mutate: updateStatus, isPending } = useUpdateLocationStatus();
+  const [selectedStatus, setSelectedStatus] = useState<'Available' | 'Unavailable' | 'Unknown'>(
+    currentStatus
   );
-  
-  const [selectedStatus, setSelectedStatus] = useState<'Available' | 'Unavailable' | 'Unknown'>('Unknown');
-  
-  // Sync local state when modal opens or Redux data changes
-  useEffect(() => {
-    if (visible && locationData?.status) {
-      setSelectedStatus(locationData.status);
-    }
-  }, [visible, locationData]);  
 
-  const handleSelect = async (status: 'Available' | 'Unavailable' | 'Unknown') => {
-    setSelectedStatus(status); // instant UI feedback
-  
-    const update = {
-      type,
-      id: locationId,
-      status,
-      lastUpdated: Date.now(),
-    };
-  
-    try {
-      dispatch(updateLocationStatusInState(update));
-      await updateLocationStatusFirestore(type, locationId, status);
-      Toast.show({ type: 'success', text1: 'Status updated!' });
-      onClose();
-    } catch (error) {
-      Toast.show({ type: 'error', text1: 'Failed to update backend.' });
+  // Sync local state when modal opens or current status changes
+  useEffect(() => {
+    if (visible) {
+      setSelectedStatus(currentStatus);
     }
-  };  
+  }, [visible, currentStatus]);
+
+  const handleSelect = (status: 'Available' | 'Unavailable' | 'Unknown') => {
+    setSelectedStatus(status); // Instant UI feedback
+
+    updateStatus(
+      {
+        type,
+        id: locationId,
+        status,
+      },
+      {
+        onSuccess: () => {
+          Toast.show({ 
+            type: 'success', 
+            text1: 'Status updated!',
+            text2: `Location marked as ${status}`,
+          });
+          onClose();
+        },
+        onError: (error) => {
+          console.error('Failed to update location status:', error);
+          Toast.show({ 
+            type: 'error', 
+            text1: 'Failed to update status',
+            text2: 'Please try again',
+          });
+          // Revert UI on error
+          setSelectedStatus(currentStatus);
+        },
+      }
+    );
+  };
 
   return (
     <Modal
@@ -73,20 +80,41 @@ export default function ReportStatusSheet({
       style={styles.modal}
     >
       <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
-        <Text style={[styles.title, { color: theme.colors.text.primary }]}>Report Current Status</Text>
+        <Text style={[styles.title, { color: theme.colors.text.primary }]}>
+          Report Current Status
+        </Text>
         <View style={styles.buttonGroup}>
           {statusOptions.map((status) => (
             <TouchableOpacity
               key={status}
-              style={[styles.button, { backgroundColor: theme.colors.secondary }]}
+              style={[
+                styles.button,
+                { backgroundColor: theme.colors.secondary },
+                selectedStatus === status && styles.selectedButton,
+              ]}
               onPress={() => handleSelect(status)}
+              disabled={isPending}
             >
-              <Text style={[styles.buttonText, { color: theme.colors.text.primary }]}>{status}</Text>
+              <Text
+                style={[
+                  styles.buttonText,
+                  { color: theme.colors.text.primary },
+                  selectedStatus === status && styles.selectedText,
+                ]}
+              >
+                {status}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
-        <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
-          <Text style={[styles.cancelText, { color: theme.colors.text.secondary }]}>Cancel</Text>
+        <TouchableOpacity 
+          onPress={onClose} 
+          style={styles.cancelButton}
+          disabled={isPending}
+        >
+          <Text style={[styles.cancelText, { color: theme.colors.text.secondary }]}>
+            Cancel
+          </Text>
         </TouchableOpacity>
       </View>
     </Modal>
@@ -126,9 +154,16 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  selectedButton: {
+    borderWidth: 2,
+    borderColor: '#10B981',
+  },
   buttonText: {
     fontSize: 16,
     fontFamily: 'Outfit_500Medium',
+  },
+  selectedText: {
+    fontWeight: '600',
   },
   cancelButton: {
     marginTop: 8,
