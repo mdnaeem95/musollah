@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable, Animat
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../../context/ThemeContext';
-import BannerAdComponent from '../../../components/BannerAd';
 
 const SettingsTab = () => {
   const router = useRouter();

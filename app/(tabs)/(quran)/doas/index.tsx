@@ -1,21 +1,17 @@
 import { ActivityIndicator, View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { useDispatch, useSelector } from 'react-redux';
 import { FontAwesome6 } from '@expo/vector-icons';
 import DoaItem from '../../../../components/quran/DoaItem';
-import { AppDispatch, RootState } from '../../../../redux/store/store';
-import { Doa } from '../../../../utils/types';
+import { Doa, useDoas, searchDoas } from '../../../../api/services/duas';
 import { useTheme } from '../../../../context/ThemeContext';
 import { FlashList } from '@shopify/flash-list';
-import { fetchDailyDoasData } from '../../../../redux/slices/doasSlice';
 
 const Doas = () => {
   const { theme } = useTheme();
-
-  const { doas, loading } = useSelector((state: RootState) => state.doas);
   const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
+
+  const { data: doas = [], isLoading, refetch } = useDoas();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
@@ -42,13 +38,10 @@ const Doas = () => {
   );
 
   const filteredDoas = useMemo(() => {
-    return doas.filter(
-      (doa) =>
-        doa.title.toLowerCase().includes(debounceQuery.toLowerCase()) ||
-        (doa.number && doa.number.toString().includes(debounceQuery))
-    );
+    return searchDoas(doas, debounceQuery);
   }, [doas, debounceQuery]);
 
+  // Debounce search query
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebounceQuery(searchQuery);
@@ -58,13 +51,13 @@ const Doas = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await dispatch(fetchDailyDoasData()); // Fetch latest doas
+    await refetch();
     setRefreshing(false);
   };
 
   return (
     <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
-      {loading && !refreshing ? (
+      {isLoading && !refreshing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.text.primary} />
         </View>
@@ -119,7 +112,7 @@ const Doas = () => {
             estimatedItemSize={74}
             data={filteredDoas}
             renderItem={renderDoaItem}
-            keyExtractor={(item) => item.number.toString()}
+            keyExtractor={(item) => item.number}
             showsVerticalScrollIndicator={false}
             refreshing={refreshing}
             onRefresh={handleRefresh}
@@ -136,6 +129,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   loadingContainer: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

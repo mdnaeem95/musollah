@@ -1,51 +1,16 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useRouter } from 'expo-router';
-import { useSelector, useDispatch } from 'react-redux';
-import { clearRecitatonPlan } from '../../../../redux/slices/quranSlice'
-import { RootState, AppDispatch } from '../../../../redux/store/store';
+import { useQuranStore, calculateRecitationProgress } from '../../../../stores/useQuranStore';
 import * as Progress from 'react-native-progress';
-import { Alert } from 'react-native';
-
-const TOTAL_AYAHS = 6236;
-const TOTAL_SURAHS = 114;
-const TOTAL_JUZ = 30;
 
 export default function RecitationPlanIndex() {
   const { theme } = useTheme();
   const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
-  const plan = useSelector((state: RootState) => state.quran.recitationPlan);
+  
+  const { recitationPlan, clearRecitationPlan } = useQuranStore();
 
-  const today = new Date();
-  const startDate = plan ? new Date(plan.startDate) : null;
-  const daysPassed = startDate
-    ? Math.max(1, Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
-    : 0;
-
-  let expected = 0;
-  let total = 0;
-
-  if (plan) {
-    switch (plan.planType) {
-      case 'ayahs':
-        total = TOTAL_AYAHS;
-        expected = (TOTAL_AYAHS / plan.daysToFinish) * daysPassed;
-        break;
-      case 'surahs':
-        total = TOTAL_SURAHS;
-        expected = (TOTAL_SURAHS / plan.daysToFinish) * daysPassed;
-        break;
-      case 'juz':
-        total = TOTAL_JUZ;
-        expected = (TOTAL_JUZ / plan.daysToFinish) * daysPassed;
-        break;
-    }
-    expected = Math.ceil(expected);
-  }
-
-  const actual = plan?.completedAyahKeys.length || 0; 
-  const progressRatio = plan ? Math.min(actual / expected, 1) : 0;
+  const progress = recitationPlan ? calculateRecitationProgress(recitationPlan) : null;
 
   const handleStartNew = () => {
     Alert.alert(
@@ -60,10 +25,8 @@ export default function RecitationPlanIndex() {
           text: 'Yes, Start New',
           style: 'destructive',
           onPress: () => {
+            clearRecitationPlan();
             router.push('/recitationPlan/timeline');
-            setTimeout(() => {
-              dispatch(clearRecitatonPlan());
-            }, 700);
           },
         },
       ],
@@ -73,18 +36,18 @@ export default function RecitationPlanIndex() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
-      {plan ? (
+      {recitationPlan && progress ? (
         <>
           <Text style={[styles.title, { color: theme.colors.text.primary }]}>
             Active Recitation Plan
           </Text>
 
           <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
-            {plan.planType.charAt(0).toUpperCase() + plan.planType.slice(1)} Plan — Day {daysPassed} of {plan.daysToFinish}
+            {recitationPlan.planType.charAt(0).toUpperCase() + recitationPlan.planType.slice(1)} Plan — Day {progress.daysPassed} of {recitationPlan.daysToFinish}
           </Text>
 
           <Progress.Bar
-            progress={progressRatio}
+            progress={progress.progressRatio}
             width={null}
             height={10}
             color={theme.colors.accent}
@@ -94,7 +57,7 @@ export default function RecitationPlanIndex() {
           />
 
           <Text style={[styles.progressText, { color: theme.colors.text.primary }]}>
-            {actual} / {expected} {plan.planType} completed
+            {progress.completed} / {progress.expected} {recitationPlan.planType} completed
           </Text>
 
           <TouchableOpacity

@@ -1,21 +1,26 @@
 import { View, Text, StyleSheet } from 'react-native';
 import React from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { Doa, DoaBookmark } from '../../../../utils/types';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../../../redux/store/store';
 import { useTheme } from '../../../../context/ThemeContext';
-import { addBookmark, removeBookmark } from '../../../../redux/slices/doasSlice';
+import { useDoaBookmarksStore } from '../../../../stores/useDoaBookmarkStore';
+import { useDoa } from '../../../../api/services/duas';
 import Toast from 'react-native-toast-message';
 import BookmarkIcon from '../../../../components/quran/BookmarkIcon';
 
 const DoaContent = () => {
-  const { doas, bookmarks } = useSelector((state: RootState) => state.doas);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { theme, textSize } = useTheme();
+  
+  // Fetch specific doa
+  const doa = useDoa(id);
+  
+  const { 
+    addBookmark, 
+    removeBookmark, 
+    isBookmarked: checkIsBookmarked 
+  } = useDoaBookmarksStore();
 
-  const doa: Doa | undefined = doas.find((doa: Doa) => doa.number === id);
-  const dispatch = useDispatch<AppDispatch>();
+  const isBookmarked = checkIsBookmarked(id);
 
   const showAddBookMarkToast = () => {
     Toast.show({
@@ -35,51 +40,72 @@ const DoaContent = () => {
     });
   };
 
-  const isBookmarked = bookmarks.some((bookmark) => bookmark.doaId === id);
-
-  // Handle bookmark toggle
   const toggleBookmark = () => {
-    const bookmark: DoaBookmark = {
-      doaId: id as string,
-      doaTitle: doa?.title || 'Unknown Doa',
-    };
+    if (!doa) return;
 
     if (isBookmarked) {
-      dispatch(removeBookmark(bookmark));
+      removeBookmark(id);
       showRemoveBookMarkToast();
     } else {
-      dispatch(addBookmark(bookmark));
+      addBookmark(id, doa.title);
       showAddBookMarkToast();
     }
   };
+
+  if (!doa) {
+    return (
+      <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
+        <Text style={[styles.errorText, { color: theme.colors.text.primary }]}>
+          Doa not found
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
       <View style={{ flexGrow: 1 }}>
         <View style={[styles.contentCard, { backgroundColor: theme.colors.secondary }]}>
           <View style={styles.headerContainer}>
-            <Text style={[styles.titleText, { color: theme.colors.text.primary }]}>{doa?.title}</Text>
+            <Text style={[styles.titleText, { color: theme.colors.text.primary }]}>
+              {doa.title}
+            </Text>
             <BookmarkIcon isBookmarked={isBookmarked} onToggle={toggleBookmark} size={45} />
           </View>
 
           <Text
             style={[
               styles.arabicText,
-              { color: theme.colors.text.primary, fontSize: textSize, lineHeight: textSize * 2.5 },
+              { 
+                color: theme.colors.text.primary, 
+                fontSize: textSize, 
+                lineHeight: textSize * 2.5 
+              },
             ]}
           >
-            {doa?.arabicText}
+            {doa.arabicText}
           </Text>
 
-          <Text style={[styles.romanizedText, { color: theme.colors.text.primary, fontSize: textSize - 10 }]}>
-            {doa?.romanizedText}
+          <Text 
+            style={[
+              styles.romanizedText, 
+              { color: theme.colors.text.primary, fontSize: textSize - 10 }
+            ]}
+          >
+            {doa.romanizedText}
           </Text>
 
-          <Text style={[styles.translationText, { color: theme.colors.text.primary, fontSize: textSize - 12 }]}>
-            {doa?.englishTranslation}
+          <Text 
+            style={[
+              styles.translationText, 
+              { color: theme.colors.text.primary, fontSize: textSize - 12 }
+            ]}
+          >
+            {doa.englishTranslation}
           </Text>
+          
           <Text style={[styles.source, { color: theme.colors.text.secondary }]}>
-            Source: {doa?.source}
+            Source: {doa.source}
           </Text>
         </View>
       </View>
@@ -131,6 +157,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
     textAlign: 'right',
+  },
+  errorText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 50,
   },
 });
 
