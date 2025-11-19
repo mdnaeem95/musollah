@@ -5,50 +5,70 @@ import { useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../../../context/ThemeContext';
 
+type ZakatCard = {
+  id: string;
+  icon: string;
+  title: string;
+  description: string;
+  route: string;
+};
+
+const ZAKAT_CARDS: ZakatCard[] = [
+  {
+    id: 'harta',
+    icon: 'money-bill',
+    title: 'Zakat Harta',
+    description: 'Calculate zakat on savings, gold, insurance, and shares.',
+    route: '/zakat/harta',
+  },
+  {
+    id: 'fidyah',
+    icon: 'heart-pulse',
+    title: 'Zakat Fidyah',
+    description: 'Learn and calculate fidyah for missed fasts.',
+    route: '/zakat/fidyah',
+  },
+];
+
 const ZakatIndex = () => {
-    const router = useRouter();
-    const { theme } = useTheme(); // Access theme context
-    const styles = createStyles(theme);
+  const router = useRouter();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
-    return (
-        <SafeAreaView style={styles.mainContainer}>
-            <View style={styles.cardContainer}>
-                {/* Zakat Harta */}
-                <TouchableOpacity 
-                    style={styles.card}
-                    onPress={() => router.push('/zakat/harta')}
-                >
-                    <FontAwesome6 
-                        name="money-bill" 
-                        size={40} 
-                        color={theme.colors.text.secondary} 
-                        style={styles.icon} 
-                    />
-                    <Text style={styles.cardTitle}>Zakat Harta</Text>
-                    <Text style={styles.cardDescription}>
-                        Calculate zakat on savings, gold, insurance, and shares.
-                    </Text>
-                </TouchableOpacity>
+  const handleCardPress = (route: string) => {
+    router.push(route as any);
+  };
 
-                {/* Zakat Fidyah */}
-                <TouchableOpacity 
-                    style={styles.card}
-                    onPress={() => router.push('/zakat/fidyah')}
-                >
-                    <FontAwesome6 
-                        name="heart-pulse" 
-                        size={40} 
-                        color={theme.colors.text.secondary} 
-                        style={styles.icon} 
-                    />
-                    <Text style={styles.cardTitle}>Zakat Fidyah</Text>
-                    <Text style={styles.cardDescription}>
-                        Learn and calculate fidyah for missed fasts.
-                    </Text>
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
-    );
+  return (
+    <SafeAreaView style={styles.mainContainer}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Zakat Calculator</Text>
+        <Text style={styles.headerDescription}>
+          Calculate your zakat obligations easily and accurately
+        </Text>
+      </View>
+
+      <View style={styles.cardContainer}>
+        {ZAKAT_CARDS.map((card) => (
+          <TouchableOpacity
+            key={card.id}
+            style={styles.card}
+            onPress={() => handleCardPress(card.route)}
+            activeOpacity={0.7}
+          >
+            <FontAwesome6
+              name={card.icon as any}
+              size={40}
+              color={theme.colors.text.secondary}
+              style={styles.icon}
+            />
+            <Text style={styles.cardTitle}>{card.title}</Text>
+            <Text style={styles.cardDescription}>{card.description}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </SafeAreaView>
+  );
 };
 
 const createStyles = (theme: any) =>
@@ -57,6 +77,20 @@ const createStyles = (theme: any) =>
       flex: 1,
       padding: theme.spacing.medium,
       backgroundColor: theme.colors.primary,
+    },
+    header: {
+      marginBottom: theme.spacing.large,
+    },
+    headerTitle: {
+      fontSize: theme.fontSizes.xxxLarge,
+      fontFamily: 'Outfit_600SemiBold',
+      color: theme.colors.text.primary,
+      marginBottom: theme.spacing.xSmall,
+    },
+    headerDescription: {
+      fontSize: theme.fontSizes.medium,
+      fontFamily: 'Outfit_400Regular',
+      color: theme.colors.text.muted,
     },
     icon: {
       marginBottom: theme.spacing.medium,

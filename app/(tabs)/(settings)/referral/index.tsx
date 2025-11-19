@@ -35,7 +35,7 @@ const ReferralScreen = () => {
                     const userRef = firestore().collection('users').doc(currentUser.uid);
                     const doc = await userRef.get();
 
-                    if (doc.exists) {
+                    if (doc.exists()) {
                         const userData = doc.data();
                         setReferralCode(userData?.referralCode || null);
                         setInvitedBy(userData?.invitedBy || null);

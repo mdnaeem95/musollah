@@ -1,167 +1,238 @@
-import React, { useContext, useState } from 'react';
+import React from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { ThemeContext } from '../../../../../context/ThemeContext';
+import { useTheme } from '../../../../../context/ThemeContext';
+import { useFidyahCalculator } from '../../../../../hooks/zakat/useFidyahCalculator';
+
+type FidyahCategoryConfig = {
+  icon: string;
+  title: string;
+  placeholder: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  total: number;
+};
 
 const FidyahCalculator = () => {
-    const { theme } = useContext(ThemeContext);
-    const styles = createStyles(theme);
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
-    const [daysHaidOther, setDaysHaidOther] = useState<string>(''); // Category 1: Haid or Other Reason
-    const [daysIllnessOldAge, setDaysIllnessOldAge] = useState<string>(''); // Category 2: Illness or Old-age
-    const [daysPregnancyFeeding, setDaysPregnancyFeeding] = useState<string>(''); // Category 3: Pregnancy or Feeding
+  const {
+    daysHaidOther,
+    daysIllnessOldAge,
+    daysPregnancyFeeding,
+    ratePerDay,
+    calculation,
+    setDaysHaidOther,
+    setDaysIllnessOldAge,
+    setDaysPregnancyFeeding,
+  } = useFidyahCalculator();
 
-    const ratePerDay = 1.4; // Fixed rate per day
+  const categories: FidyahCategoryConfig[] = [
+    {
+      icon: 'droplet',
+      title: 'Haid or Other Reason',
+      placeholder: 'Enter number of days',
+      value: daysHaidOther,
+      onChangeText: setDaysHaidOther,
+      total: calculation.haidOther,
+    },
+    {
+      icon: 'heart-pulse',
+      title: 'Illness or Old-age',
+      placeholder: 'Enter number of days',
+      value: daysIllnessOldAge,
+      onChangeText: setDaysIllnessOldAge,
+      total: calculation.illnessOldAge,
+    },
+    {
+      icon: 'person-pregnant',
+      title: 'Pregnancy or Feeding',
+      placeholder: 'Enter number of days',
+      value: daysPregnancyFeeding,
+      onChangeText: setDaysPregnancyFeeding,
+      total: calculation.pregnancyFeeding,
+    },
+  ];
 
-    // Calculate total amounts
-    const totalHaidOther = parseFloat(daysHaidOther) * ratePerDay || 0;
-    const totalIllnessOldAge = parseFloat(daysIllnessOldAge) * ratePerDay || 0;
-    const totalPregnancyFeeding = parseFloat(daysPregnancyFeeding) * ratePerDay || 0;
-
-    // Calculate the grand total for all categories
-    const grandTotal = totalHaidOther + totalIllnessOldAge + totalPregnancyFeeding;
-
-    return (
-        <View style={styles.mainContainer}>
-            <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-                {/* Fixed rate display */}
-                <View style={styles.rateContainer}>
-                    <Text style={styles.rateText}>Daily Rate: ${ratePerDay.toFixed(2)}</Text>
-                </View>
-                
-                {/* Category 1: Haid or Other Reason */}
-                <View style={styles.card}>
-                    <View style={styles.iconContainer}>
-                        <FontAwesome6 name="droplet" size={24} color={theme.colors.text.secondary} />
-                        <Text style={styles.cardTitle}>Haid or Other Reason</Text>
-                    </View>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter number of days"
-                        placeholderTextColor={theme.colors.text.muted}
-                        value={daysHaidOther}
-                        onChangeText={setDaysHaidOther}
-                        keyboardType="numeric"
-                    />
-                    <Text style={styles.resultText}>Total Amount: ${totalHaidOther.toFixed(2)}</Text>
-                </View>
-
-                {/* Category 2: Illness or Old-age */}
-                <View style={styles.card}>
-                    <View style={styles.iconContainer}>
-                        <FontAwesome6 name="heart-pulse" size={24} color={theme.colors.text.secondary} />
-                        <Text style={styles.cardTitle}>Illness or Old-age</Text>
-                    </View>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter number of days"
-                        placeholderTextColor={theme.colors.text.muted}
-                        value={daysIllnessOldAge}
-                        onChangeText={setDaysIllnessOldAge}
-                        keyboardType="numeric"
-                    />
-                    <Text style={styles.resultText}>Total Amount: ${totalIllnessOldAge.toFixed(2)}</Text>
-                </View>
-
-                {/* Category 3: Pregnancy or Feeding */}
-                <View style={styles.card}>
-                    <View style={styles.iconContainer}>
-                        <FontAwesome6 name="person-pregnant" size={24} color={theme.colors.text.secondary} />
-                        <Text style={styles.cardTitle}>Pregnancy or Feeding</Text>
-                    </View>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter number of days"
-                        placeholderTextColor={theme.colors.text.muted}
-                        value={daysPregnancyFeeding}
-                        onChangeText={setDaysPregnancyFeeding}
-                        keyboardType="numeric"
-                    />
-                    <Text style={styles.resultText}>Total Amount: ${totalPregnancyFeeding.toFixed(2)}</Text>
-                </View>
-
-                {/* Display grand total at the bottom */}
-                <View style={styles.totalContainer}>
-                    <Text style={styles.totalText}>Total Fidyah Payable:</Text>
-                    <Text style={styles.totalAmount}>${grandTotal.toFixed(2)}</Text>
-                </View>
-            </ScrollView>
+  return (
+    <View style={styles.mainContainer}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Fidyah Calculator</Text>
+          <Text style={styles.headerDescription}>
+            Calculate compensation for missed fasts
+          </Text>
         </View>
-    );
+
+        {/* Fixed rate display */}
+        <View style={styles.rateContainer}>
+          <FontAwesome6 name="coins" size={20} color={theme.colors.accent} />
+          <Text style={styles.rateText}>Daily Rate: ${ratePerDay.toFixed(2)}</Text>
+        </View>
+
+        {/* Categories */}
+        {categories.map((category, index) => (
+          <View key={index} style={styles.card}>
+            <View style={styles.iconContainer}>
+              <FontAwesome6
+                name={category.icon as any}
+                size={24}
+                color={theme.colors.accent}
+              />
+              <Text style={styles.cardTitle}>{category.title}</Text>
+            </View>
+
+            <TextInput
+              style={styles.input}
+              placeholder={category.placeholder}
+              placeholderTextColor={theme.colors.text.muted}
+              value={category.value}
+              onChangeText={category.onChangeText}
+              keyboardType="numeric"
+            />
+
+            <View style={styles.resultContainer}>
+              <Text style={styles.resultLabel}>Amount:</Text>
+              <Text style={styles.resultValue}>${category.total.toFixed(2)}</Text>
+            </View>
+          </View>
+        ))}
+
+        {/* Grand Total */}
+        <View style={styles.totalContainer}>
+          <Text style={styles.totalLabel}>Total Fidyah Payable</Text>
+          <Text style={styles.totalAmount}>${calculation.grandTotal.toFixed(2)}</Text>
+
+          {calculation.grandTotal > 0 && (
+            <Text style={styles.totalDescription}>
+              Total days: {
+                (parseFloat(daysHaidOther) || 0) +
+                (parseFloat(daysIllnessOldAge) || 0) +
+                (parseFloat(daysPregnancyFeeding) || 0)
+              }
+            </Text>
+          )}
+        </View>
+      </ScrollView>
+    </View>
+  );
 };
 
 const createStyles = (theme: any) =>
-    StyleSheet.create({
-        mainContainer: {
-            flex: 1,
-            backgroundColor: theme.colors.primary,
-            padding: 16,
-        },
-        scrollContainer: {
-            paddingBottom: 20,
-        },
-        card: {
-            backgroundColor: theme.colors.secondary,
-            borderRadius: theme.borderRadius.medium,
-            padding: theme.spacing.large,
-            marginBottom: theme.spacing.medium,
-            ...theme.shadows.default,
-        },
-        iconContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: theme.spacing.small,
-        },
-        cardTitle: {
-            fontSize: theme.fontSizes.large,
-            fontFamily: 'Outfit_600SemiBold',
-            color: theme.colors.text.secondary,
-            marginLeft: theme.spacing.small,
-        },
-        input: {
-            borderWidth: 1,
-            borderColor: theme.colors.secondary,
-            padding: theme.spacing.small,
-            textAlign: 'left',
-            borderRadius: theme.borderRadius.small,
-            color: theme.colors.text.primary,
-            backgroundColor: theme.colors.primary,
-            marginVertical: theme.spacing.small,
-        },
-        resultText: {
-            fontSize: theme.fontSizes.medium,
-            fontFamily: 'Outfit_500Medium',
-            color: theme.colors.text.secondary,
-        },
-        rateContainer: {
-            marginBottom: theme.spacing.medium,
-            alignItems: 'center',
-            padding: theme.spacing.small,
-            backgroundColor: theme.colors.secondary,
-            borderRadius: theme.borderRadius.medium,
-        },
-        rateText: {
-            fontSize: theme.fontSizes.medium,
-            fontFamily: 'Outfit_500Medium',
-            color: theme.colors.text.secondary,
-        },
-        totalContainer: {
-            padding: theme.spacing.medium,
-            backgroundColor: theme.colors.secondary,
-            borderRadius: theme.borderRadius.medium,
-            alignItems: 'center',
-        },
-        totalText: {
-            fontSize: theme.fontSizes.large,
-            fontFamily: 'Outfit_600SemiBold',
-            color: theme.colors.text.secondary,
-            marginBottom: theme.spacing.small,
-        },
-        totalAmount: {
-            fontSize: theme.fontSizes.xLarge,
-            fontFamily: 'Outfit_600SemiBold',
-            color: theme.colors.text.secondary,
-        },
-    });
+  StyleSheet.create({
+    mainContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.primary,
+      padding: theme.spacing.medium,
+    },
+    scrollContainer: {
+      paddingBottom: theme.spacing.large,
+    },
+    header: {
+      marginBottom: theme.spacing.medium,
+    },
+    headerTitle: {
+      fontSize: theme.fontSizes.xxLarge,
+      fontFamily: 'Outfit_600SemiBold',
+      color: theme.colors.text.primary,
+      marginBottom: theme.spacing.xSmall,
+    },
+    headerDescription: {
+      fontSize: theme.fontSizes.medium,
+      fontFamily: 'Outfit_400Regular',
+      color: theme.colors.text.muted,
+    },
+    rateContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.spacing.small,
+      marginBottom: theme.spacing.medium,
+      padding: theme.spacing.medium,
+      backgroundColor: theme.colors.secondary,
+      borderRadius: theme.borderRadius.medium,
+      ...theme.shadows.default,
+    },
+    rateText: {
+      fontSize: theme.fontSizes.medium,
+      fontFamily: 'Outfit_500Medium',
+      color: theme.colors.text.secondary,
+    },
+    card: {
+      backgroundColor: theme.colors.secondary,
+      borderRadius: theme.borderRadius.medium,
+      padding: theme.spacing.large,
+      marginBottom: theme.spacing.medium,
+      ...theme.shadows.default,
+    },
+    iconContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.small,
+      marginBottom: theme.spacing.medium,
+    },
+    cardTitle: {
+      fontSize: theme.fontSizes.large,
+      fontFamily: 'Outfit_600SemiBold',
+      color: theme.colors.text.secondary,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme.colors.text.muted,
+      padding: theme.spacing.medium,
+      borderRadius: theme.borderRadius.small,
+      color: theme.colors.text.primary,
+      backgroundColor: theme.colors.primary,
+      fontFamily: 'Outfit_400Regular',
+      fontSize: theme.fontSizes.medium,
+      marginBottom: theme.spacing.small,
+    },
+    resultContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingTop: theme.spacing.small,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.text.muted,
+    },
+    resultLabel: {
+      fontSize: theme.fontSizes.medium,
+      fontFamily: 'Outfit_400Regular',
+      color: theme.colors.text.muted,
+    },
+    resultValue: {
+      fontSize: theme.fontSizes.large,
+      fontFamily: 'Outfit_600SemiBold',
+      color: theme.colors.accent,
+    },
+    totalContainer: {
+      padding: theme.spacing.large,
+      backgroundColor: theme.colors.secondary,
+      borderRadius: theme.borderRadius.medium,
+      alignItems: 'center',
+      gap: theme.spacing.small,
+      ...theme.shadows.default,
+    },
+    totalLabel: {
+      fontSize: theme.fontSizes.large,
+      fontFamily: 'Outfit_600SemiBold',
+      color: theme.colors.text.secondary,
+    },
+    totalAmount: {
+      fontSize: theme.fontSizes.xxxLarge,
+      fontFamily: 'Outfit_700Bold',
+      color: theme.colors.accent,
+    },
+    totalDescription: {
+      fontSize: theme.fontSizes.small,
+      fontFamily: 'Outfit_400Regular',
+      color: theme.colors.text.muted,
+    },
+  });
 
 export default FidyahCalculator;

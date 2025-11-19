@@ -1,153 +1,97 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Alert, StyleSheet, TextInput, Pressable, Animated } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, TextInput, Pressable, Animated, ActivityIndicator } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { deleteUser, getAuth, signOut, updateProfile } from '@react-native-firebase/auth';
-import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from '@react-native-firebase/firestore';
-import { persistor } from '../../../../redux/store/store';
-import { useRouter, useSegments } from 'expo-router';
 import { useTheme } from '../../../../context/ThemeContext';
 import Modal from 'react-native-modal';
-import ThemedButton from '../../../../components/ThemedButton'; 
+import ThemedButton from '../../../../components/ThemedButton';
 import SignInModal from '../../../../components/SignInModal';
+import { useAccountSettings } from '../../../../hooks/settings/useAccountSettings';
 
 const AccountSettings = () => {
-  const auth = getAuth();
-  const firestore = getFirestore();
-  const router = useRouter();
-  const segments = useSegments();
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
-  const [currentUser, setCurrentUser] = useState(auth.currentUser);
-  const [name, setName] = useState<string>('');
-  const [coursesCompleted, setCoursesCompleted] = useState<number>(0);
-  const [isModalVisible, setModalVisible] = useState<boolean>(false);
-  const [isSignUpModalVisible, setIsSignUpModalVisible] = useState<boolean>(false);
-  const [newName, setNewName] = useState<string>('');
+  const {
+    profile,
+    isAuthenticated,
+    isLoading,
+    isUpdating,
+    isEditNameModalVisible,
+    isSignUpModalVisible,
+    newName,
+    setNewName,
+    openEditNameModal,
+    closeEditNameModal,
+    handleSaveName,
+    handleSignOut,
+    handleDeleteAccount,
+    setSignUpModalVisible,
+  } = useAccountSettings();
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (currentUser) {
-        try {
-          const userDocRef = doc(firestore, 'users', currentUser.uid);
-          const userDoc = await getDoc(userDocRef);
-          if (userDoc.exists) {
-            const userData = userDoc.data();
-            setName(userData?.name || '');
-            setCoursesCompleted(userData?.coursesCompleted || 0);
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-        }
-      }
-    };
-
-    fetchUserData();
-  }, [currentUser, firestore]);
-
-  const handleSaveName = async () => {
-    try {
-      if (currentUser) {
-        const userDocRef = doc(firestore, 'users', currentUser.uid);
-        await updateProfile(currentUser, { displayName: newName });
-        await updateDoc(userDocRef, { name: newName });
-        setName(newName);
-        setModalVisible(false);
-        Alert.alert('Success!', 'Name changed successfully!');
-      }
-    } catch (error) {
-      console.error('Error updating name:', error);
-      Alert.alert('Error', 'Failed to update name. Please try again.');
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      await persistor.purge();
-      setCurrentUser(null);
-      router.replace(segments.join('/'));
-      Alert.alert('You have been successfully signed out.');
-    } catch (error) {
-      console.error('Error signing out:', error);
-      Alert.alert('Error', 'Failed to sign out. Please try again.');
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    Alert.alert(
-      'Delete Account',
-      'This action cannot be undone. Do you want to proceed?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Proceed',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              if (currentUser) {
-                const userDocRef = doc(firestore, 'users', currentUser.uid);
-                await deleteDoc(userDocRef);
-                await deleteUser(currentUser);
-                await persistor.purge();
-                router.push('/(auth)/AuthScreen');
-                Alert.alert('Account deleted successfully.');
-              }
-            } catch (error) {
-              console.error('Error deleting account:', error);
-              Alert.alert('Error', 'Failed to delete your account. Please try again.');
-            }
-          },
-        },
-      ]
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color={theme.colors.accent} />
+      </View>
     );
-  };
+  }
 
   return (
     <View style={styles.container}>
       <View style={styles.form}>
         {/* Name Field */}
-        <SettingsField 
+        <SettingsField
           icon="user"
           label="Name"
-          value={name}
-          onPress={() => setModalVisible(true)}
-          editable
+          value={profile?.name || 'Not set'}
+          onPress={isAuthenticated ? openEditNameModal : undefined}
+          editable={isAuthenticated}
+        />
+
+        {/* Email Field */}
+        <SettingsField
+          icon="envelope"
+          label="Email"
+          value={profile?.email || 'Not set'}
         />
 
         {/* Courses Completed Field */}
-        <SettingsField 
+        <SettingsField
           icon="graduation-cap"
           label="Courses Completed"
-          value={coursesCompleted.toString()}
+          value={profile?.enrolledCourses.length.toString() || '0'}
         />
 
         {/* Actions */}
-        {currentUser ? (
+        {isAuthenticated ? (
           <>
-            <ThemedButton text="Sign Out" 
-              onPress={handleSignOut} 
+            <ThemedButton
+              text="Sign Out"
+              onPress={handleSignOut}
               style={{ backgroundColor: theme.colors.text.error }}
-              textStyle={{ color: '#FFFFFF' }} 
+              textStyle={{ color: '#FFFFFF' }}
             />
-            <ThemedButton 
-              text="Delete Account" 
-              onPress={handleDeleteAccount} 
+            <ThemedButton
+              text="Delete Account"
+              onPress={handleDeleteAccount}
               style={{ backgroundColor: theme.colors.text.error }}
-              textStyle={{ color: '#FFFFFF' }} 
+              textStyle={{ color: '#FFFFFF' }}
             />
           </>
         ) : (
-          <ThemedButton text="Sign Up" onPress={() => setIsSignUpModalVisible(true)} />
+          <ThemedButton
+            text="Sign In / Sign Up"
+            onPress={() => setSignUpModalVisible(true)}
+          />
         )}
       </View>
 
       {/* Edit Name Modal */}
-      <Modal isVisible={isModalVisible} onBackdropPress={() => setModalVisible(false)}>
+      <Modal isVisible={isEditNameModalVisible} onBackdropPress={closeEditNameModal}>
         <View style={styles.modalContent}>
           {/* Close Button */}
-          <Pressable onPress={() => setModalVisible(false)} style={styles.closeButton}>
-            <FontAwesome6 name="xmark" size={18} color={theme.colors.text.primary}/>
+          <Pressable onPress={closeEditNameModal} style={styles.closeButton}>
+            <FontAwesome6 name="xmark" size={18} color={theme.colors.text.primary} />
           </Pressable>
 
           <Text style={styles.modalTitle}>Edit Name</Text>
@@ -158,39 +102,90 @@ const AccountSettings = () => {
             onChangeText={setNewName}
             placeholder="Enter new name"
             placeholderTextColor={theme.colors.text.muted}
+            autoFocus
+            editable={!isUpdating}
           />
 
           <View style={styles.buttonRow}>
-            <ThemedButton text="Back" onPress={() => setModalVisible(false)} style={styles.backButton} textStyle={{ color: '#FFFFFF' }} />
-            <ThemedButton text="Save" onPress={handleSaveName} style={{ flex: 1 }} />
+            <ThemedButton
+              text="Cancel"
+              onPress={closeEditNameModal}
+              style={styles.backButton}
+              textStyle={{ color: '#FFFFFF' }}
+              disabled={isUpdating}
+            />
+            <ThemedButton
+              text={isUpdating ? 'Saving...' : 'Save'}
+              onPress={handleSaveName}
+              style={{ flex: 1 }}
+              disabled={isUpdating || !newName.trim()}
+            />
           </View>
         </View>
       </Modal>
 
       {/* Sign In Modal */}
-      <SignInModal isVisible={isSignUpModalVisible} onClose={() => setIsSignUpModalVisible(false)} />
+      <SignInModal
+        isVisible={isSignUpModalVisible}
+        onClose={() => setSignUpModalVisible(false)}
+      />
     </View>
   );
 };
 
-const SettingsField = ({ icon, label, value, onPress, editable }: { icon: any; label: string; value: string; onPress?: () => void; editable?: boolean }) => {
+const SettingsField = ({
+  icon,
+  label,
+  value,
+  onPress,
+  editable,
+}: {
+  icon: any;
+  label: string;
+  value: string;
+  onPress?: () => void;
+  editable?: boolean;
+}) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const scaleValue = new Animated.Value(1);
 
-  const handlePressIn = () => Animated.timing(scaleValue, { toValue: 0.95, duration: 100, useNativeDriver: true }).start();
-  const handlePressOut = () => Animated.timing(scaleValue, { toValue: 1, duration: 100, useNativeDriver: true }).start();
+  const handlePressIn = () =>
+    Animated.timing(scaleValue, {
+      toValue: 0.95,
+      duration: 100,
+      useNativeDriver: true,
+    }).start();
+
+  const handlePressOut = () =>
+    Animated.timing(scaleValue, {
+      toValue: 1,
+      duration: 100,
+      useNativeDriver: true,
+    }).start();
 
   return (
-    <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={editable ? onPress : undefined}>
-      <Animated.View style={[styles.settingsField, { transform: [{ scale: scaleValue }] }]}>
+    <Pressable
+      onPressIn={editable ? handlePressIn : undefined}
+      onPressOut={editable ? handlePressOut : undefined}
+      onPress={editable ? onPress : undefined}
+      disabled={!editable}
+    >
+      <Animated.View
+        style={[
+          styles.settingsField,
+          { transform: [{ scale: scaleValue }] },
+        ]}
+      >
         <View style={styles.settingsLeftField}>
           <FontAwesome6 name={icon} size={20} color={theme.colors.text.primary} />
           <Text style={styles.settingsLabel}>{label}</Text>
         </View>
         <View style={styles.settingsLeftField}>
           <Text style={styles.valueText}>{value}</Text>
-          {editable && <FontAwesome6 name="edit" size={18} color={theme.colors.text.primary} />}
+          {editable && (
+            <FontAwesome6 name="edit" size={18} color={theme.colors.text.primary} />
+          )}
         </View>
       </Animated.View>
     </Pressable>
@@ -204,12 +199,16 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.colors.primary,
       padding: theme.spacing.medium,
     },
+    centered: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     form: {
       backgroundColor: theme.colors.secondary,
       borderRadius: theme.borderRadius.large,
       padding: theme.spacing.medium,
       ...theme.shadows.default,
-      gap: theme.spacing.medium
+      gap: theme.spacing.medium,
     },
     settingsField: {
       flexDirection: 'row',
@@ -222,7 +221,7 @@ const createStyles = (theme: any) =>
     settingsLeftField: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.small
+      gap: theme.spacing.small,
     },
     settingsLabel: {
       fontSize: theme.fontSizes.medium,
@@ -232,7 +231,7 @@ const createStyles = (theme: any) =>
     valueText: {
       fontSize: theme.fontSizes.medium,
       color: theme.colors.text.secondary,
-      fontFamily: 'Outfit_400Regular'
+      fontFamily: 'Outfit_400Regular',
     },
     modalContent: {
       gap: theme.spacing.large,
@@ -241,13 +240,13 @@ const createStyles = (theme: any) =>
       borderRadius: theme.borderRadius.medium,
       alignItems: 'center',
       width: '90%',
-      alignSelf: 'center'
+      alignSelf: 'center',
     },
     closeButton: {
       position: 'absolute',
       top: 12,
       right: 12,
-      padding: theme.spacing.small
+      padding: theme.spacing.small,
     },
     modalTitle: {
       fontSize: theme.fontSizes.xLarge,
@@ -259,20 +258,23 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.colors.primary,
       borderRadius: theme.borderRadius.small,
       padding: theme.spacing.small,
+      borderWidth: 1,
       borderColor: theme.colors.text.muted,
       color: theme.colors.text.secondary,
+      fontSize: theme.fontSizes.medium,
+      fontFamily: 'Outfit_400Regular',
     },
     buttonRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       gap: theme.spacing.medium,
       width: '100%',
-      paddingHorizontal: theme.spacing.small
+      paddingHorizontal: theme.spacing.small,
     },
     backButton: {
       backgroundColor: theme.colors.text.error,
-      flex: 1
-    }
-});
+      flex: 1,
+    },
+  });
 
 export default AccountSettings;

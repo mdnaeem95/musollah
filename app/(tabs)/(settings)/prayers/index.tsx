@@ -1,105 +1,156 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Modal } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
 import { Picker } from '@react-native-picker/picker';
-import { AppDispatch, RootState } from '../../../../redux/store/store';
-import { setReminderInterval, toggleNotificationForPrayer, toggleTimeFormat } from '../../../../redux/slices/userPreferencesSlice';
 import { useTheme } from '../../../../context/ThemeContext';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { usePrayerSettings } from '../../../../hooks/settings/usePrayerSettings';
 
-const PRAYER_SESSIONS = ['Subuh', 'Syuruk', 'Zohor', 'Asar', 'Maghrib', 'Isyak']
+const PRAYER_SESSIONS = ['Subuh', 'Syuruk', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
+const REMINDER_INTERVALS = [5, 10, 15, 20, 25, 30];
 
 const PrayersSettings = () => {
-  const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
-  const { timeFormat, reminderInterval, selectedAdhan, mutedNotifications } = useSelector((state: RootState) => state.userPreferences);
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
-  const [isReminderPickerVisible, setIsReminderPickerVisible] = useState<boolean>(false);
-
-  const handleTimeFormatToggle = () => {
-    dispatch(toggleTimeFormat());
-  };
-
-  const handleReminderIntervalChange = (value: number) => {
-    dispatch(setReminderInterval(value));
-    setIsReminderPickerVisible(false);
-  };
-
-  const handleToggleNotification = (prayerName: string) => {
-    dispatch(toggleNotificationForPrayer(prayerName))
-  }
+  const {
+    timeFormat,
+    reminderInterval,
+    selectedAdhan,
+    mutedNotifications,
+    isReminderPickerVisible,
+    handleTimeFormatToggle,
+    handleReminderIntervalChange,
+    handleToggleNotification,
+    navigateToAdhanSelection,
+    openReminderPicker,
+    closeReminderPicker,
+  } = usePrayerSettings();
 
   return (
     <View style={styles.mainContainer}>
+      {/* General Settings */}
       <View style={styles.settingsContainer}>
         {/* 24-hour format toggle */}
         <View style={styles.settingsField}>
-          <Text style={styles.settingsName}>24 Hour Prayer Format</Text>
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingsName}>24 Hour Prayer Format</Text>
+            <Text style={styles.settingDescription}>
+              {timeFormat === '24-hour' ? '13:00' : '1:00 PM'}
+            </Text>
+          </View>
           <Switch
             value={timeFormat === '24-hour'}
             onValueChange={handleTimeFormatToggle}
-            trackColor={{ false: theme.colors.text.muted, true: theme.colors.accent }}
+            trackColor={{
+              false: theme.colors.text.muted,
+              true: theme.colors.accent,
+            }}
             thumbColor={
               timeFormat === '24-hour'
                 ? theme.colors.primary
                 : theme.colors.secondary
             }
+            ios_backgroundColor={theme.colors.text.muted}
           />
         </View>
 
         {/* Pre-prayer reminder */}
         <TouchableOpacity
           style={styles.settingsField}
-          onPress={() => setIsReminderPickerVisible(true)}
+          onPress={openReminderPicker}
+          activeOpacity={0.7}
         >
-          <Text style={styles.settingsName}>Pre-Prayer Reminder Interval</Text>
-          <Text style={styles.settingsValue}>
-            {reminderInterval === 0 ? 'None' : `${reminderInterval} mins`}
-          </Text>
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingsName}>Pre-Prayer Reminder</Text>
+            <Text style={styles.settingDescription}>
+              Get notified before prayer time
+            </Text>
+          </View>
+          <View style={styles.chevronContainer}>
+            <Text style={styles.settingsValue}>
+              {reminderInterval === 0 ? 'None' : `${reminderInterval} mins`}
+            </Text>
+            <FontAwesome6
+              name="chevron-right"
+              color={theme.colors.text.muted}
+              size={theme.fontSizes.medium}
+            />
+          </View>
         </TouchableOpacity>
 
         {/* Adhan Selection */}
-        <TouchableOpacity style={styles.settingsField} onPress={() => router.push('./prayers/adhanSelection')}>
-          <Text style={styles.settingsName}>Adhan Audio</Text>
+        <TouchableOpacity
+          style={styles.settingsField}
+          onPress={navigateToAdhanSelection}
+          activeOpacity={0.7}
+        >
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingsName}>Adhan Audio</Text>
+            <Text style={styles.settingDescription}>
+              Choose prayer call sound
+            </Text>
+          </View>
           <View style={styles.chevronContainer}>
             <Text style={styles.settingsValue}>{selectedAdhan}</Text>
-            <FontAwesome6 name="chevron-right" color={theme.colors.text.muted} size={theme.fontSizes.large} />
+            <FontAwesome6
+              name="chevron-right"
+              color={theme.colors.text.muted}
+              size={theme.fontSizes.medium}
+            />
           </View>
         </TouchableOpacity>
       </View>
 
-        {/* Mute notifications */}
-        <Text style={styles.settingsHeader}>Prayer Notifications</Text>
-        <View style={styles.settingsContainer}>
-          {PRAYER_SESSIONS.map((prayer) => (
-            <View style={styles.settingsField} key={prayer}>
-              <Text style={styles.settingsName}>{prayer}</Text>
-              <Switch 
-                value={!mutedNotifications.includes(prayer)}
-                onValueChange={() => handleToggleNotification(prayer)}
-                trackColor={{ false: theme.colors.text.muted, true: theme.colors.accent }}
-                thumbColor={
-                  mutedNotifications.includes(prayer)
-                    ? theme.colors.primary
-                    : theme.colors.secondary
-                }
-              />
-            </View>
-          ))}
-        </View>
+      {/* Prayer Notifications */}
+      <Text style={styles.sectionHeader}>Prayer Notifications</Text>
+      <Text style={styles.sectionDescription}>
+        Choose which prayers to receive notifications for
+      </Text>
+      <View style={styles.settingsContainer}>
+        {PRAYER_SESSIONS.map((prayer, index) => (
+          <View
+            key={prayer}
+            style={[
+              styles.settingsField,
+              index !== PRAYER_SESSIONS.length - 1 && styles.settingsFieldBorder,
+            ]}
+          >
+            <Text style={styles.settingsName}>{prayer}</Text>
+            <Switch
+              value={!mutedNotifications.includes(prayer)}
+              onValueChange={() => handleToggleNotification(prayer)}
+              trackColor={{
+                false: theme.colors.text.muted,
+                true: theme.colors.accent,
+              }}
+              thumbColor={
+                mutedNotifications.includes(prayer)
+                  ? theme.colors.secondary
+                  : theme.colors.primary
+              }
+              ios_backgroundColor={theme.colors.text.muted}
+            />
+          </View>
+        ))}
+      </View>
 
       {/* Reminder Interval Picker Modal */}
       <Modal
         visible={isReminderPickerVisible}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setIsReminderPickerVisible(false)}
+        onRequestClose={closeReminderPicker}
       >
-        <View style={styles.modalBackground}>
-          <View style={styles.modalContainer}>
+        <TouchableOpacity
+          style={styles.modalBackground}
+          activeOpacity={1}
+          onPress={closeReminderPicker}
+        >
+          <TouchableOpacity
+            style={styles.modalContainer}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
             <Text style={styles.modalTitle}>Select Reminder Interval</Text>
             <Picker
               selectedValue={reminderInterval}
@@ -107,18 +158,22 @@ const PrayersSettings = () => {
               onValueChange={(value) => handleReminderIntervalChange(value as number)}
             >
               <Picker.Item label="None" value={0} />
-              {[5, 10, 15, 20, 25, 30].map((interval) => (
-                <Picker.Item key={interval} label={`${interval} minutes`} value={interval} />
+              {REMINDER_INTERVALS.map((interval) => (
+                <Picker.Item
+                  key={interval}
+                  label={`${interval} minutes`}
+                  value={interval}
+                />
               ))}
             </Picker>
             <TouchableOpacity
-              onPress={() => setIsReminderPickerVisible(false)}
+              onPress={closeReminderPicker}
               style={styles.closeButton}
             >
-              <Text style={styles.closeButtonText}>Close</Text>
+              <Text style={styles.closeButtonText}>Done</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -135,7 +190,7 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.colors.secondary,
       borderRadius: theme.borderRadius.large,
       padding: theme.spacing.medium,
-      gap: theme.spacing.medium,
+      marginBottom: theme.spacing.medium,
       ...theme.shadows.default,
     },
     settingsField: {
@@ -144,27 +199,46 @@ const createStyles = (theme: any) =>
       justifyContent: 'space-between',
       paddingVertical: theme.spacing.small,
     },
+    settingsFieldBorder: {
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.text.muted,
+      paddingBottom: theme.spacing.medium,
+    },
+    settingInfo: {
+      flex: 1,
+      gap: theme.spacing.xSmall,
+    },
     settingsName: {
-      fontFamily: 'Outfit_400Regular',
+      fontFamily: 'Outfit_500Medium',
       fontSize: theme.fontSizes.medium,
       color: theme.colors.text.secondary,
+    },
+    settingDescription: {
+      fontFamily: 'Outfit_400Regular',
+      fontSize: theme.fontSizes.small,
+      color: theme.colors.text.muted,
     },
     settingsValue: {
       fontFamily: 'Outfit_400Regular',
       fontSize: theme.fontSizes.medium,
       color: theme.colors.text.muted,
     },
-    settingsHeader: {
-      fontFamily: 'Outfit_500Medium',
+    sectionHeader: {
+      fontFamily: 'Outfit_600SemiBold',
       fontSize: theme.fontSizes.large,
       color: theme.colors.text.primary,
-      marginTop: 16,
-      marginBottom: 10
+      marginBottom: theme.spacing.xSmall,
+    },
+    sectionDescription: {
+      fontFamily: 'Outfit_400Regular',
+      fontSize: theme.fontSizes.small,
+      color: theme.colors.text.muted,
+      marginBottom: theme.spacing.small,
     },
     chevronContainer: {
       flexDirection: 'row',
-      alignContent: 'center',
-      gap: 10
+      alignItems: 'center',
+      gap: theme.spacing.small,
     },
     modalBackground: {
       flex: 1,
@@ -175,8 +249,10 @@ const createStyles = (theme: any) =>
     modalContainer: {
       backgroundColor: theme.colors.secondary,
       borderRadius: theme.borderRadius.medium,
-      padding: theme.spacing.medium,
+      padding: theme.spacing.large,
       alignItems: 'center',
+      width: '80%',
+      maxWidth: 320,
     },
     modalTitle: {
       fontSize: theme.fontSizes.large,
@@ -185,18 +261,18 @@ const createStyles = (theme: any) =>
       marginBottom: theme.spacing.medium,
     },
     picker: {
-      width: 200,
+      width: '100%',
       height: 150,
-      marginBottom: theme.spacing.medium,
     },
     closeButton: {
       marginTop: theme.spacing.medium,
-      padding: theme.spacing.small,
+      paddingVertical: theme.spacing.small,
+      paddingHorizontal: theme.spacing.large,
       backgroundColor: theme.colors.accent,
       borderRadius: theme.borderRadius.small,
     },
     closeButtonText: {
-      fontFamily: 'Outfit_400Regular',
+      fontFamily: 'Outfit_500Medium',
       fontSize: theme.fontSizes.medium,
       color: theme.colors.text.primary,
     },
