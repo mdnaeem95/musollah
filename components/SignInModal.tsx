@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '../redux/store/store';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
-import { UserInfo } from '../utils/types';
-import { signUp, signIn } from '../redux/slices/userSlice';
-import { useRouter, useSegments } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useAuthStore } from '../stores/useAuthStore';
+
+// ============================================================================
+// TYPES
+// ============================================================================
 
 interface SignInModalProps {
   isVisible: boolean;
@@ -14,41 +15,77 @@ interface SignInModalProps {
   allowGuest?: boolean;
 }
 
-const SignInModal: React.FC<SignInModalProps> = ({ isVisible, onClose, allowGuest = false }) => {
+interface AuthFormData {
+  email: string;
+  password: string;
+}
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
+
+const SignInModal: React.FC<SignInModalProps> = ({ 
+  isVisible, 
+  onClose, 
+  allowGuest = false 
+}) => {
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
-  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const segments = useSegments();
+  
+  // Zustand store
+  const { signIn, signUp, isLoading, error, clearError } = useAuthStore();
 
-  const { control, handleSubmit, formState: { errors }, reset } = useForm<UserInfo>();
+  // React Hook Form
+  const { 
+    control, 
+    handleSubmit, 
+    formState: { errors }, 
+    reset 
+  } = useForm<AuthFormData>();
 
-  const onSignUpSubmit: SubmitHandler<UserInfo> = async ({ email, password }) => {
+  // Clear errors when modal closes
+  useEffect(() => {
+    if (!isVisible) {
+      clearError();
+      reset();
+    }
+  }, [isVisible, clearError, reset]);
+
+  // ============================================================================
+  // HANDLERS
+  // ============================================================================
+
+  const onSignUpSubmit: SubmitHandler<AuthFormData> = async ({ email, password }) => {
     try {
-      await dispatch(signUp({ email, password })).unwrap();
+      await signUp(email, password);
       handleModalClose();
       router.replace('/(tabs)');
-    } catch (error) {
-      alert('Error: Failed to sign up. Please try again.');
+    } catch (err) {
+      // Error is stored in Zustand store, will be displayed below form
+      console.error('Sign up error:', err);
     }
   };
 
-  const onSignInSubmit: SubmitHandler<UserInfo> = async ({ email, password }) => {
+  const onSignInSubmit: SubmitHandler<AuthFormData> = async ({ email, password }) => {
     try {
-      await dispatch(signIn({ email, password })).unwrap();
+      await signIn(email, password);
       handleModalClose();
       router.replace('/(tabs)');
-    } catch (error) {
-      alert('Error: Failed to sign in. Please try again.');
+    } catch (err) {
+      // Error is stored in Zustand store, will be displayed below form
+      console.error('Sign in error:', err);
     }
   };
 
   const toggleMode = () => {
     setIsSignUp(!isSignUp);
     reset();
+    clearError();
   };
 
   const handleModalClose = () => {
     reset();
+    clearError();
     onClose();
   };
 
@@ -57,20 +94,51 @@ const SignInModal: React.FC<SignInModalProps> = ({ isVisible, onClose, allowGues
     router.replace('/(tabs)');
   };
 
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+
   return (
-    <Modal transparent={true} visible={isVisible} onRequestClose={handleModalClose} animationType="slide">
+    <Modal 
+      transparent 
+      visible={isVisible} 
+      onRequestClose={handleModalClose} 
+      animationType="slide"
+    >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
-          <Text style={styles.headerText}>{isSignUp ? 'Create an account' : 'Sign in'}</Text>
+          {/* Close Button */}
+          <TouchableOpacity 
+            style={styles.closeButton} 
+            onPress={handleModalClose}
+            disabled={isLoading}
+          >
+            <FontAwesome6 name="xmark" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          {/* Header */}
+          <Text style={styles.headerText}>
+            {isSignUp ? 'Create an account' : 'Sign in'}
+          </Text>
           <Text style={styles.privacyText}>
-            {isSignUp ? 'By creating an account, you agree to our Terms of Service and Privacy Policy.' : 'By signing in, you agree to our Terms of Service and Privacy Policy.'}
+            {isSignUp 
+              ? 'By creating an account, you agree to our Terms of Service and Privacy Policy.' 
+              : 'By signing in, you agree to our Terms of Service and Privacy Policy.'}
           </Text>
 
+          {/* Form */}
           <View style={styles.formContainer}>
+            {/* Email Input */}
             <Controller
               control={control}
               name="email"
-              rules={{ required: 'Email is required' }}
+              rules={{ 
+                required: 'Email is required',
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: 'Invalid email address'
+                }
+              }}
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
                   placeholder="Enter your email"
@@ -79,15 +147,27 @@ const SignInModal: React.FC<SignInModalProps> = ({ isVisible, onClose, allowGues
                   value={value}
                   style={styles.inputField}
                   keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
                 />
               )}
             />
-            {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
+            {errors.email && (
+              <Text style={styles.errorText}>{errors.email.message}</Text>
+            )}
 
+            {/* Password Input */}
             <Controller
               control={control}
               name="password"
-              rules={{ required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } }}
+              rules={{ 
+                required: 'Password is required', 
+                minLength: { 
+                  value: 6, 
+                  message: 'Password must be at least 6 characters' 
+                } 
+              }}
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
                   placeholder="Password (6+ characters)"
@@ -96,43 +176,80 @@ const SignInModal: React.FC<SignInModalProps> = ({ isVisible, onClose, allowGues
                   onChangeText={onChange}
                   value={value}
                   style={styles.inputField}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
                 />
               )}
             />
-            {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
+            {errors.password && (
+              <Text style={styles.errorText}>{errors.password.message}</Text>
+            )}
 
+            {/* Auth Error from Store */}
+            {error && (
+              <View style={styles.errorContainer}>
+                <FontAwesome6 name="circle-exclamation" size={16} color="#ff6b6b" />
+                <Text style={styles.authErrorText}>{error}</Text>
+              </View>
+            )}
+
+            {/* Submit Button */}
             <TouchableOpacity
-              style={styles.submitButton}
+              style={[
+                styles.submitButton, 
+                isLoading && styles.submitButtonDisabled
+              ]}
               onPress={handleSubmit(isSignUp ? onSignUpSubmit : onSignInSubmit)}
+              disabled={isLoading}
             >
-              <Text style={styles.submitButtonText}>{isSignUp ? 'Create account' : 'Sign in'}</Text>
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.submitButtonText}>
+                  {isSignUp ? 'Create account' : 'Sign in'}
+                </Text>
+              )}
             </TouchableOpacity>
 
+            {/* Guest Button */}
             {allowGuest && (
               <TouchableOpacity
-                style={[styles.submitButton, { backgroundColor: '#6c757d' }]}
+                style={[
+                  styles.submitButton, 
+                  styles.guestButton,
+                  isLoading && styles.submitButtonDisabled
+                ]}
                 onPress={handleContinueAsGuest}
+                disabled={isLoading}
               >
                 <Text style={styles.submitButtonText}>Continue as Guest</Text>
               </TouchableOpacity>
             )}
           </View>
 
-          <TouchableOpacity style={styles.footerLink} onPress={toggleMode}>
+          {/* Footer Toggle */}
+          <TouchableOpacity 
+            style={styles.footerLink} 
+            onPress={toggleMode}
+            disabled={isLoading}
+          >
             <Text style={styles.footerText}>
               {isSignUp ? 'Have an account? ' : 'New here? '}
-              <Text style={styles.footerLinkText}>{isSignUp ? 'Sign in' : 'Create account'}</Text>
+              <Text style={styles.footerLinkText}>
+                {isSignUp ? 'Sign in' : 'Create account'}
+              </Text>
             </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.closeButton} onPress={handleModalClose}>
-            <FontAwesome6 name="xmark" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
       </View>
     </Modal>
   );
 };
+
+// ============================================================================
+// STYLES
+// ============================================================================
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -158,6 +275,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 20,
     left: 20,
+    zIndex: 10,
   },
   headerText: {
     fontSize: 24,
@@ -172,6 +290,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
     fontFamily: 'Outfit_400Regular',
+    paddingHorizontal: 20,
   },
   inputField: {
     backgroundColor: '#FFFFFF',
@@ -179,18 +298,27 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     fontSize: 16,
     marginBottom: 15,
+    fontFamily: 'Outfit_400Regular',
   },
   submitButton: {
     backgroundColor: '#4D6561',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 10,
+    minHeight: 50,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
   },
   submitButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontFamily: 'Outfit_600SemiBold',
+  },
+  guestButton: {
+    backgroundColor: '#6c757d',
   },
   footerLink: {
     marginTop: 30,
@@ -204,11 +332,29 @@ const styles = StyleSheet.create({
   footerLinkText: {
     color: '#D6B0FF',
     textDecorationLine: 'underline',
+    fontFamily: 'Outfit_600SemiBold',
   },
   errorText: {
-    color: 'red',
+    color: '#ff6b6b',
     fontSize: 12,
     marginBottom: 10,
+    marginTop: -10,
+    fontFamily: 'Outfit_400Regular',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 15,
+    gap: 8,
+  },
+  authErrorText: {
+    color: '#ff6b6b',
+    fontSize: 14,
+    fontFamily: 'Outfit_400Regular',
+    flex: 1,
   },
 });
 

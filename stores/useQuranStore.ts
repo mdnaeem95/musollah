@@ -27,6 +27,7 @@ export interface RecitationPlan {
   daysToFinish: number;
   startDate: string; // ISO date
   completedAyahKeys: string[]; // Format: "surahNumber:ayahNumber"
+  lastReadAyah: string;
 }
 
 interface QuranState {

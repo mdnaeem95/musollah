@@ -1,6 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getDoaAfterPrayer } from '../../../api/firebase';
-import type { DoaAfterPrayer } from '../../../types/doa.types';
+/**
+ * Doa Hook
+ * 
+ * Custom hook for fetching Dua after prayer data.
+ * Wraps TanStack Query service for backward compatibility.
+ */
+
+import { useMemo } from 'react';
+import { DoaAfterPrayer, useDoa as useDoaService } from '../../../api/services/duaAfterPrayer';
+
+// ============================================================================
+// TYPES
+// ============================================================================
 
 interface UseDoaState {
   doas: DoaAfterPrayer[];
@@ -9,37 +19,60 @@ interface UseDoaState {
   refetch: () => Promise<void>;
 }
 
+// ============================================================================
+// HOOK
+// ============================================================================
+
 /**
  * Custom hook for fetching Doa after prayer data
  * Handles loading, error states, and data fetching logic
+ * 
+ * @returns {UseDoaState} Doa state with data, loading, error, and refetch
+ * 
+ * @example
+ * ```tsx
+ * const { doas, loading, error, refetch } = useDoa();
+ * 
+ * if (loading) return <LoadingSpinner />;
+ * if (error) return <ErrorComponent error={error} />;
+ * 
+ * return (
+ *   <FlatList
+ *     data={doas}
+ *     renderItem={({ item }) => <DoaCard doa={item} />}
+ *   />
+ * );
+ * ```
  */
 export const useDoa = (): UseDoaState => {
-  const [doas, setDoas] = useState<DoaAfterPrayer[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { data, isLoading, error, refetch } = useDoaService();
 
-  const fetchDoas = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getDoaAfterPrayer();
-      setDoas(data);
-    } catch (err) {
-      console.error('Error fetching doas:', err);
-      setError(err instanceof Error ? err : new Error('Failed to fetch doas'));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchDoas();
-  }, [fetchDoas]);
+  // Memoize refetch function to maintain referential equality
+  const handleRefetch = useMemo(() => {
+    return async () => {
+      await refetch();
+    };
+  }, [refetch]);
 
   return {
-    doas,
-    loading,
-    error,
-    refetch: fetchDoas,
+    doas: data || [],
+    loading: isLoading,
+    error: error as Error | null,
+    refetch: handleRefetch,
   };
 };
+
+// ============================================================================
+// RE-EXPORTS
+// ============================================================================
+
+// Re-export types and utilities for convenience
+export type { DoaAfterPrayer } from '../../../api/services/duaAfterPrayer';
+export {
+  useDoaByStep,
+  usePrefetchDoa,
+  searchDoa,
+  getNextDoa,
+  getPreviousDoa,
+  formatDoaForSharing,
+} from '../../../api/services/duaAfterPrayer';

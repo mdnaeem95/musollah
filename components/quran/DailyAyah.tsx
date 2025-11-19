@@ -1,19 +1,29 @@
-import React, { useEffect, useState } from 'react';
+/**
+ * Daily Ayah Component
+ * 
+ * Displays a random Quranic verse based on user's mood.
+ * Caches ayah for 24 hours per mood to show consistent daily content.
+ */
+
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
-import { RootState } from '../../redux/store/store';
-import { getRandomAyahByMood } from '../../utils';
 import { Dropdown } from 'react-native-element-dropdown';
+import { useSurahs } from '../../api/services/quran';
+import { defaultStorage } from '../../api/client/storage';
+import { getRandomAyahByMood } from '../../utils';
 import { useTheme } from '../../context/ThemeContext';
 
-const MOOD_KEY = 'selectedMood';
-const AYAH_KEY = 'dailyAyah';
-const TIMESTAMP_KEY = 'dailyAyahTimestamp';
-const CACHE_DURATION = 24 * 60 * 60 * 1000;
+// ============================================================================
+// CONSTANTS
+// ============================================================================
 
-const moods = [
+const MOOD_KEY = 'selectedMood';
+const AYAH_KEY_PREFIX = 'dailyAyah';
+const TIMESTAMP_KEY = 'dailyAyahTimestamp';
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+const MOODS = [
   { label: 'Neutral', value: 'Neutral' },
   { label: 'Down', value: 'Down' },
   { label: 'Grateful', value: 'Grateful' },
@@ -21,113 +31,214 @@ const moods = [
   { label: 'Hopeful', value: 'Hopeful' },
   { label: 'Afraid', value: 'Afraid' },
   { label: 'Patient', value: 'Patient' },
-];
+] as const;
 
-const DailyAyah = () => {
+// ============================================================================
+// TYPES
+// ============================================================================
+
+type Mood = typeof MOODS[number]['value'];
+
+interface DailyAyahData {
+  arabicText: string;
+  englishText: string;
+  surahNumber: number;
+  ayahNumber: number;
+}
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
+
+const DailyAyah: React.FC = () => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
-
-  const [ayah, setAyah] = useState<any>({
-    arabicText: '',
-    englishText: '',
-    surahNumber: 0,
-    ayahNumber: 0,
-  });
-  const [mood, setMood] = useState<string>('Neutral');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [isSkeleton, setIsSkeleton] = useState<boolean>(false);
   const router = useRouter();
 
-  const surahs = useSelector((state: RootState) => state.quran.surahs);
+  // State
+  const [ayah, setAyah] = useState<DailyAyahData | null>(null);
+  const [mood, setMood] = useState<Mood>('Neutral');
+  const [isSkeleton, setIsSkeleton] = useState<boolean>(false);
 
-  useEffect(() => {
-    const fetchDailyAyah = async () => {
-      setLoading(true);
+  // Fetch all surahs from service
+  const { data: surahs, isLoading } = useSurahs();
 
-      const storedMood = await AsyncStorage.getItem(MOOD_KEY);
-      const currentMood = storedMood || mood;
-      setMood(currentMood);
+  // ============================================================================
+  // STORAGE HELPERS
+  // ============================================================================
 
-      const cachedAyah = await AsyncStorage.getItem(`${AYAH_KEY}_${currentMood}`);
-      const cachedTimestamp = await AsyncStorage.getItem(TIMESTAMP_KEY);
+  const getCachedAyah = (currentMood: Mood): DailyAyahData | null => {
+    try {
+      const cacheKey = `${AYAH_KEY_PREFIX}_${currentMood}`;
+      const cached = defaultStorage.getString(cacheKey);
+      const timestamp = defaultStorage.getString(TIMESTAMP_KEY);
 
+      if (!cached || !timestamp) return null;
+
+      const lastFetchedTime = parseInt(timestamp, 10);
       const currentTime = Date.now();
 
-      if (cachedAyah && cachedTimestamp) {
-        const lastFetchedTime = parseInt(cachedTimestamp, 10);
-        if (currentTime - lastFetchedTime < CACHE_DURATION) {
-          setAyah(JSON.parse(cachedAyah));
-          setLoading(false);
-          return;
-        }
+      // Check if cache is still valid (< 24 hours old)
+      if (currentTime - lastFetchedTime < CACHE_DURATION) {
+        return JSON.parse(cached);
       }
 
-      const randomAyah = getRandomAyahByMood(currentMood);
+      return null;
+    } catch (error) {
+      console.error('Error reading cached ayah:', error);
+      return null;
+    }
+  };
+
+  const setCachedAyah = (currentMood: Mood, ayahData: DailyAyahData) => {
+    try {
+      const cacheKey = `${AYAH_KEY_PREFIX}_${currentMood}`;
+      defaultStorage.setString(cacheKey, JSON.stringify(ayahData));
+      defaultStorage.setString(TIMESTAMP_KEY, Date.now().toString());
+    } catch (error) {
+      console.error('Error caching ayah:', error);
+    }
+  };
+
+  const getStoredMood = (): Mood => {
+    try {
+      const stored = defaultStorage.getString(MOOD_KEY);
+      return (stored as Mood) || 'Neutral';
+    } catch {
+      return 'Neutral';
+    }
+  };
+
+  const setStoredMood = (newMood: Mood) => {
+    try {
+      defaultStorage.setString(MOOD_KEY, newMood);
+    } catch (error) {
+      console.error('Error storing mood:', error);
+    }
+  };
+
+  // put this helper above the effect (or inside it)
+  function getAyahArrays(surah: any) {
+    // Preferred shape used in your app
+    if (Array.isArray(surah?.arabicAyahs) && Array.isArray(surah?.englishTranslations)) {
+      return {
+        arabicAyahs: surah.arabicAyahs as string[],
+        englishAyahs: surah.englishTranslations as string[],
+      };
+    }
+    // Back-compat: ayahs: [{ text, translation? }]
+    if (Array.isArray(surah?.ayahs)) {
+      return {
+        arabicAyahs: surah.ayahs.map((a: any) => a?.text ?? ''),
+        englishAyahs: surah.ayahs.map((a: any) => a?.translation ?? ''),
+      };
+    }
+    // Fallback
+    return { arabicAyahs: [] as string[], englishAyahs: [] as string[] };
+  }
+
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
+
+  useEffect(() => {
+    const initializeMood = () => {
+      const storedMood = getStoredMood();
+      setMood(storedMood);
+    };
+
+    initializeMood();
+  }, []);
+
+  useEffect(() => {
+    if (!surahs || surahs.length === 0) return;
+
+    const fetchDailyAyah = () => {
+      const cachedAyah = getCachedAyah(mood);
+      if (cachedAyah) {
+        setAyah(cachedAyah);
+        return;
+      }
+
+      const randomAyah = getRandomAyahByMood(mood);
       const surah = surahs.find((s: any) => s.number === randomAyah.surahNumber);
-
-      if (surah) {
-        const arabicAyahs = surah.arabicText.split('|');
-        const englishAyahs = surah.englishTranslation.split('|');
-
-        const selectedAyah = {
-          arabicText: arabicAyahs[randomAyah.ayahNumber - 1],
-          englishText: englishAyahs[randomAyah.ayahNumber - 1],
-          surahNumber: randomAyah.surahNumber,
-          ayahNumber: randomAyah.ayahNumber,
-        };
-
-        await AsyncStorage.setItem(`${AYAH_KEY}_${currentMood}`, JSON.stringify(selectedAyah));
-        await AsyncStorage.setItem(TIMESTAMP_KEY, currentTime.toString());
-
-        setAyah(selectedAyah);
+      if (!surah) {
+        console.error('Surah not found:', randomAyah.surahNumber);
+        return;
       }
 
-      setLoading(false);
+      const { arabicAyahs, englishAyahs } = getAyahArrays(surah);
+
+      const selectedAyah: DailyAyahData = {
+        arabicText: arabicAyahs[randomAyah.ayahNumber - 1] || '',
+        englishText: englishAyahs[randomAyah.ayahNumber - 1] || '',
+        surahNumber: randomAyah.surahNumber,
+        ayahNumber: randomAyah.ayahNumber,
+      };
+
+      setCachedAyah(mood, selectedAyah);
+      setAyah(selectedAyah);
     };
 
     fetchDailyAyah();
   }, [surahs, mood]);
 
-  const handleMoodChange = async (selectedMood: string) => {
+  // ============================================================================
+  // HANDLERS
+  // ============================================================================
+
+  const handleMoodChange = (selectedMood: Mood) => {
     setIsSkeleton(true);
     setMood(selectedMood);
-    await AsyncStorage.setItem(MOOD_KEY, selectedMood);
+    setStoredMood(selectedMood);
 
+    // Show skeleton for smooth transition
     setTimeout(() => {
       setIsSkeleton(false);
     }, 500);
   };
 
   const handleAyahClick = () => {
+    if (!ayah) return;
+
     router.push({
       pathname: `/surahs/${ayah.surahNumber}`,
       params: { ayahIndex: ayah.ayahNumber },
     });
   };
 
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+
+  const showSkeleton = isLoading || isSkeleton || !ayah;
+
   return (
     <View style={styles.container}>
+      {/* Mood Selector */}
       <View style={styles.moodContainer}>
         <Text style={styles.headerText}>I am feeling: </Text>
         <Dropdown
-          data={moods}
+          data={[...MOODS] as any[]} 
           labelField="label"
           valueField="value"
           placeholder="Select mood"
           value={mood}
-          onChange={(item) => handleMoodChange(item.value)}
+          onChange={(item) => handleMoodChange(item.value as Mood)}
           style={styles.dropdown}
           placeholderStyle={styles.dropdownPlaceholder}
           selectedTextStyle={styles.dropdownSelectedText}
           iconStyle={styles.dropdownIcon}
           containerStyle={styles.dropdownContainer}
+          disable={isLoading}
         />
       </View>
 
+      {/* Ayah Card */}
       <View style={styles.ayahCard}>
         <Text style={styles.headerText}>Ayah of the Day</Text>
 
-        {loading || isSkeleton || !ayah ? (
+        {showSkeleton ? (
           <View style={styles.ayahContent}>
             <Animated.View style={[styles.skeleton, styles.skeletonArabic]} />
             <Animated.View style={[styles.skeleton, styles.skeletonEnglish]} />
@@ -146,6 +257,10 @@ const DailyAyah = () => {
     </View>
   );
 };
+
+// ============================================================================
+// STYLES
+// ============================================================================
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
@@ -217,6 +332,7 @@ const createStyles = (theme: any) =>
       textAlign: 'center',
       color: theme.colors.text.secondary,
       marginTop: theme.spacing.medium,
+      fontFamily: 'Outfit_400Regular',
     },
     ayahInfo: {
       marginTop: theme.spacing.small,

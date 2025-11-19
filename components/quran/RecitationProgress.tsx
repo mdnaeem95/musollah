@@ -1,31 +1,70 @@
-import React, { useEffect, useState } from 'react';
+/**
+ * Recitation Progress Component
+ * 
+ * Displays user's Quran reading progress based on their plan.
+ * Shows completion percentage, days passed, and resume button.
+ */
+
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useSelector } from 'react-redux';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as Progress from 'react-native-progress';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { RootState } from '../../redux/store/store';
+import { useQuranStore } from '../../stores/useQuranStore';
+import { defaultStorage } from '../../api/client/storage';
 import { useTheme } from '../../context/ThemeContext';
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
 
 const TOTAL_AYAHS = 6236;
 const TOTAL_SURAHS = 114;
 const TOTAL_JUZ = 30;
 
-const QuranProgressSection = () => {
+const STORAGE_KEY_OVERALL_SURAHS = 'readSurahsOverall';
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
+
+const RecitationProgress: React.FC = () => {
   const { theme } = useTheme();
-  const plan = useSelector((state: RootState) => state.quran.recitationPlan);
   const router = useRouter();
 
+  // Zustand store
+  const plan = useQuranStore((state) => state.recitationPlan);
+
+  // Local state for overall progress (when no plan)
   const [overallSurahsRead, setOverallSurahsRead] = useState(0);
 
-  useFocusEffect(() => {
-    const loadSurahProgress = async () => {
-      const stored = await AsyncStorage.getItem('readSurahsOverall');
-      const total = stored ? JSON.parse(stored).length : 0;
-      setOverallSurahsRead(total);
-    };
-    loadSurahProgress();
-  });
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadSurahProgress = () => {
+        try {
+          const stored = defaultStorage.getString(STORAGE_KEY_OVERALL_SURAHS);
+          if (stored) {
+            const readSurahs = JSON.parse(stored);
+            setOverallSurahsRead(Array.isArray(readSurahs) ? readSurahs.length : 0);
+          } else {
+            setOverallSurahsRead(0);
+          }
+        } catch (error) {
+          console.error('Error loading surah progress:', error);
+          setOverallSurahsRead(0);
+        }
+      };
+
+      loadSurahProgress();
+    }, [])
+  );
+
+  // ============================================================================
+  // CALCULATIONS
+  // ============================================================================
 
   const today = new Date();
   const startDate = plan ? new Date(plan.startDate) : null;
@@ -54,21 +93,44 @@ const QuranProgressSection = () => {
     expected = Math.ceil(expected);
   }
 
-  const actual = plan?.completedAyahKeys.length || 0;
-  const progressRatio = plan ? Math.min(actual / expected, 1) : overallSurahsRead / TOTAL_SURAHS;
+  const actual = plan?.completedAyahKeys?.length || 0;
+  const progressRatio = plan 
+    ? Math.min(actual / expected, 1) 
+    : overallSurahsRead / TOTAL_SURAHS;
+
+  // ============================================================================
+  // HANDLERS
+  // ============================================================================
+
+  const handleResume = () => {
+    if (!plan?.lastReadAyah) return;
+
+    const [surah, ayah] = plan.lastReadAyah.split(':');
+    router.push({
+      pathname: `/surahs/${surah}`,
+      params: { ayahIndex: ayah },
+    });
+  };
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
   return (
     <View style={[styles.card, { backgroundColor: theme.colors.secondary }]}>
+      {/* Header */}
       <Text style={[styles.header, { color: theme.colors.text.primary }]}>
         {plan ? 'My Reading Plan' : 'All-Time Quran Progress'}
       </Text>
 
+      {/* Sub-header */}
       <Text style={[styles.subHeader, { color: theme.colors.text.secondary }]}>
         {plan
           ? `Day ${daysPassed} of ${plan.daysToFinish}`
           : `Surahs read: ${overallSurahsRead} / ${TOTAL_SURAHS}`}
       </Text>
 
+      {/* Progress Bar */}
       <Progress.Bar
         progress={progressRatio}
         width={null}
@@ -76,32 +138,34 @@ const QuranProgressSection = () => {
         color={theme.colors.accent}
         unfilledColor={theme.colors.primary}
         borderWidth={0}
-        style={{ marginVertical: 12 }}
+        style={styles.progressBar}
       />
 
+      {/* Progress Label */}
       <Text style={[styles.label, { color: theme.colors.text.primary }]}>
         {plan
           ? `Completed ${actual} / ${expected} ${plan.planType}`
           : `${((overallSurahsRead / TOTAL_SURAHS) * 100).toFixed(2)}% complete`}
       </Text>
 
+      {/* Resume Button */}
       {plan?.lastReadAyah && (
         <TouchableOpacity
           style={[styles.resumeButton, { backgroundColor: theme.colors.accent }]}
-          onPress={() => {
-            const [surah, ayah] = plan.lastReadAyah.split(':');
-            router.push({
-              pathname: `/surahs/${surah}`,
-              params: { ayahIndex: ayah },
-            });
-          }}
+          onPress={handleResume}
         >
-          <Text style={styles.resumeText}>📖 Resume from Surah {plan.lastReadAyah}</Text>
+          <Text style={styles.resumeText}>
+            📖 Resume from Surah {plan.lastReadAyah}
+          </Text>
         </TouchableOpacity>
       )}
     </View>
   );
 };
+
+// ============================================================================
+// STYLES
+// ============================================================================
 
 const styles = StyleSheet.create({
   card: {
@@ -117,6 +181,9 @@ const styles = StyleSheet.create({
   subHeader: {
     fontSize: 14,
     fontFamily: 'Outfit_400Regular',
+  },
+  progressBar: {
+    marginVertical: 12,
   },
   label: {
     fontSize: 14,
@@ -136,4 +203,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default QuranProgressSection;
+export default RecitationProgress;
