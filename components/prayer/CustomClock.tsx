@@ -1,27 +1,61 @@
-import React, { useEffect, useState } from 'react';
+/**
+ * Custom Clock Component
+ * 
+ * Displays current time formatted according to user preferences.
+ * Updates every minute with automatic cleanup.
+ */
+
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../redux/store/store';
+import { usePreferencesStore } from '../../stores/userPreferencesStore';
+
+// ============================================================================
+// TYPES
+// ============================================================================
 
 interface CustomClockProps {
   isRamadanMode?: boolean;
 }
 
+// ============================================================================
+// COMPONENT
+// ============================================================================
+
 const CustomClock: React.FC<CustomClockProps> = ({ isRamadanMode = false }) => {
   const [currentTime, setCurrentTime] = useState('');
-  const { timeFormat } = useSelector((state: RootState) => state.userPreferences);
+  
+  // Zustand store - optimized selector
+  const timeFormat = usePreferencesStore(state => state.timeFormat);
 
-  // Function to format time based on user preference
-  const formatTime = (date: Date) => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    if (timeFormat === '12-hour') {
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      const formattedHours = hours % 12 || 12; // Convert 0 to 12 for 12-hour format
-      return `${formattedHours}:${minutes < 10 ? '0' + minutes : minutes} ${ampm}`;
-    }
-    return `${hours < 10 ? '0' + hours : hours}:${minutes < 10 ? '0' + minutes : minutes}`;
-  };
+  // ============================================================================
+  // TIME FORMATTING
+  // ============================================================================
+
+  /**
+   * Format time based on user preference (12-hour or 24-hour)
+   */
+  const formatTime = useMemo(() => {
+    return (date: Date): string => {
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      
+      if (timeFormat === '12-hour') {
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const formattedHours = hours % 12 || 12; // Convert 0 to 12 for 12-hour format
+        const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+        return `${formattedHours}:${formattedMinutes} ${ampm}`;
+      }
+      
+      // 24-hour format
+      const formattedHours = hours < 10 ? `0${hours}` : hours;
+      const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+      return `${formattedHours}:${formattedMinutes}`;
+    };
+  }, [timeFormat]);
+
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
 
   useEffect(() => {
     const updateTime = () => {
@@ -29,12 +63,19 @@ const CustomClock: React.FC<CustomClockProps> = ({ isRamadanMode = false }) => {
       setCurrentTime(formatTime(now));
     };
 
-    // Initialize time and set interval
+    // Initialize time immediately
     updateTime();
-    const interval = setInterval(updateTime, 60000); // Update every minute
+    
+    // Update every minute
+    const interval = setInterval(updateTime, 60000);
 
-    return () => clearInterval(interval); // Cleanup interval on unmount
-  }, [timeFormat]);
+    // Cleanup interval on unmount
+    return () => clearInterval(interval);
+  }, [formatTime]);
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
   return (
     <View style={styles.container}>
@@ -44,6 +85,10 @@ const CustomClock: React.FC<CustomClockProps> = ({ isRamadanMode = false }) => {
     </View>
   );
 };
+
+// ============================================================================
+// STYLES
+// ============================================================================
 
 const styles = StyleSheet.create({
   container: {

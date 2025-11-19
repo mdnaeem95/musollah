@@ -1,6 +1,6 @@
 /**
  * App Layout Component
- * 
+ *
  * Root provider setup for the app.
  * Uses modern state management: Zustand (client) + TanStack Query (server)
  */
@@ -10,16 +10,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import Toast from 'react-native-toast-message';
 import TrackPlayer from 'react-native-track-player';
+
 import { NotificationProvider } from '../context/NotificationContext';
 import { ThemeProvider } from '../context/ThemeContext';
+import { AuthProvider } from '../context/AuthContext'; // 👈 add this
 import { toastConfig } from '../utils/toastConfig';
 import { playbackService } from '../constants/playbackService';
 import RootLayout from './RootLayout';
 
-// ============================================================================
-// NOTIFICATIONS SETUP
-// ============================================================================
-
+// Notifications
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: false,
@@ -28,38 +27,21 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// ============================================================================
-// TRACKPLAYER SETUP
-// ============================================================================
-
-// Register playback service (lazy initialization happens in useTrackPlayerSetup)
+// TrackPlayer
 TrackPlayer.registerPlaybackService(() => playbackService);
 
-// ============================================================================
-// REACT QUERY SETUP
-// ============================================================================
-
-/**
- * QueryClient with optimized defaults for offline-first experience
- */
+// React Query
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Retry failed requests
       retry: 3,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-      
-      // Caching strategy
-      staleTime: 1000 * 60 * 5, // 5 minutes - data stays fresh
-      gcTime: 1000 * 60 * 60 * 24, // 24 hours - keep in memory
-      
-      // Refetching behavior
-      refetchOnWindowFocus: false, // Don't refetch on every focus
-      refetchOnReconnect: 'always', // Refetch when internet reconnects
-      refetchOnMount: true, // Refetch on component mount if stale
-      
-      // Offline-first
-      networkMode: 'offlineFirst', // Use cache first, then network
+      retryDelay: (i) => Math.min(1000 * 2 ** i, 30000),
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 60 * 24,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: 'always',
+      refetchOnMount: true,
+      networkMode: 'offlineFirst',
     },
     mutations: {
       retry: 1,
@@ -68,20 +50,18 @@ const queryClient = new QueryClient({
   },
 });
 
-// ============================================================================
-// APP LAYOUT
-// ============================================================================
-
 export default function AppLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ActionSheetProvider>
-        <ThemeProvider>
-          <NotificationProvider>
-            <RootLayout />
-            <Toast config={toastConfig} />
-          </NotificationProvider>
-        </ThemeProvider>
+        <AuthProvider> {/* 👈 wrap everything that uses useAuth */}
+          <ThemeProvider>
+            <NotificationProvider>
+              <RootLayout />
+              <Toast config={toastConfig} />
+            </NotificationProvider>
+          </ThemeProvider>
+        </AuthProvider>
       </ActionSheetProvider>
     </QueryClientProvider>
   );
