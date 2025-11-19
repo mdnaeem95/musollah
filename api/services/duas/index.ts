@@ -11,47 +11,47 @@ import { cache, TTL } from '../../client/storage';
 // TYPES
 // ============================================================================
 
-export interface Dua {
-  id: string;
+export interface Doa {
+  number: string;
   title: string;
-  arabic: string;
-  transliteration: string;
-  translation: string;
-  category?: string;
-  reference?: string;
+  arabicText: string;
+  romanizedText: string;
+  englishTranslation: string;
+  source: string;
 }
 
 // ============================================================================
 // API FUNCTIONS
 // ============================================================================
 
-async function fetchDuas(): Promise<Dua[]> {
-  const snapshot = await db.collection('duas').get();
-  return snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  })) as Dua[];
+async function fetchDoas(): Promise<Doa[]> {
+  const snapshot = await db
+    .collection('doas')
+    .orderBy('number', 'asc')
+    .get();
+  
+  return snapshot.docs.map(doc => doc.data() as Doa);
 }
 
 // ============================================================================
 // QUERY KEYS
 // ============================================================================
 
-const DUAS_QUERY_KEYS = {
-  all: ['duas'] as const,
-  detail: (id: string) => ['duas', 'detail', id] as const,
+const DOAS_QUERY_KEYS = {
+  all: ['doas'] as const,
+  detail: (number: string) => ['doas', 'detail', number] as const,
 };
 
 // ============================================================================
 // HOOKS
 // ============================================================================
 
-export function useDuas() {
+export function useDoas() {
   return useQuery({
-    queryKey: DUAS_QUERY_KEYS.all,
+    queryKey: DOAS_QUERY_KEYS.all,
     queryFn: async () => {
-      const cacheKey = 'duas';
-      const cached = cache.get<Dua[]>(cacheKey);
+      const cacheKey = 'doas-all';
+      const cached = cache.get<Doa[]>(cacheKey);
       
       if (cached) {
         console.log('⚡ Using cached duas');
@@ -59,24 +59,45 @@ export function useDuas() {
       }
 
       console.log('🌐 Fetching duas from Firebase');
-      const duas = await fetchDuas();
+      const doas = await fetchDoas();
       
-      cache.set(cacheKey, duas, TTL.ONE_WEEK);
-      return duas;
+      // Cache for 1 week (static content)
+      cache.set(cacheKey, doas, TTL.ONE_WEEK);
+      return doas;
     },
     staleTime: TTL.ONE_DAY,
     gcTime: TTL.ONE_WEEK,
   });
 }
 
-export function usePrefetchDuas() {
+export function useDoa(number: string) {
+  const { data: doas } = useDoas();
+  return doas?.find(doa => doa.number === number);
+}
+
+export function usePrefetchDoas() {
   const queryClient = useQueryClient();
 
   return async () => {
     await queryClient.prefetchQuery({
-      queryKey: DUAS_QUERY_KEYS.all,
-      queryFn: fetchDuas,
+      queryKey: DOAS_QUERY_KEYS.all,
+      queryFn: fetchDoas,
       staleTime: TTL.ONE_DAY,
     });
   };
+}
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+export function searchDoas(doas: Doa[], query: string): Doa[] {
+  const lowerQuery = query.toLowerCase().trim();
+  if (!lowerQuery) return doas;
+  
+  return doas.filter(
+    (doa) =>
+      doa.title.toLowerCase().includes(lowerQuery) ||
+      doa.number.includes(lowerQuery)
+  );
 }

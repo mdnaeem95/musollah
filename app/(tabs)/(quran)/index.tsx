@@ -1,13 +1,11 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome6 } from '@expo/vector-icons';
 import DailyAyah from '../../../components/quran/DailyAyah';
-import DailyGoalTracker from '../../../components/quran/DailyGoalTracker';
-import OverallProgressTracker from '../../../components/quran/OverallProgressTracker';
 import { useTheme } from '../../../context/ThemeContext';
 import RecitationProgress from '../../../components/quran/RecitationProgress';
+import { getLastReadAyah, getLastListenedAyah } from '../../../utils/quran/storage';
 
 const QuranDashboard = () => {
   const { theme } = useTheme();
@@ -37,23 +35,17 @@ const QuranDashboard = () => {
 
   useFocusEffect(
     useCallback(() => {
-      const loadLastStates = async () => {
-        const lastListened = await AsyncStorage.getItem('lastListenedAyah');
-        console.log('Last Listened: ', lastListened)
-        const lastRead = await AsyncStorage.getItem('lastReadAyah');
-        console.log('Last Read: ', lastRead)
+      // Load from MMKV storage
+      const lastListened = getLastListenedAyah();
+      const lastRead = getLastReadAyah();
 
-        if (lastListened) {
-          const { surahNumber, ayahIndex } = JSON.parse(lastListened);
-          setLastListenedAyah({ surahNumber, ayahIndex });
-        }
+      if (lastListened) {
+        setLastListenedAyah(lastListened);
+      }
 
-        if (lastRead) {
-          const { surahNumber, ayahNumber } = JSON.parse(lastRead);
-          setLastReadAyah({ surahNumber, ayahNumber });
-        }
-      };
-      loadLastStates();
+      if (lastRead) {
+        setLastReadAyah(lastRead);
+      }
     }, [])
   );
 
@@ -61,27 +53,28 @@ const QuranDashboard = () => {
     <View style={styles.mainContainer}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.gridContainer}>
-        {[
-          {
-            label: 'Quran',
-            icon: 'book-quran',
-            route: '/surahs',
-          },
-          {
-            label: 'Duas',
-            icon: 'hands-praying',
-            route: '/doas',
-          },
-          {
-            label: 'Bookmarks',
-            icon: 'bookmark',
-            route: '/bookmarks',
-          },
-          {
-            label: 'Recitation Plan',
-            icon: 'calendar-check',
-            route: '/recitationPlan',
-          }].map(({ label, icon, route }, index) => (
+          {[
+            {
+              label: 'Quran',
+              icon: 'book-quran',
+              route: '/surahs',
+            },
+            {
+              label: 'Duas',
+              icon: 'hands-praying',
+              route: '/doas',
+            },
+            {
+              label: 'Bookmarks',
+              icon: 'bookmark',
+              route: '/bookmarks',
+            },
+            {
+              label: 'Recitation Plan',
+              icon: 'calendar-check',
+              route: '/recitationPlan',
+            },
+          ].map(({ label, icon, route }, index) => (
             <TouchableOpacity
               key={index}
               style={styles.gridItem}
@@ -97,9 +90,7 @@ const QuranDashboard = () => {
                   color={theme.colors.text.primary}
                   solid
                 />
-                <Text style={styles.iconLabel}>
-                  {label}
-                </Text>
+                <Text style={styles.iconLabel}>{label}</Text>
               </Animated.View>
             </TouchableOpacity>
           ))}

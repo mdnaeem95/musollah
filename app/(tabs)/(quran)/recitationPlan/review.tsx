@@ -1,10 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { usePlan } from './context';
-import { useDispatch } from 'react-redux';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../../../context/ThemeContext';
-import { AppDispatch } from '../../../../redux/store/store';
-import { setRecitationPlan } from '../../../../redux/slices/quranSlice';
+import { useQuranStore } from '../../../../stores/useQuranStore';
 
 const TOTAL_AYAHS = 6236;
 const TOTAL_SURAHS = 114;
@@ -14,15 +12,15 @@ export default function ReviewScreen() {
   const { theme } = useTheme();
   //@ts-ignore
   const { plan } = usePlan();
-  const dispatch = useDispatch<AppDispatch>();
+  const setRecitationPlan = useQuranStore((state) => state.setRecitationPlan);
   const router = useRouter();
 
   const handleStart = () => {
-    dispatch(setRecitationPlan({
+    setRecitationPlan({
       ...plan,
       startDate: new Date().toISOString(),
       completedAyahKeys: [],
-    }));
+    });
     router.replace('/(quran)');
   };
 
@@ -55,7 +53,7 @@ export default function ReviewScreen() {
       </Text>
 
       <Text style={[styles.summary, { color: theme.colors.text.secondary }]}>
-        🔁 You’ll need to read around
+        📝 You'll need to read around
         {' '}
         <Text style={styles.highlight}>
           {plan.planType === 'juz'

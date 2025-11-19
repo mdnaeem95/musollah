@@ -1,67 +1,89 @@
-import { FlatList, ActivityIndicator, View, TextInput, TouchableOpacity, StyleSheet, Text } from 'react-native';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useSelector } from 'react-redux';
+import { View, TextInput, TouchableOpacity, StyleSheet, Text } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import SurahItem from '../../../../components/quran/SurahItem';
-import { RootState } from '../../../../redux/store/store';
-import { Surah } from '../../../../utils/types';
 import { useTheme } from '../../../../context/ThemeContext';
 import { FlashList } from '@shopify/flash-list';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import JuzItem from '../../../../components/quran/JuzItem';
-import { JuzMeta, juzMeta } from '../../../../data/juzMeta';
+import { juzMeta } from '../../../../data/juzMeta';
 import { calculateTotalAyahs, countReadAyahsInJuz } from '../../../../utils/quran';
+import { useSurahs } from '../../../../api/services/quran';
+import { useQuranStore } from '../../../../stores/useQuranStore';
+
+type SurahForItem = {
+  id: string;
+  number: number;
+  arabicName: string;
+  englishName: string;
+  englishTranslation: string;
+  englishNameTranslation: string;
+  arabicText: string;
+  audioLinks: string;
+  numberOfAyahs: number;
+  revelationType?: string;
+};
 
 const Surahs = () => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
-
-  const { surahs, isLoading } = useSelector((state: RootState) => state.quran);
   const router = useRouter();
+  
+  // TanStack Query for surahs
+  const { data: surahs = [], isLoading } = useSurahs();
+  
+  // Zustand for reading progress
+  const readAyahs = useQuranStore((state) => state.readAyahs);
+  const getReadCountForSurah = useQuranStore((state) => state.getReadCountForSurah);
   
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
   const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
-  const [readAyahsMap, setReadAyahsMap] = useState<Record<number, number>>({});
-  const [juzProgressMap, setJuzProgressMap] = useState<Record<number, { read: number; total: number }>>({});
   const [mode, setMode] = useState<'surah' | 'juz'>('surah');
   const [renderMode, setRenderMode] = useState<'surah' | 'juz'>('surah');
 
+  // Smooth mode transition
   useEffect(() => {
-    const timeout = setTimeout(() => setRenderMode(mode), 100); // 100–200ms works well
+    const timeout = setTimeout(() => setRenderMode(mode), 100);
     return () => clearTimeout(timeout);
   }, [mode]);
 
-  useFocusEffect(
-    useCallback(() => {
-      const loadProgress = async () => {
-        const data = await AsyncStorage.getItem('readAyahsOverall');
-        if (!data) return;
-  
-        const readKeys: string[] = JSON.parse(data);
-        const countMap: Record<number, number> = {};
-        const juzMap: Record<number, { read: number; total: number }> = {};
-  
-        for (const key of readKeys) {
-          const [s] = key.split(':');
-          const surahNum = parseInt(s, 10);
-          countMap[surahNum] = (countMap[surahNum] || 0) + 1;
-        }
-  
-        for (const juz of juzMeta) {
-          const total = calculateTotalAyahs(juz);
-          const read = countReadAyahsInJuz(juz, readKeys);
-          juzMap[juz.number] = { total, read };
-        }
-  
-        setReadAyahsMap(countMap);
-        setJuzProgressMap(juzMap);
-      };
-  
-      loadProgress();
-    }, [])
-  );  
+  const itemSurahs: SurahForItem[] = useMemo(() => {
+    return surahs.map((s: any) => ({
+      id: String(s.id ?? s.number),
+      number: s.number,
+      arabicName: s.name ?? '',                         // fallback if missing
+      englishName: s.englishName ?? '',
+      englishTranslation: s.englishTranslation ?? '',
+      englishNameTranslation: s.englishNameTranslation ?? '',
+      arabicText: s.arabicText ?? '',                   // required by SurahItem -> default to ''
+      audioLinks: Array.isArray(s.audioLinks) ? s.audioLinks : [], // required -> default []
+      numberOfAyahs: s.numberOfAyahs ?? s.ayahs ?? 0,
+      revelationType: s.revelationType ?? '',
+    }));
+  }, [surahs]);
+
+  // Calculate progress maps from Zustand state
+  const { readAyahsMap, juzProgressMap } = useMemo(() => {
+    const countMap: Record<number, number> = {};
+    const juzMap: Record<number, { read: number; total: number }> = {};
+
+    // Count read ayahs per surah
+    for (const key of readAyahs) {
+      const [s] = key.split(':');
+      const surahNum = parseInt(s, 10);
+      countMap[surahNum] = (countMap[surahNum] || 0) + 1;
+    }
+
+    // Calculate juz progress
+    for (const juz of juzMeta) {
+      const total = calculateTotalAyahs(juz);
+      const read = countReadAyahsInJuz(juz, readAyahs);
+      juzMap[juz.number] = { total, read };
+    }
+
+    return { readAyahsMap: countMap, juzProgressMap: juzMap };
+  }, [readAyahs]);
 
   const toggleSearch = () => {
     setIsSearchExpanded(!isSearchExpanded);
@@ -71,14 +93,15 @@ const Surahs = () => {
   };
 
   const filteredSurahs = useMemo(() => {
-    return surahs.filter(
-      (surah: Surah) =>
-        (surah.arabicName && surah.arabicName.toLowerCase().includes(debounceQuery.toLowerCase())) ||
+    return itemSurahs.filter(
+      (surah) =>
         (surah.englishName && surah.englishName.toLowerCase().includes(debounceQuery.toLowerCase())) ||
+        (surah.arabicName && surah.arabicName.toLowerCase().includes(debounceQuery.toLowerCase())) ||
         (surah.number && surah.number.toString().includes(debounceQuery))
     );
-  }, [surahs, debounceQuery]);
+  }, [itemSurahs, debounceQuery]);
 
+  // Debounce search
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebounceQuery(searchQuery);
@@ -88,6 +111,7 @@ const Surahs = () => {
 
   return (
     <View style={styles.mainContainer}>
+      {/* Mode Toggle */}
       <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 12 }}>
         <TouchableOpacity
           onPress={() => setMode('surah')}
@@ -99,7 +123,9 @@ const Surahs = () => {
             marginRight: 8,
           }}
         >
-          <Text style={{ color: theme.colors.text.primary, fontFamily: 'Outfit_600SemiBold' }}>Surahs</Text>
+          <Text style={{ color: theme.colors.text.primary, fontFamily: 'Outfit_600SemiBold' }}>
+            Surahs
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -111,7 +137,9 @@ const Surahs = () => {
             borderRadius: 10,
           }}
         >
-          <Text style={{ color: theme.colors.text.primary, fontFamily: 'Outfit_600SemiBold' }}>Juz</Text>
+          <Text style={{ color: theme.colors.text.primary, fontFamily: 'Outfit_600SemiBold' }}>
+            Juz
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -147,7 +175,7 @@ const Surahs = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Surah List or Loading Indicator */}
+      {/* Surah List or Juz List */}
       {mode === 'surah' ? (
         <FlashList
           data={filteredSurahs}
@@ -220,11 +248,6 @@ const createStyles = (theme: any) =>
     },
     bookmarkIconContainer: {
       padding: theme.spacing.small / 2,
-    },
-    loadingIndicator: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
     },
     listContainer: {
       paddingBottom: theme.spacing.large,
