@@ -1,74 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
-import { fetchFoodAdditives } from '../../../../api/firebase';
-import { FoodAdditive } from '../../../../utils/types';
+import { FAB } from '@rneui/base';
 import { useTheme } from '../../../../context/ThemeContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FAB } from '@rneui/base'
-import { useRouter } from 'expo-router';
-
-const CACHE_KEY = 'foodAdditivesCache';
-const CACHE_TTL = 24 * 60 * 60 * 1000; // Cache TTL set to 24 hours (in milliseconds)
+import { useFoodAdditivesPage } from '../../../../hooks/foodAdditives/useFoodAdditivesPage';
+import { getAdditiveStatusColor } from '../../../../api/services/foodAdditives';
+import { FoodAdditive } from '../../../../utils/types';
 
 const FoodAdditivesPage = () => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
-  const router = useRouter();
 
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [foodAdditives, setFoodAdditives] = useState<FoodAdditive[]>([]);
-  const [filteredAdditives, setFilteredAdditives] = useState<FoodAdditive[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  const fetchFoodAdditivesWithCache = async () => {
-    try {
-      const cachedData = await AsyncStorage.getItem(CACHE_KEY);
-      if (cachedData) {
-        const parsedData = JSON.parse(cachedData);
-        const { timestamp, additives } = parsedData;
-        const now = new Date().getTime();
-        if (now - timestamp < CACHE_TTL) {
-          setFoodAdditives(additives);
-          setFilteredAdditives(additives);
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      const additives = await fetchFoodAdditives();
-      setFoodAdditives(additives);
-      setFilteredAdditives(additives);
-
-      const cacheData = {
-        timestamp: new Date().getTime(),
-        additives,
-      };
-      await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-    } catch (error) {
-      console.error('Failed to fetch food additives:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchFoodAdditivesWithCache();
-  }, []);
-
-  useEffect(() => {
-    const filtered = foodAdditives.filter((additive) =>
-      additive.chemicalName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredAdditives(filtered);
-  }, [searchQuery, foodAdditives]);
-
-  const getStatusColor = (status: string) => {
-    return status.toLowerCase() === 'ok'
-      ? theme.colors.text.success
-      : theme.colors.text.error;
-  };
+  const {
+    searchQuery,
+    filteredAdditives,
+    isLoading,
+    error,
+    handleSearchChange,
+    navigateToScanner,
+  } = useFoodAdditivesPage();
 
   const renderFoodAdditive = ({ item }: { item: FoodAdditive }) => (
     <View style={[styles.additiveContainer, { backgroundColor: theme.colors.secondary }]}>
@@ -76,7 +27,12 @@ const FoodAdditivesPage = () => {
       <Text style={[styles.chemicalName, { color: theme.colors.text.secondary }]}>
         {item.chemicalName}
       </Text>
-      <Text style={[styles.status, { color: getStatusColor(item.status) }]}>
+      <Text
+        style={[
+          styles.status,
+          { color: getAdditiveStatusColor(item.status, theme) },
+        ]}
+      >
         Status: {item.status}
       </Text>
       <Text style={[styles.description, { color: theme.colors.text.secondary }]}>
@@ -85,42 +41,96 @@ const FoodAdditivesPage = () => {
     </View>
   );
 
+  if (isLoading) {
+    return (
+      <View style={[styles.mainContainer, styles.centered]}>
+        <ActivityIndicator size="large" color={theme.colors.accent} />
+        <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
+          Loading food additives...
+        </Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.mainContainer, styles.centered]}>
+        <FontAwesome6 name="circle-exclamation" size={48} color={theme.colors.text.error} />
+        <Text style={[styles.errorText, { color: theme.colors.text.error }]}>
+          Failed to load food additives
+        </Text>
+        <Text style={[styles.errorSubtext, { color: theme.colors.text.muted }]}>
+          Please try again later
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.mainContainer}>
+      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <FontAwesome6 name="magnifying-glass" size={20} color={theme.colors.text.secondary} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search by chemical name"
+          placeholder="Search by E-code or chemical name"
           placeholderTextColor={theme.colors.text.muted}
           value={searchQuery}
-          onChangeText={setSearchQuery}
+          onChangeText={handleSearchChange}
+          autoCapitalize="none"
+          autoCorrect={false}
         />
+        {searchQuery.length > 0 && (
+          <FontAwesome6
+            name="xmark"
+            size={18}
+            color={theme.colors.text.muted}
+            onPress={() => handleSearchChange('')}
+            style={styles.clearButton}
+          />
+        )}
       </View>
 
-      {isLoading ? (
-        <ActivityIndicator size="large" color={theme.colors.text.primary} />
-      ) : filteredAdditives.length > 0 ? (
+      {/* Results Count */}
+      {searchQuery.length > 0 && (
+        <Text style={[styles.resultsCount, { color: theme.colors.text.muted }]}>
+          {filteredAdditives.length} result{filteredAdditives.length !== 1 ? 's' : ''} found
+        </Text>
+      )}
+
+      {/* Additives List */}
+      {filteredAdditives.length > 0 ? (
         <FlashList
           estimatedItemSize={150}
           data={filteredAdditives}
           keyExtractor={(item) => item.id}
           renderItem={renderFoodAdditive}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
         />
       ) : (
         <View style={styles.noResultsContainer}>
-          <Text style={styles.noResultsText}>
+          <FontAwesome6 name="magnifying-glass" size={48} color={theme.colors.text.muted} />
+          <Text style={[styles.noResultsText, { color: theme.colors.text.secondary }]}>
             No results found for "{searchQuery}"
+          </Text>
+          <Text style={[styles.noResultsSubtext, { color: theme.colors.text.muted }]}>
+            Try a different search term
           </Text>
         </View>
       )}
 
+      {/* FAB - Food Scanner */}
       <FAB
         placement="right"
-        color={theme.colors.muted}
-        icon={{ name: 'camera-alt', type: 'material', color: theme.colors.text.primary }}
-        onPress={() => router.push('/(settings)/food-additives/foodScanner')} // You’ll create this screen
-        style={{ position: 'absolute', bottom: 30, right: 20 }}
+        color={theme.colors.accent}
+        icon={{
+          name: 'camera-alt',
+          type: 'material',
+          color: theme.colors.text.primary,
+        }}
+        onPress={navigateToScanner}
+        style={styles.fab}
       />
     </View>
   );
@@ -133,21 +143,36 @@ const createStyles = (theme: any) =>
       padding: theme.spacing.medium,
       backgroundColor: theme.colors.primary,
     },
+    centered: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: theme.spacing.medium,
+    },
     searchContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.secondary,
       borderRadius: theme.borderRadius.medium,
       paddingHorizontal: theme.spacing.small,
-      marginBottom: theme.spacing.medium,
+      marginBottom: theme.spacing.small,
       ...theme.shadows.default,
     },
     searchInput: {
       flex: 1,
       fontSize: theme.fontSizes.medium,
+      fontFamily: 'Outfit_400Regular',
       paddingVertical: theme.spacing.small,
       paddingHorizontal: theme.spacing.small,
       color: theme.colors.text.primary,
+    },
+    clearButton: {
+      padding: theme.spacing.xSmall,
+    },
+    resultsCount: {
+      fontSize: theme.fontSizes.small,
+      fontFamily: 'Outfit_400Regular',
+      marginBottom: theme.spacing.small,
+      paddingHorizontal: theme.spacing.xSmall,
     },
     additiveContainer: {
       padding: theme.spacing.medium,
@@ -159,29 +184,57 @@ const createStyles = (theme: any) =>
     eCode: {
       fontSize: theme.fontSizes.xLarge,
       fontFamily: 'Outfit_600SemiBold',
+      marginBottom: theme.spacing.xSmall,
     },
     chemicalName: {
       fontSize: theme.fontSizes.large,
-      fontFamily: 'Outfit_400Regular',
+      fontFamily: 'Outfit_500Medium',
+      marginBottom: theme.spacing.xSmall,
     },
     status: {
       fontSize: theme.fontSizes.medium,
       fontFamily: 'Outfit_500Medium',
+      marginBottom: theme.spacing.small,
     },
     description: {
       fontSize: theme.fontSizes.small,
       fontFamily: 'Outfit_400Regular',
-      marginTop: theme.spacing.small,
+      lineHeight: theme.fontSizes.small * 1.5,
     },
     noResultsContainer: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+      gap: theme.spacing.small,
     },
     noResultsText: {
       fontSize: theme.fontSizes.large,
       fontFamily: 'Outfit_500Medium',
-      color: theme.colors.text.secondary,
+      textAlign: 'center',
+    },
+    noResultsSubtext: {
+      fontSize: theme.fontSizes.medium,
+      fontFamily: 'Outfit_400Regular',
+      textAlign: 'center',
+    },
+    loadingText: {
+      fontSize: theme.fontSizes.medium,
+      fontFamily: 'Outfit_400Regular',
+    },
+    errorText: {
+      fontSize: theme.fontSizes.large,
+      fontFamily: 'Outfit_600SemiBold',
+      textAlign: 'center',
+    },
+    errorSubtext: {
+      fontSize: theme.fontSizes.medium,
+      fontFamily: 'Outfit_400Regular',
+      textAlign: 'center',
+    },
+    fab: {
+      position: 'absolute',
+      bottom: 30,
+      right: 20,
     },
   });
 

@@ -1,8 +1,7 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { format } from 'date-fns';
-import { getGoldPrice } from '../../../../../api/gold';
 import GuideModal from '../../../../../components/zakat/GuideModal';
 import SharesModal from '../../../../../components/zakat/SharesModal';
 import InsuranceModal from '../../../../../components/zakat/InsuranceModal';
@@ -12,82 +11,52 @@ import EligibilityModal from '../../../../../components/zakat/EligibilityModal';
 import ZakatTable from '../../../../../components/zakat/ZakatTable';
 import ThemedButton from '../../../../../components/ThemedButton';
 import { useTheme } from '../../../../../context/ThemeContext';
-
-const nisabAmountNotWearing = 86;  // 86 grams for gold not meant for wearing
-const urufAmountWearing = 860;    // 860 grams for gold meant for wearing
+import { useZakatHartaCalculator } from '../../../../../hooks/zakat/useZakatHartaCalculator';
 
 const ZakatHarta = () => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
-  const [savings, setSavings] = useState<string>('');
-  const [savingsInterest, setSavingsInterest] = useState<string>('0');
-  const [gold, setGold] = useState<string>('');
-  const [insurance, setInsurance] = useState<string>('');
-  const [shares, setShares] = useState<string>('');
-  const [totalZakat, setTotalZakat] = useState<number>(0);
-  const [nisabAmount, setNisabAmount] = useState(10975);
+  const {
+    // State
+    savings,
+    savingsInterest,
+    gold,
+    insurance,
+    shares,
+    usedGold,
+    unusedGold,
+    eligibility,
+    haulStates,
+    totalZakat,
+    nisabAmount,
+    goldPriceData,
+    isLoadingGoldPrice,
+    nisabAmountNotWearing,
+    urufAmountWearing,
 
-  const [currentGoldPrice, setCurrentGoldPrice] = useState<number>(0);
-  const [goldPriceTimeStamp, setGoldPriceTimeStamp] = useState('');
+    // Modal state
+    isEligibilityModalVisible,
+    savingsModalVisible,
+    goldModalVisible,
+    insuranceModalVisible,
+    sharesModalVisible,
+    guideModalVisible,
 
-  const [isEligibilityModalVisible, setIsEligibilityModalVisible] = useState(false);
-  const [savingsModalVisible, setIsSavingsModalVisible] = useState(false);
-  const [goldModalVisible, setIsGoldModalVisible] = useState(false);
-  const [insuranceModalVisible, setIsInsuranceModalVisible] = useState(false);
-  const [sharesModalVisible, setIsSharesModalVisible] = useState(false);
-  const [guideModalVisible, setIsGuideModalVisible] = useState(false);
-
-  const [usedGold, setUsedGold] = useState<string>('0');
-  const [unusedGold, setUnusedGold] = useState<string>('0');
-
-  const [eligibility, setEligibility] = useState({
-    savings: { eligible: false, amount: '0' },
-    gold: { eligible: false, notForUse: '0', forUse: '0' },
-    insurance: { eligible: false, amount: '0' },
-    shares: { eligible: false, amount: '0' },
-  });
-  
-  const [haulStates, setHaulStates] = useState({
-    savingsHaul: false,
-    goldNotWearingHaul: false,
-    goldWearingHaul: false,
-  });
-
-  const fetchGoldPrice = async () => {
-    try {
-      const { pricePerGram, timestamp } = await getGoldPrice();
-      setCurrentGoldPrice(pricePerGram);
-      setGoldPriceTimeStamp(timestamp);
-    } catch (error) {
-      console.error('Error fetching gold price:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchGoldPrice();
-  }, []);
-
-  useEffect(() => {
-    calculateZakat();
-  }, [savings, gold, insurance, shares]);
-
-  const calculateZakat = () => {
-    const zakatSavings = parseFloat(savings) || 0;
-    const zakatGold = parseFloat(gold) || 0;
-    const zakatInsurance = eligibility.insurance.eligible ? parseFloat(eligibility.insurance.amount) || 0 : 0;
-    const zakatShares = eligibility.shares.eligible ? parseFloat(eligibility.shares.amount) || 0 : 0;
-  
-    const total = (zakatSavings + zakatGold + zakatInsurance + zakatShares);
-    setTotalZakat(total);
-  };
-
-  const parseDate = (timestamp: any) => {
-    const date = new Date(timestamp);
-    return isNaN(date.getTime()) ? 'Invalid Date' : format(date, 'dd MMM yyyy, hh:mm a');
-  };
-
-  const formattedTimestamp = parseDate(goldPriceTimeStamp);
+    // Actions
+    setSavings,
+    setGold,
+    setInsurance,
+    setShares,
+    setIsEligibilityModalVisible,
+    setIsSavingsModalVisible,
+    setIsGoldModalVisible,
+    setIsInsuranceModalVisible,
+    setIsSharesModalVisible,
+    setIsGuideModalVisible,
+    handleEligibilityCalculated,
+    handleGoldSave,
+  } = useZakatHartaCalculator();
 
   const renderEligibilityIcon = (isEligible: boolean) => {
     return isEligible ? (
@@ -97,15 +66,41 @@ const ZakatHarta = () => {
     );
   };
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.nisabContainer}>
-        <Text style={styles.nisabText}>
-          Nisab for this month: ${nisabAmount}
+  const formattedTimestamp = goldPriceData?.timestamp
+    ? format(new Date(goldPriceData.timestamp), 'dd MMM yyyy, hh:mm a')
+    : '';
+
+  if (isLoadingGoldPrice) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color={theme.colors.accent} />
+        <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
+          Loading gold prices...
         </Text>
       </View>
+    );
+  }
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+  return (
+    <View style={styles.container}>
+      {/* Nisab Display */}
+      <View style={styles.nisabContainer}>
+        <View style={styles.nisabHeader}>
+          <FontAwesome6 name="scale-balanced" size={20} color={theme.colors.accent} />
+          <Text style={styles.nisabLabel}>Nisab for this month</Text>
+        </View>
+        <Text style={styles.nisabAmount}>${nisabAmount.toLocaleString()}</Text>
+        {goldPriceData && (
+          <Text style={styles.nisabSubtext}>
+            Based on current gold price: ${goldPriceData.pricePerGram.toFixed(2)}/gram
+          </Text>
+        )}
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <ZakatTable
           savings={savings}
           setSavings={setSavings}
@@ -126,11 +121,22 @@ const ZakatHarta = () => {
           }}
         />
 
-        <View style={{ width: '95%', gap: 20, alignItems: 'center', justifyContent: 'center', marginHorizontal: 5 }}>
-          <ThemedButton text="Check Eligibility" onPress={() => setIsEligibilityModalVisible(true)} textStyle={{ color: theme.colors.accent }} style={{ backgroundColor: theme.colors.secondary }} />
-          <ThemedButton text="Guide" onPress={() => setIsGuideModalVisible(true)} textStyle={{ color: theme.colors.accent }} style={{ backgroundColor: theme.colors.secondary }} />
+        <View style={styles.buttonContainer}>
+          <ThemedButton
+            text="Check Eligibility"
+            onPress={() => setIsEligibilityModalVisible(true)}
+            textStyle={{ color: theme.colors.text.primary }}
+            style={{ backgroundColor: theme.colors.accent }}
+          />
+          <ThemedButton
+            text="Guide"
+            onPress={() => setIsGuideModalVisible(true)}
+            textStyle={{ color: theme.colors.accent }}
+            style={{ backgroundColor: theme.colors.secondary }}
+          />
         </View>
 
+        {/* Modals */}
         <EligibilityModal
           isVisible={isEligibilityModalVisible}
           onClose={() => setIsEligibilityModalVisible(false)}
@@ -142,16 +148,7 @@ const ZakatHarta = () => {
             shares,
           }}
           initialHaulStates={haulStates}
-          onCalculate={(newEligibility) => {
-            setEligibility(newEligibility)
-
-            // Auto-fill the input fields with eligibility amounts
-            setSavings(newEligibility.savings.amount);
-            setUnusedGold(newEligibility.gold.notForUse);
-            setUsedGold(newEligibility.gold.forUse);
-            setInsurance(newEligibility.insurance.amount);
-            setShares(newEligibility.shares.amount);
-          }}
+          onCalculate={handleEligibilityCalculated}
           nisabAmount={nisabAmount}
           nisabAmountNotWearing={nisabAmountNotWearing}
           urufAmountWearing={urufAmountWearing}
@@ -170,11 +167,8 @@ const ZakatHarta = () => {
           onClose={() => setIsGoldModalVisible(false)}
           initialUsedGold={usedGold}
           initialUnusedGold={unusedGold}
-          onSave={(used, unused) => {
-            setUsedGold(used);
-            setUnusedGold(unused);
-          }}
-          currentGoldPrice={currentGoldPrice}
+          onSave={handleGoldSave}
+          currentGoldPrice={goldPriceData?.pricePerGram || 0}
           formattedTimestamp={formattedTimestamp}
         />
 
@@ -208,18 +202,52 @@ const createStyles = (theme: any) =>
       padding: theme.spacing.medium,
       backgroundColor: theme.colors.primary,
     },
-    nisabContainer: {
-      marginBottom: theme.spacing.large,
-      paddingHorizontal: theme.spacing.small,
+    centered: {
+      justifyContent: 'center',
       alignItems: 'center',
+      gap: theme.spacing.medium,
     },
-    nisabText: {
-      fontSize: theme.fontSizes.large,
-      fontFamily: 'Outfit_500Medium',
-      color: theme.colors.text.primary,
+    nisabContainer: {
+      marginBottom: theme.spacing.medium,
+      padding: theme.spacing.medium,
+      backgroundColor: theme.colors.secondary,
+      borderRadius: theme.borderRadius.medium,
+      alignItems: 'center',
+      ...theme.shadows.default,
+    },
+    nisabHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.small,
+      marginBottom: theme.spacing.small,
+    },
+    nisabLabel: {
+      fontSize: theme.fontSizes.medium,
+      fontFamily: 'Outfit_400Regular',
+      color: theme.colors.text.muted,
+    },
+    nisabAmount: {
+      fontSize: theme.fontSizes.xxxLarge,
+      fontFamily: 'Outfit_700Bold',
+      color: theme.colors.accent,
+      marginBottom: theme.spacing.xSmall,
+    },
+    nisabSubtext: {
+      fontSize: theme.fontSizes.small,
+      fontFamily: 'Outfit_400Regular',
+      color: theme.colors.text.muted,
+    },
+    loadingText: {
+      fontSize: theme.fontSizes.medium,
+      fontFamily: 'Outfit_400Regular',
     },
     scrollContainer: {
-      gap: theme.spacing.small,
+      gap: theme.spacing.medium,
+      paddingBottom: theme.spacing.large,
+    },
+    buttonContainer: {
+      gap: theme.spacing.medium,
+      marginTop: theme.spacing.small,
     },
   });
 

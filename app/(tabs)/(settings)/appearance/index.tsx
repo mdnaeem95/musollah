@@ -1,66 +1,20 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableWithoutFeedback,
-  Animated,
-  Easing,
-  Switch,
-  StyleSheet as RNStyleSheet,
-} from 'react-native';
-import { useTheme } from '../../../../context/ThemeContext';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../../../../redux/store/store';
-import { toggleRamadanMode } from '../../../../redux/slices/userPreferencesSlice';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableWithoutFeedback, Animated, Switch, StyleSheet as RNStyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { greenTheme, blueTheme, purpleTheme } from '../../../../theme/theme';
-import { useThemeTransition } from '../../../../hooks/useThemeTransition'; // ✅ Shared hook
+import { useAppearanceSettings } from '../../../../hooks/settings/useAppearanceSettings';
 
 const Appearance = () => {
-  const { theme, currentTheme, switchTheme, isDarkMode, toggleDarkMode } = useTheme();
-  const dispatch = useDispatch();
-  const { themeTransitionAnim, triggerThemeTransition } = useThemeTransition(); // ✅ Shared value
-  const isRamadanMode = useSelector((state: RootState) => state.userPreferences.ramadanMode);
-  const themes = ['green', 'blue', 'purple'];
-
-  const [transitionColor, setTransitionColor] = useState(theme.colors.primary);
-
-  const [animatedValues, setAnimatedValues] = useState(() =>
-    themes.reduce((acc, themeName) => {
-      //@ts-ignore
-      acc[themeName] = new Animated.Value(currentTheme === themeName ? 1 : 0);
-      return acc;
-    }, {})
-  );
-
-  const handleThemeChange = (themeName: any) => {
-    //@ts-ignore
-    const nextColor = themes[themeName]?.light?.colors?.primary ?? theme.colors.primary;
-    setTransitionColor(nextColor);
-
-    triggerThemeTransition(() => switchTheme(themeName));
-
-    Object.keys(animatedValues).forEach((key) => {
-      //@ts-ignore
-      Animated.timing(animatedValues[key], {
-        toValue: key === themeName ? 1 : 0,
-        duration: 300,
-        easing: Easing.inOut(Easing.ease),
-        useNativeDriver: false,
-      }).start();
-    });
-  };
-
-  const handleDarkModeToggle = () => {
-    const nextColor = isDarkMode ? theme.colors.primary : theme.colors.primary;
-    setTransitionColor(nextColor);
-    triggerThemeTransition(toggleDarkMode);
-  };
-
-  const toggleRamadanModeHandler = () => {
-    dispatch(toggleRamadanMode());
-  };
+  const {
+    theme,
+    currentTheme,
+    themes,
+    isDarkMode,
+    transitionColor,
+    themeTransitionAnim,
+    animatedValues,
+    handleThemeChange,
+    handleDarkModeToggle,
+  } = useAppearanceSettings();
 
   const styles = createStyles(theme);
 
@@ -101,12 +55,13 @@ const Appearance = () => {
 
         {/* Theme Selection */}
         <View style={styles.checkboxContainer}>
-          {themes.map((themeName: any) => {
-            //@ts-ignore
+          {themes.map((themeName) => {
             const animatedColor = animatedValues[themeName].interpolate({
               inputRange: [0, 1],
               outputRange: [theme.colors.text.muted, theme.colors.accent],
             });
+
+            const isSelected = currentTheme === themeName;
 
             return (
               <TouchableWithoutFeedback
@@ -114,7 +69,9 @@ const Appearance = () => {
                 onPress={() => handleThemeChange(themeName)}
               >
                 <View style={styles.checkboxItem}>
-                  <Text style={styles.label}>{themeName.toUpperCase()}</Text>
+                  <Text style={[styles.label, isSelected && styles.labelSelected]}>
+                    {themeName.toUpperCase()}
+                  </Text>
                   <Animated.View
                     style={[
                       styles.checkbox,
@@ -132,7 +89,12 @@ const Appearance = () => {
 
         {/* Dark Mode Toggle */}
         <View style={styles.settingsField}>
-          <Text style={styles.darkModeLabel}>Dark Mode</Text>
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingLabel}>Dark Mode</Text>
+            <Text style={styles.settingDescription}>
+              {isDarkMode ? 'Enabled' : 'Disabled'}
+            </Text>
+          </View>
           <Switch
             value={isDarkMode}
             onValueChange={handleDarkModeToggle}
@@ -141,22 +103,9 @@ const Appearance = () => {
               true: theme.colors.accent,
             }}
             thumbColor={isDarkMode ? theme.colors.primary : theme.colors.secondary}
+            ios_backgroundColor={theme.colors.text.muted}
           />
         </View>
-
-        {/* Ramadan Mode Toggle (Optional) */}
-        {/* <View style={styles.settingsField}>
-          <Text style={styles.darkModeLabel}>Ramadan Mode</Text>
-          <Switch
-            value={isRamadanMode}
-            onValueChange={toggleRamadanModeHandler}
-            trackColor={{
-              false: theme.colors.text.muted,
-              true: theme.colors.accent,
-            }}
-            thumbColor={isRamadanMode ? theme.colors.primary : theme.colors.secondary}
-          />
-        </View> */}
       </View>
     </View>
   );
@@ -180,13 +129,13 @@ const createStyles = (theme: any) =>
       fontSize: theme.fontSizes.xxLarge,
       fontFamily: 'Outfit_600SemiBold',
       color: theme.colors.accent,
-      marginBottom: theme.spacing.large,
+      marginBottom: theme.spacing.small,
     },
     checkboxContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: theme.spacing.large,
+      marginBottom: theme.spacing.medium,
     },
     checkboxItem: {
       alignItems: 'center',
@@ -197,6 +146,10 @@ const createStyles = (theme: any) =>
       fontSize: theme.fontSizes.medium,
       color: theme.colors.text.secondary,
       marginBottom: theme.spacing.small,
+    },
+    labelSelected: {
+      fontFamily: 'Outfit_600SemiBold',
+      color: theme.colors.accent,
     },
     checkbox: {
       width: 40,
@@ -209,11 +162,23 @@ const createStyles = (theme: any) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingVertical: theme.spacing.small,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.text.muted,
+      paddingTop: theme.spacing.medium,
     },
-    darkModeLabel: {
-      fontFamily: 'Outfit_400Regular',
+    settingInfo: {
+      flex: 1,
+      gap: theme.spacing.xSmall,
+    },
+    settingLabel: {
+      fontFamily: 'Outfit_500Medium',
       fontSize: theme.fontSizes.medium,
       color: theme.colors.text.secondary,
+    },
+    settingDescription: {
+      fontFamily: 'Outfit_400Regular',
+      fontSize: theme.fontSizes.small,
+      color: theme.colors.text.muted,
     },
   });
 
