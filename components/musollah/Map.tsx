@@ -72,7 +72,7 @@ const Map = ({
         <TouchableOpacity
           style={{
             position: 'absolute',
-            top: 12,
+            top: 100,
             left: 10,
             backgroundColor: 'rgba(255,255,255,0.9)',
             borderRadius: 25,
