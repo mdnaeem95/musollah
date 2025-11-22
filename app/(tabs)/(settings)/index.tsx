@@ -114,7 +114,8 @@ const createStyles = (theme: any) =>
     gridContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: 20,
       marginBottom: theme.spacing.large,
     },
     gridItem: {

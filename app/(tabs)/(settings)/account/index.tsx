@@ -55,13 +55,6 @@ const AccountSettings = () => {
           value={profile?.email || 'Not set'}
         />
 
-        {/* Courses Completed Field */}
-        <SettingsField
-          icon="graduation-cap"
-          label="Courses Completed"
-          value={profile?.enrolledCourses.length.toString() || '0'}
-        />
-
         {/* Actions */}
         {isAuthenticated ? (
           <>

@@ -1,4 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+
+type ActiveModal = 'none' | 'actions' | 'location';
 
 interface UsePrayerModalsReturn {
   isActionsModalVisible: boolean;
@@ -12,40 +14,44 @@ interface UsePrayerModalsReturn {
 
 /**
  * Hook for managing prayer modal states
- * Implements modal visibility logic
- * 
- * Manages:
- * - Actions modal (FAB menu)
- * - Location modal (city selection)
+ * Uses single state to prevent race conditions
  */
 export const usePrayerModals = (): UsePrayerModalsReturn => {
-  const [isActionsModalVisible, setIsActionsModalVisible] = useState(false);
-  const [isLocationModalVisible, setIsLocationModalVisible] = useState(false);
+  // ✅ Single source of truth - only one modal can be active
+  const [activeModal, setActiveModal] = useState<ActiveModal>('none');
 
   const openActionsModal = useCallback(() => {
-    setIsActionsModalVisible(true);
+    setActiveModal('actions');
   }, []);
 
   const closeActionsModal = useCallback(() => {
-    setIsActionsModalVisible(false);
+    setActiveModal((current) => {
+      // ✅ Only close if actions is currently active
+      return current === 'actions' ? 'none' : current;
+    });
   }, []);
 
   const openLocationModal = useCallback(() => {
-    // Close actions modal if open
-    setIsActionsModalVisible(false);
-    setIsLocationModalVisible(true);
+    // ✅ Directly switch to location modal
+    setActiveModal('location');
   }, []);
 
   const closeLocationModal = useCallback(() => {
-    setIsLocationModalVisible(false);
+    setActiveModal((current) => {
+      // ✅ Only close if location is currently active
+      return current === 'location' ? 'none' : current;
+    });
   }, []);
 
   const closeAllModals = useCallback(() => {
-    setIsActionsModalVisible(false);
-    setIsLocationModalVisible(false);
+    setActiveModal('none');
   }, []);
 
-  return {
+  // ✅ Derive boolean states from single source
+  const isActionsModalVisible = activeModal === 'actions';
+  const isLocationModalVisible = activeModal === 'location';
+
+  return useMemo(() => ({
     isActionsModalVisible,
     isLocationModalVisible,
     openActionsModal,
@@ -53,5 +59,13 @@ export const usePrayerModals = (): UsePrayerModalsReturn => {
     openLocationModal,
     closeLocationModal,
     closeAllModals,
-  };
+  }), [
+    isActionsModalVisible,
+    isLocationModalVisible,
+    openActionsModal,
+    closeActionsModal,
+    openLocationModal,
+    closeLocationModal,
+    closeAllModals,
+  ]);
 };

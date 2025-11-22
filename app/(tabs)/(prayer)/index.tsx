@@ -83,10 +83,12 @@ const PrayerTab: React.FC = () => {
   }, [dateNavigation.formattedDate]);
 
   // Handle location modal close with refetch
+  const { closeLocationModal } = modals;
+
   const handleLocationModalClose = useCallback(() => {
-    modals.closeLocationModal();
+    closeLocationModal();
     refetch();
-  }, [modals, refetch]);
+  }, [closeLocationModal, refetch]);
 
   const renderContent = () => {
     // ✅ SIMPLIFIED loading check

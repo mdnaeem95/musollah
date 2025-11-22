@@ -135,7 +135,7 @@ const createStyles = (theme: any) =>
       flex: 1,
     },
     tableHeaderText: {
-      fontSize: 14,
+      fontSize: 12,
       fontFamily: 'Outfit_600SemiBold',
       color: theme.colors.text.primary,
       textAlign: 'center',

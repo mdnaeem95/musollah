@@ -62,16 +62,6 @@ const CompassInfo: React.FC<CompassInfoProps> = ({
         >
           When the arrow points to the Kaabah, you're facing Qiblah.
         </Text>
-        
-        {isNearQibla && (
-          <Text
-            style={[styles.foundText, { color: accentColor }]}
-            accessibilityRole="text"
-            accessibilityLiveRegion="polite"
-          >
-            🕋 Qibla Found! ({accuracyPercentage}% accurate)
-          </Text>
-        )}
       </View>
 
       {/* Footer Information */}

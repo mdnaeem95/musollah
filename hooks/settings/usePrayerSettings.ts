@@ -30,7 +30,7 @@ export function usePrayerSettings() {
   };
 
   const navigateToAdhanSelection = () => {
-    router.push('/(tabs)/settings/prayers/adhanSelection');
+    router.push('./prayers/adhanSelection');
   };
 
   const openReminderPicker = () => {

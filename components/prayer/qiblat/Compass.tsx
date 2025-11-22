@@ -171,6 +171,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 20,
+    gap: 30
   },
 });
 

@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, interpolateColor } from 'react-native-reanimated';
 import { COMPASS_SIZE } from '../../../constants/compass.constants';
 
@@ -75,6 +75,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
+    marginTop: 30
   },
   circle: {
     width: COMPASS_SIZE,
