@@ -1,9 +1,3 @@
-/**
- * Prayer Service Types
- * 
- * Type definitions for prayer times, Islamic dates, and related data.
- */
-
 // ============================================================================
 // PRAYER TIMES
 // ============================================================================

@@ -1,8 +1,3 @@
-/**
- * Duas Service
- * Replaces doasSlice.ts
- */
-
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '../../client/firebase';
 import { cache, TTL } from '../../client/storage';

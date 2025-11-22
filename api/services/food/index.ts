@@ -1,9 +1,3 @@
-/**
- * Restaurant Service (Enhanced)
- * 
- * Complete restaurant data management including details, reviews, and favorites.
- */
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { db, FieldValue, storageService } from '../../client/firebase';
 import { cache, TTL } from '../../client/storage';
@@ -227,9 +221,6 @@ const RESTAURANT_QUERY_KEYS = {
 // HOOKS
 // ============================================================================
 
-/**
- * Fetch all restaurants with aggressive caching
- */
 export function useRestaurants() {
   return useQuery({
     queryKey: RESTAURANT_QUERY_KEYS.list,
@@ -255,9 +246,6 @@ export function useRestaurants() {
   });
 }
 
-/**
- * Fetch single restaurant by ID
- */
 export function useRestaurantDetail(id: string | null) {
   return useQuery({
     queryKey: RESTAURANT_QUERY_KEYS.detail(id!),
@@ -284,9 +272,6 @@ export function useRestaurantDetail(id: string | null) {
   });
 }
 
-/**
- * Fetch restaurant reviews
- */
 export function useRestaurantReviews(restaurantId: string | null) {
   return useQuery({
     queryKey: RESTAURANT_QUERY_KEYS.reviews(restaurantId!),
@@ -313,9 +298,6 @@ export function useRestaurantReviews(restaurantId: string | null) {
   });
 }
 
-/**
- * Fetch user's favorite restaurants
- */
 export function useUserFavorites(userId: string | null) {
   return useQuery({
     queryKey: RESTAURANT_QUERY_KEYS.favorites(userId!),
@@ -330,9 +312,6 @@ export function useUserFavorites(userId: string | null) {
   });
 }
 
-/**
- * Toggle favorite mutation with optimistic updates
- */
 export function useToggleFavorite() {
   const queryClient = useQueryClient();
 
@@ -397,9 +376,6 @@ export function useToggleFavorite() {
   });
 }
 
-/**
- * Get unique categories from all restaurants
- */
 export function useRestaurantCategories() {
   const { data: restaurants } = useRestaurants();
   
@@ -424,10 +400,6 @@ export function useSubmitReview() {
   });
 }
 
-
-/**
- * Calculate average rating from reviews
- */
 export function calculateAverageRating(reviews: RestaurantReview[]): number {
   if (reviews.length === 0) return 0;
   const total = reviews.reduce((acc, r) => acc + r.rating, 0);
@@ -438,9 +410,6 @@ export function calculateAverageRating(reviews: RestaurantReview[]): number {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * Calculate distance between two coordinates (Haversine formula)
- */
 export function calculateDistance(
   from: { latitude: number; longitude: number },
   to: { latitude: number; longitude: number }
@@ -464,9 +433,6 @@ function toRad(degrees: number): number {
   return degrees * (Math.PI / 180);
 }
 
-/**
- * Sort restaurants by distance from user location
- */
 export function sortByDistance(
   restaurants: Restaurant[],
   userLocation: { latitude: number; longitude: number }
@@ -478,9 +444,6 @@ export function sortByDistance(
   });
 }
 
-/**
- * Get recommended restaurants (closest 5)
- */
 export function getRecommendedRestaurants(
   restaurants: Restaurant[],
   userLocation: { latitude: number; longitude: number },
@@ -489,9 +452,6 @@ export function getRecommendedRestaurants(
   return sortByDistance(restaurants, userLocation).slice(0, limit);
 }
 
-/**
- * Search restaurants by query
- */
 export function searchRestaurants(
   restaurants: Restaurant[],
   query: string

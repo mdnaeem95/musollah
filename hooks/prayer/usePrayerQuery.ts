@@ -1,10 +1,15 @@
 import { useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { modernPrayerService } from '../../services/prayer.service';
 import { useNetworkStatus } from '../useNetworkStatus';
 import { DailyPrayerTimes } from '../../utils/types/prayer.types';
 import { CACHE_KEYS } from '../../constants/prayer.constants';
+
+const PRAYER_QUERY_KEYS = {
+  all: ['prayer-times'] as const,
+  daily: (date: string) => ['prayer-times', 'daily', date] as const,
+};
 
 interface UsePrayerQueryOptions {
   date: string;
@@ -17,16 +22,10 @@ type UsePrayerQueryReturn = UseQueryResult<DailyPrayerTimes, Error> & {
   usingStaleData: boolean;
 };
 
-
 /**
  * React Query wrapper for fetching prayer times
  * 
- * Features:
- * - Automatic retry with exponential backoff
- * - Stale-while-revalidate strategy
- * - Offline support with cached data
- * - Auto-refetch on app foreground
- * - Type-safe with proper error handling
+ * ✅ SIMPLIFIED: Removed complex logic that was causing issues
  */
 export const usePrayerQuery = ({
   date,
@@ -35,57 +34,70 @@ export const usePrayerQuery = ({
 }: UsePrayerQueryOptions): UsePrayerQueryReturn => {
   const queryClient = useQueryClient();
   const isOnline = useNetworkStatus();
+  
+  // Track last successful invocation to prevent duplicate callbacks
+  const lastSuccessDate = useRef<string | null>(null);
+  const lastErrorMessage = useRef<string | null>(null);
 
-  // Main query
+  // Main query - SIMPLIFIED
   const query = useQuery<DailyPrayerTimes, Error>({
-    queryKey: [CACHE_KEYS.PRAYER_TIMES, date],
-    queryFn: () => modernPrayerService.fetchPrayerTimesForDate(date),
+    queryKey: PRAYER_QUERY_KEYS.daily(date), // ✅ Standard key format
+    queryFn: async () => {
+      console.log('🌐 Executing query function for date:', date);
+      const result = await modernPrayerService.fetchPrayerTimesForDate(date);
+      console.log('✅ Query function returned:', {
+        date: result?.date,
+        hasData: !!result,
+      });
+      return result;
+    },
     
-    // Cache configuration
     staleTime: 1000 * 60 * 60, // 1 hour
     gcTime: 1000 * 60 * 60 * 24, // 24 hours
-    
-    // Only fetch if online OR if we have cached data
-    enabled: isOnline || !!queryClient.getQueryData([CACHE_KEYS.PRAYER_TIMES, date]),
-    
-    // Retry configuration
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    
-    // Refetch configuration
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: 'always',
-    refetchOnMount: false, // Use cached data on mount
-    
-    // Network mode - prioritize cache when offline
-    networkMode: 'offlineFirst',
+    enabled: true,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    networkMode: isOnline ? 'online' : 'offlineFirst',
   });
 
-  // Handle success callback
+  // ✅ SIMPLIFIED: Success callback with duplicate prevention
   useEffect(() => {
     if (query.isSuccess && query.data && onSuccess) {
-      onSuccess(query.data);
+      const dataDate = query.data.date || date;
+      if (lastSuccessDate.current !== dataDate) {
+        lastSuccessDate.current = dataDate;
+        onSuccess(query.data);
+      }
     }
-  }, [query.isSuccess, query.data, onSuccess]);
+  }, [query.isSuccess, query.data, onSuccess, date]);
 
-  // Handle error callback
+  // ✅ SIMPLIFIED: Error callback with duplicate prevention
   useEffect(() => {
     if (query.isError && query.error && onError) {
-      onError(query.error);
+      const errorMsg = query.error.message;
+      if (lastErrorMessage.current !== errorMsg) {
+        lastErrorMessage.current = errorMsg;
+        onError(query.error);
+      }
     }
   }, [query.isError, query.error, onError]);
 
-  // Auto-refetch when app comes to foreground
+  // ✅ SIMPLIFIED: Auto-refetch on foreground (no dependencies on query.refetch)
   useEffect(() => {
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active' && isOnline) {
-        query.refetch();
+        // Use queryClient directly to avoid dependency issues
+        queryClient.invalidateQueries({ 
+          queryKey: [CACHE_KEYS.PRAYER_TIMES, date],
+        });
       }
-    };
+    });
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
-  }, [isOnline, query.refetch]);
+  }, [date, isOnline, queryClient]); // ✅ Stable dependencies only
 
   // Determine if using stale data
   const usingStaleData = !isOnline && !!query.data;
@@ -97,10 +109,7 @@ export const usePrayerQuery = ({
   };
 };
 
-/**
- * Hook for prefetching prayer times
- * Useful for preloading adjacent dates
- */
+// Keep prefetch and invalidate hooks unchanged
 export const usePrefetchPrayerTimes = () => {
   const queryClient = useQueryClient();
   const isOnline = useNetworkStatus();
@@ -111,25 +120,18 @@ export const usePrefetchPrayerTimes = () => {
     await queryClient.prefetchQuery({
       queryKey: [CACHE_KEYS.PRAYER_TIMES, date],
       queryFn: () => modernPrayerService.fetchPrayerTimesForDate(date),
-      staleTime: 1000 * 60 * 60, // 1 hour
+      staleTime: 1000 * 60 * 60,
     });
   };
 
   const prefetchMultipleDates = async (dates: string[]) => {
     if (!isOnline) return;
-
     await Promise.all(dates.map(date => prefetchDate(date)));
   };
 
-  return {
-    prefetchDate,
-    prefetchMultipleDates,
-  };
+  return { prefetchDate, prefetchMultipleDates };
 };
 
-/**
- * Hook for invalidating prayer time cache
- */
 export const useInvalidatePrayerCache = () => {
   const queryClient = useQueryClient();
 
@@ -145,8 +147,5 @@ export const useInvalidatePrayerCache = () => {
     });
   };
 
-  return {
-    invalidateDate,
-    invalidateAll,
-  };
+  return { invalidateDate, invalidateAll };
 };

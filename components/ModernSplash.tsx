@@ -1,3 +1,9 @@
+/**
+ * Modern Splash Screen Component
+ * 
+ * ✅ ENHANCED: Added detailed animation logging and guaranteed callback execution
+ */
+
 import { useEffect } from 'react';
 import { StyleSheet, View, Image, Platform, Text } from 'react-native';
 import { BlurView } from 'expo-blur';
@@ -32,6 +38,7 @@ export const ModernSplash: React.FC<ModernSplashProps> = ({
 
   // Entrance animation
   useEffect(() => {
+    console.log('🎨 Starting entrance animation');
     logoScale.value = withTiming(1, {
       duration: 800,
       easing: Easing.out(Easing.cubic),
@@ -57,6 +64,8 @@ export const ModernSplash: React.FC<ModernSplashProps> = ({
   // Exit animation (triggers when progress reaches 100)
   useEffect(() => {
     if (progress >= 100) {
+      console.log('🚀 Progress 100% - Starting exit animation');
+      
       slideY.value = withTiming(
         -1000,
         {
@@ -64,8 +73,16 @@ export const ModernSplash: React.FC<ModernSplashProps> = ({
           easing: Easing.in(Easing.cubic),
         },
         (finished) => {
+          console.log('✨ Exit animation finished:', { finished, hasCallback: !!onAnimationComplete });
+          
           if (finished && onAnimationComplete) {
             runOnJS(onAnimationComplete)();
+          } else if (!finished) {
+            console.warn('⚠️ Animation did not finish naturally');
+            // Call callback anyway to prevent hanging
+            if (onAnimationComplete) {
+              runOnJS(onAnimationComplete)();
+            }
           }
         }
       );

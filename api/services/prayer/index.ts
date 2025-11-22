@@ -1,9 +1,3 @@
-/**
- * Prayer Service
- * 
- * Centralized export for all prayer-related functionality.
- */
-
 // Types
 export * from './types';
 

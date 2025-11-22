@@ -1,7 +1,6 @@
 import React, { memo, useCallback } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { MotiView } from 'moti';
-import { FontAwesome6 } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../../context/ThemeContext';
@@ -34,9 +33,6 @@ const EMPTY_PRAYERS: PrayersPayload = {
   Isyak: false,
 };
 
-/** Convenience type: only loggable prayers (exclude Syuruk) */
-type LoggablePrayer = Exclude<PrayerName, PrayerName.SYURUK>;
-
 /**
  * Prayer Times List with Prayer Logging
  * 
@@ -46,6 +42,7 @@ type LoggablePrayer = Exclude<PrayerName, PrayerName.SYURUK>;
  * - Optimistic updates
  * - Type-safe with proper hooks
  * - Cleaner separation of concerns
+ * - Checkbox integrated into PrayerTimeItem for better alignment
  */
 const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({ 
   prayerTimes, 
@@ -67,6 +64,8 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
   const { mutate: savePrayerLog } = useSavePrayerLog();
 
   // Handle prayer toggle
+  // ✅ FIX: Only include stable dependencies
+  // Read current values inside the callback instead of closing over them
   const handlePrayerToggle = useCallback((prayerName: PrayerName) => {
     if (!userId) {
       Toast.show({
@@ -78,7 +77,7 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
       return;
     }
 
-    // Skip Syuruk (sunrise)
+    // Skip Syuruk (sunrise) - should never be called but safety check
     if (prayerName === PrayerName.SYURUK) return;
 
     // Check if prayer time has passed (only for today)
@@ -100,7 +99,7 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
       (prayerLog?.prayers as PrayersPayload | undefined) ?? EMPTY_PRAYERS;
 
     // Toggle with strong typing (exclude Syuruk)
-    const key = prayerName as keyof PrayersPayload; // Subuh | Zohor | Asar | Maghrib | Isyak
+    const key = prayerName as keyof PrayersPayload;
     const updatedPrayers: PrayersPayload = {
       ...currentPrayers,
       [key]: !currentPrayers[key],
@@ -112,7 +111,9 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
       date: dateStr,
       prayers: updatedPrayers,
     });
-  }, [userId, dateStr, prayerLog, isToday, prayerTimes, savePrayerLog]);
+  }, [userId, dateStr, isToday]); 
+  // ✅ Only stable primitives: userId, dateStr, isToday
+  // ❌ Removed: prayerLog, prayerTimes, savePrayerLog (they're read inside callback)
 
   // Empty state
   if (!prayerTimes) {
@@ -136,28 +137,16 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
             from={{ opacity: 0, translateY: 20 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ delay: index * 50 }}
+            style={styles.itemContainer}
           >
-            <View style={styles.prayerRow}>
-              <PrayerTimeItem
-                name={prayerName}
-                time={prayerTimes[prayerName]}
-              />
-              {isLoggable && userId && (
-                <TouchableOpacity
-                  onPress={() => handlePrayerToggle(prayerName)}
-                  style={styles.checkButton}
-                  accessibilityLabel={`Mark ${prayerName} as ${isLogged ? 'not completed' : 'completed'}`}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: isLogged }}
-                >
-                  <FontAwesome6
-                    name={isLogged ? 'check-circle' : 'circle'}
-                    size={24}
-                    color={isLogged ? theme.colors.text.success : theme.colors.text.muted}
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
+            <PrayerTimeItem
+              name={prayerName}
+              time={prayerTimes[prayerName]}
+              isLogged={isLogged}
+              onToggle={() => handlePrayerToggle(prayerName)}
+              isLoggable={isLoggable}
+              showCheckbox={!!userId} // Only show checkbox if user is signed in
+            />
           </MotiView>
         );
       })}
@@ -167,7 +156,6 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
 
 const createStyles = (theme: any) => StyleSheet.create({
   container: {
-    marginTop: 20,
     paddingHorizontal: 20,
     width: '100%',
   },
@@ -180,15 +168,10 @@ const createStyles = (theme: any) => StyleSheet.create({
     fontSize: 16,
     color: theme.colors.text.muted,
   },
-  prayerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  itemContainer: {
     marginBottom: 15,
-  },
-  checkButton: {
-    marginLeft: 15,
-    padding: 5,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
 });
 

@@ -1,13 +1,3 @@
-/**
- * User Profile Service
- * 
- * Manages user profile data, enrolled courses, and social features.
- * Add this to api/services/user/profile.ts
- * 
- * Authentication is handled by useAuthStore.
- * This service handles user profile data only.
- */
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import firestore from '@react-native-firebase/firestore';
 import { cache, TTL } from '../../client/storage';
@@ -70,9 +60,6 @@ const USER_QUERY_KEYS = {
 // API FUNCTIONS
 // ============================================================================
 
-/**
- * Fetch user profile from Firestore
- */
 async function fetchUserProfile(userId: string): Promise<UserProfile> {
   try {
     const userDoc = await firestore()
@@ -110,9 +97,6 @@ async function fetchUserProfile(userId: string): Promise<UserProfile> {
   }
 }
 
-/**
- * Update user profile
- */
 async function updateUserProfile(
   userId: string,
   updates: UpdateProfileData
@@ -132,60 +116,6 @@ async function updateUserProfile(
   }
 }
 
-/**
- * Toggle enrolled course
- * (refactored to accept a single variables object)
- */
-async function toggleEnrolledCourse(vars: ToggleCourseVars): Promise<void> {
-  const { userId, courseId, enrolled } = vars;
-  try {
-    const userRef = firestore().collection('users').doc(userId);
-    
-    if (enrolled) {
-      await userRef.update({
-        enrolledCourses: firestore.FieldValue.arrayUnion(courseId),
-      });
-    } else {
-      await userRef.update({
-        enrolledCourses: firestore.FieldValue.arrayRemove(courseId),
-      });
-    }
-    
-    console.log(`✅ Course ${enrolled ? 'enrolled' : 'unenrolled'}: ${courseId}`);
-  } catch (error) {
-    console.error('❌ Error toggling course:', error);
-    throw error;
-  }
-}
-
-/**
- * Toggle liked question
- */
-async function toggleLikedQuestion(vars: ToggleQuestionVars): Promise<void> {
-  const { userId, questionId, liked } = vars;
-  try {
-    const userRef = firestore().collection('users').doc(userId);
-    
-    if (liked) {
-      await userRef.update({
-        likedQuestions: firestore.FieldValue.arrayUnion(questionId),
-      });
-    } else {
-      await userRef.update({
-        likedQuestions: firestore.FieldValue.arrayRemove(questionId),
-      });
-    }
-    
-    console.log(`✅ Question ${liked ? 'liked' : 'unliked'}: ${questionId}`);
-  } catch (error) {
-    console.error('❌ Error toggling question like:', error);
-    throw error;
-  }
-}
-
-/**
- * Toggle favourite restaurant
- */
 async function toggleFavouriteRestaurant(vars: ToggleRestaurantVars): Promise<void> {
   const { userId, restaurantId, favourite } = vars;
   try {
@@ -208,38 +138,10 @@ async function toggleFavouriteRestaurant(vars: ToggleRestaurantVars): Promise<vo
   }
 }
 
-/**
- * Toggle saved event
- */
-async function toggleSavedEvent(vars: ToggleEventVars): Promise<void> {
-  const { userId, eventId, saved } = vars;
-  try {
-    const userRef = firestore().collection('users').doc(userId);
-    
-    if (saved) {
-      await userRef.update({
-        savedEvents: firestore.FieldValue.arrayUnion(eventId),
-      });
-    } else {
-      await userRef.update({
-        savedEvents: firestore.FieldValue.arrayRemove(eventId),
-      });
-    }
-    
-    console.log(`✅ Event ${saved ? 'saved' : 'unsaved'}: ${eventId}`);
-  } catch (error) {
-    console.error('❌ Error toggling event save:', error);
-    throw error;
-  }
-}
-
 // ============================================================================
 // TANSTACK QUERY HOOKS
 // ============================================================================
 
-/**
- * Fetch user profile
- */
 export function useUserProfile(userId: string | null) {
   return useQuery({
     queryKey: USER_QUERY_KEYS.profile(userId ?? 'anon'),
@@ -267,9 +169,6 @@ export function useUserProfile(userId: string | null) {
   });
 }
 
-/**
- * Update user profile
- */
 export function useUpdateUserProfile() {
   const queryClient = useQueryClient();
   
@@ -304,40 +203,6 @@ export function useUpdateUserProfile() {
   });
 }
 
-/**
- * Toggle enrolled course
- */
-export function useToggleEnrolledCourse() {
-  const queryClient = useQueryClient();
-  
-  return useMutation<void, unknown, ToggleCourseVars>({
-    mutationFn: (vars) => toggleEnrolledCourse(vars),
-    
-    onSuccess: (_data, { userId }) => {
-      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile(userId) });
-      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.enrolledCourses(userId) });
-    },
-  });
-}
-
-/**
- * Toggle liked question
- */
-export function useToggleLikedQuestion() {
-  const queryClient = useQueryClient();
-  
-  return useMutation<void, unknown, ToggleQuestionVars>({
-    mutationFn: (vars) => toggleLikedQuestion(vars),
-    
-    onSuccess: (_data, { userId }) => {
-      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile(userId) });
-    },
-  });
-}
-
-/**
- * Toggle favourite restaurant
- */
 export function useToggleFavouriteRestaurant() {
   const queryClient = useQueryClient();
   
@@ -350,68 +215,11 @@ export function useToggleFavouriteRestaurant() {
   });
 }
 
-/**
- * Toggle saved event
- */
-export function useToggleSavedEvent() {
-  const queryClient = useQueryClient();
-  
-  return useMutation<void, unknown, ToggleEventVars>({
-    mutationFn: (vars) => toggleSavedEvent(vars),
-    
-    onSuccess: (_data, { userId }) => {
-      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile(userId) });
-      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.savedEvents(userId) });
-    },
-  });
-}
-
 // ============================================================================
 // UTILITY HOOKS
 // ============================================================================
 
-/**
- * Check if user is enrolled in a course
- */
-export function useIsEnrolledInCourse(userId: string | null, courseId: string) {
-  const { data: profile } = useUserProfile(userId);
-  return profile?.enrolledCourses.includes(courseId) ?? false;
-}
-
-/**
- * Check if user liked a question
- */
-export function useIsQuestionLiked(userId: string | null, questionId: string) {
-  const { data: profile } = useUserProfile(userId);
-  return profile?.likedQuestions.includes(questionId) ?? false;
-}
-
-/**
- * Check if restaurant is favourited
- */
 export function useIsRestaurantFavourited(userId: string | null, restaurantId: string) {
   const { data: profile } = useUserProfile(userId);
   return profile?.favouriteRestaurants.includes(restaurantId) ?? false;
-}
-
-/**
- * Check if event is saved
- */
-export function useIsEventSaved(userId: string | null, eventId: string) {
-  const { data: profile } = useUserProfile(userId);
-  return profile?.savedEvents.includes(eventId) ?? false;
-}
-
-/**
- * Get follower/following counts
- */
-export function useSocialCounts(userId: string | null) {
-  const { data: profile } = useUserProfile(userId);
-  
-  if (!profile) return { followerCount: 0, followingCount: 0 };
-  
-  return {
-    followerCount: Object.keys(profile.followers).length,
-    followingCount: Object.keys(profile.following).length,
-  };
 }

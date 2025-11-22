@@ -1,10 +1,3 @@
-/**
- * Prayer Service API
- * 
- * API functions for fetching prayer times and Islamic dates.
- * Uses Aladhan API as the external data source.
- */
-
 import { format } from 'date-fns';
 import { aladhanClient, handleApiError } from '../../client/http';
 import { db } from '../../client/firebase';
@@ -13,7 +6,6 @@ import {
   IslamicDateResponse,
   PrayerTimesParams,
   DailyPrayerTime,
-  MonthlyPrayerTimes,
   NormalizedPrayerTimes,
   CalculationMethod,
 } from './types';
@@ -22,12 +14,6 @@ import {
 // EXTERNAL API CALLS (Aladhan)
 // ============================================================================
 
-/**
- * Fetch prayer times for a specific location and date
- * 
- * @param params - Location coordinates and optional calculation parameters
- * @returns Prayer times for the specified location and date
- */
 export async function fetchPrayerTimes(
   params: PrayerTimesParams
 ): Promise<PrayerTimesResponse> {
@@ -50,12 +36,6 @@ export async function fetchPrayerTimes(
   }
 }
 
-/**
- * Convert Gregorian date to Islamic (Hijri) date
- * 
- * @param date - Gregorian date in DD-MM-YYYY format
- * @returns Islamic date information
- */
 export async function convertToIslamicDate(
   date: string
 ): Promise<IslamicDateResponse> {
@@ -70,13 +50,6 @@ export async function convertToIslamicDate(
   }
 }
 
-/**
- * Fetch prayer times for today at a specific location
- * 
- * @param latitude - Location latitude
- * @param longitude - Location longitude
- * @returns Today's prayer times
- */
 export async function fetchTodayPrayerTimes(
   latitude: number,
   longitude: number
@@ -88,14 +61,6 @@ export async function fetchTodayPrayerTimes(
   });
 }
 
-/**
- * Fetch prayer times for a specific date
- * 
- * @param latitude - Location latitude
- * @param longitude - Location longitude
- * @param date - Date object to fetch prayer times for
- * @returns Prayer times for the specified date
- */
 export async function fetchPrayerTimesByDate(
   latitude: number,
   longitude: number,
@@ -115,14 +80,6 @@ export async function fetchPrayerTimesByDate(
 // FIREBASE QUERIES (Legacy - to be migrated)
 // ============================================================================
 
-/**
- * Fetch monthly prayer times from Firebase
- * 
- * @deprecated Use client-side calculations instead
- * @param year - Year
- * @param month - Month (1-12)
- * @returns Array of daily prayer times for the month
- */
 export async function fetchMonthlyPrayerTimesFromFirebase(
   year: number,
   month: number
@@ -174,12 +131,6 @@ export async function fetchMonthlyPrayerTimesFromFirebase(
 // DATA TRANSFORMATION
 // ============================================================================
 
-/**
- * Normalize prayer times from Aladhan format to app format
- * 
- * @param data - Aladhan prayer times data
- * @returns Normalized prayer times
- */
 export function normalizePrayerTimes(
   data: PrayerTimesResponse['data']
 ): NormalizedPrayerTimes {
@@ -194,12 +145,6 @@ export function normalizePrayerTimes(
   };
 }
 
-/**
- * Convert local format prayer times to normalized format
- * 
- * @param localTime - Prayer time in local format (subuh, syuruk, etc.)
- * @returns Normalized prayer times
- */
 export function normalizeLocalPrayerTimes(
   localTime: DailyPrayerTime
 ): NormalizedPrayerTimes {
@@ -218,31 +163,19 @@ export function normalizeLocalPrayerTimes(
 // UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * Get current date in DD-MM-YYYY format (Aladhan API format)
- */
 export function getTodayDateForAPI(): string {
   return format(new Date(), 'dd-MM-yyyy');
 }
 
-/**
- * Get current date in YYYY-MM-DD format (ISO format)
- */
 export function getTodayDateISO(): string {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
-/**
- * Check if prayer times are for today
- */
 export function isToday(dateString: string): boolean {
   const today = getTodayDateISO();
   return dateString === today;
 }
 
-/**
- * Parse time string (HH:MM) to Date object for today
- */
 export function parseTimeToDate(timeString: string): Date {
   const [hours, minutes] = timeString.split(':').map(Number);
   const date = new Date();
@@ -250,9 +183,6 @@ export function parseTimeToDate(timeString: string): Date {
   return date;
 }
 
-/**
- * Get next prayer based on current time
- */
 export function getNextPrayer(prayerTimes: NormalizedPrayerTimes): {
   name: string;
   time: string;

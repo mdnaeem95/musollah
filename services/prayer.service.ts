@@ -111,12 +111,28 @@ class ModernPrayerService {
     return format(parsedDate, DATE_FORMATS.API);
   }
 
+  private convertISOToFirebaseDate(isoDate: string): string {
+    // ISO: '2025-01-19' → Firebase: '19/1/2025'
+    const [year, month, day] = isoDate.split('-');
+    return `${parseInt(day, 10)}/${parseInt(month, 10)}/${year}`;
+  }
+
+  private convertFirebaseDateToISO(firebaseDate: string): string {
+    // Firebase: '19/1/2025' → ISO: '2025-01-19'
+    const [day, month, year] = firebaseDate.split('/');
+    const paddedDay = day.padStart(2, '0');
+    const paddedMonth = month.padStart(2, '0');
+    return `${year}-${paddedMonth}-${paddedDay}`;
+  }
+
   /**
    * Fetch prayer times for a specific date
    * Cache-first strategy with stale-while-revalidate
    */
   async fetchPrayerTimesForDate(date: string): Promise<DailyPrayerTimes> {
-    const cacheKey = `${CACHE_KEYS.PRAYER_TIMES}_${date}`;
+    // ✅ Convert ISO format to Firebase format for query
+    const firebaseDate = this.convertISOToFirebaseDate(date);
+    const cacheKey = `${CACHE_KEYS.PRAYER_TIMES}_${date}`; // Use ISO for cache key
 
     try {
       // 1. Check fresh cache first (synchronous!)
@@ -130,7 +146,6 @@ class ModernPrayerService {
       const isOnline = await this.checkNetworkConnection();
       
       if (!isOnline) {
-        // Try stale cache as fallback
         const staleCache = this.getStaleCachedData<DailyPrayerTimes>(cacheKey);
         if (staleCache) {
           console.log('⚠️ Using stale cache (offline):', date);
@@ -139,16 +154,15 @@ class ModernPrayerService {
         throw new NetworkError('No internet connection and no cached data');
       }
 
-      // 3. Fetch from Firebase
-      console.log('🔄 Fetching from Firebase:', date);
+      // 3. Fetch from Firebase using Firebase date format
+      console.log('🔄 Fetching from Firebase:', firebaseDate);
       const snapshot = await firestore()
         .collection('prayerTimes2025')
-        .where('date', '==', date)
+        .where('date', '==', firebaseDate) // Use Firebase format for query
         .limit(1)
         .get();
 
       if (snapshot.empty) {
-        // Try stale cache as fallback
         const staleCache = this.getStaleCachedData<DailyPrayerTimes>(cacheKey);
         if (staleCache) {
           console.log('⚠️ Using stale cache (no data):', date);
@@ -162,7 +176,7 @@ class ModernPrayerService {
 
       // 4. Transform and validate data
       const prayerTimes: DailyPrayerTimes = {
-        date: this.validateAndFormatDate(date, DATE_FORMATS.FIREBASE),
+        date: date, // ✅ Return ISO format
         hijriDate: await this.fetchIslamicDate(date),
         prayers: {
           [PrayerName.SUBUH]: data.time.subuh,
@@ -182,7 +196,6 @@ class ModernPrayerService {
     } catch (error) {
       console.error('❌ Error fetching prayer times:', error);
       
-      // Last resort: try stale cache
       const staleCache = this.getStaleCachedData<DailyPrayerTimes>(cacheKey);
       if (staleCache) {
         console.log('⚠️ Using stale cache (error):', date);
@@ -271,25 +284,35 @@ class ModernPrayerService {
    * Fetch Islamic date
    */
   private async fetchIslamicDate(gregorianDate: string): Promise<string> {
-    try {
-      const adjustedDate = subDays(
-        parse(gregorianDate, DATE_FORMATS.FIREBASE, new Date()),
-        1
-      );
-      const formattedDate = format(adjustedDate, DATE_FORMATS.ISLAMIC_API);
+    console.log('📅 Fetching Islamic date for:', gregorianDate);
 
-      const response = await fetch(
-        `${this.API_BASE_URL}/gToH/${formattedDate}`
-      );
+    try {
+      // 1. ✅ No day subtraction
+      const parsedDate = parse(gregorianDate, DATE_FORMATS.FIREBASE, new Date());
+      const formattedDate = format(parsedDate, DATE_FORMATS.ISLAMIC_API);
+      
+      console.log('🔄 Formatted for API:', formattedDate);
+
+      const response = await fetch(`${this.API_BASE_URL}/gToH/${formattedDate}`);
+      
+      console.log('📡 Response status:', response.status);
 
       if (!response.ok) {
-        throw new ApiError(`Islamic date API failed: ${response.status}`);
+        // 2. ✅ Better error logging
+        const errorText = await response.text();
+        console.error('❌ API Error:', { status: response.status, body: errorText });
+        
+        // 3. ✅ User-friendly errors
+        if (response.status === 404) return 'Invalid date format';
+        if (response.status === 429) return 'Too many requests';
+        return `API error: ${response.status}`;
       }
 
       const data = await response.json();
       return this.formatIslamicDate(data.data.hijri);
     } catch (error) {
-      console.error('Error fetching Islamic date:', error);
+      console.error('❌ Error:', error);
+      if (error instanceof TypeError) return 'Network error';
       return 'Unable to fetch Islamic date';
     }
   }

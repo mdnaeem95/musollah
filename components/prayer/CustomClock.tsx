@@ -2,7 +2,7 @@
  * Custom Clock Component
  * 
  * Displays current time formatted according to user preferences.
- * Updates every minute with automatic cleanup.
+ * Updates every minute with perfect synchronization to system time.
  */
 
 import React, { useEffect, useState, useMemo } from 'react';
@@ -63,14 +63,29 @@ const CustomClock: React.FC<CustomClockProps> = ({ isRamadanMode = false }) => {
       setCurrentTime(formatTime(now));
     };
 
-    // Initialize time immediately
+    // ✅ Initialize time immediately
     updateTime();
     
-    // Update every minute
-    const interval = setInterval(updateTime, 60000);
+    // ✅ Calculate milliseconds until next minute boundary
+    const now = new Date();
+    const secondsUntilNextMinute = 60 - now.getSeconds();
+    const msUntilNextMinute = secondsUntilNextMinute * 1000 - now.getMilliseconds();
+    
+    // ✅ Wait until next minute boundary, then start synced interval
+    const syncTimeout = setTimeout(() => {
+      updateTime(); // Update at the minute boundary
+      
+      // ✅ Now start precise 60-second interval (synced to minute boundaries)
+      const interval = setInterval(updateTime, 60000);
+      
+      // Store interval ID for cleanup
+      return () => clearInterval(interval);
+    }, msUntilNextMinute);
 
-    // Cleanup interval on unmount
-    return () => clearInterval(interval);
+    // ✅ Cleanup both timeout and interval
+    return () => {
+      clearTimeout(syncTimeout);
+    };
   }, [formatTime]);
 
   // ============================================================================
