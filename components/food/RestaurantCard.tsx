@@ -48,7 +48,7 @@ const RestaurantCard: React.FC<Props> = ({ restaurant, distance }) => {
               No reviews yet.
             </Text>
             <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
-              {distance} km
+              {distance}
             </Text>
           </>
         )}

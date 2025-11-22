@@ -215,28 +215,45 @@ export interface FoodAdditive {
 }
 
 export interface Restaurant {
-    id: string,
-    image: string,
-    name : string,
-    address: string,
-    coordinates: {
-        latitude: number;
-        longitude: number;
-    };
-    status: string,
-    hours: string,
-    website: string,
-    categories: string[],
-    averageRating?: number;
-    totalReviews?: number;
-    menuUrl?: string;
-    socials?: {
-        instagram?: string;
-        tiktok?: string;
-        facebook?: string;
-        number?: string;
-    }
+  // Core fields
+  id: string;
+  name: string;
+  categories: string[];
+
+  // Location (normalized from Firebase 'location' GeoPoint)
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+
+  // Details
+  address: string;
+  image: string;
+  hours: string;
+  website: string;
+  menuUrl: string;
+  status: string;
+
+  // Social links
+  socials: {
+    instagram?: string;
+    tiktok?: string;
+    facebook?: string;
+    number?: string;
+  };
+
+  // Ratings & Reviews
+  averageRating: number;
+  totalReviews: number;
+
+  // Optional fields
+  rating?: number;
+  priceRange?: string;
+  description?: string;
+  halal?: boolean;
+  tags?: string[];
 }
+
 export interface RestaurantReview {
     id: string;
     restaurantId: string;
