@@ -1,9 +1,3 @@
-/**
- * Food Additives Service
- * 
- * Manages food additives (E-codes) data with caching.
- */
-
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchFoodAdditives, fetchFoodAdditiveByECode, fetchFoodAdditivesByStatus, fetchFoodAdditivesByCategory } from './queries';
 import { FoodAdditive } from '../../../utils/types';
@@ -31,9 +25,6 @@ const FOOD_ADDITIVES_QUERY_KEYS = {
 // API FUNCTIONS
 // ============================================================================
 
-/**
- * Fetch all food additives with caching
- */
 async function getFoodAdditives(): Promise<FoodAdditive[]> {
   try {
     // Check MMKV cache first
@@ -61,9 +52,6 @@ async function getFoodAdditives(): Promise<FoodAdditive[]> {
 // TANSTACK QUERY HOOKS
 // ============================================================================
 
-/**
- * Fetch all food additives with caching
- */
 export function useFoodAdditives() {
   return useQuery({
     queryKey: FOOD_ADDITIVES_QUERY_KEYS.list,
@@ -74,9 +62,6 @@ export function useFoodAdditives() {
   });
 }
 
-/**
- * Fetch a single food additive by E-code
- */
 export function useFoodAdditiveByECode(eCode: string) {
   return useQuery({
     queryKey: FOOD_ADDITIVES_QUERY_KEYS.byECode(eCode),
@@ -87,9 +72,6 @@ export function useFoodAdditiveByECode(eCode: string) {
   });
 }
 
-/**
- * Fetch food additives by status
- */
 export function useFoodAdditivesByStatus(status: string) {
   return useQuery({
     queryKey: FOOD_ADDITIVES_QUERY_KEYS.byStatus(status),
@@ -100,9 +82,6 @@ export function useFoodAdditivesByStatus(status: string) {
   });
 }
 
-/**
- * Fetch food additives by category
- */
 export function useFoodAdditivesByCategory(category: string) {
   return useQuery({
     queryKey: FOOD_ADDITIVES_QUERY_KEYS.byCategory(category),
@@ -113,9 +92,6 @@ export function useFoodAdditivesByCategory(category: string) {
   });
 }
 
-/**
- * Prefetch food additives
- */
 export function usePrefetchFoodAdditives() {
   const queryClient = useQueryClient();
 
@@ -128,9 +104,6 @@ export function usePrefetchFoodAdditives() {
   };
 }
 
-/**
- * Invalidate food additives cache
- */
 export function useInvalidateFoodAdditives() {
   const queryClient = useQueryClient();
 
@@ -145,9 +118,6 @@ export function useInvalidateFoodAdditives() {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * Search food additives by chemical name or E-code
- */
 export function searchFoodAdditives(
   additives: FoodAdditive[],
   query: string
@@ -163,18 +133,12 @@ export function searchFoodAdditives(
   );
 }
 
-/**
- * Get status color based on additive status
- */
 export function getAdditiveStatusColor(status: string, theme: any): string {
   return status.toLowerCase() === 'ok'
     ? theme.colors.text.success
     : theme.colors.text.error;
 }
 
-/**
- * Group additives by status
- */
 export function groupAdditivesByStatus(additives: FoodAdditive[]): {
   ok: FoodAdditive[];
   notOk: FoodAdditive[];
@@ -192,9 +156,6 @@ export function groupAdditivesByStatus(additives: FoodAdditive[]): {
   );
 }
 
-/**
- * Group additives by category
- */
 export function groupAdditivesByCategory(
   additives: FoodAdditive[]
 ): Record<string, FoodAdditive[]> {
@@ -208,17 +169,11 @@ export function groupAdditivesByCategory(
   }, {} as Record<string, FoodAdditive[]>);
 }
 
-/**
- * Get unique categories from additives
- */
 export function getUniqueCategories(additives: FoodAdditive[]): string[] {
   const categories = new Set(additives.map((a) => a.category));
   return Array.from(categories).sort();
 }
 
-/**
- * Sort additives by E-code (numerical)
- */
 export function sortByECode(additives: FoodAdditive[]): FoodAdditive[] {
   return [...additives].sort((a, b) => {
     const numA = parseInt(a.eCode.replace(/\D/g, ''), 10);

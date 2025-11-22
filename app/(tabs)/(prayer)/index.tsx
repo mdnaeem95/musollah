@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { View, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { AnimatePresence } from 'moti';
@@ -24,28 +24,12 @@ import { usePrayerModals } from '../../../hooks/prayer/usePrayerModals';
 import { usePrayerActions } from '../../../hooks/prayer/usePrayerActions';
 import { usePrayerQuery } from '../../../hooks/prayer/usePrayerQuery';
 import { analyticsService } from '../../../services/analytics/service';
+import { formatIslamicDateResponseSingapore, useTodayIslamicDate } from '../../../api/services/prayer';
 
-/**
- * Modern Prayer Tab Component
- * 
- * Architecture:
- * - Follows SOLID principles (Single Responsibility)
- * - Uses custom hooks for business logic
- * - Presentational components for UI
- * - React Query for data fetching
- * - Proper error boundaries
- * - Optimized performance with memoization
- * 
- * Improvements from original:
- * - 130 lines vs 250+ lines
- * - Separated concerns (date, modals, actions)
- * - Better error handling
- * - Improved TypeScript types
- * - Modern React patterns
- */
 const PrayerTab: React.FC = () => {
-  const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const { theme } = useTheme();  // Keep this as is!
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const { data: islamicDateData } = useTodayIslamicDate();
 
   // Date navigation hook
   const dateNavigation = usePrayerDateNavigation();
@@ -59,6 +43,15 @@ const PrayerTab: React.FC = () => {
     onActionComplete: modals.closeActionsModal,
   });
 
+  const handleSuccess = useCallback((data: any) => {
+    console.log('✅ Prayer data loaded:', dateNavigation.formattedDate);
+  }, [dateNavigation.formattedDate]);
+
+  const handleError = useCallback((err: Error) => {
+    console.error('❌ Prayer data error:', err);
+    analyticsService.logError(err, { screen: 'PrayerTab' });
+  }, []); // Empty deps - analyticsService is stable
+
   // Data fetching with React Query
   const {
     data: prayerData,
@@ -69,13 +62,8 @@ const PrayerTab: React.FC = () => {
     usingStaleData,
   } = usePrayerQuery({
     date: dateNavigation.formattedDate,
-    onSuccess: (data) => {
-      console.log('✅ Prayer data loaded:', dateNavigation.formattedDate);
-    },
-    onError: (err) => {
-      console.error('❌ Prayer data error:', err);
-      analyticsService.logError(err, { screen: 'PrayerTab' });
-    },
+    onSuccess: handleSuccess,
+    onError: handleError,  
   });
 
   // Calculate prayer times
@@ -92,7 +80,7 @@ const PrayerTab: React.FC = () => {
       date: dateNavigation.formattedDate,
       isOnline: !isOffline,
     });
-  }, [dateNavigation.formattedDate, isOffline]);
+  }, [dateNavigation.formattedDate]);
 
   // Handle location modal close with refetch
   const handleLocationModalClose = useCallback(() => {
@@ -100,10 +88,23 @@ const PrayerTab: React.FC = () => {
     refetch();
   }, [modals, refetch]);
 
-  // Render content based on state
   const renderContent = () => {
-    if (isLoading && !prayerData) {
+    // ✅ SIMPLIFIED loading check
+    if (isLoading) {
       return <PrayerTimesSkeleton key="skeleton" />;
+    }
+
+    // ✅ Show error state if no data after loading
+    if (!prayerData && !isLoading) {
+      return (
+        <View style={styles.contentContainer}>
+          <PrayerErrorFallback
+            error={error || new Error('No prayer data available')}
+            resetError={refetch}
+            isOffline={isOffline}
+          />
+        </View>
+      );
     }
 
     return (
@@ -146,7 +147,7 @@ const PrayerTab: React.FC = () => {
               onNext={dateNavigation.goToNextDay}
               canGoNext={dateNavigation.canGoNext}
               canGoPrev={dateNavigation.canGoPrev}
-              hijriDate={prayerData?.hijriDate}
+              hijriDate={islamicDateData ? formatIslamicDateResponseSingapore(islamicDateData) : undefined}
             />
 
             <CustomClock />

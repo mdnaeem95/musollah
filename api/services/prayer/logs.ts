@@ -1,10 +1,3 @@
-/**
- * Prayer Logs & Stats Service
- * 
- * Extends the prayer service with prayer logging and statistics.
- * Add this to api/services/prayer/logs.ts
- */
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, eachDayOfInterval } from 'date-fns';
 import { Platform } from 'react-native';
@@ -64,9 +57,6 @@ const PRAYER_LOG_QUERY_KEYS = {
 // API FUNCTIONS
 // ============================================================================
 
-/**
- * Fetch prayer log for a specific date
- */
 async function fetchPrayerLog(
   userId: string,
   date: string
@@ -96,9 +86,6 @@ async function fetchPrayerLog(
   }
 }
 
-/**
- * Save/update prayer log for a specific date
- */
 async function savePrayerLog(
   userId: string,
   date: string,
@@ -128,9 +115,6 @@ async function savePrayerLog(
   }
 }
 
-/**
- * Fetch weekly prayer logs
- */
 async function fetchWeeklyPrayerLogs(
   userId: string,
   startDate: string,
@@ -171,9 +155,6 @@ async function fetchWeeklyPrayerLogs(
   }
 }
 
-/**
- * Calculate prayer statistics from all logs
- */
 async function calculatePrayerStats(userId: string): Promise<PrayerStats> {
   try {
     const docRef = firestore()
@@ -230,9 +211,6 @@ async function calculatePrayerStats(userId: string): Promise<PrayerStats> {
   }
 }
 
-/**
- * Update iOS widget with latest prayer times
- */
 async function updateWidget(prayers: any): Promise<void> {
   if (widgetStorage && Platform.OS === 'ios') {
     try {
@@ -249,9 +227,6 @@ async function updateWidget(prayers: any): Promise<void> {
 // TANSTACK QUERY HOOKS
 // ============================================================================
 
-/**
- * Fetch prayer log for today
- */
 export function useTodayPrayerLog(userId: string | null) {
   const today = format(new Date(), 'yyyy-MM-dd');
   
@@ -283,9 +258,6 @@ export function useTodayPrayerLog(userId: string | null) {
   });
 }
 
-/**
- * Fetch prayer log for a specific date
- */
 export function usePrayerLog(userId: string | null, date: string) {
   return useQuery({
     queryKey: PRAYER_LOG_QUERY_KEYS.daily(userId!, date),
@@ -314,9 +286,6 @@ export function usePrayerLog(userId: string | null, date: string) {
   });
 }
 
-/**
- * Fetch weekly prayer logs
- */
 export function useWeeklyPrayerLogs(
   userId: string | null,
   startDate: string,
@@ -336,9 +305,6 @@ export function useWeeklyPrayerLogs(
   });
 }
 
-/**
- * Fetch prayer statistics
- */
 export function usePrayerStats(userId: string | null) {
   return useQuery({
     queryKey: PRAYER_LOG_QUERY_KEYS.stats(userId!),
@@ -370,9 +336,6 @@ export function usePrayerStats(userId: string | null) {
 // MUTATIONS
 // ============================================================================
 
-/**
- * Save/update prayer log with optimistic updates
- */
 export function useSavePrayerLog() {
   const queryClient = useQueryClient();
   
@@ -450,9 +413,6 @@ export function useSavePrayerLog() {
 // UTILITY HOOKS
 // ============================================================================
 
-/**
- * Check if a specific prayer is logged for today
- */
 export function useIsPrayerLogged(
   userId: string | null,
   prayerName: keyof PrayerLog['prayers']
@@ -462,9 +422,6 @@ export function useIsPrayerLogged(
   return log?.prayers[prayerName] ?? false;
 }
 
-/**
- * Get completion rate for today
- */
 export function useTodayCompletionRate(userId: string | null) {
   const { data: log } = useTodayPrayerLog(userId);
   

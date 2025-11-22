@@ -68,3 +68,48 @@ export const CACHE_DURATION = {
   LOCATION: 60 * 60 * 1000, // 1 hour
   MONTHLY: 30 * 24 * 60 * 60 * 1000, // 30 days
 } as const;
+
+export const SINGAPORE_ISLAMIC_MONTHS: Record<number, string> = {
+  1: 'Muharram',
+  2: 'Safar',
+  3: "Rabi'ul Awwal",
+  4: "Rabi'ul Thani",
+  5: 'Jamadil Awwal',
+  6: 'Jamadil Thani',
+  7: 'Rajab',
+  8: "Sya'ban",
+  9: 'Ramadan',
+  10: 'Syawal',
+  11: 'Zulkaedah',
+  12: 'Zulhijjah',
+} as const;
+
+export const ENGLISH_TO_MONTH_NUMBER: Record<string, number> = {
+  "Muharram'": 1,
+  'Safar': 2,
+  "Rabi' al-Awwal": 3,
+  "Rabi' al-Thani": 3,
+  "Rabi' al-awwal": 3,
+  "Rabi' al-thani": 4,
+  "Rabī' al-awwal": 3,
+  "Rabī' al-thānī": 4,
+  'Jumada al-Awwal': 5,
+  'Jumada al-Thani': 6,
+  'Jumada al-awwal': 5,
+  'Jumada al-thani': 6,
+  'Jumādā al-awwal': 5,
+  'Jumādā al-thānī': 6,
+  'Jumada Al-Ula': 5,
+  'Jumada Al-Akhirah': 6,
+  'Rajab': 7,
+  "Sha'ban": 8,
+  "Sha'bān": 8,
+  'Ramadan': 9,
+  'Ramaḍān': 9,
+  'Shawwal': 10,
+  'Shawwāl': 10,
+  "Dhu al-Qi'dah": 11,
+  "Dhū al-Qi'dah": 11,
+  'Dhu al-Hijjah': 12,
+  'Dhū al-Ḥijjah': 12,
+} as const;

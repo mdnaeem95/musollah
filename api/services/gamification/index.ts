@@ -1,10 +1,4 @@
-/**
- * Gamification Service
- * Replaces gamificationSlice.ts
- */
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAuth } from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { cache, TTL } from '../../client/storage';
 

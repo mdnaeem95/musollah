@@ -1,11 +1,5 @@
-/**
- * Prayer Service Queries
- * 
- * TanStack Query hooks for prayer times and Islamic dates.
- * Provides automatic caching, refetching, and state management.
- */
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns'; // ✅ Add this import
 import { cache, TTL } from '../../client/storage';
 import {
   fetchPrayerTimes,
@@ -13,7 +7,6 @@ import {
   fetchPrayerTimesByDate,
   convertToIslamicDate,
   fetchMonthlyPrayerTimesFromFirebase,
-  normalizePrayerTimes,
   getTodayDateForAPI,
 } from './api';
 import {
@@ -23,20 +16,83 @@ import {
   PRAYER_QUERY_KEYS,
   LocationCoordinates,
   DailyPrayerTime,
+  HijriDate,
 } from './types';
+import { ENGLISH_TO_MONTH_NUMBER, SINGAPORE_ISLAMIC_MONTHS } from '../../../constants/prayer.constants';
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Convert Firebase MUIS times to PrayerTimesResponse format
+ */
+function convertMUISToResponse(
+  muisTime: DailyPrayerTime,
+  location: LocationCoordinates
+): PrayerTimesResponse {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+
+  return {
+    code: 200,
+    status: 'OK',
+    data: {
+      timings: {
+        Fajr: muisTime.subuh,
+        Sunrise: muisTime.syuruk,
+        Dhuhr: muisTime.zohor,
+        Asr: muisTime.asar,
+        Maghrib: muisTime.maghrib,
+        Isha: muisTime.isyak,
+      },
+      date: {
+        readable: format(now, 'dd MMM yyyy'),
+        timestamp: Math.floor(now.getTime() / 1000).toString(),
+        gregorian: {
+          date: format(now, 'dd-MM-yyyy'),
+          format: 'DD-MM-YYYY',
+          day: day.toString(),
+          weekday: { en: format(now, 'EEEE') },
+          month: { number: month, en: format(now, 'MMMM') },
+          year: year.toString(),
+          designation: { abbreviated: 'AD', expanded: 'Anno Domini' },
+        },
+        hijri: {
+          date: '',
+          format: '',
+          day: '',
+          weekday: { en: '' },
+          month: { number: 0, en: '' },
+          year: '',
+          designation: { abbreviated: '', expanded: '' },
+          holidays: [],
+        },
+      },
+      meta: {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        timezone: 'Asia/Singapore',
+        method: {
+          id: 11,
+          name: 'MUIS Official (Singapore)', // ✅ Indicates official source
+          params: { Fajr: 20, Isha: 18 },
+        },
+        latitudeAdjustmentMethod: 'ANGLE_BASED',
+        midnightMode: 'STANDARD',
+        school: 'Shafi',
+        offset: {},
+      },
+    },
+  };
+}
 
 // ============================================================================
 // PRAYER TIMES QUERIES
 // ============================================================================
 
-/**
- * Fetch prayer times for a specific location and date
- * 
- * Features:
- * - 24-hour cache (prayer times don't change within a day)
- * - Automatic refetch on mount if stale
- * - Background refetch on window focus
- */
 export function usePrayerTimes(params: PrayerTimesParams) {
   return useQuery({
     queryKey: PRAYER_QUERY_KEYS.times(params),
@@ -59,17 +115,20 @@ export function usePrayerTimes(params: PrayerTimesParams) {
       
       return response;
     },
-    staleTime: TTL.ONE_DAY, // Consider data fresh for 24 hours
-    gcTime: TTL.ONE_WEEK, // Keep in cache for 1 week
+    staleTime: TTL.ONE_DAY,
+    gcTime: TTL.ONE_WEEK,
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 }
 
 /**
- * Fetch today's prayer times for a specific location
+ * Fetch today's prayer times with MUIS priority
  * 
- * Most commonly used query - optimized with aggressive caching
+ * Priority:
+ * 1. ✅ MMKV cache (instant)
+ * 2. ✅ Firebase MUIS official times (Singapore only)
+ * 3. ❌ Aladhan API (fallback for non-Singapore or missing data)
  */
 export function useTodayPrayerTimes(location: LocationCoordinates) {
   const today = getTodayDateForAPI();
@@ -78,18 +137,67 @@ export function useTodayPrayerTimes(location: LocationCoordinates) {
     queryKey: PRAYER_QUERY_KEYS.daily(today, location),
     queryFn: async () => {
       const cacheKey = `prayer-times-today-${location.latitude}-${location.longitude}`;
-      const cached = cache.get<PrayerTimesResponse>(cacheKey);
       
+      // ✅ LAYER 1: Check MMKV cache first
+      const cached = cache.get<PrayerTimesResponse>(cacheKey);
       if (cached) {
-        console.log('🎯 Using cached today prayer times');
+        console.log('⚡ Using cached prayer times');
+        const source = cached.data.meta.method.name;
+        console.log(`📍 Source: ${source}`);
         return cached;
       }
 
-      console.log('🌐 Fetching today prayer times from API');
+      // ✅ LAYER 2: Try Firebase MUIS official times (for Singapore)
+      try {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1; // 1-12
+        const day = now.getDate();
+        
+        console.log('🕌 Attempting to fetch MUIS official times from Firebase...');
+        const monthlyTimes = await fetchMonthlyPrayerTimesFromFirebase(year, month);
+        
+        // Find today's times
+        const todayTime = monthlyTimes.find(t => t.day === day);
+        
+        if (todayTime) {
+          console.log('✅ SUCCESS: Using MUIS official times from Firebase');
+          console.log('📊 Times:', {
+            Subuh: todayTime.subuh,
+            Syuruk: todayTime.syuruk,
+            Zohor: todayTime.zohor,
+            Asar: todayTime.asar,
+            Maghrib: todayTime.maghrib,
+            Isyak: todayTime.isyak,
+          });
+          
+          // Convert to standard response format
+          const muisResponse = convertMUISToResponse(todayTime, location);
+          
+          // Cache until end of day
+          const endOfDay = new Date(now);
+          endOfDay.setHours(23, 59, 59, 999);
+          const ttl = endOfDay.getTime() - now.getTime();
+          
+          cache.set(cacheKey, muisResponse, ttl);
+          return muisResponse;
+        } else {
+          console.warn(`⚠️ No MUIS data found for ${day}/${month}/${year}`);
+        }
+      } catch (error) {
+        console.warn('⚠️ Firebase MUIS times unavailable:', error);
+      }
+
+      // ❌ LAYER 3: Fallback to Aladhan API
+      console.log('🌐 FALLBACK: Fetching from Aladhan API');
+      console.log('⚠️ WARNING: Using calculated times - may differ from MUIS official times');
+      
       const response = await fetchTodayPrayerTimes(
         location.latitude,
         location.longitude
       );
+      
+      console.log('📊 Aladhan API times:', response.data.timings);
       
       // Cache until end of day
       const now = new Date();
@@ -101,16 +209,13 @@ export function useTodayPrayerTimes(location: LocationCoordinates) {
       
       return response;
     },
-    staleTime: TTL.ONE_HOUR, // Refetch every hour during active use
+    staleTime: TTL.ONE_HOUR,
     gcTime: TTL.ONE_DAY,
     retry: 3,
-    enabled: !!(location.latitude && location.longitude), // Only fetch if we have a location
+    enabled: !!(location.latitude && location.longitude),
   });
 }
 
-/**
- * Fetch prayer times for a specific date
- */
 export function usePrayerTimesByDate(
   location: LocationCoordinates,
   date: Date
@@ -118,6 +223,24 @@ export function usePrayerTimesByDate(
   return useQuery({
     queryKey: PRAYER_QUERY_KEYS.daily(date.toISOString(), location),
     queryFn: async () => {
+      // Try Firebase first for past/future dates too
+      try {
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        
+        const monthlyTimes = await fetchMonthlyPrayerTimesFromFirebase(year, month);
+        const dayTime = monthlyTimes.find(t => t.day === day);
+        
+        if (dayTime) {
+          console.log(`✅ Using MUIS official times for ${day}/${month}/${year}`);
+          return convertMUISToResponse(dayTime, location);
+        }
+      } catch (error) {
+        console.warn('Firebase MUIS times unavailable for date, using Aladhan');
+      }
+      
+      // Fallback to Aladhan
       const response = await fetchPrayerTimesByDate(
         location.latitude,
         location.longitude,
@@ -135,11 +258,6 @@ export function usePrayerTimesByDate(
 // MONTHLY PRAYER TIMES QUERY
 // ============================================================================
 
-/**
- * Fetch monthly prayer times from Firebase
- * 
- * @deprecated This will be replaced with client-side calculations
- */
 export function useMonthlyPrayerTimes(year: number, month: number) {
   return useQuery({
     queryKey: PRAYER_QUERY_KEYS.monthly(year, month),
@@ -152,7 +270,7 @@ export function useMonthlyPrayerTimes(year: number, month: number) {
         return cached;
       }
 
-      console.log('🌐 Fetching monthly prayer times from Firebase');
+      console.log('🕌 Fetching MUIS monthly prayer times from Firebase');
       const times = await fetchMonthlyPrayerTimesFromFirebase(year, month);
       
       // Cache for 1 month (data doesn't change)
@@ -160,8 +278,8 @@ export function useMonthlyPrayerTimes(year: number, month: number) {
       
       return times;
     },
-    staleTime: TTL.ONE_MONTH, // Monthly data is static
-    gcTime: TTL.ONE_MONTH * 3, // Keep for 3 months
+    staleTime: TTL.ONE_MONTH,
+    gcTime: TTL.ONE_MONTH * 3,
     retry: 2,
   });
 }
@@ -170,9 +288,6 @@ export function useMonthlyPrayerTimes(year: number, month: number) {
 // ISLAMIC DATE QUERY
 // ============================================================================
 
-/**
- * Convert Gregorian date to Islamic (Hijri) date
- */
 export function useIslamicDate(date: string) {
   return useQuery({
     queryKey: PRAYER_QUERY_KEYS.islamicDate(date),
@@ -193,16 +308,42 @@ export function useIslamicDate(date: string) {
       
       return response;
     },
-    staleTime: Infinity, // Islamic dates never change
+    staleTime: Infinity,
     gcTime: Infinity,
     retry: 2,
     enabled: !!date,
   });
 }
 
-/**
- * Get today's Islamic date
- */
+export function convertToSingaporeMonth(englishMonth: string): string {
+  // Try to find month number from English name
+  const monthNumber = ENGLISH_TO_MONTH_NUMBER[englishMonth];
+  
+  if (monthNumber) {
+    return SINGAPORE_ISLAMIC_MONTHS[monthNumber];
+  }
+
+  // Fallback: return original if not found
+  console.warn(`Unknown Islamic month: ${englishMonth}`);
+  return englishMonth;
+}
+
+export function formatIslamicDateSingapore(hijri: HijriDate): string {
+  const { day, month, year } = hijri;
+  
+  // Get Singapore month name using month number
+  const singaporeMonth = SINGAPORE_ISLAMIC_MONTHS[month.number];
+  
+  // If month number mapping fails, try English name mapping
+  const monthName = singaporeMonth || convertToSingaporeMonth(month.en);
+  
+  return `${day} ${monthName} ${year}`;
+}
+
+export function formatIslamicDateResponseSingapore(data: IslamicDateResponse): string {
+  return formatIslamicDateSingapore(data.data.hijri);
+}
+
 export function useTodayIslamicDate() {
   const today = getTodayDateForAPI();
   return useIslamicDate(today);
@@ -212,10 +353,6 @@ export function useTodayIslamicDate() {
 // PREFETCH UTILITIES
 // ============================================================================
 
-/**
- * Prefetch prayer times for a location
- * Useful for preloading data before navigation
- */
 export function usePrefetchPrayerTimes() {
   const queryClient = useQueryClient();
 
@@ -253,10 +390,6 @@ export function usePrefetchPrayerTimes() {
 // INVALIDATION UTILITIES
 // ============================================================================
 
-/**
- * Invalidate prayer times cache
- * Use when location changes or manual refresh is needed
- */
 export function useInvalidatePrayerTimes() {
   const queryClient = useQueryClient();
 
@@ -286,9 +419,6 @@ export function useInvalidatePrayerTimes() {
 // OPTIMISTIC UPDATES EXAMPLE (for prayer logs)
 // ============================================================================
 
-/**
- * Example mutation for logging prayers with optimistic updates
- */
 export function useLogPrayer() {
   const queryClient = useQueryClient();
 
@@ -303,17 +433,13 @@ export function useLogPrayer() {
       return log;
     },
     
-    // Optimistic update
     onMutate: async (newLog) => {
-      // Cancel outgoing refetches
       await queryClient.cancelQueries({
         queryKey: ['prayers', 'logs'],
       });
 
-      // Snapshot previous value
       const previousLogs = queryClient.getQueryData(['prayers', 'logs']);
 
-      // Optimistically update
       queryClient.setQueryData(['prayers', 'logs'], (old: any) => {
         return [...(old || []), newLog];
       });
@@ -321,14 +447,12 @@ export function useLogPrayer() {
       return { previousLogs };
     },
     
-    // Rollback on error
     onError: (err, newLog, context) => {
       if (context?.previousLogs) {
         queryClient.setQueryData(['prayers', 'logs'], context.previousLogs);
       }
     },
     
-    // Refetch on success
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['prayers', 'logs'],

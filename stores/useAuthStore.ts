@@ -1,21 +1,6 @@
-/**
- * Auth Store
- * 
- * Manages authentication state and user session.
- * Replaces auth-related state from Redux userSlice with Zustand.
- * 
- * Features:
- * - User authentication status
- * - Basic user info (userId, email, name)
- * - Sign in/sign out actions
- * - MMKV persistence
- * 
- * Note: Full user profile data (enrolledCourses, prayerLogs, etc.) 
- * should be managed by TanStack Query in api/services/user/
- */
-
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { shallow, useShallow } from 'zustand/shallow'; // ✅ ADD THIS IMPORT
 import { defaultStorage } from '../api/client/storage';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
@@ -111,7 +96,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         
         try {
-          console.log('📝 Signing up user:', email);
+          console.log('🔐 Signing up user:', email);
           
           const auth = getAuth();
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -274,25 +259,31 @@ export const useCurrentUser = () => {
 
 /**
  * Check if user is authenticated and get userId in one call
+ * ✅ FIXED: Uses shallow comparison to prevent infinite loops
  */
 export const useAuth = () => {
-  return useAuthStore((state) => ({
-    isAuthenticated: state.isAuthenticated,
-    userId: state.user?.uid ?? null,
-    user: state.user,
-  }));
+  return useAuthStore(
+    useShallow((state) => ({
+      isAuthenticated: state.isAuthenticated,
+      userId: state.user?.uid ?? null,
+      user: state.user,
+    }))
+  );
 };
+
 
 /**
  * Get auth actions (sign in, sign out, etc.)
  */
 export const useAuthActions = () => {
-  return useAuthStore((state) => ({
-    signIn: state.signIn,
-    signUp: state.signUp,
-    signOut: state.signOut,
-    clearError: state.clearError,
-  }));
+  return useAuthStore(
+    useShallow((state) => ({
+      signIn: state.signIn,
+      signUp: state.signUp,
+      signOut: state.signOut,
+      clearError: state.clearError,
+    }))
+  );
 };
 
 // ============================================================================

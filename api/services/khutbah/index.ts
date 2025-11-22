@@ -1,10 +1,3 @@
-/**
- * Khutbah Service
- * 
- * Fetch Friday sermon (Khutbah) content from Firebase.
- * Implements caching and error handling.
- */
-
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '../../client/firebase';
 import { cache, TTL } from '../../client/storage';
@@ -31,10 +24,6 @@ export interface Khutbah {
 // API FUNCTIONS
 // ============================================================================
 
-/**
- * Fetch all khutbahs from Firebase
- * Ordered by date (most recent first)
- */
 async function fetchKhutbahs(): Promise<Khutbah[]> {
   try {
     const snapshot = await db
@@ -55,9 +44,6 @@ async function fetchKhutbahs(): Promise<Khutbah[]> {
   }
 }
 
-/**
- * Fetch a single khutbah by ID
- */
 async function fetchKhutbahById(id: string): Promise<Khutbah | null> {
   try {
     const doc = await db.collection('khutbahs').doc(id).get();
@@ -77,9 +63,6 @@ async function fetchKhutbahById(id: string): Promise<Khutbah | null> {
   }
 }
 
-/**
- * Search khutbahs by title or tags
- */
 function searchKhutbahs(khutbahs: Khutbah[], query: string): Khutbah[] {
   const lowerQuery = query.toLowerCase();
   
@@ -90,9 +73,6 @@ function searchKhutbahs(khutbahs: Khutbah[], query: string): Khutbah[] {
   );
 }
 
-/**
- * Filter khutbahs by date range
- */
 function filterKhutbahsByDateRange(
   khutbahs: Khutbah[],
   startDate: string,
@@ -119,15 +99,6 @@ const KHUTBAH_QUERY_KEYS = {
 // TANSTACK QUERY HOOKS
 // ============================================================================
 
-/**
- * Fetch all khutbahs
- * 
- * Features:
- * - MMKV cache for instant loading
- * - Firebase as source of truth
- * - 1 hour stale time
- * - Background refetch on window focus
- */
 export function useKhutbahs() {
   return useQuery({
     queryKey: KHUTBAH_QUERY_KEYS.lists,
@@ -158,9 +129,6 @@ export function useKhutbahs() {
   });
 }
 
-/**
- * Fetch a single khutbah by ID
- */
 export function useKhutbah(id: string) {
   return useQuery({
     queryKey: KHUTBAH_QUERY_KEYS.detail(id),
@@ -192,11 +160,6 @@ export function useKhutbah(id: string) {
   });
 }
 
-/**
- * Search khutbahs with client-side filtering
- * 
- * Uses the cached khutbahs list for instant search results
- */
 export function useSearchKhutbahs(query: string) {
   const { data: khutbahs } = useKhutbahs();
 
@@ -214,9 +177,6 @@ export function useSearchKhutbahs(query: string) {
 // PREFETCH UTILITIES
 // ============================================================================
 
-/**
- * Prefetch khutbahs for faster navigation
- */
 export function usePrefetchKhutbahs() {
   const queryClient = useQueryClient();
 
@@ -243,10 +203,6 @@ export function usePrefetchKhutbahs() {
 // INVALIDATION UTILITIES
 // ============================================================================
 
-/**
- * Invalidate khutbah cache
- * Use after adding/updating khutbahs
- */
 export function useInvalidateKhutbahs() {
   const queryClient = useQueryClient();
 
@@ -269,9 +225,6 @@ export function useInvalidateKhutbahs() {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * Format khutbah date for display
- */
 export function formatKhutbahDate(dateStr: string): string {
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-US', {
@@ -282,23 +235,14 @@ export function formatKhutbahDate(dateStr: string): string {
   });
 }
 
-/**
- * Get available languages for a khutbah
- */
 export function getAvailableLanguages(khutbah: Khutbah): Language[] {
   return Object.keys(khutbah.links) as Language[];
 }
 
-/**
- * Check if khutbah has a specific language
- */
 export function hasLanguage(khutbah: Khutbah, language: Language): boolean {
   return !!khutbah.links[language];
 }
 
-/**
- * Get most recent khutbah
- */
 export function getMostRecentKhutbah(khutbahs: Khutbah[]): Khutbah | null {
   if (khutbahs.length === 0) return null;
   return khutbahs.sort((a, b) => 

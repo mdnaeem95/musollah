@@ -1,10 +1,3 @@
-/**
- * Quran Service
- * 
- * Fetch Quran surahs and verses from Alquran Cloud API.
- * Implements aggressive caching since Quran data never changes.
- */
-
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { quranClient, handleApiError } from '../../client/http';
 import { cache, TTL } from '../../client/storage';
@@ -65,9 +58,6 @@ export const EDITIONS = {
 // API FUNCTIONS
 // ============================================================================
 
-/**
- * Fetch all surahs (chapters) of the Quran
- */
 export async function fetchSurahs(): Promise<Surah[]> {
   try {
     const response = await quranClient.get<SurahsAPIResponse>('/surah');
@@ -77,12 +67,6 @@ export async function fetchSurahs(): Promise<Surah[]> {
   }
 }
 
-/**
- * Fetch a specific surah with all its verses
- * 
- * @param surahNumber - Surah number (1-114)
- * @param edition - Language/edition identifier
- */
 export async function fetchSurahDetail(
   surahNumber: number,
   edition: string = EDITIONS.ARABIC
@@ -97,9 +81,6 @@ export async function fetchSurahDetail(
   }
 }
 
-/**
- * Fetch multiple editions of a surah (Arabic + Translation)
- */
 export async function fetchSurahWithTranslation(
   surahNumber: number
 ): Promise<{
@@ -135,11 +116,6 @@ export const QURAN_QUERY_KEYS = {
 // TANSTACK QUERY HOOKS
 // ============================================================================
 
-/**
- * Fetch all surahs (chapters)
- * 
- * Quran data never changes, so cache indefinitely
- */
 export function useSurahs() {
   return useQuery({
     queryKey: QURAN_QUERY_KEYS.surahs,
@@ -166,12 +142,6 @@ export function useSurahs() {
   });
 }
 
-/**
- * Fetch a specific surah with verses
- * 
- * @param surahNumber - Surah number (1-114)
- * @param edition - Language/edition identifier
- */
 export function useSurah(surahNumber: number, edition: string = EDITIONS.ARABIC) {
   return useQuery({
     queryKey: QURAN_QUERY_KEYS.surah(surahNumber, edition),
@@ -199,11 +169,6 @@ export function useSurah(surahNumber: number, edition: string = EDITIONS.ARABIC)
   });
 }
 
-/**
- * Fetch a surah with both Arabic and English translation
- * 
- * @param surahNumber - Surah number (1-114)
- */
 export function useSurahWithTranslation(surahNumber: number) {
   return useQuery({
     queryKey: QURAN_QUERY_KEYS.surahWithTranslation(surahNumber),
@@ -237,9 +202,6 @@ export function useSurahWithTranslation(surahNumber: number) {
 // PREFETCH UTILITIES
 // ============================================================================
 
-/**
- * Prefetch surahs for faster navigation
- */
 export function usePrefetchQuran() {
   const queryClient = useQueryClient();
 
@@ -276,17 +238,11 @@ export function usePrefetchQuran() {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * Get surah name by number
- */
 export function getSurahName(surahNumber: number, surahs: Surah[]): string {
   const surah = surahs.find(s => s.number === surahNumber);
   return surah?.name || '';
 }
 
-/**
- * Search surahs by name
- */
 export function searchSurahs(surahs: Surah[], query: string): Surah[] {
   const lowerQuery = query.toLowerCase();
   return surahs.filter(
@@ -297,9 +253,6 @@ export function searchSurahs(surahs: Surah[], query: string): Surah[] {
   );
 }
 
-/**
- * Get surah progress (ayahs read / total ayahs)
- */
 export function getSurahProgress(
   surahNumber: number,
   currentAyah: number,
@@ -311,24 +264,15 @@ export function getSurahProgress(
   return Math.round((currentAyah / surah.numberOfAyahs) * 100);
 }
 
-/**
- * Get total Quran progress
- */
 export function getTotalQuranProgress(completedAyahs: number): number {
   const TOTAL_AYAHS = 6236;
   return Math.round((completedAyahs / TOTAL_AYAHS) * 100);
 }
 
-/**
- * Format ayah reference (e.g., "2:255" for Surah Al-Baqarah, Ayah 255)
- */
 export function formatAyahReference(surahNumber: number, ayahNumber: number): string {
   return `${surahNumber}:${ayahNumber}`;
 }
 
-/**
- * Parse ayah reference string
- */
 export function parseAyahReference(reference: string): {
   surahNumber: number;
   ayahNumber: number;

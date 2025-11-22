@@ -24,11 +24,16 @@ export const usePrayerNotifications = (prayerData: DailyPrayerTimes | null) => {
     if (!prayerData || mutedNotifications.length === 5) return;
 
     // Create unique key to prevent redundant scheduling
+    const mutedKey = [...mutedNotifications].sort().join(',');
     const scheduleKey = `${prayerData.date}_${reminderInterval}_${selectedAdhan}`;
     
     if (lastScheduledRef.current === scheduleKey) return;
 
+    let mounted = true;
+
     const scheduleNotifications = async () => {
+      if (!mounted) return;
+
       try {
         await notificationService.cancelAllNotifications();
         
@@ -41,10 +46,14 @@ export const usePrayerNotifications = (prayerData: DailyPrayerTimes | null) => {
           selectedAdhan
         );
 
-        lastScheduledRef.current = scheduleKey;
-        console.log('✅ Prayer notifications scheduled');
+        if (mounted) {
+          lastScheduledRef.current = scheduleKey;
+          console.log('✅ Prayer notifications scheduled');
+        }
       } catch (error) {
-        console.error('❌ Failed to schedule notifications:', error);
+        if (mounted) {
+          console.error('❌ Failed to schedule notifications:', error);
+        }
       }
     };
 
@@ -52,12 +61,15 @@ export const usePrayerNotifications = (prayerData: DailyPrayerTimes | null) => {
 
     // Re-schedule when app becomes active
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active') {
+      if (mounted && nextAppState === 'active') {
         scheduleNotifications();
       }
     };
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
-    return () => subscription.remove();
-  }, [prayerData, mutedNotifications, reminderInterval, selectedAdhan]);
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, [prayerData?.date, mutedNotifications, reminderInterval, selectedAdhan]);
 };

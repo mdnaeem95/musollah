@@ -1,12 +1,3 @@
-/**
- * Gold Price Service
- * 
- * Fetch and cache gold prices with multi-layer caching strategy:
- * 1. MMKV cache (instant, local)
- * 2. Firestore (shared across devices)
- * 3. External API (fallback)
- */
-
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { metalPriceClient, handleApiError } from '../../client/http';
@@ -42,9 +33,6 @@ const OUNCES_TO_GRAMS = 31.1035;
 // API FUNCTIONS
 // ============================================================================
 
-/**
- * Fetch gold price from the API
- */
 async function fetchGoldPriceFromAPI(): Promise<GoldPriceData> {
   try {
     const response = await metalPriceClient.get<MetalPriceAPIResponse>('/latest', {
@@ -68,9 +56,6 @@ async function fetchGoldPriceFromAPI(): Promise<GoldPriceData> {
   }
 }
 
-/**
- * Get gold price from Firestore
- */
 async function getGoldPriceFromFirestore(
   todayDate: string
 ): Promise<GoldPriceData | null> {
@@ -94,9 +79,6 @@ async function getGoldPriceFromFirestore(
   }
 }
 
-/**
- * Store gold price in Firestore
- */
 async function storeGoldPriceInFirestore(
   todayDate: string,
   data: GoldPriceData
@@ -110,14 +92,6 @@ async function storeGoldPriceInFirestore(
   }
 }
 
-/**
- * Get today's gold price with multi-layer caching
- * 
- * Priority:
- * 1. MMKV cache (instant)
- * 2. Firestore (shared)
- * 3. API (fallback)
- */
 async function getTodayGoldPrice(): Promise<GoldPriceData> {
   const todayDate = format(new Date(), 'yyyy-MM-dd');
   const cacheKey = `gold-price-${todayDate}`;
@@ -158,14 +132,6 @@ const GOLD_QUERY_KEYS = {
   todayPrice: ['gold', 'price', 'today'] as const,
 };
 
-/**
- * Hook to fetch today's gold price
- * 
- * Features:
- * - Multi-layer caching (MMKV → Firestore → API)
- * - Automatic refetch once per day
- * - Background updates on window focus
- */
 export function useGoldPrice() {
   return useQuery({
     queryKey: GOLD_QUERY_KEYS.todayPrice,
@@ -178,10 +144,6 @@ export function useGoldPrice() {
   });
 }
 
-/**
- * Hook to prefetch gold price
- * Useful for preloading before navigation
- */
 export function usePrefetchGoldPrice() {
   const queryClient = useQueryClient();
 
@@ -194,10 +156,6 @@ export function usePrefetchGoldPrice() {
   };
 }
 
-/**
- * Hook to invalidate gold price cache
- * Use for manual refresh
- */
 export function useInvalidateGoldPrice() {
   const queryClient = useQueryClient();
 
@@ -212,23 +170,14 @@ export function useInvalidateGoldPrice() {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * Format gold price for display
- */
 export function formatGoldPrice(price: number): string {
   return `$${price.toFixed(2)}`;
 }
 
-/**
- * Calculate gold value for a given weight
- */
 export function calculateGoldValue(pricePerGram: number, grams: number): number {
   return Number((pricePerGram * grams).toFixed(2));
 }
 
-/**
- * Get price change information (if historical data available)
- */
 export function getPriceChange(
   currentPrice: number,
   previousPrice: number

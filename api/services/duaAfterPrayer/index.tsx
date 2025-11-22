@@ -1,10 +1,3 @@
-/**
- * Doa Service
- * 
- * Fetch Islamic supplications (Dua) from Firebase.
- * Implements aggressive caching since Dua data never changes.
- */
-
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '../../client/firebase';
 import { cache, TTL } from '../../client/storage';
@@ -34,10 +27,6 @@ const DOA_QUERY_KEYS = {
 // ============================================================================
 // API FUNCTIONS
 // ============================================================================
-
-/**
- * Fetch all Dua after prayer from Firebase
- */
 async function fetchDoaAfterPrayer(): Promise<DoaAfterPrayer[]> {
   try {
     console.log('🌐 Fetching Dua after prayer from Firebase');
@@ -65,9 +54,6 @@ async function fetchDoaAfterPrayer(): Promise<DoaAfterPrayer[]> {
   }
 }
 
-/**
- * Get a specific Dua by step number
- */
 async function fetchDoaByStep(step: number): Promise<DoaAfterPrayer | null> {
   try {
     const snapshot = await db
@@ -95,11 +81,6 @@ async function fetchDoaByStep(step: number): Promise<DoaAfterPrayer | null> {
 // TANSTACK QUERY HOOKS
 // ============================================================================
 
-/**
- * Fetch all Dua after prayer
- * 
- * Dua data never changes, so cache indefinitely
- */
 export function useDoa() {
   return useQuery({
     queryKey: DOA_QUERY_KEYS.afterPrayer,
@@ -125,9 +106,6 @@ export function useDoa() {
   });
 }
 
-/**
- * Fetch a specific Dua by step number
- */
 export function useDoaByStep(step: number) {
   return useQuery({
     queryKey: [...DOA_QUERY_KEYS.afterPrayer, 'step', step] as const,
@@ -158,9 +136,6 @@ export function useDoaByStep(step: number) {
 // PREFETCH UTILITIES
 // ============================================================================
 
-/**
- * Prefetch Dua for faster navigation
- */
 export function usePrefetchDoa() {
   const queryClient = useQueryClient();
 
@@ -187,9 +162,6 @@ export function usePrefetchDoa() {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * Search Dua by title or text
- */
 export function searchDoa(doas: DoaAfterPrayer[], query: string): DoaAfterPrayer[] {
   const lowerQuery = query.toLowerCase();
   return doas.filter(
@@ -200,25 +172,16 @@ export function searchDoa(doas: DoaAfterPrayer[], query: string): DoaAfterPrayer
   );
 }
 
-/**
- * Get next Dua by step
- */
 export function getNextDoa(currentStep: number, doas: DoaAfterPrayer[]): DoaAfterPrayer | null {
   const nextStep = currentStep + 1;
   return doas.find(doa => doa.step === nextStep) || null;
 }
 
-/**
- * Get previous Doa by step
- */
 export function getPreviousDoa(currentStep: number, doas: DoaAfterPrayer[]): DoaAfterPrayer | null {
   const prevStep = currentStep - 1;
   return doas.find(doa => doa.step === prevStep) || null;
 }
 
-/**
- * Format Doa for sharing
- */
 export function formatDoaForSharing(doa: DoaAfterPrayer): string {
   return `
 ${doa.title}

@@ -1,8 +1,3 @@
-/**
- * Musollah Service
- * Replaces musollahSlice.ts
- */
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LocationObject } from 'expo-location';
 import { db } from '../../client/firebase';

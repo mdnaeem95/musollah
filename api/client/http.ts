@@ -1,13 +1,3 @@
-/**
- * HTTP Client
- *
- * Centralized HTTP client using axios with:
- * - Request/response interceptors
- * - Error handling
- * - Timeout configuration
- * - Logging
- */
-
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 import { logError } from './firebase';
 
@@ -38,9 +28,6 @@ type ApiErrorBody = {
 // HTTP CLIENT
 // ============================================================================
 
-/**
- * Create an axios instance with interceptors
- */
 function createHttpClient(config?: AxiosRequestConfig): AxiosInstance {
   const client = axios.create({
     timeout: 30000, // 30 seconds
@@ -136,9 +123,6 @@ export const metalPriceClient = createHttpClient({
 // HELPER FUNCTIONS
 // ============================================================================
 
-/**
- * Handle API errors consistently
- */
 export function handleApiError(error: unknown, context?: string): never {
   if (error instanceof ApiError) {
     throw error;
@@ -151,9 +135,6 @@ export function handleApiError(error: unknown, context?: string): never {
   throw new ApiError('Unknown error occurred', undefined, error);
 }
 
-/**
- * Retry a request with exponential backoff
- */
 export async function retryRequest<T>(
   requestFn: () => Promise<T>,
   maxRetries: number = 3,
@@ -187,27 +168,16 @@ export async function retryRequest<T>(
 // ============================================================================
 // TYPE UTILITIES
 // ============================================================================
-
-/**
- * Standard API response wrapper
- */
 export interface ApiResponse<T> {
   data: T;
   code: number;
   status: string;
 }
-
-/**
- * Pagination params
- */
 export interface PaginationParams {
   page?: number;
   limit?: number;
 }
 
-/**
- * Pagination response
- */
 export interface PaginatedResponse<T> {
   data: T[];
   pagination: {

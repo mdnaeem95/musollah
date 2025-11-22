@@ -1,10 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
 import { addDays, subDays, format, isAfter, startOfDay } from 'date-fns';
-import { DATE_FORMATS } from '../../constants/prayer.constants';
 
 interface UsePrayerDateNavigationReturn {
   selectedDate: Date;
-  formattedDate: string;
+  formattedDate: string; // ISO format: YYYY-MM-DD
+  displayDate: string;   // Display format: DD MMM YYYY
   canGoNext: boolean;
   canGoPrev: boolean;
   goToNextDay: () => void;
@@ -15,13 +15,8 @@ interface UsePrayerDateNavigationReturn {
 
 /**
  * Hook for managing prayer date navigation
- * Implements date state and navigation logic
  * 
- * Features:
- * - Navigate previous/next day
- * - Prevent future dates beyond tomorrow
- * - Jump to today
- * - Formatted date output
+ * ✅ FIXED: Uses consistent ISO date format (YYYY-MM-DD) for all queries
  */
 export const usePrayerDateNavigation = (
   initialDate: Date = new Date()
@@ -35,9 +30,15 @@ export const usePrayerDateNavigation = (
     return startOfDay(tom);
   }, []);
 
-  // Format date for API/Firebase
+  // ✅ Format date for queries (ISO format for consistency)
   const formattedDate = useMemo(
-    () => format(selectedDate, DATE_FORMATS.FIREBASE),
+    () => format(selectedDate, 'yyyy-MM-dd'), // ISO format
+    [selectedDate]
+  );
+
+  // ✅ Format date for display
+  const displayDate = useMemo(
+    () => format(selectedDate, 'dd MMM yyyy'),
     [selectedDate]
   );
 
@@ -47,16 +48,12 @@ export const usePrayerDateNavigation = (
     [selectedDate, tomorrow]
   );
 
-  const canGoPrev = useMemo(
-    () => true, // Can always go to past dates
-    []
-  );
+  const canGoPrev = useMemo(() => true, []);
 
   // Navigation handlers
   const goToNextDay = useCallback(() => {
     setSelectedDate(current => {
       const next = addDays(current, 1);
-      // Don't allow future dates beyond tomorrow
       return isAfter(next, tomorrow) ? current : next;
     });
   }, [tomorrow]);
@@ -70,7 +67,6 @@ export const usePrayerDateNavigation = (
   }, []);
 
   const setDate = useCallback((date: Date) => {
-    // Validate date is not too far in future
     if (isAfter(date, tomorrow)) {
       console.warn('Cannot set date beyond tomorrow');
       return;
@@ -80,7 +76,8 @@ export const usePrayerDateNavigation = (
 
   return {
     selectedDate,
-    formattedDate,
+    formattedDate,   // ISO format for queries
+    displayDate,     // Display format for UI
     canGoNext,
     canGoPrev,
     goToNextDay,
