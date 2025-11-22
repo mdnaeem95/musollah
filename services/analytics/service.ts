@@ -1,11 +1,18 @@
-import analytics from '@react-native-firebase/analytics';
-import crashlytics from '@react-native-firebase/crashlytics';
 import { Platform } from 'react-native';
 
+// ✅ Analytics modular imports
+import { getAnalytics, logEvent, setUserId as setAnalyticsUserId, setUserProperty } from '@react-native-firebase/analytics';
+
+// ✅ Crashlytics modular imports
+import { getCrashlytics, recordError, setAttribute, setUserId as setCrashUserId } from '@react-native-firebase/crashlytics';
+
+const analyticsInstance = getAnalytics();
+const crashlyticsInstance = getCrashlytics();
+
 class AnalyticsService {
-  async trackEvent(eventName: string, params?: Record<string, any>) {
+  async trackEvent(eventName: string, params: Record<string, any> = {}) {
     try {
-      await analytics().logEvent(eventName, {
+      await logEvent(analyticsInstance, eventName, {
         ...params,
         platform: Platform.OS,
         timestamp: new Date().toISOString(),
@@ -15,11 +22,12 @@ class AnalyticsService {
     }
   }
 
-  async trackScreenView(screenName: string, params?: Record<string, any>) {
+  async trackScreenView(screenName: string, params: Record<string, any> = {}) {
     try {
-      await analytics().logScreenView({
-        screen_name: screenName,
-        screen_class: screenName,
+      // Manual screen tracking via GA4 reserved event
+      await logEvent(analyticsInstance, 'screen_view', {
+        firebase_screen: screenName,
+        firebase_screen_class: screenName,
         ...params,
       });
     } catch (error) {
@@ -30,7 +38,7 @@ class AnalyticsService {
   async setUserProperties(properties: Record<string, string>) {
     try {
       for (const [key, value] of Object.entries(properties)) {
-        await analytics().setUserProperty(key, value);
+        await setUserProperty(analyticsInstance, key, value);
       }
     } catch (error) {
       console.error('User properties error:', error);
@@ -39,12 +47,13 @@ class AnalyticsService {
 
   async logError(error: Error, context?: Record<string, any>) {
     try {
-      crashlytics().recordError(error, error.name);
-      
+      // recordError(instance, error, name?) — signature may vary slightly by version
+      await recordError(crashlyticsInstance, error, error.name);
+
       if (context) {
-        Object.entries(context).forEach(([key, value]) => {
-          crashlytics().setAttribute(key, String(value));
-        });
+        for (const [key, value] of Object.entries(context)) {
+          await setAttribute(crashlyticsInstance, key, String(value));
+        }
       }
     } catch (e) {
       console.error('Crashlytics error:', e);
@@ -53,8 +62,8 @@ class AnalyticsService {
 
   async setUserId(userId: string) {
     try {
-      await analytics().setUserId(userId);
-      await crashlytics().setUserId(userId);
+      await setAnalyticsUserId(analyticsInstance, userId);
+      await setCrashUserId(crashlyticsInstance, userId);
     } catch (error) {
       console.error('Set user ID error:', error);
     }

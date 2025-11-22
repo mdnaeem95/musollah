@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
-import { FAB } from '@rneui/base';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useFoodAdditivesPage } from '../../../../hooks/foodAdditives/useFoodAdditivesPage';
 import { getAdditiveStatusColor } from '../../../../api/services/foodAdditives';
@@ -119,19 +118,6 @@ const FoodAdditivesPage = () => {
           </Text>
         </View>
       )}
-
-      {/* FAB - Food Scanner */}
-      <FAB
-        placement="right"
-        color={theme.colors.accent}
-        icon={{
-          name: 'camera-alt',
-          type: 'material',
-          color: theme.colors.text.primary,
-        }}
-        onPress={navigateToScanner}
-        style={styles.fab}
-      />
     </View>
   );
 };

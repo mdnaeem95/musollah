@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ const screenHeight = Dimensions.get('window').height;
 interface PrayerAction {
   icon: any;
   label: string;
-  onPress: (event: GestureResponderEvent) => void;
+  onPress: () => void;
 }
 
 interface PrayerActionsModalProps {
@@ -29,20 +29,45 @@ interface PrayerActionsModalProps {
 const PrayerActionsModal = ({ visible, onClose, actions }: PrayerActionsModalProps) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  
+  // ✅ Track pending action to execute after modal hides
+  const pendingAction = useRef<(() => void) | null>(null);
 
-  // Estimate height dynamically based on number of actions
   const numRows = Math.ceil(actions.length / 3);
-  const estimatedHeight = 100 + numRows * 100; // base padding + row height estimate
+  const estimatedHeight = 100 + numRows * 100;
+
+  // ✅ Handle action press - store action and close modal
+  const handleActionPress = useCallback((action: PrayerAction) => {
+    return () => {
+      // Store the action to execute after modal animation completes
+      pendingAction.current = action.onPress;
+      onClose();
+    };
+  }, [onClose]);
+
+  // ✅ Execute pending action after modal is fully hidden
+  const handleModalHide = useCallback(() => {
+    if (pendingAction.current) {
+      const action = pendingAction.current;
+      pendingAction.current = null;
+      // Small delay to ensure state is settled
+      setTimeout(action, 50);
+    }
+  }, []);
 
   return (
     <Modal
       isVisible={visible}
       onBackdropPress={onClose}
       onSwipeComplete={onClose}
+      onModalHide={handleModalHide}  // ✅ Execute action after animation
       swipeDirection="down"
       backdropOpacity={0.3}
       style={styles.modal}
-      propagateSwipe
+      useNativeDriver
+      useNativeDriverForBackdrop
+      hideModalContentWhileAnimating
+      animationOutTiming={250}
     >
       <View style={[styles.container, { height: Math.min(estimatedHeight, screenHeight * 0.5) }]}>
         <View style={styles.handle} />
@@ -53,7 +78,11 @@ const PrayerActionsModal = ({ visible, onClose, actions }: PrayerActionsModalPro
           contentContainerStyle={styles.grid}
           scrollEnabled={false}
           renderItem={({ item }) => (
-            <TouchableOpacity onPress={item.onPress} style={styles.card}>
+            <TouchableOpacity 
+              onPress={handleActionPress(item)} 
+              style={styles.card}
+              activeOpacity={0.7}
+            >
               <View style={[styles.iconContainer, { backgroundColor: theme.colors.secondary }]}>
                 <FontAwesome6 name={item.icon} size={20} color={theme.colors.text.primary} />
               </View>
