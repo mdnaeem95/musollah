@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { useCallback, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Alert } from 'react-native';
-import { useFocusEffect } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { format, subDays, addDays, startOfWeek } from 'date-fns';
 import { Skeleton } from 'moti/skeleton';
@@ -11,12 +10,7 @@ import { useTheme } from '../../../../context/ThemeContext';
 import { useAuth } from '../../../../stores/useAuthStore';
 import { useLocationStore } from '../../../../stores/useLocationStore';
 import { useTodayPrayerTimes } from '../../../../api/services/prayer';
-import { 
-  usePrayerLog,
-  useWeeklyPrayerLogs, 
-  useSavePrayerLog,
-  usePrayerStats 
-} from '../../../../api/services/prayer/logs';
+import { usePrayerLog, useWeeklyPrayerLogs, useSavePrayerLog, usePrayerStats } from '../../../../api/services/prayer/logs';
 import { usePrayerStreakManager } from '../../../../hooks/usePrayerStreakManager';
 import { usePrayerDateNavigation } from '../../../../hooks/prayer/usePrayerDateNavigation';
 
