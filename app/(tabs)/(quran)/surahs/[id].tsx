@@ -1,14 +1,7 @@
-/**
- * Surah Detail Screen
- * 
- * Displays Quran surah with Arabic text, English translation, and audio playback.
- * Supports bookmarking, read tracking, and navigation between surahs.
- * 
- * Architecture: Presentational component using custom hooks for business logic.
- */
+// [id].tsx
 
 import React, { useCallback, useLayoutEffect } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
@@ -21,6 +14,76 @@ import { useSurahs } from '../../../../api/services/quran';
 import { PlayPauseButton } from '../../../../components/quran/AyahPlayPauseButton';
 import { FloatingPlayer } from '../../../../components/quran/FloatingPlayer';
 import BookmarkIcon from '../../../../components/quran/BookmarkIcon';
+import { calculateContrastColor } from '../../../../utils'; // ✅ for ayah number contrast
+
+// ============================================================================
+// READ TOGGLE COMPONENT (COLORS ONLY)
+// ============================================================================
+
+const ReadToggle = ({ 
+  isRead, 
+  onToggle, 
+  accentColor, 
+  mutedBorderColor,
+}: { 
+  isRead: boolean; 
+  onToggle: () => void; 
+  accentColor: string; 
+  mutedBorderColor: string;
+}) => {
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  const checkColor = calculateContrastColor(accentColor);
+
+  const handlePress = () => {
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 1.2,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    onToggle();
+  };
+
+  if (isRead) {
+    return (
+      <TouchableOpacity onPress={handlePress} style={styles.iconButton}>
+        <Animated.View style={[
+          styles.readBadge, 
+          { 
+            backgroundColor: accentColor, // ✅ themed
+            transform: [{ scale: scaleAnim }] 
+          }
+        ]}>
+          <FontAwesome6
+            name="check"
+            size={16}
+            color={checkColor} // ✅ themed contrast
+            solid
+          />
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <TouchableOpacity onPress={handlePress} style={styles.iconButton}>
+      <Animated.View style={[
+        styles.unreadBadge, 
+        { 
+          borderColor: mutedBorderColor, // ✅ themed
+          transform: [{ scale: scaleAnim }] 
+        }
+      ]} />
+    </TouchableOpacity>
+  );
+};
 
 // ============================================================================
 // COMPONENT
@@ -30,23 +93,17 @@ const SurahDetailScreen = () => {
   const router = useRouter();
   const navigation = useNavigation();
 
-  // URL params
   const { id, ayahIndex } = useLocalSearchParams<{
     id: string;
     ayahIndex?: string;
   }>();
 
-  // Parse params
   const surahNumber = id ? parseInt(id, 10) : 1;
   const initialAyahIndex = ayahIndex ? parseInt(ayahIndex, 10) : undefined;
 
-  // Theme
   const { theme, textSize, reciter } = useTheme();
-
-  // Surahs list (for picker)
   const { data: surahs = [] } = useSurahs();
 
-  // Business logic
   const {
     surah,
     isLoading,
@@ -68,9 +125,6 @@ const SurahDetailScreen = () => {
     reciter,
   });
 
-  /**
-   * Set dynamic header with surah name and picker toggle
-   */
   useLayoutEffect(() => {
     if (surah) {
       navigation.setOptions({
@@ -92,9 +146,6 @@ const SurahDetailScreen = () => {
     }
   }, [navigation, surah, isPickerVisible, theme, togglePickerVisibility]);
 
-  /**
-   * Render individual ayah
-   */
   const renderAyah = useCallback(
     ({ item, index }: { item: string; index: number }) => {
       if (!surah) return null;
@@ -104,74 +155,66 @@ const SurahDetailScreen = () => {
       const isAyahBookmarked = isBookmarked(ayahNumber);
       const isAyahRead = isRead(ayahNumber);
 
+      const ayahPillBg = theme.colors.accent; // ✅ themed
+      const ayahPillText = calculateContrastColor(ayahPillBg); // ✅ auto-contrast
+
       return (
         <View style={styles.ayahContainer}>
-          {/* Top row: Ayah number + actions */}
           <View style={[styles.topRow, { backgroundColor: theme.colors.secondary }]}>
-            <View style={styles.ayahNumber}>
-              <Text style={styles.ayahNumberText}>{ayahNumber}</Text>
+            <View style={[styles.ayahNumber, { backgroundColor: ayahPillBg }]}>
+              <Text style={[styles.ayahNumberText, { color: ayahPillText }]}>
+                {ayahNumber}
+              </Text>
             </View>
 
             <View style={styles.iconGroup}>
-              {/* Play/Pause */}
-                <PlayPauseButton
+              <PlayPauseButton
                 iconSize={20}
                 color={theme.colors.text.primary}
                 isActiveAyah={currentAyahIndex === index}
                 currentAyahIndex={currentAyahIndex}
                 trackIndex={index}
-                />
+              />
 
-
-              {/* Bookmark */}
               <TouchableOpacity
                 onPress={() => toggleBookmark(ayahNumber)}
                 style={styles.iconButton}
               >
                 <BookmarkIcon 
-                    isBookmarked={isAyahBookmarked}
-                    onToggle={() => toggleBookmark(ayahNumber)} 
+                  isBookmarked={isAyahBookmarked}
+                  onToggle={() => toggleBookmark(ayahNumber)} 
                 />
               </TouchableOpacity>
 
-              {/* Read/Unread */}
-              <TouchableOpacity
-                onPress={() => toggleReadAyah(ayahNumber)}
-                style={styles.iconButton}
-              >
-                <FontAwesome6
-                  name={isAyahRead ? 'circle-check' : 'circle'}
-                  size={20}
-                  color={isAyahRead ? theme.colors.primary : theme.colors.text.secondary}
-                  solid={isAyahRead}
-                />
-              </TouchableOpacity>
+              <ReadToggle
+                isRead={isAyahRead}
+                onToggle={() => toggleReadAyah(ayahNumber)}
+                accentColor={theme.colors.accent}             // ✅ themed
+                mutedBorderColor={theme.colors.text.muted}   // ✅ themed
+              />
             </View>
           </View>
 
-          {/* Arabic text */}
           <Text
             style={[
               styles.quranText,
-              { color: theme.colors.text.primary, fontSize: textSize },
+              { color: theme.colors.text.arabic, fontSize: textSize },
             ]}
           >
             {item}
           </Text>
 
-          {/* English translation */}
           <View style={styles.translationContainer}>
             <Text
               style={[
-                styles.translationText,
-                { color: theme.colors.text.secondary },
+                styles.translationText, 
+          { color: theme.colors.text.secondary },
               ]}
             >
               {englishText}
             </Text>
           </View>
 
-          {/* Separator */}
           <View
             style={[styles.separator, { backgroundColor: theme.colors.muted }]}
           />
@@ -180,7 +223,6 @@ const SurahDetailScreen = () => {
     },
     [
       surah,
-      surahNumber,
       currentAyahIndex,
       isBookmarked,
       isRead,
@@ -191,9 +233,6 @@ const SurahDetailScreen = () => {
     ]
   );
 
-  /**
-   * Render progress tracker
-   */
   const renderProgressTracker = useCallback(() => {
     if (!surah) return null;
 
@@ -211,9 +250,6 @@ const SurahDetailScreen = () => {
     );
   }, [surah, readAyahsCount, theme]);
 
-  /**
-   * Error state
-   */
   if (error) {
     return (
       <SafeAreaView style={[styles.centerContainer, { backgroundColor: theme.colors.primary }]}>
@@ -224,20 +260,14 @@ const SurahDetailScreen = () => {
     );
   }
 
-  /**
-   * Loading state
-   */
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.centerContainer, { backgroundColor: theme.colors.primary }]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.accent} /> {/* ✅ visible in dark */}
       </SafeAreaView>
     );
   }
 
-  /**
-   * Not found state
-   */
   if (!surah) {
     return (
       <SafeAreaView style={[styles.centerContainer, { backgroundColor: theme.colors.primary }]}>
@@ -248,10 +278,8 @@ const SurahDetailScreen = () => {
 
   return (
     <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
-      {/* Progress Tracker */}
       {renderProgressTracker()}
 
-      {/* Ayahs List */}
       <FlashList
         ref={listRef}
         estimatedItemSize={219}
@@ -260,12 +288,16 @@ const SurahDetailScreen = () => {
         keyExtractor={(item, index) => index.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 80 }}
+        extraData={[readAyahsCount, theme.colors.primary]} // ✅ forces re-render on theme change
       />
 
-      {/* Floating Audio Player */}
-      <FloatingPlayer style={styles.floatingPlayer} />
+      <FloatingPlayer
+        style={[
+          styles.floatingPlayer,
+          { backgroundColor: theme.colors.secondary } // ✅ themed
+        ]}
+      />
 
-      {/* Surah Picker Dropdown */}
       {isPickerVisible && (
         <View
           style={[
@@ -294,7 +326,7 @@ const SurahDetailScreen = () => {
 };
 
 // ============================================================================
-// STYLES
+// STYLES (UNCHANGED)
 // ============================================================================
 
 const styles = StyleSheet.create({
@@ -377,6 +409,25 @@ const styles = StyleSheet.create({
   iconButton: {
     paddingHorizontal: 5,
     paddingVertical: 5,
+  },
+  readBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  unreadBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2.5,
+    backgroundColor: 'transparent',
   },
   quranText: {
     fontFamily: 'Amiri_400Regular',

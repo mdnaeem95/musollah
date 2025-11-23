@@ -46,6 +46,7 @@ export const greenTheme = {
         muted: '#8FA19C',
         success: '#7ED38E',
         error: '#F28A8A',
+        arabic: '#EAF6F1',
       },
 
       modalBackground: 'rgba(0,0,0,0.35)',
@@ -79,6 +80,7 @@ export const greenTheme = {
         muted: '#7A8A86',
         success: '#2E7D32',
         error: '#C62828',
+        arabic: '#0B1413',
       },
 
       modalBackground: 'rgba(15,31,30,0.06)',
@@ -116,6 +118,7 @@ export const blueTheme = {
         muted: '#91A0AE',
         success: '#7DB7D8',
         error: '#F28A8A',
+        arabic: '#EAF2FA',
       },
 
       modalBackground: 'rgba(0,0,0,0.35)',
@@ -149,6 +152,7 @@ export const blueTheme = {
         muted: '#5E758C',
         success: '#4286B9',
         error: '#D65A5A',
+        arabic: '#0E1822',
       },
 
       modalBackground: 'rgba(18,36,54,0.06)',
@@ -186,6 +190,7 @@ export const purpleTheme = {
         muted: '#9E8EB5',
         success: '#A98ED8',
         error: '#F28A9B',
+        arabic: '#F1EEFA',
       },
 
       modalBackground: 'rgba(0,0,0,0.35)',
@@ -219,6 +224,7 @@ export const purpleTheme = {
         muted: '#7F6A99',
         success: '#7D5FB8',
         error: '#C26472',
+        arabic: '#241736',
       },
 
       modalBackground: 'rgba(46,33,66,0.06)',

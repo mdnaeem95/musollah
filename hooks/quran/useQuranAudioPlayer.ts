@@ -1,9 +1,6 @@
+// useQuranAudioPlayer.ts - Updated
 import { useEffect, useState, useCallback } from 'react';
-import TrackPlayer, {
-  Event,
-  Track,
-  type PlaybackTrackChangedEvent,
-} from 'react-native-track-player';
+import TrackPlayer, { Event, Track, type PlaybackTrackChangedEvent } from 'react-native-track-player';
 import { useQuranStore } from '../../stores/useQuranStore';
 import { reciterOptions } from '../../utils/constants';
 
@@ -13,6 +10,7 @@ interface UseQuranAudioPlayerParams {
   audioLinks: string[];
   reciter: string;
   enabled: boolean;
+  isPlayerSetup: boolean; // ✅ Add this
 }
 
 interface UseQuranAudioPlayerReturn {
@@ -26,6 +24,7 @@ export function useQuranAudioPlayer({
   audioLinks,
   reciter,
   enabled,
+  isPlayerSetup, // ✅ Add this
 }: UseQuranAudioPlayerParams): UseQuranAudioPlayerReturn {
   const [currentAyahIndex, setCurrentAyahIndex] = useState(0);
   const [isReady, setIsReady] = useState(false);
@@ -48,7 +47,8 @@ export function useQuranAudioPlayer({
   }, [audioLinks, reciter, surahNumber, surahName]);
 
   useEffect(() => {
-    if (!enabled || audioLinks.length === 0) return;
+    // ✅ Wait for player setup
+    if (!enabled || !isPlayerSetup || audioLinks.length === 0) return;
     let isMounted = true;
 
     const setupTracks = async () => {
@@ -66,11 +66,10 @@ export function useQuranAudioPlayer({
     return () => {
       isMounted = false;
     };
-  }, [enabled, audioLinks, generateTracks]);
+  }, [enabled, isPlayerSetup, audioLinks, generateTracks]); // ✅ Add isPlayerSetup
 
-  // ✅ Use enum instead of string; type the event payload
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !isPlayerSetup) return; // ✅ Add isPlayerSetup check
 
     const onTrackChange = TrackPlayer.addEventListener(
       Event.PlaybackTrackChanged,
@@ -95,11 +94,10 @@ export function useQuranAudioPlayer({
     return () => {
       onTrackChange.remove();
     };
-  }, [enabled, surahNumber, setLastListenedAyah]);
+  }, [enabled, isPlayerSetup, surahNumber, setLastListenedAyah]); // ✅ Add isPlayerSetup
 
-  // Already using enum here — keep as-is
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !isPlayerSetup) return; // ✅ Add isPlayerSetup check
 
     const onQueueEnd = TrackPlayer.addEventListener(
       Event.PlaybackQueueEnded,
@@ -119,7 +117,7 @@ export function useQuranAudioPlayer({
     return () => {
       onQueueEnd.remove();
     };
-  }, [enabled]);
+  }, [enabled, isPlayerSetup]); // ✅ Add isPlayerSetup
 
   return { currentAyahIndex, isReady };
 }

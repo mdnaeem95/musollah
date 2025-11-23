@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native';
+// [id].tsx - Updated with ScrollView and no card
+import { ScrollView, Text, StyleSheet, View } from 'react-native';
 import React from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -11,7 +12,6 @@ const DoaContent = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { theme, textSize } = useTheme();
   
-  // Fetch specific doa
   const doa = useDoa(id);
   
   const { 
@@ -63,70 +63,62 @@ const DoaContent = () => {
   }
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
-      <View style={{ flexGrow: 1 }}>
-        <View style={[styles.contentCard, { backgroundColor: theme.colors.secondary }]}>
-          <View style={styles.headerContainer}>
-            <Text style={[styles.titleText, { color: theme.colors.text.primary }]}>
-              {doa.title}
-            </Text>
-            <BookmarkIcon isBookmarked={isBookmarked} onToggle={toggleBookmark} size={45} />
-          </View>
-
-          <Text
-            style={[
-              styles.arabicText,
-              { 
-                color: theme.colors.text.primary, 
-                fontSize: textSize, 
-                lineHeight: textSize * 2.5 
-              },
-            ]}
-          >
-            {doa.arabicText}
-          </Text>
-
-          <Text 
-            style={[
-              styles.romanizedText, 
-              { color: theme.colors.text.primary, fontSize: textSize - 10 }
-            ]}
-          >
-            {doa.romanizedText}
-          </Text>
-
-          <Text 
-            style={[
-              styles.translationText, 
-              { color: theme.colors.text.primary, fontSize: textSize - 12 }
-            ]}
-          >
-            {doa.englishTranslation}
-          </Text>
-          
-          <Text style={[styles.source, { color: theme.colors.text.secondary }]}>
-            Source: {doa.source}
-          </Text>
-        </View>
+    <ScrollView 
+      style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.headerContainer}>
+        <Text style={[styles.titleText, { color: theme.colors.text.primary }]}>
+          {doa.title}
+        </Text>
+        <BookmarkIcon isBookmarked={isBookmarked} onToggle={toggleBookmark} size={45} />
       </View>
-    </View>
+
+      <Text
+        style={[
+          styles.arabicText,
+          { 
+            color: theme.colors.text.primary, 
+            fontSize: textSize, 
+            lineHeight: textSize * 2.5 
+          },
+        ]}
+      >
+        {doa.arabicText}
+      </Text>
+
+      <Text 
+        style={[
+          styles.romanizedText, 
+          { color: theme.colors.text.primary, fontSize: textSize - 10 }
+        ]}
+      >
+        {doa.romanizedText}
+      </Text>
+
+      <Text 
+        style={[
+          styles.translationText, 
+          { color: theme.colors.text.primary, fontSize: textSize - 12 }
+        ]}
+      >
+        {doa.englishTranslation}
+      </Text>
+      
+      <Text style={[styles.source, { color: theme.colors.text.secondary }]}>
+        Source: {doa.source}
+      </Text>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    padding: 20,
   },
-  contentCard: {
-    borderRadius: 12,
+  contentContainer: {
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 4,
-    marginBottom: 20,
   },
   headerContainer: {
     flexDirection: 'row',
@@ -157,6 +149,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
     textAlign: 'right',
+    marginBottom: 20,
   },
   errorText: {
     fontFamily: 'Outfit_400Regular',

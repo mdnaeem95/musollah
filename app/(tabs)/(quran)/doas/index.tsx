@@ -1,3 +1,4 @@
+// index.tsx - Updated to sort duas by number
 import { ActivityIndicator, View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
@@ -38,7 +39,12 @@ const Doas = () => {
   );
 
   const filteredDoas = useMemo(() => {
-    return searchDoas(doas, debounceQuery);
+    const filtered = searchDoas(doas, debounceQuery);
+    return filtered.sort((a, b) => {
+      const numA = parseInt(a.number, 10);
+      const numB = parseInt(b.number, 10);
+      return numA - numB;
+    });
   }, [doas, debounceQuery]);
 
   // Debounce search query
@@ -107,7 +113,6 @@ const Doas = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Duas List */}
           <FlashList
             estimatedItemSize={74}
             data={filteredDoas}

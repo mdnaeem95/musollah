@@ -75,7 +75,7 @@ const DoaLayout = () => {
           name="[id]"
           options={{
             headerShown: true,
-            headerTitle: 'Doas',
+            headerTitle: 'Duas',
             headerStyle: {
               backgroundColor: theme.colors.primary,
             },

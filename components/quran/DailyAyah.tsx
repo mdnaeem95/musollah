@@ -3,13 +3,18 @@
  * 
  * Displays a random Quranic verse based on user's mood.
  * Caches ayah for 24 hours per mood to show consistent daily content.
+ * 
+ * ARCHITECTURE:
+ * - Uses TanStack Query for surah data fetching
+ * - MMKV storage for mood and ayah caching
+ * - Fetches full surah with translation when needed
  */
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, Animated, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Dropdown } from 'react-native-element-dropdown';
-import { useSurahs } from '../../api/services/quran';
+import { useSurahWithTranslation } from '../../api/services/quran';
 import { defaultStorage } from '../../api/client/storage';
 import { getRandomAyahByMood } from '../../utils';
 import { useTheme } from '../../context/ThemeContext';
@@ -19,7 +24,7 @@ import { useTheme } from '../../context/ThemeContext';
 // ============================================================================
 
 const MOOD_KEY = 'selectedMood';
-const AYAH_KEY_PREFIX = 'dailyAyah';
+const AYAH_CACHE_KEY_PREFIX = 'dailyAyah';
 const TIMESTAMP_KEY = 'dailyAyahTimestamp';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -46,6 +51,69 @@ interface DailyAyahData {
   ayahNumber: number;
 }
 
+interface CachedAyahSelection {
+  surahNumber: number;
+  ayahIndex: number; // 0-based index
+  timestamp: number;
+}
+
+// ============================================================================
+// STORAGE HELPERS
+// ============================================================================
+
+const getStoredMood = (): Mood => {
+  try {
+    const stored = defaultStorage.getString(MOOD_KEY);
+    return (stored as Mood) || 'Neutral';
+  } catch {
+    return 'Neutral';
+  }
+};
+
+const setStoredMood = (mood: Mood) => {
+  try {
+    defaultStorage.setString(MOOD_KEY, mood);
+  } catch (error) {
+    console.error('Error storing mood:', error);
+  }
+};
+
+const getCachedAyahSelection = (mood: Mood): CachedAyahSelection | null => {
+  try {
+    const cacheKey = `${AYAH_CACHE_KEY_PREFIX}_${mood}`;
+    const cached = defaultStorage.getString(cacheKey);
+    
+    if (!cached) return null;
+    
+    const selection = JSON.parse(cached) as CachedAyahSelection;
+    const now = Date.now();
+    
+    // Check if cache is still valid (< 24 hours)
+    if (now - selection.timestamp < CACHE_DURATION) {
+      return selection;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error reading cached ayah selection:', error);
+    return null;
+  }
+};
+
+const setCachedAyahSelection = (mood: Mood, surahNumber: number, ayahIndex: number) => {
+  try {
+    const cacheKey = `${AYAH_CACHE_KEY_PREFIX}_${mood}`;
+    const selection: CachedAyahSelection = {
+      surahNumber,
+      ayahIndex,
+      timestamp: Date.now(),
+    };
+    defaultStorage.setString(cacheKey, JSON.stringify(selection));
+  } catch (error) {
+    console.error('Error caching ayah selection:', error);
+  }
+};
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -56,162 +124,128 @@ const DailyAyah: React.FC = () => {
   const router = useRouter();
 
   // State
-  const [ayah, setAyah] = useState<DailyAyahData | null>(null);
-  const [mood, setMood] = useState<Mood>('Neutral');
-  const [isSkeleton, setIsSkeleton] = useState<boolean>(false);
-
-  // Fetch all surahs from service
-  const { data: surahs, isLoading } = useSurahs();
-
-  // ============================================================================
-  // STORAGE HELPERS
-  // ============================================================================
-
-  const getCachedAyah = (currentMood: Mood): DailyAyahData | null => {
-    try {
-      const cacheKey = `${AYAH_KEY_PREFIX}_${currentMood}`;
-      const cached = defaultStorage.getString(cacheKey);
-      const timestamp = defaultStorage.getString(TIMESTAMP_KEY);
-
-      if (!cached || !timestamp) return null;
-
-      const lastFetchedTime = parseInt(timestamp, 10);
-      const currentTime = Date.now();
-
-      // Check if cache is still valid (< 24 hours old)
-      if (currentTime - lastFetchedTime < CACHE_DURATION) {
-        return JSON.parse(cached);
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Error reading cached ayah:', error);
-      return null;
-    }
-  };
-
-  const setCachedAyah = (currentMood: Mood, ayahData: DailyAyahData) => {
-    try {
-      const cacheKey = `${AYAH_KEY_PREFIX}_${currentMood}`;
-      defaultStorage.setString(cacheKey, JSON.stringify(ayahData));
-      defaultStorage.setString(TIMESTAMP_KEY, Date.now().toString());
-    } catch (error) {
-      console.error('Error caching ayah:', error);
-    }
-  };
-
-  const getStoredMood = (): Mood => {
-    try {
-      const stored = defaultStorage.getString(MOOD_KEY);
-      return (stored as Mood) || 'Neutral';
-    } catch {
-      return 'Neutral';
-    }
-  };
-
-  const setStoredMood = (newMood: Mood) => {
-    try {
-      defaultStorage.setString(MOOD_KEY, newMood);
-    } catch (error) {
-      console.error('Error storing mood:', error);
-    }
-  };
-
-  // put this helper above the effect (or inside it)
-  function getAyahArrays(surah: any) {
-    // Preferred shape used in your app
-    if (Array.isArray(surah?.arabicAyahs) && Array.isArray(surah?.englishTranslations)) {
-      return {
-        arabicAyahs: surah.arabicAyahs as string[],
-        englishAyahs: surah.englishTranslations as string[],
-      };
-    }
-    // Back-compat: ayahs: [{ text, translation? }]
-    if (Array.isArray(surah?.ayahs)) {
-      return {
-        arabicAyahs: surah.ayahs.map((a: any) => a?.text ?? ''),
-        englishAyahs: surah.ayahs.map((a: any) => a?.translation ?? ''),
-      };
-    }
-    // Fallback
-    return { arabicAyahs: [] as string[], englishAyahs: [] as string[] };
-  }
+  const [mood, setMood] = useState<Mood>(() => getStoredMood());
+  const [selectedAyah, setSelectedAyah] = useState<{
+    surahNumber: number;
+    ayahIndex: number;
+  } | null>(null);
+  const [isSwitchingMood, setIsSwitchingMood] = useState(false);
 
   // ============================================================================
-  // EFFECTS
+  // DETERMINE WHICH AYAH TO SHOW
   // ============================================================================
 
   useEffect(() => {
-    const initializeMood = () => {
-      const storedMood = getStoredMood();
-      setMood(storedMood);
-    };
-
-    initializeMood();
-  }, []);
-
-  useEffect(() => {
-    if (!surahs || surahs.length === 0) return;
-
-    const fetchDailyAyah = () => {
-      const cachedAyah = getCachedAyah(mood);
-      if (cachedAyah) {
-        setAyah(cachedAyah);
+    const determineAyah = () => {
+      // Check cache first
+      const cached = getCachedAyahSelection(mood);
+      
+      if (cached) {
+        console.log('📖 Using cached ayah selection:', cached);
+        setSelectedAyah({
+          surahNumber: cached.surahNumber,
+          ayahIndex: cached.ayahIndex,
+        });
         return;
       }
 
+      // Generate new random ayah
+      console.log('🎲 Generating new random ayah for mood:', mood);
       const randomAyah = getRandomAyahByMood(mood);
-      const surah = surahs.find((s: any) => s.number === randomAyah.surahNumber);
-      if (!surah) {
-        console.error('Surah not found:', randomAyah.surahNumber);
-        return;
-      }
-
-      const { arabicAyahs, englishAyahs } = getAyahArrays(surah);
-
-      const selectedAyah: DailyAyahData = {
-        arabicText: arabicAyahs[randomAyah.ayahNumber - 1] || '',
-        englishText: englishAyahs[randomAyah.ayahNumber - 1] || '',
+      
+      // Convert to 0-based index for API
+      const ayahIndex = randomAyah.ayahNumber - 1;
+      
+      setSelectedAyah({
         surahNumber: randomAyah.surahNumber,
-        ayahNumber: randomAyah.ayahNumber,
-      };
-
-      setCachedAyah(mood, selectedAyah);
-      setAyah(selectedAyah);
+        ayahIndex,
+      });
+      
+      // Cache the selection
+      setCachedAyahSelection(mood, randomAyah.surahNumber, ayahIndex);
     };
 
-    fetchDailyAyah();
-  }, [surahs, mood]);
+    determineAyah();
+  }, [mood]);
+
+  // ============================================================================
+  // FETCH SURAH DATA
+  // ============================================================================
+
+  const {
+    data: surahData,
+    isLoading,
+    error,
+  } = useSurahWithTranslation(selectedAyah?.surahNumber ?? 1);
+
+  // ============================================================================
+  // EXTRACT AYAH TEXT
+  // ============================================================================
+
+  const ayahData: DailyAyahData | null = React.useMemo(() => {
+    if (!surahData || !selectedAyah) return null;
+
+    const { arabic, translation } = surahData;
+    const ayahIndex = selectedAyah.ayahIndex;
+
+    // Validate index
+    if (ayahIndex < 0 || ayahIndex >= arabic.ayahs.length) {
+      console.error('Invalid ayah index:', ayahIndex);
+      return null;
+    }
+
+    const arabicAyah = arabic.ayahs[ayahIndex];
+    const englishAyah = translation.ayahs[ayahIndex];
+
+    return {
+      arabicText: arabicAyah.text,
+      englishText: englishAyah.text,
+      surahNumber: selectedAyah.surahNumber,
+      ayahNumber: ayahIndex + 1, // Convert back to 1-based for display
+    };
+  }, [surahData, selectedAyah]);
 
   // ============================================================================
   // HANDLERS
   // ============================================================================
 
-  const handleMoodChange = (selectedMood: Mood) => {
-    setIsSkeleton(true);
-    setMood(selectedMood);
-    setStoredMood(selectedMood);
+  const handleMoodChange = (newMood: Mood) => {
+    setIsSwitchingMood(true);
+    setMood(newMood);
+    setStoredMood(newMood);
 
-    // Show skeleton for smooth transition
+    // Reset switching state after transition
     setTimeout(() => {
-      setIsSkeleton(false);
-    }, 500);
+      setIsSwitchingMood(false);
+    }, 300);
   };
 
   const handleAyahClick = () => {
-    if (!ayah) return;
+    if (!ayahData) return;
 
     router.push({
-      pathname: `/surahs/${ayah.surahNumber}`,
-      params: { ayahIndex: ayah.ayahNumber },
+      pathname: `/surahs/${ayahData.surahNumber}`,
+      params: { ayahIndex: ayahData.ayahNumber },
     });
   };
 
   // ============================================================================
-  // RENDER
+  // RENDER STATES
   // ============================================================================
 
-  const showSkeleton = isLoading || isSkeleton || !ayah;
+  const showSkeleton = isLoading || isSwitchingMood || !ayahData;
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.ayahCard}>
+          <Text style={styles.errorText}>
+            Failed to load daily ayah. Please try again.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -219,7 +253,7 @@ const DailyAyah: React.FC = () => {
       <View style={styles.moodContainer}>
         <Text style={styles.headerText}>I am feeling: </Text>
         <Dropdown
-          data={[...MOODS] as any[]} 
+          data={[...MOODS] as any[]}
           labelField="label"
           valueField="value"
           placeholder="Select mood"
@@ -246,10 +280,10 @@ const DailyAyah: React.FC = () => {
           </View>
         ) : (
           <TouchableOpacity onPress={handleAyahClick} style={styles.ayahContent}>
-            <Text style={styles.arabicText}>{ayah.arabicText}</Text>
-            <Text style={styles.englishText}>"{ayah.englishText}"</Text>
+            <Text style={styles.arabicText}>{ayahData.arabicText}</Text>
+            <Text style={styles.englishText}>"{ayahData.englishText}"</Text>
             <Text style={styles.ayahInfo}>
-              Surah {ayah.surahNumber}, Ayah {ayah.ayahNumber}
+              Surah {ayahData.surahNumber}, Ayah {ayahData.ayahNumber}
             </Text>
           </TouchableOpacity>
         )}
@@ -340,6 +374,13 @@ const createStyles = (theme: any) =>
       fontFamily: 'Outfit_500Medium',
       color: theme.colors.text.muted,
       textAlign: 'center',
+    },
+    errorText: {
+      fontSize: theme.fontSizes.medium,
+      color: theme.colors.error,
+      textAlign: 'center',
+      fontFamily: 'Outfit_400Regular',
+      marginTop: theme.spacing.medium,
     },
     skeleton: {
       backgroundColor: theme.colors.secondary,
