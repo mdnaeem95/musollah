@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Image } from 'react-native';
 //@ts-ignore
 import Onboarding from 'react-native-onboarding-swiper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
+import { defaultStorage } from '../../api/client/storage';
 import SignInModal from '../../components/SignInModal';
 
 export default function AssistantOnboardingScreen() {
@@ -13,8 +13,9 @@ export default function AssistantOnboardingScreen() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [shouldNavigate, setShouldNavigate] = useState(false);
 
-  const handleDone = async () => {
-    await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+  const handleDone = () => {
+    console.log('✅ Onboarding completed - setting flag');
+    defaultStorage.setBoolean('hasSeenOnboarding', true);
     setShowAuthModal(true);
   };
 
@@ -49,7 +50,7 @@ export default function AssistantOnboardingScreen() {
             backgroundColor: theme.colors.primary,
             image: styledImage(require('../../assets/onboarding/ahmadahminahwelcome.png')),
             title: 'Welcome to Rihlah',
-            subtitle: 'I’m Ahmad the Assistant. Let me show you around.',
+            subtitle: "I'm Ahmad the Assistant. Let me show you around.",
           },
           {
             backgroundColor: theme.colors.primary,
@@ -65,14 +66,8 @@ export default function AssistantOnboardingScreen() {
           },
           {
             backgroundColor: theme.colors.primary,
-            image: styledImage(require('../../assets/onboarding/ahmadaminahcommunity.png')),
-            title: 'Community Events',
-            subtitle: 'Join talks, workshops, and Islamic programs around you.',
-          },
-          {
-            backgroundColor: theme.colors.primary,
             image: styledImage(require('../../assets/onboarding/ahmadahminahwelcome.png')),
-            title: 'Let’s Get Started',
+            title: "Let's Get Started",
             subtitle: 'Log in or create an account to save your Rihlah experience.',
           },
         ]}
@@ -84,7 +79,7 @@ export default function AssistantOnboardingScreen() {
           setShowAuthModal(false);
           setShouldNavigate(true);
         }}
-        allowGuest={true} // ✅ pass this to show guest button inside the modal
+        allowGuest={true}
       />
     </>
   );
