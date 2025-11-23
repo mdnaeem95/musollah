@@ -1,116 +1,155 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Audio } from 'expo-av';
-import { usePreferencesStore, type AdhanSelection } from '../../../../stores/userPreferencesStore';
+import React from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { FontAwesome6 } from '@expo/vector-icons';
+import { useTheme } from '../../../../context/ThemeContext';
+import { usePrayerSettings } from '../../../../hooks/settings/usePrayerSettings';
 
-export type AdhanOption = {
-  id: number;
-  label: 'None' | 'Ahmad Al-Nafees' | 'Mishary Rashid Alafasy'; // tighten for safety
-  file: any;
-};
+const AdhanSelectionScreen = () => {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
-export const ADHAN_OPTIONS: AdhanOption[] = [
-  { id: 1, label: 'None', file: null },
-  { id: 2, label: 'Ahmad Al-Nafees', file: require('../../../../assets/adhans/ahmadAlNafees.mp3') },
-  { id: 3, label: 'Mishary Rashid Alafasy', file: require('../../../../assets/adhans/mishary.mp3') },
-];
-
-// 🔁 Map UI label -> store enum/union
-const labelToSelection: Record<AdhanOption['label'], AdhanSelection> = {
-  'None': 'None' as AdhanSelection,                       // or AdhanSelection.None
-  'Ahmad Al-Nafees': 'AhmadAlNafees' as AdhanSelection,   // or AdhanSelection.AhmadAlNafees
-  'Mishary Rashid Alafasy': 'MisharyRashidAlafasy' as AdhanSelection, // or AdhanSelection.MisharyRashidAlafasy
-};
-
-export function useAdhanSelection() {
-  const { selectedAdhan, setSelectedAdhan } = usePreferencesStore();
-  const [currentSound, setCurrentSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  useEffect(() => {
-    const configureAudio = async () => {
-      try {
-        await Audio.setAudioModeAsync({
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: false,
-          shouldDuckAndroid: true,
-        });
-      } catch (error) {
-        console.error('Failed to configure audio:', error);
-      }
-    };
-    configureAudio();
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (currentSound) {
-        currentSound.unloadAsync().catch((error) => {
-          console.error('Failed to unload sound:', error);
-        });
-      }
-    };
-  }, [currentSound]);
-
-  const stopCurrentSound = useCallback(async () => {
-    if (currentSound) {
-      try {
-        await currentSound.stopAsync();
-        await currentSound.unloadAsync();
-        setCurrentSound(null);
-        setIsPlaying(false);
-      } catch (error) {
-        console.error('Error stopping sound:', error);
-      }
-    }
-  }, [currentSound]);
-
-  const playAudio = useCallback(
-    async (file: any) => {
-      try {
-        await stopCurrentSound();
-        if (!file) return; // None selected
-
-        const { sound: newSound } = await Audio.Sound.createAsync(file, {
-          shouldPlay: true,
-          isLooping: false,
-        });
-
-        setCurrentSound(newSound);
-        setIsPlaying(true);
-
-        newSound.setOnPlaybackStatusUpdate((status) => {
-          if ('isLoaded' in status && status.isLoaded && (status as any).didJustFinish) {
-            setIsPlaying(false);
-          }
-        });
-      } catch (error) {
-        console.error('Error playing sound:', error);
-        setIsPlaying(false);
-      }
-    },
-    [stopCurrentSound]
-  );
-
-  const handleAdhanSelect = useCallback(
-    async (option: AdhanOption) => {
-      // ✅ Convert UI label to store type
-      const selection = labelToSelection[option.label];
-      setSelectedAdhan(selection);
-
-      // Play preview
-      await playAudio(option.file);
-    },
-    [setSelectedAdhan, playAudio]
-  );
-
-  return {
-    // State
-    adhanOptions: ADHAN_OPTIONS,
-    selectedAdhan, // this is AdhanSelection from the store
-    isPlaying,
-
-    // Actions
+  const {
+    adhanOptions,
+    selectedAdhan,
+    isPlayingAdhan,
     handleAdhanSelect,
-    stopCurrentSound,
-  };
-}
+  } = usePrayerSettings();
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.description}>
+        Select the adhan audio you want to hear for prayer times. Tap to preview.
+      </Text>
+
+      <FlatList
+        data={adhanOptions}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item, index }) => {
+          const isSelected = item.label === selectedAdhan;
+          const isLastItem = index === adhanOptions.length - 1;
+
+          return (
+            <TouchableOpacity
+              style={[
+                styles.adhanOption,
+                !isLastItem && styles.adhanOptionBorder,
+                isSelected && styles.selectedOption,
+              ]}
+              onPress={() => handleAdhanSelect(item)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.optionContent}>
+                {isSelected && (
+                  <FontAwesome6
+                    name="check-circle"
+                    size={20}
+                    color={theme.colors.accent}
+                    solid
+                  />
+                )}
+                <Text
+                  style={[
+                    styles.adhanLabel,
+                    isSelected && styles.selectedLabel,
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </View>
+
+              {item.file && (
+                <FontAwesome6
+                  name="play"
+                  size={16}
+                  color={theme.colors.text.muted}
+                />
+              )}
+            </TouchableOpacity>
+          );
+        }}
+        contentContainerStyle={styles.listContent}
+      />
+
+      {isPlayingAdhan && (
+        <View style={styles.playingIndicator}>
+          <FontAwesome6
+            name="volume-high"
+            size={20}
+            color={theme.colors.accent}
+          />
+          <Text style={styles.playingText}>Playing preview...</Text>
+        </View>
+      )}
+    </View>
+  );
+};
+
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.primary,
+      padding: theme.spacing.medium,
+    },
+    description: {
+      fontFamily: 'Outfit_400Regular',
+      fontSize: theme.fontSizes.medium,
+      color: theme.colors.text.muted,
+      marginBottom: theme.spacing.medium,
+      lineHeight: 22,
+    },
+    listContent: {
+      backgroundColor: theme.colors.secondary,
+      borderRadius: theme.borderRadius.large,
+      ...theme.shadows.default,
+    },
+    adhanOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: theme.spacing.medium,
+      paddingHorizontal: theme.spacing.medium,
+    },
+    adhanOptionBorder: {
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.text.muted + '20',
+    },
+    selectedOption: {
+      backgroundColor: theme.colors.accent + '10',
+    },
+    optionContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.small,
+      flex: 1,
+    },
+    adhanLabel: {
+      fontFamily: 'Outfit_500Medium',
+      fontSize: theme.fontSizes.medium,
+      color: theme.colors.text.secondary,
+    },
+    selectedLabel: {
+      color: theme.colors.accent,
+      fontFamily: 'Outfit_600SemiBold',
+    },
+    playingIndicator: {
+      position: 'absolute',
+      bottom: theme.spacing.large,
+      left: theme.spacing.medium,
+      right: theme.spacing.medium,
+      backgroundColor: theme.colors.secondary,
+      padding: theme.spacing.medium,
+      borderRadius: theme.borderRadius.medium,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.small,
+      ...theme.shadows.strong,
+    },
+    playingText: {
+      fontFamily: 'Outfit_500Medium',
+      fontSize: theme.fontSizes.medium,
+      color: theme.colors.text.secondary,
+    },
+  });
+
+export default AdhanSelectionScreen;

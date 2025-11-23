@@ -78,7 +78,6 @@ const SettingsLayout = () => {
     { name: "support/index", title: "Support & Feedback" },
     { name: "appearance/index", title: "Appearance" },
     { name: "food-additives/index", title: "Food Additives" },
-    { name: "food-additives/foodScanner", title: "Ingredients Scanner" },
     { name: "zakat/index", title: "Zakat" },
     { name: "zakat/fidyah/index", title: "Zakat Fidyah" },
     { name: "zakat/harta/index", title: "Zakat Harta" },
