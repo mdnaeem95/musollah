@@ -10,7 +10,13 @@ interface SettingsModalProps {
   textSize: number;
   onTextSizeChange: (value: number) => void;
   isDarkMode: boolean;
+
+  // old instant toggle (keep)
   toggleDarkMode: () => void;
+
+  // ✅ new animated toggle (optional)
+  toggleDarkModeAnimated?: () => void;
+
   reciter: string;
   onReciterChange: (value: string) => void;
   activeTheme: any;
@@ -24,12 +30,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onTextSizeChange,
   isDarkMode,
   toggleDarkMode,
+  toggleDarkModeAnimated, // ✅ new
   reciter,
   onReciterChange,
   activeTheme,
   showReciter,
 }) => {
   const styles = createStyles(activeTheme);
+
+  // ✅ use animated toggle if available
+  const handleToggleDarkMode = toggleDarkModeAnimated ?? toggleDarkMode;
 
   return (
     <Modal transparent animationType="fade" visible={isVisible} onRequestClose={onClose}>
@@ -58,7 +68,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               <Text style={styles.toggleText}>Light</Text>
               <Switch
                 value={isDarkMode}
-                onValueChange={toggleDarkMode}
+                onValueChange={handleToggleDarkMode} 
                 thumbColor={activeTheme.colors.accent}
                 trackColor={{
                   false: activeTheme.colors.secondary,

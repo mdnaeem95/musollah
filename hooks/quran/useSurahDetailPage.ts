@@ -12,6 +12,7 @@ import Toast from 'react-native-toast-message';
 import { useSurahWithTranslation } from '../../api/services/quran';
 import { useQuranStore } from '../../stores/useQuranStore';
 import { useQuranAudioPlayer } from './useQuranAudioPlayer';
+import { useTrackPlayerSetup } from './useTrackPlayerSetup';
 
 // ============================================================================
 // TYPES
@@ -64,6 +65,7 @@ export function useSurahDetailPage({
   initialAyahIndex,
   reciter,
 }: UseSurahDetailPageParams): UseSurahDetailPageReturn {
+  const { isSetup: isPlayerSetup } = useTrackPlayerSetup();
   const router = useRouter();
   const listRef = useRef<FlashList<string>>(null);
 
@@ -110,6 +112,7 @@ export function useSurahDetailPage({
     audioLinks: surah?.audioLinks || [],
     reciter,
     enabled: !!surah,
+    isPlayerSetup
   });
 
   // Read ayahs count for this surah
