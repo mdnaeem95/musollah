@@ -1,8 +1,9 @@
 // services/notification.service.ts
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { parse, addMinutes, subMinutes } from 'date-fns';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { addDays, format, startOfDay } from 'date-fns';
+import { defaultStorage } from '../api/client/storage';
+import { fetchPrayerTimesByDate, normalizePrayerTimes } from '../api/services/prayer';
 import { 
   DailyPrayerTimes, 
   PrayerName, 
@@ -15,17 +16,31 @@ interface ScheduledNotification {
   prayerName: PrayerName;
   type: 'reminder' | 'adhan';
   scheduledFor: Date;
+  date: string;
+}
+
+interface NotificationMetadata {
+  lastScheduledDate: string;
+  scheduledDates: string[];
+  scheduledCount: number;
+  lastUpdated: number;
+}
+
+interface LocationCoords {
+  latitude: number;
+  longitude: number;
 }
 
 class NotificationService {
   private readonly NOTIFICATION_STORAGE_KEY = 'scheduled_notifications';
+  private readonly METADATA_STORAGE_KEY = 'notification_metadata';
+  private readonly DAYS_TO_SCHEDULE = 5;
   
   constructor() {
     this.initialize();
   }
 
   private async initialize() {
-    // Configure notification handler
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
@@ -34,7 +49,6 @@ class NotificationService {
       }),
     });
 
-    // Request permissions
     await this.requestPermissions();
   }
 
@@ -53,7 +67,6 @@ class NotificationService {
         return false;
       }
 
-      // Configure notification channel for Android
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('default', {
           name: 'Prayer Notifications',
@@ -74,79 +87,178 @@ class NotificationService {
     }
   }
 
+  private hasExistingNotifications(): boolean {
+    const metadata = this.getMetadata();
+    if (!metadata) return false;
+
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const scheduledDates = metadata.scheduledDates || [];
+    
+    const futureDates = scheduledDates.filter(date => date >= today);
+    const hasEnoughScheduled = futureDates.length >= 3;
+
+    console.log('📊 Notification check:', {
+      scheduledDates: futureDates.length,
+      hasEnough: hasEnoughScheduled,
+      dates: futureDates
+    });
+
+    return hasEnoughScheduled;
+  }
+
   async schedulePrayerNotifications(
     prayerData: DailyPrayerTimes,
     reminderMinutes: number,
     mutedPrayers: PrayerName[],
-    selectedAdhan: string
+    selectedAdhan: string,
+    userLocation?: LocationCoords
   ): Promise<void> {
     try {
+      if (this.hasExistingNotifications()) {
+        console.log('✅ Notifications already scheduled, skipping');
+        return;
+      }
+
       const hasPermission = await this.requestPermissions();
       if (!hasPermission) return;
 
-      // Cancel existing notifications for this date
-      await this.cancelNotificationsForDate(prayerData.date);
+      console.log(`📅 Scheduling notifications for next ${this.DAYS_TO_SCHEDULE} days`);
+
+      await this.cancelAllNotifications();
 
       const scheduledNotifications: ScheduledNotification[] = [];
+      const scheduledDates: string[] = [];
 
-      for (const prayerName of LOGGABLE_PRAYERS) {
-        if (mutedPrayers.includes(prayerName)) continue;
+      const location = userLocation || {
+        latitude: 1.3521,
+        longitude: 103.8198
+      };
 
-        const prayerTimeStr = prayerData.prayers[prayerName];
-        if (!prayerTimeStr) continue;
+      for (let i = 0; i < this.DAYS_TO_SCHEDULE; i++) {
+        const targetDate = addDays(startOfDay(new Date()), i);
+        const dateStr = format(targetDate, 'yyyy-MM-dd');
 
-        const [hours, minutes] = prayerTimeStr.split(':').map(Number);
-        const prayerTime = new Date(prayerData.date);
-        prayerTime.setHours(hours, minutes, 0, 0);
+        try {
+          let dayPrayerData: DailyPrayerTimes;
 
-        // Skip if prayer time has passed
-        if (prayerTime < new Date()) continue;
+          if (i === 0) {
+            dayPrayerData = prayerData;
+          } else {
+            console.log(`📡 Fetching prayer times for ${dateStr}`);
+            const response = await fetchPrayerTimesByDate(
+              location.latitude,
+              location.longitude,
+              targetDate
+            );
 
-        // Schedule reminder notification
-        if (reminderMinutes > 0) {
-          const reminderTime = subMinutes(prayerTime, reminderMinutes);
-          if (reminderTime > new Date()) {
-            const reminderId = await this.scheduleNotification({
-              title: `${prayerName} in ${reminderMinutes} minutes`,
-              body: 'Time to prepare for prayer',
-              data: { type: 'reminder', prayer: prayerName },
-              trigger: reminderTime,
-            });
+            const normalized = normalizePrayerTimes(response.data);
 
-            scheduledNotifications.push({
-              id: reminderId,
-              prayerName,
-              type: 'reminder',
-              scheduledFor: reminderTime,
-            });
+            dayPrayerData = {
+              date: dateStr,
+              hijriDate: response.data.date.hijri.date || '',
+              prayers: {
+                Subuh: normalized.fajr,
+                Syuruk: normalized.sunrise,
+                Zohor: normalized.dhuhr,
+                Asar: normalized.asr,
+                Maghrib: normalized.maghrib,
+                Isyak: normalized.isha,
+              },
+            };
           }
+
+          const dayNotifications = await this.scheduleDayNotifications(
+            dayPrayerData,
+            reminderMinutes,
+            mutedPrayers,
+            selectedAdhan,
+            dateStr
+          );
+
+          scheduledNotifications.push(...dayNotifications);
+          scheduledDates.push(dateStr);
+
+          console.log(`✅ Scheduled ${dayNotifications.length} notifications for ${dateStr}`);
+        } catch (error) {
+          console.error(`❌ Failed to schedule notifications for ${dateStr}:`, error);
         }
-
-        // Schedule adhan notification
-        const adhanId = await this.scheduleNotification({
-          title: `${prayerName} Prayer Time`,
-          body: 'Time for prayer',
-          data: { type: 'adhan', prayer: prayerName, sound: selectedAdhan },
-          trigger: prayerTime,
-          sound: Platform.OS === 'ios' ? selectedAdhan : undefined,
-        });
-
-        scheduledNotifications.push({
-          id: adhanId,
-          prayerName,
-          type: 'adhan',
-          scheduledFor: prayerTime,
-        });
       }
 
-      // Save scheduled notifications
-      await this.saveScheduledNotifications(scheduledNotifications);
+      this.saveScheduledNotifications(scheduledNotifications);
+      this.saveMetadata({
+        lastScheduledDate: format(new Date(), 'yyyy-MM-dd'),
+        scheduledDates,
+        scheduledCount: scheduledNotifications.length,
+        lastUpdated: Date.now(),
+      });
       
-      console.log(`✅ Scheduled ${scheduledNotifications.length} notifications`);
+      console.log(`✅ Total: ${scheduledNotifications.length} notifications for ${scheduledDates.length} days`);
     } catch (error) {
       console.error('❌ Error scheduling notifications:', error);
       throw error;
     }
+  }
+
+  private async scheduleDayNotifications(
+    prayerData: DailyPrayerTimes,
+    reminderMinutes: number,
+    mutedPrayers: PrayerName[],
+    selectedAdhan: string,
+    dateStr: string
+  ): Promise<ScheduledNotification[]> {
+    const scheduledNotifications: ScheduledNotification[] = [];
+    const now = new Date();
+
+    for (const prayerName of LOGGABLE_PRAYERS) {
+      if (mutedPrayers.includes(prayerName)) continue;
+
+      const prayerTimeStr = prayerData.prayers[prayerName];
+      if (!prayerTimeStr) continue;
+
+      const [hours, minutes] = prayerTimeStr.split(':').map(Number);
+      const prayerTime = new Date(prayerData.date);
+      prayerTime.setHours(hours, minutes, 0, 0);
+
+      if (prayerTime <= now) continue;
+
+      if (reminderMinutes > 0) {
+        const reminderTime = new Date(prayerTime.getTime() - reminderMinutes * 60 * 1000);
+        if (reminderTime > now) {
+          const reminderId = await this.scheduleNotification({
+            title: `${prayerName} in ${reminderMinutes} minutes`,
+            body: 'Time to prepare for prayer',
+            data: { type: 'reminder', prayer: prayerName },
+            trigger: reminderTime,
+          });
+
+          scheduledNotifications.push({
+            id: reminderId,
+            prayerName,
+            type: 'reminder',
+            scheduledFor: reminderTime,
+            date: dateStr,
+          });
+        }
+      }
+
+      const adhanId = await this.scheduleNotification({
+        title: `${prayerName} Prayer Time`,
+        body: 'Time for prayer',
+        data: { type: 'adhan', prayer: prayerName, sound: selectedAdhan },
+        trigger: prayerTime,
+        sound: Platform.OS === 'ios' ? selectedAdhan : undefined,
+      });
+
+      scheduledNotifications.push({
+        id: adhanId,
+        prayerName,
+        type: 'adhan',
+        scheduledFor: prayerTime,
+        date: dateStr,
+      });
+    }
+
+    return scheduledNotifications;
   }
 
   private async scheduleNotification(config: {
@@ -164,7 +276,6 @@ class NotificationService {
       priority: Notifications.AndroidNotificationPriority.HIGH,
     };
 
-    // Create the trigger
     const trigger = this.createTrigger(config.trigger);
 
     return await Notifications.scheduleNotificationAsync({
@@ -175,7 +286,6 @@ class NotificationService {
 
   private createTrigger(trigger: Date | number): Notifications.NotificationTriggerInput {
     if (typeof trigger === 'number') {
-      // Trigger in X seconds
       return {
         type: 'timeInterval',
         seconds: trigger,
@@ -183,14 +293,10 @@ class NotificationService {
       } as Notifications.TimeIntervalTriggerInput;
     }
 
-    // Convert Date to seconds from now
     const now = new Date().getTime();
     const triggerTime = trigger.getTime();
     const secondsUntilTrigger = Math.max(1, Math.floor((triggerTime - now) / 1000));
 
-    // Use TimeInterval trigger for dates
-    // Note: For more precise scheduling, consider using CalendarNotificationTrigger
-    // with hour, minute, and day components, but it's more complex to implement
     return {
       type: 'timeInterval',
       seconds: secondsUntilTrigger,
@@ -201,7 +307,8 @@ class NotificationService {
   async cancelAllNotifications(): Promise<void> {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
-      await AsyncStorage.removeItem(this.NOTIFICATION_STORAGE_KEY);
+      defaultStorage.delete(this.NOTIFICATION_STORAGE_KEY);
+      defaultStorage.delete(this.METADATA_STORAGE_KEY);
       console.log('✅ All notifications cancelled');
     } catch (error) {
       console.error('❌ Error cancelling notifications:', error);
@@ -210,41 +317,41 @@ class NotificationService {
 
   async cancelNotificationsForDate(date: string): Promise<void> {
     try {
-      const scheduled = await this.getScheduledNotifications();
-      const toCancel = scheduled.filter(n => 
-        n.scheduledFor.toISOString().startsWith(date)
-      );
+      const scheduled = this.getScheduledNotifications();
+      const toCancel = scheduled.filter(n => n.date === date);
 
       for (const notification of toCancel) {
         await Notifications.cancelScheduledNotificationAsync(notification.id);
       }
 
-      const remaining = scheduled.filter(n => 
-        !n.scheduledFor.toISOString().startsWith(date)
-      );
+      const remaining = scheduled.filter(n => n.date !== date);
+      this.saveScheduledNotifications(remaining);
       
-      await this.saveScheduledNotifications(remaining);
+      console.log(`✅ Cancelled ${toCancel.length} notifications for ${date}`);
     } catch (error) {
       console.error('❌ Error cancelling notifications for date:', error);
     }
   }
 
-  private async saveScheduledNotifications(
-    notifications: ScheduledNotification[]
-  ): Promise<void> {
-    await AsyncStorage.setItem(
-      this.NOTIFICATION_STORAGE_KEY,
-      JSON.stringify(notifications)
-    );
+  async forceReschedule(): Promise<void> {
+    await this.cancelAllNotifications();
+    console.log('🔄 Forced reschedule - call schedulePrayerNotifications again');
   }
 
-  private async getScheduledNotifications(): Promise<ScheduledNotification[]> {
+  private saveScheduledNotifications(notifications: ScheduledNotification[]): void {
+    const serialized = notifications.map(n => ({
+      ...n,
+      scheduledFor: n.scheduledFor.toISOString(),
+    }));
+    defaultStorage.set(this.NOTIFICATION_STORAGE_KEY, serialized);
+  }
+
+  private getScheduledNotifications(): ScheduledNotification[] {
     try {
-      const stored = await AsyncStorage.getItem(this.NOTIFICATION_STORAGE_KEY);
+      const stored = defaultStorage.get<any[]>(this.NOTIFICATION_STORAGE_KEY);
       if (!stored) return [];
       
-      const parsed = JSON.parse(stored);
-      return parsed.map((n: any) => ({
+      return stored.map(n => ({
         ...n,
         scheduledFor: new Date(n.scheduledFor),
       }));
@@ -253,25 +360,37 @@ class NotificationService {
     }
   }
 
-  // Schedule notifications for multiple days
-  async scheduleMultipleDayNotifications(
-    prayerTimesList: DailyPrayerTimes[],
-    settings: PrayerNotificationSettings
-  ): Promise<void> {
-    for (const prayerData of prayerTimesList) {
-      await this.schedulePrayerNotifications(
-        prayerData,
-        settings.reminderMinutes,
-        settings.mutedPrayers,
-        settings.selectedAdhan
-      );
-    }
+  private saveMetadata(metadata: NotificationMetadata): void {
+    defaultStorage.set(this.METADATA_STORAGE_KEY, metadata);
   }
 
-  // Get pending notifications count
+  private getMetadata(): NotificationMetadata | null {
+    return defaultStorage.get<NotificationMetadata>(this.METADATA_STORAGE_KEY);
+  }
+
   async getPendingNotificationsCount(): Promise<number> {
     const notifications = await Notifications.getAllScheduledNotificationsAsync();
     return notifications.length;
+  }
+
+  async getScheduledDatesInfo(): Promise<{
+    dates: string[];
+    count: number;
+    nextSchedule: string | null;
+  }> {
+    const metadata = this.getMetadata();
+    if (!metadata) {
+      return { dates: [], count: 0, nextSchedule: null };
+    }
+
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const futureDates = metadata.scheduledDates.filter(date => date >= today);
+
+    return {
+      dates: futureDates,
+      count: metadata.scheduledCount,
+      nextSchedule: futureDates[0] || null,
+    };
   }
 }
 
