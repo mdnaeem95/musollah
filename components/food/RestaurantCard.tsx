@@ -1,91 +1,266 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import { AirbnbRating } from 'react-native-ratings';
-import { Restaurant } from '../../utils/types';
-import { useTheme } from '../../context/ThemeContext';
+/**
+ * Restaurant Card Component (UPGRADED)
+ * 
+ * 3D restaurant card with certification badges and quick actions.
+ * 
+ * @version 2.0 - 3D effects, certification, quick actions, glassmorphism
+ */
 
-interface Props {
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Pressable, Linking, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import { MotiView } from 'moti';
+import { FontAwesome6 } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+
+import { useTheme } from '../../context/ThemeContext';
+import QuickActionButton from './QuickActionButton';
+import type { Restaurant } from '../../utils/types';
+
+interface RestaurantCardProps {
   restaurant: Restaurant;
   distance: string;
 }
 
-const RestaurantCard: React.FC<Props> = ({ restaurant, distance }) => {
+const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, distance }) => {
   const { theme } = useTheme();
   const router = useRouter();
-  const hasReviews = restaurant.averageRating !== 0 && restaurant.totalReviews !== 0;
-
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  
+  const handleCardPress = () => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    router.push(`/${restaurant.id}`);
+  };
+  
+  const handleCall = () => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    // Implement call functionality
+  };
+  
+  const handleDirections = () => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    // Open maps
+    const url = Platform.select({
+      ios: `maps://app?daddr=${restaurant.coordinates.latitude},${restaurant.coordinates.longitude}`,
+      android: `google.navigation:q=${restaurant.coordinates.latitude},${restaurant.coordinates.longitude}`,
+    });
+    if (url) Linking.openURL(url);
+  };
+  
+  const handleFavorite = () => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(isFavorited ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium);
+    }
+    setIsFavorited(!isFavorited);
+  };
+  
   return (
-    <TouchableOpacity
-      style={[styles.card, { backgroundColor: theme.colors.secondary }]}
-      onPress={() => router.push(`${restaurant.id}`)}
+    <MotiView
+      from={{ opacity: 0, translateY: 20, rotateX: '45deg' }}
+      animate={{ opacity: 1, translateY: 0, rotateX: '0deg' }}
+      transition={{ type: 'spring', damping: 20 }}
     >
-      <Image source={{ uri: restaurant.image }} style={styles.image} />
-      <View style={styles.details}>
-        <Text style={[styles.title, { color: theme.colors.text.primary }]} numberOfLines={1} ellipsizeMode="tail">
-          {restaurant.name}
-        </Text>
-        {hasReviews ? (
-          <>
-            <View style={styles.ratingRow}>
-              <AirbnbRating
-                isDisabled
-                showRating={false}
-                defaultRating={restaurant.averageRating}
-                size={14}
-              />
-              <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
-                {`${restaurant.averageRating} (${restaurant.totalReviews})`}
+      <Pressable
+        onPress={handleCardPress}
+        style={({ pressed }) => [
+          styles.card,
+          {
+            transform: [
+              { perspective: 1000 },
+              { scale: pressed ? 0.98 : 1 },
+            ],
+            backgroundColor: theme.colors.secondary,
+            shadowColor: theme.colors.accent,
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.1,
+            shadowRadius: 20,
+            elevation: 8,
+          },
+        ]}
+      >
+        {/* Image with gradient overlay */}
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: restaurant.image }}
+            style={styles.image}
+            onLoad={() => setImageLoaded(true)}
+          />
+          
+          {/* Gradient overlay */}
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.7)']}
+            style={styles.imageGradient}
+          />
+          
+          {/* MUIS Badge (if certified) */}
+          {restaurant.halal && (
+            <MotiView
+              from={{ scale: 0, rotate: '-45deg' }}
+              animate={{ scale: 1, rotate: '0deg' }}
+              delay={300}
+              style={styles.certificationBadge}
+            >
+              <BlurView intensity={80} tint="light" style={styles.badgeBlur}>
+                <FontAwesome6 name="certificate" size={12} color="#4CAF50" />
+                <Text style={styles.badgeText}>MUIS</Text>
+              </BlurView>
+            </MotiView>
+          )}
+          
+          {/* Distance badge */}
+          <View style={styles.distanceBadge}>
+            <BlurView intensity={80} tint="dark" style={styles.distanceBlur}>
+              <FontAwesome6 name="location-dot" size={10} color="#fff" />
+              <Text style={styles.distanceText}>{distance}</Text>
+            </BlurView>
+          </View>
+        </View>
+        
+        {/* Content */}
+        <View style={styles.content}>
+          <Text 
+            style={[styles.name, { color: theme.colors.text.primary }]}
+            numberOfLines={1}
+          >
+            {restaurant.name}
+          </Text>
+          
+          <View style={styles.metaRow}>
+            {/* Rating */}
+            <View style={styles.ratingContainer}>
+              <FontAwesome6 name="star" size={12} color="#FFD700" solid />
+              <Text style={[styles.rating, { color: theme.colors.text.primary }]}>
+                {restaurant.averageRating?.toFixed(1) || 'New'}
               </Text>
             </View>
-            <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
-              {distance} km
+            
+            {/* Reviews count */}
+            <Text style={[styles.reviews, { color: theme.colors.text.secondary }]}>
+              ({restaurant.totalReviews || 0})
             </Text>
-          </>
-        ) : (
-          <>
-            <Text style={[styles.subtitle, { color: theme.colors.text.muted }]}>
-              No reviews yet.
+            
+            {/* Categories */}
+            <Text 
+              style={[styles.categories, { color: theme.colors.text.secondary }]}
+              numberOfLines={1}
+            >
+              {restaurant.categories.slice(0, 2).join(' • ')}
             </Text>
-            <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
-              {distance}
-            </Text>
-          </>
-        )}
-      </View>
-    </TouchableOpacity>
+          </View>
+          
+          {/* Quick actions row */}
+          <View style={styles.actionsRow}>
+            <QuickActionButton icon="phone" onPress={handleCall} />
+            <QuickActionButton icon="location-arrow" onPress={handleDirections} />
+            <QuickActionButton icon="bookmark" onPress={handleFavorite} active={isFavorited} />
+          </View>
+        </View>
+      </Pressable>
+    </MotiView>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    width: 150,
-    borderRadius: 12,
+    width: 280,
     marginRight: 16,
-    height: 180
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  imageContainer: {
+    width: '100%',
+    height: 160,
+    position: 'relative',
   },
   image: {
     width: '100%',
-    height: 100,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    height: '100%',
   },
-  details: {
-    padding: 10,
-    gap: 6,
+  imageGradient: {
+    ...StyleSheet.absoluteFillObject,
   },
-  title: {
+  certificationBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  badgeBlur: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  badgeText: {
+    color: '#4CAF50',
+    fontSize: 10,
+    fontFamily: 'Outfit_700Bold',
+  },
+  distanceBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  distanceBlur: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  distanceText: {
+    color: '#fff',
+    fontSize: 12,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  content: {
+    padding: 16,
+  },
+  name: {
+    fontSize: 16,
+    fontFamily: 'Outfit_700Bold',
+    marginBottom: 8,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  rating: {
     fontSize: 14,
-    fontFamily: 'Outfit_500Medium',
+    fontFamily: 'Outfit_600SemiBold',
   },
-  subtitle: {
+  reviews: {
     fontSize: 12,
     fontFamily: 'Outfit_400Regular',
   },
-  ratingRow: {
+  categories: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: 'Outfit_400Regular',
+  },
+  actionsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: 8,
   },
 });
 
