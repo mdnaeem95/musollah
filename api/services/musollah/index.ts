@@ -86,6 +86,34 @@ interface RawMusollahData {
   musollahs: MusollahLocation[];
 }
 
+export interface LocationRequest {
+  type: 'Bidet' | 'Musollah';
+  buildingName: string;
+  address: string;
+  postal: string;
+  
+  // Bidet-specific fields
+  maleFacility?: boolean;
+  femaleFacility?: boolean;
+  accessibleFacility?: boolean;
+  
+  // Musollah-specific fields
+  segregated?: boolean;
+  airConditioned?: boolean;
+  ablutionArea?: boolean;
+  slippers?: boolean;
+  prayerMats?: boolean;
+  telekung?: boolean;
+  directions?: string;
+  
+  // Metadata
+  submittedAt: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  reviewedAt?: string;
+  reviewedBy?: string;
+  notes?: string;
+}
+
 // ============================================================================
 // CONSTANTS
 // ============================================================================
@@ -573,6 +601,28 @@ export function useMusollahData(userLocation: LocationObject | null) {
   };
 }
 
+/**
+ * Submit new location request
+ * Stores in 'locationRequests' collection for admin review
+ */
+async function submitLocationRequest(data: Omit<LocationRequest, 'status'>): Promise<void> {
+  try {
+    const requestData: LocationRequest = {
+      ...data,
+      status: 'pending', // Default status
+    };
+    
+    await db
+      .collection('locationRequests')
+      .add(requestData);
+      
+    console.log('✅ Location request submitted successfully');
+  } catch (error) {
+    console.error('❌ Error submitting location request:', error);
+    throw new Error('Failed to submit location request');
+  }
+}
+
 // ============================================================================
 // INDIVIDUAL LOCATION HOOKS
 // ============================================================================
@@ -677,6 +727,94 @@ export function useMusollahLocations(userLocation: LocationObject | null) {
 }
 
 // ============================================================================
+// BIDET / MUSOLLAH UPDATE HELPERS
+// ============================================================================
+
+type GenderStatus = 'Yes' | 'No' | 'Unknown';
+type AmenityStatus = 'Yes' | 'No' | 'Unknown';
+
+export interface UpdateBidetStatusPayload {
+  id: string;
+  status: 'Available' | 'Unavailable' | 'Unknown';
+  male?: GenderStatus;
+  female?: GenderStatus;
+  handicap?: GenderStatus;
+}
+
+export interface UpdateMusollahStatusPayload {
+  id: string;
+  status: 'Available' | 'Unavailable' | 'Unknown';
+  segregated?: AmenityStatus;
+  airConditioned?: AmenityStatus;
+  ablutionArea?: AmenityStatus;
+  slippers?: AmenityStatus;
+  prayerMats?: AmenityStatus;
+  telekung?: AmenityStatus;
+}
+
+/**
+ * Bidet-specific update:
+ * - Always updates status + lastUpdated
+ * - Optionally updates Male / Female / Handicap fields
+ * - Clears bidet cache afterwards
+ */
+export async function updateBidetStatus({
+  id,
+  status,
+  male,
+  female,
+  handicap,
+}: UpdateBidetStatusPayload): Promise<void> {
+  const updates: Record<string, any> = {
+    status,
+    lastUpdated: Date.now(),
+  };
+
+  if (male !== undefined) {
+    updates.Male = male;
+  }
+  if (female !== undefined) {
+    updates.Female = female;
+  }
+  if (handicap !== undefined) {
+    updates.Handicap = handicap;
+  }
+
+  await db.collection(COLLECTIONS.bidets).doc(id).update(updates);
+
+  // Clear relevant cache
+  cache.clear(CACHE_KEYS.allBidets);
+}
+
+export async function updateMusollahStatus({
+  id,
+  status,
+  segregated,
+  airConditioned,
+  ablutionArea,
+  slippers,
+  prayerMats,
+  telekung,
+}: UpdateMusollahStatusPayload): Promise<void> {
+  const updates: Record<string, any> = {
+    status,
+    lastUpdated: Date.now(),
+  };
+
+  if (segregated !== undefined) updates.Segregated = segregated;
+  if (airConditioned !== undefined) updates.AirConditioned = airConditioned;
+  if (ablutionArea !== undefined) updates.AblutionArea = ablutionArea;
+  if (slippers !== undefined) updates.Slippers = slippers;
+  if (prayerMats !== undefined) updates.PrayerMats = prayerMats;
+  if (telekung !== undefined) updates.Telekung = telekung;
+
+  await db.collection(COLLECTIONS.musollahs).doc(id).update(updates);
+
+  // Clear cache for musollahs
+  cache.clear(CACHE_KEYS.allMusollahs);
+}
+
+// ============================================================================
 // MUTATION HOOKS
 // ============================================================================
 
@@ -702,6 +840,58 @@ export function useRefreshMusollahData() {
     clearAllMusollahCache();
     queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.all });
   };
+}
+
+/**
+ * Bidet-specific hook:
+ * - Allows updating status + male/female/handicap
+ */
+export function useUpdateBidetStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: UpdateBidetStatusPayload) => updateBidetStatus(payload),
+    onSuccess: () => {
+      // Invalidate all bidet-related queries so distances/update times refresh
+      queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.bidets });
+      queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.allLocations });
+      queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.all });
+    },
+  });
+}
+
+/**
+ * Musollah-specific hook:
+ * - Allows updating status + amenities such as ablution area
+ */
+export function useUpdateMusollahStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: UpdateMusollahStatusPayload) =>
+      updateMusollahStatus(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.musollahs });
+      queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.allLocations });
+      queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.all });
+    },
+  });
+}
+
+export function useSubmitLocationRequest() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: submitLocationRequest,
+    onSuccess: () => {
+      // Optionally invalidate any related queries
+      // queryClient.invalidateQueries({ queryKey: ['musollah'] });
+      console.log('✅ Location request mutation successful');
+    },
+    onError: (error) => {
+      console.error('❌ Location request mutation failed:', error);
+    },
+  });
 }
 
 // ============================================================================
