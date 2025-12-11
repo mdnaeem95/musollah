@@ -1,34 +1,35 @@
 /**
- * Musollah Screen (Refactored)
+ * Musollah Screen (MODERN DESIGN v2.0)
  * 
- * Main screen for finding prayer facilities:
- * - Bidets
- * - Musollahs (prayer rooms)
- * - Mosques
+ * Premium prayer facility finder with:
+ * - Glassmorphism UI
+ * - Staggered animations
+ * - Haptic feedback
+ * - Islamic design elements
+ * - Prayer-aware content
  * 
- * Features:
- * - Interactive map with markers
- * - Search filtering
- * - Tab-based navigation
- * - Detail sheets
- * - Error and empty states
- * - Loading skeletons
+ * @version 2.0
+ * @updated December 2025
  */
 
-import React, { useEffect, useCallback, memo } from 'react';
-import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Text, RefreshControl } from 'react-native';
-import { SearchBar } from '@rneui/themed';
-import SegmentedControl from '@react-native-segmented-control/segmented-control';
+import React, { useEffect, useCallback, memo, useMemo, useState } from 'react';
+import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Text, TextInput, Platform } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import { FlashList } from '@shopify/flash-list';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { MotiView } from 'moti';
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
+
 import Map from '../../../components/musollah/Map';
+import IslamicPatternOverlay from '../../../components/food/IslamicPatternOverlay';
 import { useLocationStore } from '../../../stores/useLocationStore';
 import { MosqueLocation, LocationUnion } from '../../../api/services/musollah';
 import BidetSheet from './BidetSheet';
 import MosqueSheet from './MosqueSheet';
 import MusollahSheet from './MusollahSheet';
-import { useLocationsTab, isBidetLocation, isMusollahLocation, isMosqueLocation } from '../../../hooks/locations/useLocationsTab';
+import { useLocationsTab, isBidetLocation, isMusollahLocation, isMosqueLocation} from '../../../hooks/locations/useLocationsTab';
+import AddLocationSheet from '../../../components/musollah/AddLocationSheet';
 
 // ============================================================================
 // CONSTANTS
@@ -42,78 +43,338 @@ const LOCATION_ICONS: Record<string, string> = {
   Mosques: 'mosque',
 };
 
+const SPACING = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+};
+
 // ============================================================================
-// SUB-COMPONENTS
+// CUSTOM SEARCH BAR (Glassmorphism)
+// ============================================================================
+
+interface CustomSearchBarProps {
+  value: string;
+  onChangeText: (text: string) => void;
+  onClear: () => void;
+  placeholder: string;
+  theme: any;
+  isDarkMode: boolean;
+}
+
+const CustomSearchBar = memo(function CustomSearchBar({
+  value,
+  onChangeText,
+  onClear,
+  placeholder,
+  theme,
+  isDarkMode,
+}: CustomSearchBarProps) {
+  const handleClear = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onClear();
+  }, [onClear]);
+
+  return (
+    <MotiView
+      from={{ opacity: 0, translateY: -20 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{ type: 'spring', damping: 20 }}
+    >
+      <BlurView
+        intensity={20}
+        tint={isDarkMode ? 'dark' : 'light'}
+        style={[styles.searchContainer, { backgroundColor: theme.colors.secondary }]}
+      >
+        {/* Search Icon */}
+        <View style={[styles.searchIconContainer, { backgroundColor: theme.colors.accent }]}>
+          <FontAwesome6 name="magnifying-glass" size={16} color="#fff" />
+        </View>
+
+        {/* Input */}
+        <TextInput
+          style={[styles.searchInput, { color: theme.colors.text.primary }]}
+          placeholder={placeholder}
+          placeholderTextColor={theme.colors.text.muted}
+          value={value}
+          onChangeText={onChangeText}
+          returnKeyType="search"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+
+        {/* Clear Button */}
+        {value.length > 0 && (
+          <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
+            <FontAwesome6 name="circle-xmark" size={18} color={theme.colors.text.secondary} />
+          </TouchableOpacity>
+        )}
+      </BlurView>
+    </MotiView>
+  );
+});
+
+// ============================================================================
+// CUSTOM SEGMENTED CONTROL (Premium Pills)
+// ============================================================================
+
+interface PremiumSegmentedControlProps {
+  selectedIndex: number;
+  onIndexChange: (index: number) => void;
+  theme: any;
+  isDarkMode: boolean;
+}
+
+const PremiumSegmentedControl = memo(function PremiumSegmentedControl({
+  selectedIndex,
+  onIndexChange,
+  theme,
+  isDarkMode,
+}: PremiumSegmentedControlProps) {
+  const handlePress = useCallback(
+    (index: number) => {
+      if (index !== selectedIndex) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        onIndexChange(index);
+      }
+    },
+    [selectedIndex, onIndexChange]
+  );
+
+  return (
+    <MotiView
+      from={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: 'spring', damping: 20, delay: 100 }}
+    >
+      <BlurView
+        intensity={15}
+        tint={isDarkMode ? 'dark' : 'light'}
+        style={[styles.segmentedContainer, { backgroundColor: theme.colors.secondary }]}
+      >
+        {LOCATION_TYPES.map((type, index) => {
+          const isSelected = index === selectedIndex;
+          const icon = LOCATION_ICONS[type];
+
+          return (
+            <TouchableOpacity
+              key={type}
+              onPress={() => handlePress(index)}
+              activeOpacity={0.7}
+              style={styles.segmentButton}
+            >
+              <MotiView
+                animate={{
+                  backgroundColor: isSelected ? theme.colors.accent : 'transparent',
+                }}
+                transition={{ type: 'timing', duration: 200 }}
+                style={styles.segmentInner}
+              >
+                <FontAwesome6
+                  name={icon}
+                  size={14}
+                  color={isSelected ? '#fff' : theme.colors.text.secondary}
+                />
+                <Text
+                  style={[
+                    styles.segmentText,
+                    {
+                      color: isSelected ? '#fff' : theme.colors.text.secondary,
+                      fontFamily: isSelected ? 'Outfit_600SemiBold' : 'Outfit_500Medium',
+                    },
+                  ]}
+                >
+                  {type}
+                </Text>
+              </MotiView>
+            </TouchableOpacity>
+          );
+        })}
+      </BlurView>
+    </MotiView>
+  );
+});
+
+// ============================================================================
+// LOCATION ITEM (Glassmorphism Card)
 // ============================================================================
 
 interface LocationItemProps {
   item: LocationUnion;
+  index: number;
   onPress: (location: LocationUnion) => void;
   theme: any;
+  isDarkMode: boolean;
 }
 
-const LocationItem = memo(function LocationItem({ 
-  item, 
-  onPress, 
-  theme 
+const LocationItem = memo(function LocationItem({
+  item,
+  index,
+  onPress,
+  theme,
+  isDarkMode,
 }: LocationItemProps) {
-  const handlePress = useCallback(() => onPress(item), [item, onPress]);
-  
+  const handlePress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onPress(item);
+  }, [item, onPress]);
+
   // Get status color for bidets/musollahs
-  const getStatusColor = () => {
+  const statusInfo = useMemo(() => {
     if ('status' in item) {
       switch (item.status) {
-        case 'Available': return '#22c55e'; // green
-        case 'Unavailable': return '#ef4444'; // red
-        default: return '#6b7280'; // gray
+        case 'Available':
+          return { color: '#4CAF50', label: 'Available', icon: 'circle-check' };
+        case 'Unavailable':
+          return { color: '#ff6b6b', label: 'Unavailable', icon: 'circle-xmark' };
+        default:
+          return { color: '#9CA3AF', label: 'Unknown', icon: 'circle-question' };
       }
     }
     return null;
-  };
-  
-  const statusColor = getStatusColor();
-  
+  }, [item]);
+
   return (
-    <TouchableOpacity
-      style={[styles.itemContainer, { backgroundColor: theme.colors.secondary }]}
-      onPress={handlePress}
-      activeOpacity={0.7}
+    <MotiView
+      from={{ opacity: 0, translateY: 20 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{
+        type: 'spring',
+        delay: index * 50, // Staggered entrance
+        damping: 20,
+      }}
     >
-      <View style={styles.itemContent}>
-        <View style={styles.itemTextContainer}>
-          <Text 
-            style={[styles.locationText, { color: theme.colors.text.primary }]}
-            numberOfLines={1}
-          >
-            {item.building || 'Unknown Location'}
-          </Text>
-          <Text 
-            style={[styles.addressText, { color: theme.colors.text.secondary }]}
-            numberOfLines={1}
-          >
-            {item.address || 'No address'}
-          </Text>
-        </View>
-        
-        <View style={styles.itemMeta}>
-          {statusColor && (
-            <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-          )}
-          <Text style={[styles.distanceText, { color: theme.colors.accent }]}>
-            {item.distance !== undefined 
-              ? `${item.distance.toFixed(1)} km` 
-              : '-- km'}
-          </Text>
-          <FontAwesome6 
-            name="chevron-right" 
-            size={12} 
-            color={theme.colors.text.secondary} 
-          />
-        </View>
-      </View>
-    </TouchableOpacity>
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
+        <BlurView
+          intensity={20}
+          tint={isDarkMode ? 'dark' : 'light'}
+          style={[styles.locationCard, { backgroundColor: theme.colors.secondary }]}
+        >
+          <View style={styles.locationCardContent}>
+            {/* Left: Info */}
+            <View style={styles.locationInfo}>
+              <Text
+                style={[styles.locationName, { color: theme.colors.text.primary }]}
+                numberOfLines={1}
+              >
+                {item.building || 'Unknown Location'}
+              </Text>
+              <Text
+                style={[styles.locationAddress, { color: theme.colors.text.secondary }]}
+                numberOfLines={1}
+              >
+                {item.address || 'No address'}
+              </Text>
+
+              {/* Status Badge (if applicable) */}
+              {statusInfo && (
+                <View
+                  style={[
+                    styles.statusBadge,
+                    { backgroundColor: statusInfo.color + '15' },
+                  ]}
+                >
+                  <FontAwesome6
+                    name={statusInfo.icon}
+                    size={10}
+                    color={statusInfo.color}
+                  />
+                  <Text style={[styles.statusText, { color: statusInfo.color }]}>
+                    {statusInfo.label}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Right: Distance + Arrow */}
+            <View style={styles.locationMeta}>
+              <View style={[styles.distanceBadge, { backgroundColor: theme.colors.accent }]}>
+                <FontAwesome6 name="location-dot" size={12} color="#fff" />
+                <Text style={styles.distanceText}>
+                  {item.distance !== undefined
+                    ? item.distance < 1
+                      ? `${Math.round(item.distance * 1000)}m`
+                      : `${item.distance.toFixed(1)} km`
+                    : '--'}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </BlurView>
+      </TouchableOpacity>
+    </MotiView>
   );
 });
+
+// ============================================================================
+// STATS HEADER (Quick Info)
+// ============================================================================
+
+interface StatsHeaderProps {
+  locationCount: number;
+  nearestDistance?: number;
+  theme: any;
+  isDarkMode: boolean;
+}
+
+const StatsHeader = memo(function StatsHeader({
+  locationCount,
+  nearestDistance,
+  theme,
+  isDarkMode,
+}: StatsHeaderProps) {
+  return (
+    <MotiView
+      from={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: 'spring', damping: 15, delay: 150 }}
+      style={styles.statsContainer}
+    >
+      <BlurView
+        intensity={15}
+        tint={isDarkMode ? 'dark' : 'light'}
+        style={[styles.statCard, { backgroundColor: theme.colors.secondary }]}
+      >
+        <FontAwesome6 name="location-dot" size={16} color={theme.colors.accent} />
+        <View>
+          <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>
+            {locationCount}
+          </Text>
+          <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>
+            Found
+          </Text>
+        </View>
+      </BlurView>
+
+      {nearestDistance !== undefined && (
+        <BlurView
+          intensity={15}
+          tint={isDarkMode ? 'dark' : 'light'}
+          style={[styles.statCard, { backgroundColor: theme.colors.secondary }]}
+        >
+          <FontAwesome6 name="bullseye" size={16} color={theme.colors.accent} />
+          <View>
+            <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>
+              {nearestDistance < 1
+                ? `${Math.round(nearestDistance * 1000)}m`
+                : `${nearestDistance.toFixed(1)}km`}
+            </Text>
+            <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>
+              Nearest
+            </Text>
+          </View>
+        </BlurView>
+      )}
+    </MotiView>
+  );
+});
+
+// ============================================================================
+// EMPTY STATE (Premium)
+// ============================================================================
 
 interface EmptyStateProps {
   type: string;
@@ -121,31 +382,34 @@ interface EmptyStateProps {
   theme: any;
 }
 
-const EmptyState = memo(function EmptyState({ 
-  type, 
-  isSearching, 
-  theme 
-}: EmptyStateProps) {
+const EmptyState = memo(function EmptyState({ type, isSearching, theme }: EmptyStateProps) {
   const icon = LOCATION_ICONS[type] || 'location-dot';
-  
+
   return (
-    <View style={styles.emptyContainer}>
-      <FontAwesome6 
-        name={icon} 
-        size={48} 
-        color={theme.colors.text.secondary} 
-      />
+    <MotiView
+      from={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: 'spring', damping: 15 }}
+      style={styles.emptyContainer}
+    >
+      <View style={[styles.emptyIconContainer, { backgroundColor: theme.colors.accent + '15' }]}>
+        <FontAwesome6 name={icon} size={48} color={theme.colors.accent} />
+      </View>
       <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>
         {isSearching ? 'No Results Found' : `No ${type} Nearby`}
       </Text>
       <Text style={[styles.emptySubtitle, { color: theme.colors.text.secondary }]}>
-        {isSearching 
-          ? 'Try a different search term'
+        {isSearching
+          ? 'Try adjusting your search terms'
           : `We couldn't find any ${type.toLowerCase()} in your area`}
       </Text>
-    </View>
+    </MotiView>
   );
 });
+
+// ============================================================================
+// ERROR STATE (Premium)
+// ============================================================================
 
 interface ErrorStateProps {
   error: Error | null;
@@ -153,33 +417,37 @@ interface ErrorStateProps {
   theme: any;
 }
 
-const ErrorState = memo(function ErrorState({ 
-  error, 
-  onRetry, 
-  theme 
-}: ErrorStateProps) {
+const ErrorState = memo(function ErrorState({ error, onRetry, theme }: ErrorStateProps) {
+  const handleRetry = useCallback(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    onRetry();
+  }, [onRetry]);
+
   return (
     <View style={styles.errorContainer}>
-      <FontAwesome6 
-        name="triangle-exclamation" 
-        size={48} 
-        color="#ef4444" 
-      />
+      <View style={[styles.errorIconContainer, { backgroundColor: '#ff6b6b15' }]}>
+        <FontAwesome6 name="triangle-exclamation" size={48} color="#ff6b6b" />
+      </View>
       <Text style={[styles.errorTitle, { color: theme.colors.text.primary }]}>
         Something Went Wrong
       </Text>
       <Text style={[styles.errorSubtitle, { color: theme.colors.text.secondary }]}>
         {error?.message || 'Unable to load locations'}
       </Text>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.retryButton, { backgroundColor: theme.colors.accent }]}
-        onPress={onRetry}
+        onPress={handleRetry}
       >
+        <FontAwesome6 name="arrow-rotate-right" size={14} color="#fff" />
         <Text style={styles.retryButtonText}>Try Again</Text>
       </TouchableOpacity>
     </View>
   );
 });
+
+// ============================================================================
+// LOCATION PERMISSION PROMPT (Premium)
+// ============================================================================
 
 interface LocationPermissionPromptProps {
   onRequestPermission: () => void;
@@ -190,25 +458,37 @@ const LocationPermissionPrompt = memo(function LocationPermissionPrompt({
   onRequestPermission,
   theme,
 }: LocationPermissionPromptProps) {
+  const handleRequest = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onRequestPermission();
+  }, [onRequestPermission]);
+
   return (
     <View style={styles.permissionContainer}>
-      <FontAwesome6 
-        name="location-dot" 
-        size={48} 
-        color={theme.colors.accent} 
-      />
-      <Text style={[styles.permissionTitle, { color: theme.colors.text.primary }]}>
-        Location Access Needed
-      </Text>
-      <Text style={[styles.permissionSubtitle, { color: theme.colors.text.secondary }]}>
-        We need your location to find nearby prayer facilities
-      </Text>
-      <TouchableOpacity 
-        style={[styles.permissionButton, { backgroundColor: theme.colors.accent }]}
-        onPress={onRequestPermission}
+      <IslamicPatternOverlay opacity={0.04} />
+      <MotiView
+        from={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: 'spring', damping: 15 }}
+        style={styles.permissionContent}
       >
-        <Text style={styles.permissionButtonText}>Enable Location</Text>
-      </TouchableOpacity>
+        <View style={[styles.permissionIcon, { backgroundColor: theme.colors.accent + '15' }]}>
+          <FontAwesome6 name="location-crosshairs" size={48} color={theme.colors.accent} />
+        </View>
+        <Text style={[styles.permissionTitle, { color: theme.colors.text.primary }]}>
+          Location Access Needed
+        </Text>
+        <Text style={[styles.permissionSubtitle, { color: theme.colors.text.secondary }]}>
+          We need your location to find nearby prayer facilities and calculate accurate distances
+        </Text>
+        <TouchableOpacity
+          style={[styles.permissionButton, { backgroundColor: theme.colors.accent }]}
+          onPress={handleRequest}
+        >
+          <FontAwesome6 name="location-dot" size={16} color="#fff" />
+          <Text style={styles.permissionButtonText}>Enable Location</Text>
+        </TouchableOpacity>
+      </MotiView>
     </View>
   );
 });
@@ -220,7 +500,12 @@ const LocationPermissionPrompt = memo(function LocationPermissionPrompt({
 export default function MusollahScreen() {
   const { theme, isDarkMode } = useTheme();
   const { userLocation, fetchLocation, isLoading: locationLoading } = useLocationStore();
-  
+  const [isAddLocationSheetVisible, setIsAddLocationSheetVisible] = useState(false);
+
+  const handleOpenAddLocation = () => {
+    setIsAddLocationSheetVisible(true);
+  };
+
   const {
     selectedIndex,
     setSelectedIndex,
@@ -239,6 +524,14 @@ export default function MusollahScreen() {
     locationCount,
   } = useLocationsTab(userLocation);
 
+  // Calculate nearest distance
+  const nearestDistance = useMemo(() => {
+    if (filteredLocations.length > 0 && filteredLocations[0].distance !== undefined) {
+      return filteredLocations[0].distance;
+    }
+    return undefined;
+  }, [filteredLocations]);
+
   // Fetch user location on mount
   useEffect(() => {
     if (!userLocation && !locationLoading) {
@@ -253,13 +546,18 @@ export default function MusollahScreen() {
   }, [fetchLocation]);
 
   // Render location item
-  const renderItem = useCallback(({ item }: { item: LocationUnion }) => (
-    <LocationItem 
-      item={item} 
-      onPress={handleSelectLocation} 
-      theme={theme} 
-    />
-  ), [handleSelectLocation, theme]);
+  const renderItem = useCallback(
+    ({ item, index }: { item: LocationUnion; index: number }) => (
+      <LocationItem
+        item={item}
+        index={index}
+        onPress={handleSelectLocation}
+        theme={theme}
+        isDarkMode={isDarkMode}
+      />
+    ),
+    [handleSelectLocation, theme, isDarkMode]
+  );
 
   // Key extractor
   const keyExtractor = useCallback((item: LocationUnion) => item.id, []);
@@ -268,6 +566,7 @@ export default function MusollahScreen() {
   if (locationLoading && !userLocation) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+        <IslamicPatternOverlay opacity={0.04} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.accent} />
           <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
@@ -282,81 +581,77 @@ export default function MusollahScreen() {
   if (!userLocation && !locationLoading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
-        <LocationPermissionPrompt 
-          onRequestPermission={fetchLocation} 
-          theme={theme} 
-        />
+        <LocationPermissionPrompt onRequestPermission={fetchLocation} theme={theme} />
       </View>
     );
   }
 
+  // Main render
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+      <IslamicPatternOverlay opacity={0.04} />
+
       <View style={styles.content}>
         {/* Map */}
-        <Map
-          region={region}
-          markerLocations={filteredLocations}
-          onMarkerPress={handleSelectLocation}
-          onRegionChangeComplete={() => {}}
-          onRefocusPress={() => {}}
-          shouldFollowUserLocation={true}
-          locationType={LOCATION_TYPES[selectedIndex]}
-        />
+        <View style={styles.mapContainer}>
+          <Map
+            region={region}
+            markerLocations={filteredLocations}
+            onMarkerPress={handleSelectLocation}
+            onAddLocationPress={handleOpenAddLocation}
+            shouldFollowUserLocation
+            onRegionChangeComplete={() => {}}
+            onRefocusPress={() => {}}
+            locationType={LOCATION_TYPES[selectedIndex]}
+          />
 
-        {/* Overlay UI */}
-        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-          {/* Search Bar */}
-          <View style={styles.topOverlay}>
-            <SearchBar
-              placeholder={`Search ${LOCATION_TYPES[selectedIndex].toLowerCase()}...`}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              onClear={clearSearch}
-              platform="default"
-              round
-              lightTheme={!isDarkMode}
-              containerStyle={[
-                styles.searchBarContainer,
-                { backgroundColor: 'transparent' }
-              ]}
-              inputContainerStyle={{ 
-                backgroundColor: theme.colors.secondary,
-                borderRadius: 12,
-              }}
-              inputStyle={{ color: theme.colors.text.primary }}
-              placeholderTextColor={theme.colors.text.secondary}
-            />
-          </View>
+          <AddLocationSheet
+            visible={isAddLocationSheetVisible}
+            onClose={() => setIsAddLocationSheetVisible(false)}
+          />
+        </View>
 
-          {/* List Container */}
-          <View style={[styles.listContainer, { backgroundColor: theme.colors.primary }]}>
-            {/* Segmented Control */}
-            <SegmentedControl
-              style={styles.segmentedControl}
-              backgroundColor={theme.colors.secondary}
-              tintColor={theme.colors.accent}
-              fontStyle={{ 
-                color: theme.colors.text.secondary,
-                fontFamily: 'Outfit_500Medium',
-              }}
-              activeFontStyle={{ 
-                color: '#fff',
-                fontFamily: 'Outfit_600SemiBold',
-              }}
-              values={LOCATION_TYPES as unknown as string[]}
-              selectedIndex={selectedIndex}
-              onChange={(event) => setSelectedIndex(event.nativeEvent.selectedSegmentIndex)}
-            />
+        {/* Search Bar Overlay */}
+        <View style={styles.searchOverlay}>
+          <CustomSearchBar
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onClear={clearSearch}
+            placeholder={`Search ${LOCATION_TYPES[selectedIndex].toLowerCase()}...`}
+            theme={theme}
+            isDarkMode={isDarkMode}
+          />
+        </View>
 
-            {/* Results Count */}
-            <View style={styles.resultsHeader}>
-              <Text style={[styles.resultsCount, { color: theme.colors.text.secondary }]}>
-                {isLoading 
-                  ? 'Loading...' 
-                  : `${locationCount} ${locationCount === 1 ? 'location' : 'locations'} found`}
-              </Text>
+        {/* Bottom Sheet Container */}
+        <View style={styles.bottomSheet}>
+          <BlurView
+            intensity={40}
+            tint={isDarkMode ? 'dark' : 'light'}
+            style={[styles.bottomSheetInner, { backgroundColor: theme.colors.primary }]}
+          >
+            {/* Handle Bar */}
+            <View style={styles.handleContainer}>
+              <View style={[styles.handleBar, { backgroundColor: theme.colors.text.muted }]} />
             </View>
+
+            {/* Segmented Control */}
+            <View style={styles.segmentedWrapper}>
+              <PremiumSegmentedControl
+                selectedIndex={selectedIndex}
+                onIndexChange={setSelectedIndex}
+                theme={theme}
+                isDarkMode={isDarkMode}
+              />
+            </View>
+
+            {/* Stats */}
+            <StatsHeader
+              locationCount={locationCount}
+              nearestDistance={nearestDistance}
+              theme={theme}
+              isDarkMode={isDarkMode}
+            />
 
             {/* Content */}
             {isError ? (
@@ -366,14 +661,14 @@ export default function MusollahScreen() {
                 <ActivityIndicator size="large" color={theme.colors.accent} />
               </View>
             ) : filteredLocations.length === 0 ? (
-              <EmptyState 
-                type={LOCATION_TYPES[selectedIndex]} 
+              <EmptyState
+                type={LOCATION_TYPES[selectedIndex]}
                 isSearching={searchQuery.length > 0}
-                theme={theme} 
+                theme={theme}
               />
             ) : (
               <FlashList
-                estimatedItemSize={80}
+                estimatedItemSize={100}
                 data={filteredLocations}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
@@ -382,34 +677,34 @@ export default function MusollahScreen() {
                 ItemSeparatorComponent={() => <View style={styles.separator} />}
               />
             )}
-          </View>
+          </BlurView>
         </View>
-
-        {/* Detail Sheets */}
-        {selectedIndex === 0 && selectedLocation && isBidetLocation(selectedLocation) && (
-          <BidetSheet
-            locationId={selectedLocation.id}
-            visible={isSheetVisible}
-            onClose={handleCloseSheet}
-          />
-        )}
-
-        {selectedIndex === 1 && selectedLocation && isMusollahLocation(selectedLocation) && (
-          <MusollahSheet
-            locationId={selectedLocation.id}
-            visible={isSheetVisible}
-            onClose={handleCloseSheet}
-          />
-        )}
-
-        {selectedIndex === 2 && selectedLocation && isMosqueLocation(selectedLocation) && (
-          <MosqueSheet
-            location={selectedLocation as MosqueLocation}
-            visible={isSheetVisible}
-            onClose={handleCloseSheet}
-          />
-        )}
       </View>
+
+      {/* Detail Sheets */}
+      {selectedIndex === 0 && selectedLocation && isBidetLocation(selectedLocation) && (
+        <BidetSheet
+          locationId={selectedLocation.id}
+          visible={isSheetVisible}
+          onClose={handleCloseSheet}
+        />
+      )}
+
+      {selectedIndex === 1 && selectedLocation && isMusollahLocation(selectedLocation) && (
+        <MusollahSheet
+          locationId={selectedLocation.id}
+          visible={isSheetVisible}
+          onClose={handleCloseSheet}
+        />
+      )}
+
+      {selectedIndex === 2 && selectedLocation && isMosqueLocation(selectedLocation) && (
+        <MosqueSheet
+          location={selectedLocation as MosqueLocation}
+          visible={isSheetVisible}
+          onClose={handleCloseSheet}
+        />
+      )}
     </View>
   );
 }
@@ -425,172 +720,352 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  topOverlay: {
-    marginTop: 10,
-    paddingHorizontal: 16,
+  mapContainer: {
+    flex: 1,
+  },
+
+  // Search Overlay
+  searchOverlay: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 20,
+    left: SPACING.xl,
+    right: SPACING.xl,
     zIndex: 10,
   },
-  listContainer: {
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    gap: SPACING.md,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  searchIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'Outfit_400Regular',
+  },
+  clearButton: {
+    padding: SPACING.xs,
+  },
+
+  // Bottom Sheet
+  bottomSheet: {
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    height: '45%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    height: '50%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  searchBarContainer: {
-    marginTop: 30,
-    padding: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-  },
-  segmentedControl: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  resultsHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  resultsCount: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 13,
-  },
-  itemContainer: {
-    marginHorizontal: 16,
-    borderRadius: 12,
+  bottomSheetInner: {
+    flex: 1,
     overflow: 'hidden',
   },
-  itemContent: {
+  handleContainer: {
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+  },
+  handleBar: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    opacity: 0.3,
+  },
+
+  // Segmented Control
+  segmentedWrapper: {
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.md,
+  },
+  segmentedContainer: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    padding: 4,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  segmentButton: {
+    flex: 1,
+  },
+  segmentInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    borderRadius: 10,
   },
-  itemTextContainer: {
-    flex: 1,
-    marginRight: 12,
-  },
-  locationText: {
-    fontFamily: 'Outfit_500Medium',
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  addressText: {
-    fontFamily: 'Outfit_400Regular',
+  segmentText: {
     fontSize: 13,
   },
-  itemMeta: {
+
+  // Stats Header
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.md,
+    gap: SPACING.md,
+  },
+  statCard: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SPACING.md,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  statValue: {
+    fontSize: 18,
+    fontFamily: 'Outfit_700Bold',
+    lineHeight: 22,
+  },
+  statLabel: {
+    fontSize: 11,
+    fontFamily: 'Outfit_400Regular',
+  },
+
+  // Location Card
+  locationCard: {
+    marginHorizontal: SPACING.xl,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  locationCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.lg,
+    gap: SPACING.md,
+  },
+  locationInfo: {
+    flex: 1,
+    gap: SPACING.xs,
+  },
+  locationName: {
+    fontSize: 16,
+    fontFamily: 'Outfit_600SemiBold',
+    lineHeight: 22,
+  },
+  locationAddress: {
+    fontSize: 13,
+    fontFamily: 'Outfit_400Regular',
+    lineHeight: 18,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: SPACING.xs,
+  },
+  statusText: {
+    fontSize: 11,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  locationMeta: {
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  distanceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 999,
   },
   distanceText: {
-    fontFamily: 'Outfit_600SemiBold',
     fontSize: 13,
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#fff',
   },
+
+  // List
   separator: {
-    height: 8,
+    height: SPACING.md,
   },
   flashListContent: {
     paddingBottom: 100,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 14,
   },
   listLoadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+
+  // Loading State
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: SPACING.lg,
+  },
+  loadingText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 15,
+  },
+
+  // Empty State
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
-    gap: 12,
+    paddingHorizontal: 40,
+    gap: SPACING.md,
+  },
+  emptyIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
   },
   emptyTitle: {
-    fontFamily: 'Outfit_600SemiBold',
-    fontSize: 18,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 20,
     textAlign: 'center',
   },
   emptySubtitle: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
+    lineHeight: 22,
   },
+
+  // Error State
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
-    gap: 12,
+    paddingHorizontal: 40,
+    gap: SPACING.md,
+  },
+  errorIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
   },
   errorTitle: {
-    fontFamily: 'Outfit_600SemiBold',
-    fontSize: 18,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 20,
     textAlign: 'center',
   },
   errorSubtitle: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
+    lineHeight: 22,
   },
   retryButton: {
-    marginTop: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginTop: SPACING.md,
+    paddingHorizontal: SPACING.xxl,
+    paddingVertical: SPACING.md,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
   },
   retryButtonText: {
     fontFamily: 'Outfit_600SemiBold',
-    fontSize: 14,
+    fontSize: 15,
     color: '#fff',
   },
+
+  // Permission Prompt
   permissionContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
-    gap: 12,
+    paddingHorizontal: 40,
+  },
+  permissionContent: {
+    alignItems: 'center',
+    gap: SPACING.lg,
+  },
+  permissionIcon: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
   },
   permissionTitle: {
-    fontFamily: 'Outfit_600SemiBold',
-    fontSize: 20,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 24,
     textAlign: 'center',
   },
   permissionSubtitle: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
-    marginBottom: 8,
+    lineHeight: 22,
   },
   permissionButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    marginTop: SPACING.md,
+    paddingHorizontal: SPACING.xxl,
+    paddingVertical: SPACING.lg,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
   permissionButtonText: {
     fontFamily: 'Outfit_600SemiBold',
-    fontSize: 14,
+    fontSize: 16,
     color: '#fff',
   },
 });
