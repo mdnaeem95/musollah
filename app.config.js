@@ -51,9 +51,7 @@ export default {
       },
       "googleServicesFile": "./google-services.json",
       "package": "com.naeemsani.rihlah",
-      "runtimeVersion": {
-        "policy": "appVersion"
-      }
+      "runtimeVersion": "exposdk:52.0.0"
     },
     "web": {
       "favicon": "./assets/favicon.png"
