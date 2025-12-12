@@ -72,7 +72,7 @@
     "react-native-error-boundary": "^2.0.0",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-get-random-values": "~1.11.0",
-    "react-native-google-mobile-ads": "^14.8.0",
+    "react-native-google-mobile-ads": "^14.11.0",
     "react-native-maps": "1.18.0",
     "react-native-mmkv": "^2.12.2",
     "react-native-modal": "^13.0.1",
