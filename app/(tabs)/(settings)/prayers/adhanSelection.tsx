@@ -1,12 +1,28 @@
+/**
+ * Adhan Selection - Modern Design
+ * 
+ * Select and preview adhan audio
+ * 
+ * @version 2.0
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { MotiView } from 'moti';
+import * as Haptics from 'expo-haptics';
+
 import { useTheme } from '../../../../context/ThemeContext';
 import { usePrayerSettings } from '../../../../hooks/settings/usePrayerSettings';
+import { calculateContrastColor } from '../../../../utils';
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 const AdhanSelectionScreen = () => {
-  const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const { theme, isDarkMode } = useTheme();
 
   const {
     adhanOptions,
@@ -16,140 +32,287 @@ const AdhanSelectionScreen = () => {
   } = usePrayerSettings();
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.description}>
-        Select the adhan audio you want to hear for prayer times. Tap to preview.
-      </Text>
+    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+      <View style={styles.content}>
+        {/* Description */}
+        <MotiView
+          from={{ opacity: 0, translateY: -20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', damping: 20 }}
+        >
+          <BlurView
+            intensity={20}
+            tint={isDarkMode ? 'dark' : 'light'}
+            style={[styles.descriptionCard, { backgroundColor: theme.colors.secondary }]}
+          >
+            <View style={[styles.descriptionIcon, { backgroundColor: theme.colors.text.muted + '15' }]}>
+              <FontAwesome6 name="circle-info" size={18} color={theme.colors.text.muted} />
+            </View>
+            <Text style={[styles.description, { color: theme.colors.text.secondary }]}>
+              Select the adhan audio you want to hear for prayer times. Tap to preview.
+            </Text>
+          </BlurView>
+        </MotiView>
 
-      <FlatList
-        data={adhanOptions}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item, index }) => {
-          const isSelected = item.label === selectedAdhan;
-          const isLastItem = index === adhanOptions.length - 1;
+        {/* Adhan Options */}
+        <FlatList
+          data={adhanOptions}
+          keyExtractor={(item) => item.id.toString()}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item, index }) => {
+            const isSelected = item.label === selectedAdhan;
+            const accentBg = theme.colors.accent;
+            const accentText = calculateContrastColor(accentBg);
 
-          return (
-            <TouchableOpacity
-              style={[
-                styles.adhanOption,
-                !isLastItem && styles.adhanOptionBorder,
-                isSelected && styles.selectedOption,
-              ]}
-              onPress={() => handleAdhanSelect(item)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.optionContent}>
-                {isSelected && (
-                  <FontAwesome6
-                    name="check-circle"
-                    size={20}
-                    color={theme.colors.accent}
-                    solid
-                  />
-                )}
-                <Text
-                  style={[
-                    styles.adhanLabel,
-                    isSelected && styles.selectedLabel,
-                  ]}
+            return (
+              <MotiView
+                from={{ opacity: 0, translateX: -20 }}
+                animate={{ opacity: 1, translateX: 0 }}
+                transition={{
+                  type: 'spring',
+                  delay: index * 80,
+                  damping: 20,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    handleAdhanSelect(item);
+                  }}
+                  activeOpacity={0.7}
                 >
-                  {item.label}
+                  <BlurView
+                    intensity={20}
+                    tint={isDarkMode ? 'dark' : 'light'}
+                    style={[
+                      styles.adhanOption,
+                      { backgroundColor: theme.colors.secondary },
+                      isSelected && [styles.selectedOption, { backgroundColor: accentBg + '20' }],
+                    ]}
+                  >
+                    {/* Icon or Checkmark */}
+                    <View style={[
+                      styles.optionIcon,
+                      { backgroundColor: isSelected ? accentBg : theme.colors.accent + '15' },
+                    ]}>
+                      {isSelected ? (
+                        <FontAwesome6
+                          name="check"
+                          size={18}
+                          color={accentText}
+                        />
+                      ) : (
+                        <FontAwesome6
+                          name="music"
+                          size={16}
+                          color={theme.colors.accent}
+                        />
+                      )}
+                    </View>
+
+                    {/* Label */}
+                    <Text
+                      style={[
+                        styles.adhanLabel,
+                        { color: theme.colors.text.primary },
+                        isSelected && [styles.selectedLabel, { color: theme.colors.accent }],
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+
+                    {/* Play Icon */}
+                    {item.file && (
+                      <View style={[styles.playIcon, { backgroundColor: theme.colors.accent + '15' }]}>
+                        <FontAwesome6
+                          name="play"
+                          size={12}
+                          color={theme.colors.accent}
+                        />
+                      </View>
+                    )}
+                  </BlurView>
+                </TouchableOpacity>
+              </MotiView>
+            );
+          }}
+        />
+
+        {/* Playing Indicator */}
+        {isPlayingAdhan && (
+          <MotiView
+            from={{ opacity: 0, translateY: 20 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            exit={{ opacity: 0, translateY: 20 }}
+            transition={{ type: 'spring', damping: 20 }}
+            style={styles.playingContainer}
+          >
+            <BlurView
+              intensity={30}
+              tint={isDarkMode ? 'dark' : 'light'}
+              style={[styles.playingIndicator, { backgroundColor: theme.colors.secondary }]}
+            >
+              <View style={[styles.playingIcon, { backgroundColor: theme.colors.accent }]}>
+                <FontAwesome6
+                  name="volume-high"
+                  size={18}
+                  color={calculateContrastColor(theme.colors.accent)}
+                />
+              </View>
+              <View style={styles.playingContent}>
+                <Text style={[styles.playingLabel, { color: theme.colors.text.primary }]}>
+                  Playing Preview
+                </Text>
+                <Text style={[styles.playingSubtext, { color: theme.colors.text.secondary }]}>
+                  Listen to the adhan...
                 </Text>
               </View>
-
-              {item.file && (
-                <FontAwesome6
-                  name="play"
-                  size={16}
-                  color={theme.colors.text.muted}
-                />
-              )}
-            </TouchableOpacity>
-          );
-        }}
-        contentContainerStyle={styles.listContent}
-      />
-
-      {isPlayingAdhan && (
-        <View style={styles.playingIndicator}>
-          <FontAwesome6
-            name="volume-high"
-            size={20}
-            color={theme.colors.accent}
-          />
-          <Text style={styles.playingText}>Playing preview...</Text>
-        </View>
-      )}
+            </BlurView>
+          </MotiView>
+        )}
+      </View>
     </View>
   );
 };
 
-const createStyles = (theme: any) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.primary,
-      padding: theme.spacing.medium,
-    },
-    description: {
-      fontFamily: 'Outfit_400Regular',
-      fontSize: theme.fontSizes.medium,
-      color: theme.colors.text.muted,
-      marginBottom: theme.spacing.medium,
-      lineHeight: 22,
-    },
-    listContent: {
-      backgroundColor: theme.colors.secondary,
-      borderRadius: theme.borderRadius.large,
-      ...theme.shadows.default,
-    },
-    adhanOption: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: theme.spacing.medium,
-      paddingHorizontal: theme.spacing.medium,
-    },
-    adhanOptionBorder: {
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.text.muted + '20',
-    },
-    selectedOption: {
-      backgroundColor: theme.colors.accent + '10',
-    },
-    optionContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.small,
-      flex: 1,
-    },
-    adhanLabel: {
-      fontFamily: 'Outfit_500Medium',
-      fontSize: theme.fontSizes.medium,
-      color: theme.colors.text.secondary,
-    },
-    selectedLabel: {
-      color: theme.colors.accent,
-      fontFamily: 'Outfit_600SemiBold',
-    },
-    playingIndicator: {
-      position: 'absolute',
-      bottom: theme.spacing.large,
-      left: theme.spacing.medium,
-      right: theme.spacing.medium,
-      backgroundColor: theme.colors.secondary,
-      padding: theme.spacing.medium,
-      borderRadius: theme.borderRadius.medium,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.small,
-      ...theme.shadows.strong,
-    },
-    playingText: {
-      fontFamily: 'Outfit_500Medium',
-      fontSize: theme.fontSizes.medium,
-      color: theme.colors.text.secondary,
-    },
-  });
+// ============================================================================
+// STYLES
+// ============================================================================
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+
+  // Description Card
+  descriptionCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 16,
+    borderRadius: 14,
+    marginBottom: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  descriptionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  description: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Outfit_400Regular',
+    lineHeight: 20,
+  },
+
+  // List
+  listContent: {
+    gap: 12,
+    paddingBottom: 100, // Space for playing indicator
+  },
+
+  // Adhan Option
+  adhanOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  selectedOption: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  optionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  adhanLabel: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Outfit_500Medium',
+  },
+  selectedLabel: {
+    fontFamily: 'Outfit_700Bold',
+  },
+  playIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Playing Indicator
+  playingContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+  },
+  playingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  playingIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  playingContent: {
+    flex: 1,
+    gap: 4,
+  },
+  playingLabel: {
+    fontSize: 15,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  playingSubtext: {
+    fontSize: 13,
+    fontFamily: 'Outfit_400Regular',
+  },
+});
 
 export default AdhanSelectionScreen;

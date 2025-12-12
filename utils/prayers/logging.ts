@@ -147,10 +147,17 @@ export const getPrayerAvailability = (
     return [];
   }
 
+  const base: Record<string, unknown> =
+    'prayers' in prayerTimes && typeof (prayerTimes as any).prayers === 'object'
+      ? ((prayerTimes as any).prayers as Record<string, unknown>)
+      : 'timings' in prayerTimes && typeof (prayerTimes as any).timings === 'object'
+      ? ((prayerTimes as any).timings as Record<string, unknown>)
+      : (prayerTimes as Record<string, unknown>);
+
   const now = new Date();
   const results: PrayerAvailability[] = [];
 
-  for (const [key, value] of Object.entries(prayerTimes)) {
+  for (const [key, value] of Object.entries(base)) {
     // Skip non-prayer keys
     if (!VALID_PRAYER_KEYS.has(key)) continue;
 
