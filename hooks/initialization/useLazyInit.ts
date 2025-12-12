@@ -18,6 +18,9 @@ import { initializeAuthListener } from '../../stores/useAuthStore';
 import { cache } from '../../api/client/storage';
 import { fetchSurahs } from '../../api/services/quran';
 import { QURAN_QUERY_KEYS } from '../../api/services/quran';
+import { updatePrayerTimesWidget } from '../../utils/widgetBridge';
+import { Platform } from 'react-native';
+import { modernPrayerService } from '../../services/prayer.service';
 
 // Track if lazy init has run
 let hasInitialized = false;
@@ -59,6 +62,9 @@ export const useLazyInit = (isReady: boolean) => {
 
     // 4. Preload Quran data (async, doesn't block)
     preloadQuranData();
+
+    // 5. ✅ Update iOS Widget with monthly prayer times
+    updateIOSWidget();
   };
 
   const initAuthMonitoring = () => {
@@ -126,6 +132,45 @@ export const useLazyInit = (isReady: boolean) => {
       console.log('✅ Quran data loaded');
     } catch (err) {
       console.warn('⚠️ Quran data preloading failed:', err);
+    }
+  };
+
+  const updateIOSWidget = async () => {
+    // Only run on iOS
+    if (Platform.OS !== 'ios') {
+      console.log('⏭️ Skipping widget update (not iOS)');
+      return;
+    }
+
+    try {
+      console.log('📱 Updating iOS widget with monthly prayer times...');
+
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1; // 1-12
+      const currentYear = now.getFullYear();
+
+      // Check cache first (instant, synchronous)
+      const cacheKey = `monthly_times_${currentYear}_${currentMonth}`;
+      const cachedData = cache.get(cacheKey);
+
+      if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+        console.log('✅ Using cached monthly times for widget');
+        
+        // Update widget with cached data
+        await updatePrayerTimesWidget(cachedData);
+        console.log('✅ Widget updated (from cache)');
+        return;
+      }
+
+      // Fetch from Firebase if not cached
+      // This will automatically update the widget inside the service
+      console.log('🌐 Fetching monthly prayer times for widget');
+      await modernPrayerService.fetchMonthlyPrayerTimes(currentYear, currentMonth);
+      
+      console.log('✅ Widget updated (from network)');
+    } catch (err) {
+      console.warn('⚠️ Widget update failed (non-critical):', err);
+      // Don't throw - widget failure shouldn't affect app
     }
   };
 };

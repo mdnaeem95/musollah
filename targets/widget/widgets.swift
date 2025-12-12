@@ -3,54 +3,92 @@ import SwiftUI
 
 // MARK: - Models
 struct PrayerDay: Codable {
-    let date: String // "d/M/yyyy"
+    let date: String
     let time: [String: String]
 }
 
 struct PrayerTimesEntry: TimelineEntry {
     let date: Date
     let prayerTimes: [String: String]
+    let lastUpdated: Date?
+    let dataSource: DataSource
+    
+    enum DataSource {
+        case live, sample, error
+    }
 }
 
 // MARK: - Provider
 struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> PrayerTimesEntry {
-        PrayerTimesEntry(date: Date(), prayerTimes: samplePrayerTimes)
+        PrayerTimesEntry(
+            date: Date(),
+            prayerTimes: samplePrayerTimes,
+            lastUpdated: nil,
+            dataSource: .sample
+        )
     }
 
     func getSnapshot(in context: Context, completion: @escaping (PrayerTimesEntry) -> Void) {
-        let entry = PrayerTimesEntry(date: Date(), prayerTimes: loadPrayerTimesForToday())
+        let (times, lastUpdated, source) = loadPrayerTimesForToday()
+        let entry = PrayerTimesEntry(
+            date: Date(),
+            prayerTimes: times,
+            lastUpdated: lastUpdated,
+            dataSource: source
+        )
         completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PrayerTimesEntry>) -> Void) {
-        let prayerTimes = loadPrayerTimesForToday()
+        let (times, lastUpdated, source) = loadPrayerTimesForToday()
         var entries: [PrayerTimesEntry] = []
 
         let calendar = Calendar.current
         let currentDate = Date()
 
+        // Create entries for every hour
         for hourOffset in 0..<24 {
             if let entryDate = calendar.date(byAdding: .hour, value: hourOffset, to: currentDate) {
-                let entry = PrayerTimesEntry(date: entryDate, prayerTimes: prayerTimes)
+                let entry = PrayerTimesEntry(
+                    date: entryDate,
+                    prayerTimes: times,
+                    lastUpdated: lastUpdated,
+                    dataSource: source
+                )
                 entries.append(entry)
             }
         }
 
-        // End of day fallback
+        // Refresh at midnight
         let midnight = calendar.startOfDay(for: currentDate.addingTimeInterval(86400))
         let timeline = Timeline(entries: entries, policy: .after(midnight))
         completion(timeline)
     }
 
-    private func loadPrayerTimesForToday() -> [String: String] {
+    // ✅ Returns (prayerTimes, lastUpdated, dataSource)
+    private func loadPrayerTimesForToday() -> ([String: String], Date?, PrayerTimesEntry.DataSource) {
         let suiteName = "group.com.rihlah.prayerTimesWidget"
         let key = "prayerTimes2025"
+        let timestampKey = "lastUpdated"
 
-        guard let userDefaults = UserDefaults(suiteName: suiteName),
-              let jsonString = userDefaults.string(forKey: key),
+        guard let userDefaults = UserDefaults(suiteName: suiteName) else {
+            print("❌ Cannot access shared UserDefaults")
+            return (samplePrayerTimes, nil, .error)
+        }
+        
+        // Get last updated timestamp
+        var lastUpdated: Date?
+        if let timestampString = userDefaults.string(forKey: timestampKey),
+           let timestamp = ISO8601DateFormatter().date(from: timestampString) {
+            lastUpdated = timestamp
+            print("✅ Last updated:", timestamp)
+        }
+        
+        guard let jsonString = userDefaults.string(forKey: key),
               let jsonData = jsonString.data(using: .utf8) else {
-            return samplePrayerTimes
+            print("⚠️ No prayer data found, using sample")
+            return (samplePrayerTimes, lastUpdated, .sample)
         }
 
         do {
@@ -60,13 +98,16 @@ struct Provider: TimelineProvider {
             let todayKey = formatter.string(from: Date())
 
             if let todayData = prayerList.first(where: { $0.date == todayKey }) {
-                return todayData.time.mapKeys { $0.capitalized }
+                print("✅ Loaded prayer times for:", todayKey)
+                return (todayData.time.mapKeys { $0.capitalized }, lastUpdated, .live)
+            } else {
+                print("⚠️ No data for today:", todayKey)
+                return (samplePrayerTimes, lastUpdated, .sample)
             }
         } catch {
             print("❌ JSON decode error:", error.localizedDescription)
+            return (samplePrayerTimes, lastUpdated, .error)
         }
-
-        return samplePrayerTimes
     }
 
     private var samplePrayerTimes: [String: String] {
@@ -88,7 +129,6 @@ extension Dictionary {
     }
 }
 
-// MARK: - Shared Time Logic
 func hasPrayerPassed(_ prayer: String, entry: PrayerTimesEntry) -> Bool {
     guard let timeString = entry.prayerTimes[prayer],
           let date = timeStringToDate(timeString, now: entry.date) else {
@@ -109,100 +149,94 @@ func timeStringToDate(_ time: String, now: Date) -> Date? {
     return nil
 }
 
-// MARK: - Home Widget View (3x2 Grid)
+// MARK: - 🆕 Standardized Lock Screen Component
+struct LockScreenPrayerTimesView: View {
+    let entry: PrayerTimesEntry
+    let prayers: [String]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(prayers, id: \.self) { prayer in
+                let time = entry.prayerTimes[prayer] ?? "--:--"
+                let isPast = hasPrayerPassed(prayer, entry: entry)
+
+                HStack(spacing: 6) {
+                    Text(prayer)
+                        .font(.system(size: 13, weight: .semibold))
+                        .frame(width: 52, alignment: .leading)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .foregroundColor(isPast ? .gray : .white)
+
+                    Text(time)
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .foregroundColor(isPast ? .gray : .white)
+                }
+                .opacity(isPast ? 0.6 : 1.0)
+            }
+            
+            // ✅ Data freshness indicator (only show if data is old)
+            if let lastUpdated = entry.lastUpdated {
+                let hoursSinceUpdate = Date().timeIntervalSince(lastUpdated) / 3600
+                if hoursSinceUpdate > 24 {
+                    HStack(spacing: 2) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 8))
+                        Text("Stale")
+                            .font(.system(size: 8, weight: .medium))
+                    }
+                    .foregroundColor(.orange)
+                    .padding(.top, 2)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Home Widget View
 struct PrayerTimesWidgetView: View {
     @Environment(\.widgetFamily) var family
     let entry: PrayerTimesEntry
 
     var body: some View {
-        switch family {
-        case .accessoryRectangular:
-            EmptyView() // handled separately
-        default:
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
+            // ✅ Header with data source indicator
+            HStack {
+                Text("Prayer Times")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                
+                Spacer()
+                
+                if entry.dataSource == .sample {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.orange)
+                }
+            }
+            
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                 ForEach(["Subuh", "Syuruk", "Zohor", "Asar", "Maghrib", "Isyak"], id: \.self) { prayer in
                     let time = entry.prayerTimes[prayer] ?? "--:--"
                     let isPast = hasPrayerPassed(prayer, entry: entry)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(prayer)
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: 11, weight: .semibold))
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
                             .foregroundStyle(isPast ? .secondary : .primary)
-                            .strikethrough(isPast, color: .secondary)
 
                         Text(time)
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(.system(size: 13, design: .monospaced))
                             .foregroundStyle(isPast ? .secondary : .primary)
-                            .strikethrough(isPast, color: .secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-            .padding(10)
-        }
-    }
-}
-
-// MARK: - Lock Screen Left
-struct LeftPrayerTimesWidgetView: View {
-    let entry: PrayerTimesEntry
-    var prayers: [String] = ["Subuh", "Syuruk", "Zohor"]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ForEach(prayers, id: \.self) { prayer in
-                let time = entry.prayerTimes[prayer] ?? "--:--"
-                let isPast = hasPrayerPassed(prayer, entry: entry)
-
-                HStack {
-                    Text(prayer)
-                        .font(.system(size: 13, weight: .semibold))
-                        .frame(width: 50, alignment: .leading) // Increase width for longer names like "Maghrib"
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.9) // Less aggressive scaling
-                        .foregroundColor(isPast ? .gray : .white)
-                        .scaleEffect(isPast ? 0.95 : 1)
-
-
-                    Text(time)
-                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(isPast ? .gray : .white)
-                        .scaleEffect(isPast ? 0.95 : 1)
+                    .opacity(isPast ? 0.5 : 1.0)
                 }
             }
         }
-    }
-}
-
-// MARK: - Lock Screen Right
-struct RightPrayerTimesWidgetView: View {
-    let entry: PrayerTimesEntry
-    var prayers: [String] = ["Asar", "Maghrib", "Isyak"]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ForEach(prayers, id: \.self) { prayer in
-                let time = entry.prayerTimes[prayer] ?? "--:--"
-                let isPast = hasPrayerPassed(prayer, entry: entry)
-
-                HStack {
-                    Text(prayer)
-                        .font(.system(size: 13, weight: .semibold))
-                        .frame(width: 50, alignment: .leading) // Increase width for longer names like "Maghrib"
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.9) // Less aggressive scaling
-                        .foregroundColor(isPast ? .gray : .white)
-                        .strikethrough(isPast, color: .secondary)
-
-                    Text(time)
-                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                        .foregroundColor(isPast ? .gray : .white)
-                        .strikethrough(isPast, color: .secondary)
-                }
-            }
-        }
+        .padding(12)
     }
 }
 
@@ -214,7 +248,7 @@ struct PrayerTimesWidget: Widget {
                 .containerBackground(.ultraThinMaterial, for: .widget)
         }
         .configurationDisplayName("Prayer Times")
-        .description("Full 6 prayer times")
+        .description("All 6 daily prayer times")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
@@ -222,10 +256,13 @@ struct PrayerTimesWidget: Widget {
 struct LeftPrayerTimesWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "LeftPrayerTimesWidget", provider: Provider()) { entry in
-            LeftPrayerTimesWidgetView(entry: entry)
-                .containerBackground(.ultraThinMaterial, for: .widget)
+            LockScreenPrayerTimesView(
+                entry: entry,
+                prayers: ["Subuh", "Syuruk", "Zohor"]
+            )
+            .containerBackground(.ultraThinMaterial, for: .widget)
         }
-        .configurationDisplayName("Prayer Times (1/2)")
+        .configurationDisplayName("Prayer Times (Morning)")
         .description("Subuh, Syuruk, Zohor")
         .supportedFamilies([.accessoryRectangular])
     }
@@ -234,10 +271,13 @@ struct LeftPrayerTimesWidget: Widget {
 struct RightPrayerTimesWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "RightPrayerTimesWidget", provider: Provider()) { entry in
-            RightPrayerTimesWidgetView(entry: entry)
-                .containerBackground(.ultraThinMaterial, for: .widget)
+            LockScreenPrayerTimesView(
+                entry: entry,
+                prayers: ["Asar", "Maghrib", "Isyak"]
+            )
+            .containerBackground(.ultraThinMaterial, for: .widget)
         }
-        .configurationDisplayName("Prayer Times (2/2)")
+        .configurationDisplayName("Prayer Times (Evening)")
         .description("Asar, Maghrib, Isyak")
         .supportedFamilies([.accessoryRectangular])
     }
