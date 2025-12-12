@@ -7,6 +7,8 @@ import { storage } from '../utils/storage'; // Your MMKV storage
 import { DailyPrayerTimes, PrayerName, PrayerLog } from '../utils/types/prayer.types';
 import { DATE_FORMATS, CACHE_KEYS, CACHE_DURATION } from '../constants/prayer.constants';
 import { ApiError, NetworkError, ValidationError } from '../utils/errors';
+import { Platform } from 'react-native';
+import { updatePrayerTimesWidget } from '../utils/widgetBridge';
 
 interface CachedData<T> { data: T; timestamp: number; version: string;}
 
@@ -407,6 +409,17 @@ class ModernPrayerService {
 
       // Cache
       this.setCachedData(cacheKey, monthlyData);
+
+      // ✅ UPDATE WIDGET with monthly data
+      if (Platform.OS === 'ios' && monthlyData.length > 0) {
+        try {
+          await updatePrayerTimesWidget(monthlyData);
+          console.log('✅ Widget updated with monthly data');
+        } catch (widgetError) {
+          console.error('⚠️ Widget update failed:', widgetError);
+          // Don't throw - widget update failure shouldn't break prayer times fetch
+        }
+      }
 
       return monthlyData;
     } catch (error) {

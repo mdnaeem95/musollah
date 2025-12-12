@@ -112,7 +112,8 @@ export default {
         }
       ],
       [
-        "expo-tracking-transparency"
+        "expo-tracking-transparency",
+        "expo-localization"
       ],
       "@react-native-firebase/auth",
       "@react-native-firebase/app",
