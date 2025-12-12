@@ -1,5 +1,18 @@
+/**
+ * Doa (After Prayer Supplications) - Modern Design
+ * 
+ * Display list of duas to recite after prayer with Arabic text,
+ * romanization, and English translation
+ * 
+ * @version 2.0
+ */
+
 import React, { useState, useCallback } from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import { MotiView } from 'moti';
+import * as Haptics from 'expo-haptics';
+
 import { useTheme } from '../../../../context/ThemeContext';
 import { useDoa } from '../../../../hooks/prayer/doa/useDoa';
 import DoaItem from '../../../../components/prayer/doa/DoaItem';
@@ -16,8 +29,9 @@ import type { DoaAfterPrayer } from '../../../../types/doa.types';
  * - Fetches duas from Firebase
  * - Displays Arabic text, romanization, and translation
  * - Info modal with guidance
- * - Error handling and retry
- * - Optimized FlatList rendering
+ * - Staggered animations
+ * - Haptic feedback
+ * - Optimized FlashList rendering
  */
 const Doa: React.FC = () => {
   const { theme } = useTheme();
@@ -25,29 +39,35 @@ const Doa: React.FC = () => {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
 
   const handleInfoPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setModalVisible(true);
   }, []);
 
   const handleModalClose = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setModalVisible(false);
   }, []);
 
-  const renderItem = useCallback(({ item }: { item: DoaAfterPrayer }) => (
-    <DoaItem
-      item={item}
-      textColor={theme.colors.text.primary}
-      secondaryColor={theme.colors.text.secondary}
-      mutedColor={theme.colors.text.muted}
-    />
-  ), [theme.colors.text]);
+  const renderItem = useCallback(
+    ({ item, index }: { item: DoaAfterPrayer; index: number }) => (
+      <MotiView
+        from={{ opacity: 0, translateY: 20 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{
+          type: 'spring',
+          delay: index * 60, // Stagger effect
+          damping: 20,
+        }}
+      >
+        <DoaItem item={item} index={index} />
+      </MotiView>
+    ),
+    []
+  );
 
   const renderHeader = useCallback(() => (
-    <DoaListHeader
-      onInfoPress={handleInfoPress}
-      backgroundColor={theme.colors.secondary}
-      iconColor={theme.colors.text.primary}
-    />
-  ), [handleInfoPress, theme.colors.secondary, theme.colors.text.primary]);
+    <DoaListHeader onInfoPress={handleInfoPress} />
+  ), [handleInfoPress]);
 
   const keyExtractor = useCallback((item: DoaAfterPrayer) => item.id, []);
 
@@ -55,7 +75,7 @@ const Doa: React.FC = () => {
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
-        <LoadingState color={theme.colors.text.muted} />
+        <LoadingState />
       </View>
     );
   }
@@ -64,36 +84,24 @@ const Doa: React.FC = () => {
   if (error) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
-        <ErrorState
-          error={error}
-          onRetry={refetch}
-          textColor={theme.colors.text.primary}
-          buttonColor={theme.colors.secondary}
-        />
+        <ErrorState error={error} onRetry={refetch} />
       </View>
     );
   }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
-      <FlatList
+      <FlashList
         data={doas}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        removeClippedSubviews
-        updateCellsBatchingPeriod={50}
+        estimatedItemSize={200}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
       />
 
-      <DoaInfoModal
-        visible={modalVisible}
-        onClose={handleModalClose}
-        backgroundColor={theme.colors.secondary}
-        textColor={theme.colors.text.primary}
-      />
+      <DoaInfoModal visible={modalVisible} onClose={handleModalClose} />
     </View>
   );
 };
@@ -101,7 +109,10 @@ const Doa: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingVertical: 16,
+  },
+  listContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
 });
 

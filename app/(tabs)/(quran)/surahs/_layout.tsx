@@ -1,8 +1,14 @@
-import React, { useContext, useEffect, useState } from 'react';
+/**
+ * Quran Section Layout - Modern Design
+ * 
+ * @version 2.0
+ */
+
+import React, { useState } from 'react';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 import SettingsModal from '../../../../components/quran/SettingsModal';
 import { useTheme } from '../../../../context/ThemeContext';
 
@@ -10,20 +16,17 @@ const SurahDetailLayout = () => {
   const router = useRouter();
   const pathname = usePathname();
   const [isModalVisible, setModalVisible] = useState(false);
-  const { theme, isDarkMode, toggleDarkMode, textSize, setTextSize, reciter, setReciter } =
-    useTheme();
+  const { theme, isDarkMode, toggleDarkMode, textSize, setTextSize, reciter, setReciter } = useTheme();
 
-  const toggleModal = () => setModalVisible(!isModalVisible);
+  const toggleModal = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setModalVisible(!isModalVisible);
+  };
 
-  useEffect(() => {
-    const loadTextSize = async () => {
-      const savedTextSize = await AsyncStorage.getItem('textSize');
-      if (savedTextSize !== null) {
-        setTextSize(parseInt(savedTextSize, 10));
-      }
-    };
-    loadTextSize();
-  }, []);
+  const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.back();
+  };
 
   return (
     <View style={styles.container}>
@@ -32,8 +35,10 @@ const SurahDetailLayout = () => {
           name="index"
           options={{
             headerShown: true,
-            headerTitle: 'Surahs',
-            headerStyle: { backgroundColor: theme.colors.primary },
+            headerTitle: 'Quran',
+            headerStyle: { 
+              backgroundColor: theme.colors.primary,
+            },
             headerTintColor: theme.colors.text.primary,
             headerTitleStyle: {
               fontFamily: 'Outfit_700Bold',
@@ -41,22 +46,26 @@ const SurahDetailLayout = () => {
               color: theme.colors.text.primary,
             },
             headerLeft: () => (
-              <TouchableOpacity onPress={() => router.back()}>
+              <TouchableOpacity 
+                onPress={handleBack}
+                style={styles.headerButton}
+              >
                 <FontAwesome6
                   name="arrow-left"
-                  size={24}
+                  size={20}
                   color={theme.colors.text.primary}
-                  style={{ padding: 10 }}
                 />
               </TouchableOpacity>
             ),
             headerRight: () => (
-              <TouchableOpacity onPress={toggleModal}>
+              <TouchableOpacity 
+                onPress={toggleModal}
+                style={styles.headerButton}
+              >
                 <FontAwesome6
                   name="gear"
-                  size={24}
+                  size={20}
                   color={theme.colors.text.primary}
-                  style={{ padding: 10 }}
                 />
               </TouchableOpacity>
             ),
@@ -66,8 +75,10 @@ const SurahDetailLayout = () => {
           name="[id]"
           options={{
             headerShown: true,
-            headerTitle: 'Surahs',
-            headerStyle: { backgroundColor: theme.colors.primary },
+            headerTitle: 'Surah',
+            headerStyle: { 
+              backgroundColor: theme.colors.primary,
+            },
             headerTintColor: theme.colors.text.primary,
             headerTitleStyle: {
               fontFamily: 'Outfit_700Bold',
@@ -75,22 +86,26 @@ const SurahDetailLayout = () => {
               color: theme.colors.text.primary,
             },
             headerLeft: () => (
-              <TouchableOpacity onPress={() => router.back()}>
+              <TouchableOpacity 
+                onPress={handleBack}
+                style={styles.headerButton}
+              >
                 <FontAwesome6
                   name="arrow-left"
-                  size={24}
+                  size={20}
                   color={theme.colors.text.primary}
-                  style={{ padding: 10 }}
                 />
               </TouchableOpacity>
             ),
             headerRight: () => (
-              <TouchableOpacity onPress={toggleModal}>
+              <TouchableOpacity 
+                onPress={toggleModal}
+                style={styles.headerButton}
+              >
                 <FontAwesome6
                   name="gear"
-                  size={24}
+                  size={20}
                   color={theme.colors.text.primary}
-                  style={{ padding: 10 }}
                 />
               </TouchableOpacity>
             ),
@@ -117,6 +132,9 @@ const SurahDetailLayout = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerButton: {
+    padding: 12,
   },
 });
 

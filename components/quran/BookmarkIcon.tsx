@@ -1,39 +1,60 @@
+/**
+ * BookmarkIcon - Lottie Bookmark Animation
+ * 
+ * @version 2.0 - Improved wrapper
+ */
+
 import React, { useRef, useEffect } from 'react';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
 import LottieView from 'lottie-react-native';
 
 interface BookmarkIconProps {
-    isBookmarked: boolean;
-    onToggle: () => void;
-    size?: number; // Optional size for the icon
+  isBookmarked: boolean;
+  onToggle: () => void;
+  size?: number;
 }
 
-const BookmarkIcon: React.FC<BookmarkIconProps> = ({ isBookmarked, onToggle, size = 40 }) => {
-    const animation = useRef<LottieView>(null);
+const BookmarkIcon: React.FC<BookmarkIconProps> = ({ 
+  isBookmarked, 
+  onToggle, 
+  size = 40 
+}) => {
+  const animation = useRef<LottieView>(null);
 
-    useEffect(() => {
-        if (isBookmarked) {
-            animation.current?.play(0, 60); // Play animation for bookmarked state
-        } else {
-            animation.current?.reset(); // Reset animation for unbookmarked state
-        }
+  useEffect(() => {
+    if (isBookmarked) {
+      animation.current?.play(0, 60);
+    } else {
+      animation.current?.reset();
+    }
 
-        // Stop the animation on the last frame after it finishes
-        setTimeout(() => {
-            animation.current?.pause(); // Pause the animation on the last frame
-        }, 1000); // Adjust based on your animation duration
-    }, [isBookmarked]);
+    setTimeout(() => {
+      animation.current?.pause();
+    }, 1000);
+  }, [isBookmarked]);
 
-    return (
-        <TouchableOpacity onPress={onToggle} style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <LottieView
-                ref={animation}
-                source={require('../../assets/animations/bookmark.json')} // Adjust the path
-                loop={false}
-                style={{ width: size, height: size }}
-            />
-        </TouchableOpacity>
-    );
+  return (
+    <TouchableOpacity 
+      onPress={onToggle} 
+      style={styles.container}
+      activeOpacity={0.7}
+    >
+      <LottieView
+        ref={animation}
+        source={require('../../assets/animations/bookmark.json')}
+        loop={false}
+        style={{ width: size, height: size }}
+      />
+    </TouchableOpacity>
+  );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 4,
+  },
+});
 
 export default BookmarkIcon;

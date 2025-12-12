@@ -1,16 +1,28 @@
-// [id].tsx - Updated with ScrollView and no card
-import { ScrollView, Text, StyleSheet, View } from 'react-native';
-import React from 'react';
+/**
+ * Dua Detail Page - Modern Design
+ * 
+ * Beautiful Islamic supplication display with glassmorphism
+ * 
+ * @version 2.0
+ */
+
+import React, { useCallback } from 'react';
+import { ScrollView, Text, StyleSheet, View, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { BlurView } from 'expo-blur';
+import { MotiView } from 'moti';
+import { FontAwesome6 } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import Toast from 'react-native-toast-message';
+
 import { useTheme } from '../../../../context/ThemeContext';
 import { useDoaBookmarksStore } from '../../../../stores/useDoaBookmarkStore';
 import { useDoa } from '../../../../api/services/duas';
-import Toast from 'react-native-toast-message';
 import BookmarkIcon from '../../../../components/quran/BookmarkIcon';
 
 const DoaContent = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { theme, textSize } = useTheme();
+  const { theme, textSize, isDarkMode } = useTheme();
   
   const doa = useDoa(id);
   
@@ -22,26 +34,33 @@ const DoaContent = () => {
 
   const isBookmarked = checkIsBookmarked(id);
 
-  const showAddBookMarkToast = () => {
+  // ============================================================================
+  // HANDLERS
+  // ============================================================================
+
+  const showAddBookMarkToast = useCallback(() => {
     Toast.show({
       type: 'success',
-      text1: 'Doa has been added to your bookmarks!',
+      text1: 'Dua Added to Bookmarks',
+      text2: 'You can find it in your bookmarks',
       visibilityTime: 2000,
       autoHide: true,
     });
-  };
+  }, []);
 
-  const showRemoveBookMarkToast = () => {
+  const showRemoveBookMarkToast = useCallback(() => {
     Toast.show({
-      type: 'removed',
-      text1: 'Doa has been removed from your bookmarks!',
+      type: 'info',
+      text1: 'Dua Removed from Bookmarks',
       visibilityTime: 2000,
       autoHide: true,
     });
-  };
+  }, []);
 
-  const toggleBookmark = () => {
+  const toggleBookmark = useCallback(() => {
     if (!doa) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     if (isBookmarked) {
       removeBookmark(id);
@@ -50,112 +69,355 @@ const DoaContent = () => {
       addBookmark(id, doa.title);
       showAddBookMarkToast();
     }
-  };
+  }, [doa, id, isBookmarked, removeBookmark, addBookmark, showAddBookMarkToast, showRemoveBookMarkToast]);
+
+  // ============================================================================
+  // LOADING STATE
+  // ============================================================================
 
   if (!doa) {
     return (
-      <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
-        <Text style={[styles.errorText, { color: theme.colors.text.primary }]}>
-          Doa not found
+      <View style={[styles.centerContainer, { backgroundColor: theme.colors.primary }]}>
+        <ActivityIndicator size="large" color={theme.colors.accent} />
+        <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
+          Loading Dua...
         </Text>
       </View>
     );
   }
 
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+
   return (
-    <ScrollView 
-      style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.headerContainer}>
-        <Text style={[styles.titleText, { color: theme.colors.text.primary }]}>
-          {doa.title}
-        </Text>
-        <BookmarkIcon isBookmarked={isBookmarked} onToggle={toggleBookmark} size={45} />
-      </View>
+    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
+      {/* Islamic Pattern Background */}
 
-      <Text
-        style={[
-          styles.arabicText,
-          { 
-            color: theme.colors.text.primary, 
-            fontSize: textSize, 
-            lineHeight: textSize * 2.5 
-          },
-        ]}
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
       >
-        {doa.arabicText}
-      </Text>
+        {/* Header Card */}
+        <MotiView
+          from={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', damping: 20 }}
+        >
+          <BlurView
+            intensity={20}
+            tint={isDarkMode ? 'dark' : 'light'}
+            style={[styles.headerCard, { backgroundColor: theme.colors.secondary }]}
+          >
+            <View style={styles.headerContent}>
+              {/* Icon Badge */}
+              <View style={[styles.iconBadge, { backgroundColor: theme.colors.accent + '15' }]}>
+                <FontAwesome6
+                  name="hands-praying"
+                  size={24}
+                  color={theme.colors.accent}
+                />
+              </View>
 
-      <Text 
-        style={[
-          styles.romanizedText, 
-          { color: theme.colors.text.primary, fontSize: textSize - 10 }
-        ]}
-      >
-        {doa.romanizedText}
-      </Text>
+              {/* Title */}
+              <Text style={[styles.titleText, { color: theme.colors.text.primary }]}>
+                {doa.title}
+              </Text>
 
-      <Text 
-        style={[
-          styles.translationText, 
-          { color: theme.colors.text.primary, fontSize: textSize - 12 }
-        ]}
-      >
-        {doa.englishTranslation}
-      </Text>
-      
-      <Text style={[styles.source, { color: theme.colors.text.secondary }]}>
-        Source: {doa.source}
-      </Text>
-    </ScrollView>
+              {/* Bookmark */}
+              <BookmarkIcon 
+                isBookmarked={isBookmarked} 
+                onToggle={toggleBookmark} 
+                size={42} 
+              />
+            </View>
+          </BlurView>
+        </MotiView>
+
+        {/* Arabic Text Card */}
+        <MotiView
+          from={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', delay: 100, damping: 20 }}
+        >
+          <BlurView
+            intensity={20}
+            tint={isDarkMode ? 'dark' : 'light'}
+            style={[styles.contentCard, { backgroundColor: theme.colors.secondary }]}
+          >
+            {/* Section Label */}
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, { backgroundColor: theme.colors.accent + '15' }]}>
+                <FontAwesome6
+                  name="book-quran"
+                  size={14}
+                  color={theme.colors.accent}
+                />
+              </View>
+              <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
+                Arabic Text
+              </Text>
+            </View>
+
+            {/* Arabic Text */}
+            <Text
+              style={[
+                styles.arabicText,
+                { 
+                  color: theme.colors.text.primary, 
+                  fontSize: textSize + 2,
+                  lineHeight: (textSize + 2) * 2.2,
+                },
+              ]}
+            >
+              {doa.arabicText}
+            </Text>
+          </BlurView>
+        </MotiView>
+
+        {/* Romanization Card */}
+        <MotiView
+          from={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', delay: 150, damping: 20 }}
+        >
+          <BlurView
+            intensity={20}
+            tint={isDarkMode ? 'dark' : 'light'}
+            style={[styles.contentCard, { backgroundColor: theme.colors.secondary }]}
+          >
+            {/* Section Label */}
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, { backgroundColor: theme.colors.accent + '15' }]}>
+                <FontAwesome6
+                  name="language"
+                  size={14}
+                  color={theme.colors.accent}
+                />
+              </View>
+              <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
+                Romanization
+              </Text>
+            </View>
+
+            {/* Romanized Text */}
+            <Text 
+              style={[
+                styles.romanizedText, 
+                { 
+                  color: theme.colors.text.primary, 
+                  fontSize: textSize - 4,
+                  lineHeight: (textSize - 4) * 1.6,
+                }
+              ]}
+            >
+              {doa.romanizedText}
+            </Text>
+          </BlurView>
+        </MotiView>
+
+        {/* Translation Card */}
+        <MotiView
+          from={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', delay: 200, damping: 20 }}
+        >
+          <BlurView
+            intensity={20}
+            tint={isDarkMode ? 'dark' : 'light'}
+            style={[styles.contentCard, { backgroundColor: theme.colors.secondary }]}
+          >
+            {/* Section Label */}
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, { backgroundColor: theme.colors.accent + '15' }]}>
+                <FontAwesome6
+                  name="message"
+                  size={14}
+                  color={theme.colors.accent}
+                />
+              </View>
+              <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
+                Translation
+              </Text>
+            </View>
+
+            {/* English Translation */}
+            <Text 
+              style={[
+                styles.translationText, 
+                { 
+                  color: theme.colors.text.primary, 
+                  fontSize: textSize - 4,
+                  lineHeight: (textSize - 4) * 1.6,
+                }
+              ]}
+            >
+              {doa.englishTranslation}
+            </Text>
+          </BlurView>
+        </MotiView>
+
+        {/* Source Card */}
+        <MotiView
+          from={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', delay: 250, damping: 20 }}
+        >
+          <BlurView
+            intensity={20}
+            tint={isDarkMode ? 'dark' : 'light'}
+            style={[styles.sourceCard, { backgroundColor: theme.colors.secondary }]}
+          >
+            <View style={styles.sourceRow}>
+              <FontAwesome6
+                name="book"
+                size={14}
+                color={theme.colors.text.secondary}
+              />
+              <Text style={[styles.sourceLabel, { color: theme.colors.text.secondary }]}>
+                Source:
+              </Text>
+              <Text style={[styles.sourceText, { color: theme.colors.text.primary }]}>
+                {doa.source}
+              </Text>
+            </View>
+          </BlurView>
+        </MotiView>
+      </ScrollView>
+    </View>
   );
 };
+
+// ============================================================================
+// STYLES
+// ============================================================================
 
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
   },
-  contentContainer: {
-    padding: 20,
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 15,
+    fontFamily: 'Outfit_400Regular',
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+
+  // Header Card
+  headerCard: {
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  headerContent: {
+    alignItems: 'center',
+    gap: 16,
+  },
+  iconBadge: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   titleText: {
-    fontFamily: 'Outfit_600SemiBold',
-    fontSize: 28,
-    flex: 1,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 22,
     textAlign: 'center',
+    lineHeight: 32,
   },
+
+  // Content Cards
+  contentCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(128, 128, 128, 0.15)',
+  },
+  sectionIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontFamily: 'Outfit_600SemiBold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+  // Text Styles
   arabicText: {
     fontFamily: 'Amiri_400Regular',
     textAlign: 'right',
-    marginBottom: 20,
   },
   romanizedText: {
     fontFamily: 'Outfit_400Regular',
-    marginBottom: 20,
   },
   translationText: {
     fontFamily: 'Outfit_400Regular',
-    marginBottom: 20,
   },
-  source: {
-    fontFamily: 'Outfit_400Regular',
+
+  // Source Card
+  sourceCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sourceLabel: {
     fontSize: 14,
-    textAlign: 'right',
-    marginBottom: 20,
+    fontFamily: 'Outfit_600SemiBold',
   },
-  errorText: {
+  sourceText: {
+    flex: 1,
+    fontSize: 14,
     fontFamily: 'Outfit_400Regular',
-    fontSize: 18,
-    textAlign: 'center',
-    marginTop: 50,
   },
 });
 

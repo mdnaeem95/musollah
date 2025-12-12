@@ -38,7 +38,7 @@ const PrayerLayout = () => {
       <Stack.Screen
         name="doa/index"
         options={{
-          title: 'Post-Prayer Doa',
+          title: '',
         }}
       />
       <Stack.Screen
@@ -59,7 +59,7 @@ const PrayerLayout = () => {
       <Stack.Screen
         name="khutbah/index"
         options={{
-          title: 'Friday Prayer Sermons',
+          title: '',
         }}
       />
     </Stack>

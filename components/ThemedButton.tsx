@@ -56,7 +56,7 @@ const createStyles = (theme: any) =>
     buttonText: {
       fontFamily: 'Outfit_400Regular',
       fontSize: theme.fontSizes.medium,
-      color: theme.colors.text.muted,
+      color: theme.colors.text.primary,
     },
   });
 
