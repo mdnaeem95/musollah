@@ -71,7 +71,7 @@ const QuranDashboard = () => {
     const hour = new Date().getHours();
 
     if (hour >= 5 && hour < 12) {
-      return ['#FFE5B4', '#FFA500'] as const; // Morning
+      return ['#FF9A56', '#FF6B35'] as const; // Morning
     }
     if (hour >= 12 && hour < 18) {
       return ['#87CEEB', '#4682B4'] as const; // Afternoon

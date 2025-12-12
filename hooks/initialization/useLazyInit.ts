@@ -21,6 +21,7 @@ import { QURAN_QUERY_KEYS } from '../../api/services/quran';
 import { updatePrayerTimesWidget } from '../../utils/widgetBridge';
 import { Platform } from 'react-native';
 import { modernPrayerService } from '../../services/prayer.service';
+import { CACHE_KEYS } from '../../constants/prayer.constants';
 
 // Track if lazy init has run
 let hasInitialized = false;
@@ -150,7 +151,7 @@ export const useLazyInit = (isReady: boolean) => {
       const currentYear = now.getFullYear();
 
       // Check cache first (instant, synchronous)
-      const cacheKey = `monthly_times_${currentYear}_${currentMonth}`;
+      const cacheKey = `${CACHE_KEYS.MONTHLY_TIMES}_${currentYear}_${currentMonth}`;
       const cachedData = cache.get(cacheKey);
 
       if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
