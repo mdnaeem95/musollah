@@ -93,7 +93,7 @@ const DynamicHero = () => {
         </BlurView>
         
         {/* Islamic pattern overlay (subtle, theme-aware) */}
-        <IslamicPatternOverlay opacity={0.06} />
+        <IslamicPatternOverlay opacity={0.02} />
       </LinearGradient>
     </MotiView>
   );

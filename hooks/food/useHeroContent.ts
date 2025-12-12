@@ -100,7 +100,7 @@ export const useHeroContent = (): HeroContent => {
     const hour = new Date().getHours();
     
     if (hour >= 5 && hour < 12) {
-      return ['#FFE5B4', '#FFD700'] as GradientColors;      // Morning (golden)
+      return ['#FF9A56', '#FF6B35'] as GradientColors;      // Morning (golden)
     } else if (hour >= 12 && hour < 17) {
       return ['#87CEEB', '#4682B4'] as GradientColors;      // Afternoon (sky blue)
     } else if (hour >= 17 && hour < 20) {
