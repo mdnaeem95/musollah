@@ -1,10 +1,13 @@
 // utils/widgetBridge.ts
 import { Platform } from 'react-native';
+import SharedGroupPreferences from 'react-native-shared-group-preferences';
 import { DailyPrayerTimes } from './types/prayer.types';
+
+const APP_GROUP_IDENTIFIER = 'group.com.rihlah.prayerTimesWidget';
 
 /**
  * Updates iOS widget with prayer times data
- * Called after fetching monthly prayer times from Firebase
+ * Widget will automatically reload when shared data changes
  */
 export async function updatePrayerTimesWidget(prayerTimesData: DailyPrayerTimes[]) {
   if (Platform.OS !== 'ios') {
@@ -18,17 +21,13 @@ export async function updatePrayerTimesWidget(prayerTimesData: DailyPrayerTimes[
   }
   
   try {
-    const SharedGroupPreferences = require('react-native-shared-group-preferences');
-    const appGroupIdentifier = 'group.com.rihlah.prayerTimesWidget';
-    
-    // ✅ Transform to widget format
+    // Transform to widget format
     const widgetData = prayerTimesData.map(day => {
-      // Convert ISO date (2025-01-19) to Firebase format (19/1/2025)
       const [year, month, dayNum] = day.date.split('-');
       const firebaseDate = `${parseInt(dayNum, 10)}/${parseInt(month, 10)}/${year}`;
       
       return {
-        date: firebaseDate, // Widget expects "d/M/yyyy" format
+        date: firebaseDate,
         time: {
           subuh: day.prayers.Subuh,
           syuruk: day.prayers.Syuruk,
@@ -42,33 +41,31 @@ export async function updatePrayerTimesWidget(prayerTimesData: DailyPrayerTimes[
     
     const jsonString = JSON.stringify(widgetData);
     
+    // Write prayer times data
     await SharedGroupPreferences.setItem(
       'prayerTimes2025',
       jsonString,
-      appGroupIdentifier
+      APP_GROUP_IDENTIFIER
     );
     
-    // Add timestamp for debugging
+    // Write timestamp
     await SharedGroupPreferences.setItem(
       'lastUpdated',
       new Date().toISOString(),
-      appGroupIdentifier
+      APP_GROUP_IDENTIFIER
     );
     
     console.log('✅ Widget data updated:', {
       count: widgetData.length,
       firstDate: widgetData[0]?.date,
       lastDate: widgetData[widgetData.length - 1]?.date,
-      timestamp: new Date().toISOString()
     });
     
-    // Reload widgets
-    const WidgetCenter = require('react-native-widgetcenter');
-    WidgetCenter.reloadAllTimelines();
+    // Note: Widget will auto-reload based on its timeline configuration
     
   } catch (error) {
     console.error('❌ Failed to update widget:', error);
-    throw error; // Re-throw so caller knows it failed
+    // Don't throw - widget failure shouldn't crash app
   }
 }
 
@@ -89,17 +86,14 @@ export async function getWidgetStatus() {
   }
   
   try {
-    const SharedGroupPreferences = require('react-native-shared-group-preferences');
-    const appGroupIdentifier = 'group.com.rihlah.prayerTimesWidget';
-    
     const data = await SharedGroupPreferences.getItem(
       'prayerTimes2025',
-      appGroupIdentifier
+      APP_GROUP_IDENTIFIER
     );
     
     const timestamp = await SharedGroupPreferences.getItem(
       'lastUpdated',
-      appGroupIdentifier
+      APP_GROUP_IDENTIFIER
     );
     
     return {
@@ -108,7 +102,7 @@ export async function getWidgetStatus() {
       lastUpdated: timestamp,
     };
   } catch (error) {
-    console.error('❌ Failed to get widget status:', error);
+    console.warn('⚠️ Failed to get widget status:', error);
     return { hasData: false, lastUpdated: null };
   }
 }
