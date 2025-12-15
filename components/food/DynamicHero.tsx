@@ -16,6 +16,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { useHeroContent } from '../../hooks/food/useHeroContent';
 import StatPill from './StatPill';
 import IslamicPatternOverlay from './IslamicPatternOverlay';
+import { enter } from '../../utils';
 
 const DynamicHero = () => {
   const { 
@@ -32,7 +33,7 @@ const DynamicHero = () => {
     <MotiView
       from={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', damping: 20 }}
+      transition={enter(0)}
     >
       <LinearGradient
         colors={backgroundGradient}

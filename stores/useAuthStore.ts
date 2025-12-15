@@ -2,9 +2,10 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { shallow, useShallow } from 'zustand/shallow'; // ✅ ADD THIS IMPORT
 import { defaultStorage } from '../api/client/storage';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from '@react-native-firebase/auth';
+import firestore, { doc, getDoc } from '@react-native-firebase/firestore';
 import { generateReferralCode } from '../utils'
+import { authService, db } from '../api/client/firebase';
 
 // ============================================================================
 // TYPES
@@ -295,33 +296,21 @@ export const useAuthActions = () => {
  * Call this once in your app's root component
  */
 export const initializeAuthListener = () => {
-  const auth = getAuth();
-  
-  return auth.onAuthStateChanged(async (firebaseUser) => {
+  return onAuthStateChanged(authService, async (firebaseUser) => {
     if (firebaseUser) {
-      console.log('🔄 Auth state changed - User signed in:', firebaseUser.uid);
-      
-      // Fetch user data from Firestore
       try {
-        const userDoc = await firestore()
-          .collection('users')
-          .doc(firebaseUser.uid)
-          .get();
-        
-        const userData = userDoc.data();
-        
-        const user: User = {
+        const userSnap = await getDoc(doc(db, 'users', firebaseUser.uid));
+        const userData = userSnap.data();
+
+        useAuthStore.getState().setUser({
           uid: firebaseUser.uid,
           email: firebaseUser.email || '',
-          displayName: firebaseUser.displayName || userData?.name || 'User',
-          avatarUrl: userData?.avatarUrl || 'https://via.placeholder.com/100',
-          referralCode: userData?.referralCode,
-        };
-        
-        useAuthStore.getState().setUser(user);
-      } catch (error) {
-        console.error('❌ Error fetching user data:', error);
-        // Set basic user info even if Firestore fetch fails
+          displayName: firebaseUser.displayName || (userData as any)?.name || 'User',
+          avatarUrl: (userData as any)?.avatarUrl || 'https://via.placeholder.com/100',
+          referralCode: (userData as any)?.referralCode,
+        });
+      } catch (e) {
+        console.error('❌ Error fetching user data:', e);
         useAuthStore.getState().setUser({
           uid: firebaseUser.uid,
           email: firebaseUser.email || '',
@@ -329,7 +318,6 @@ export const initializeAuthListener = () => {
         });
       }
     } else {
-      console.log('🔄 Auth state changed - User signed out');
       useAuthStore.getState().setUser(null);
     }
   });

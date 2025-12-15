@@ -8,16 +8,15 @@
 
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { usePlan } from './context';
 import { useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
-
+import { usePlan } from '../../../../context/PlanContext';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useQuranStore } from '../../../../stores/useQuranStore';
-import { calculateContrastColor } from '../../../../utils';
+import { calculateContrastColor, enter } from '../../../../utils';
 
 const TOTAL_AYAHS = 6236;
 const TOTAL_SURAHS = 114;
@@ -66,7 +65,7 @@ export default function ReviewScreen() {
         <MotiView
           from={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', damping: 20 }}
+          transition={enter(0)}
           style={styles.header}
         >
           <View style={[styles.successIcon, { backgroundColor: theme.colors.accent + '15' }]}>
@@ -85,7 +84,7 @@ export default function ReviewScreen() {
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 100, damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}
@@ -161,7 +160,7 @@ export default function ReviewScreen() {
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 150, damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}
@@ -185,7 +184,7 @@ export default function ReviewScreen() {
         <MotiView
           from={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', delay: 200, damping: 15 }}
+          transition={enter(0)}
         >
           <TouchableOpacity
             style={[styles.startButton, { backgroundColor: accentBg }]}

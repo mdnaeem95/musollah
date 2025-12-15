@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { MotiView } from 'moti';
-import { scaleSize } from '../../utils';
+import { enter, scaleSize } from '../../utils';
 import { useTheme } from '../../context/ThemeContext';
 import { PrayerName } from '../../utils/types/prayer.types';
 
@@ -29,7 +29,7 @@ const CurrentPrayerInfo: React.FC<CurrentPrayerInfoProps> = memo(({
       <MotiView
         from={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', damping: 15 }}
+        transition={enter(0)}
       >
         <Text style={styles.currentPrayerText}>
           {currentPrayer}

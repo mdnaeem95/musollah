@@ -23,7 +23,7 @@ import { useSurahs } from '../../../../api/services/quran';
 import { PlayPauseButton } from '../../../../components/quran/AyahPlayPauseButton';
 import { FloatingPlayer } from '../../../../components/quran/FloatingPlayer';
 import BookmarkIcon from '../../../../components/quran/BookmarkIcon';
-import { calculateContrastColor } from '../../../../utils';
+import { calculateContrastColor, enter } from '../../../../utils';
 import IslamicPatternOverlay from '../../../../components/food/IslamicPatternOverlay';
 
 // ============================================================================
@@ -180,11 +180,7 @@ const SurahDetailScreen = () => {
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{
-            type: 'spring',
-            delay: Math.min(index * 50, 500), // Cap delay at 500ms
-            damping: 20,
-          }}
+          transition={enter(0)}
           style={styles.ayahWrapper}
         >
           <BlurView
@@ -332,7 +328,7 @@ const SurahDetailScreen = () => {
         <MotiView
           from={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', damping: 15 }}
+          transition={enter(0)}
           style={styles.errorContainer}
         >
           <View style={[styles.errorIcon, { backgroundColor: theme.colors.text.error + '15' }]}>
@@ -369,7 +365,6 @@ const SurahDetailScreen = () => {
       {/* Ayah List */}
       <FlashList
         ref={listRef}
-        estimatedItemSize={280}
         data={surah.arabicAyahs}
         renderItem={renderAyah}
         keyExtractor={(item, index) => `ayah-${index}`}

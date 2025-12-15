@@ -30,6 +30,7 @@ import MosqueSheet from './MosqueSheet';
 import MusollahSheet from './MusollahSheet';
 import { useLocationsTab, isBidetLocation, isMusollahLocation, isMosqueLocation} from '../../../hooks/locations/useLocationsTab';
 import AddLocationSheet from '../../../components/musollah/AddLocationSheet';
+import { enter } from '../../../utils';
 
 // ============================================================================
 // CONSTANTS
@@ -82,7 +83,7 @@ const CustomSearchBar = memo(function CustomSearchBar({
     <MotiView
       from={{ opacity: 0, translateY: -20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'spring', damping: 20 }}
+      transition={enter(0)}
     >
       <BlurView
         intensity={20}
@@ -148,7 +149,7 @@ const PremiumSegmentedControl = memo(function PremiumSegmentedControl({
     <MotiView
       from={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', damping: 20, delay: 100 }}
+      transition={enter(0)}
     >
       <BlurView
         intensity={15}
@@ -241,11 +242,7 @@ const LocationItem = memo(function LocationItem({
     <MotiView
       from={{ opacity: 0, translateY: 20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{
-        type: 'spring',
-        delay: index * 50, // Staggered entrance
-        damping: 20,
-      }}
+      transition={enter(0)}
     >
       <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
         <BlurView
@@ -330,7 +327,7 @@ const StatsHeader = memo(function StatsHeader({
     <MotiView
       from={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', damping: 15, delay: 150 }}
+      transition={enter(0)}
       style={styles.statsContainer}
     >
       <BlurView
@@ -389,7 +386,7 @@ const EmptyState = memo(function EmptyState({ type, isSearching, theme }: EmptyS
     <MotiView
       from={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', damping: 15 }}
+      transition={enter(0)}
       style={styles.emptyContainer}
     >
       <View style={[styles.emptyIconContainer, { backgroundColor: theme.colors.accent + '15' }]}>
@@ -469,7 +466,7 @@ const LocationPermissionPrompt = memo(function LocationPermissionPrompt({
       <MotiView
         from={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', damping: 15 }}
+        transition={enter(0)}
         style={styles.permissionContent}
       >
         <View style={[styles.permissionIcon, { backgroundColor: theme.colors.accent + '15' }]}>
@@ -668,7 +665,6 @@ export default function MusollahScreen() {
               />
             ) : (
               <FlashList
-                estimatedItemSize={100}
                 data={filteredLocations}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}

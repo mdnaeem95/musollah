@@ -17,7 +17,7 @@ import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../../context/ThemeContext';
 import { useQuranStore, calculateRecitationProgress } from '../../../../stores/useQuranStore';
-import { calculateContrastColor } from '../../../../utils';
+import { calculateContrastColor, enter } from '../../../../utils';
 
 export default function RecitationPlanIndex() {
   const { theme, isDarkMode } = useTheme();
@@ -78,7 +78,7 @@ export default function RecitationPlanIndex() {
           <MotiView
             from={{ opacity: 0, translateY: -20 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: 'spring', damping: 20 }}
+            transition={enter(0)}
             style={styles.headerContainer}
           >
             <View style={[styles.iconBadge, { backgroundColor: theme.colors.accent + '15' }]}>
@@ -97,7 +97,7 @@ export default function RecitationPlanIndex() {
           <MotiView
             from={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: 'spring', delay: 100, damping: 20 }}
+            transition={enter(0)}
           >
             <BlurView
               intensity={20}
@@ -188,7 +188,7 @@ export default function RecitationPlanIndex() {
           <MotiView
             from={{ opacity: 0, translateY: 20 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: 'spring', delay: 200, damping: 20 }}
+            transition={enter(0)}
           >
             <TouchableOpacity
               onPress={handleStartNew}
@@ -221,7 +221,7 @@ export default function RecitationPlanIndex() {
         <MotiView
           from={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', damping: 15 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}
@@ -255,11 +255,7 @@ export default function RecitationPlanIndex() {
                   key={feature.text}
                   from={{ opacity: 0, translateX: -20 }}
                   animate={{ opacity: 1, translateX: 0 }}
-                  transition={{
-                    type: 'spring',
-                    delay: index * 100,
-                    damping: 20,
-                  }}
+                  transition={enter(0)}
                   style={styles.featureItem}
                 >
                   <View style={[styles.featureIcon, { backgroundColor: theme.colors.accent + '15' }]}>

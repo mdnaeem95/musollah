@@ -12,6 +12,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { MotiView } from 'moti';
 
 import { useTheme } from '../../../context/ThemeContext';
+import { enter } from '../../../utils';
 
 // ============================================================================
 // LOADING STATE
@@ -25,7 +26,7 @@ export const LoadingState: React.FC = () => {
       <MotiView
         from={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', damping: 15 }}
+        transition={enter(0)}
         style={styles.loadingContent}
       >
         <View style={[styles.loadingIcon, { backgroundColor: theme.colors.accent + '15' }]}>
@@ -60,7 +61,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({ error, onRetry }) => {
       <MotiView
         from={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', damping: 15 }}
+        transition={enter(0)}
         style={styles.errorContent}
       >
         <View style={[styles.errorIcon, { backgroundColor: '#ff6b6b' + '15' }]}>

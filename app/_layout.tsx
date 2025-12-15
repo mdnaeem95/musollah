@@ -1,29 +1,12 @@
-import * as Notifications from 'expo-notifications';
+import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
-import Toast from 'react-native-toast-message';
-import TrackPlayer from 'react-native-track-player';
 
-import { NotificationProvider } from '../context/NotificationContext';
+import { AuthProvider } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
-import { AuthProvider } from '../context/AuthContext'; // 👈 add this
-import { toastConfig } from '../utils/toastConfig';
-import { playbackService } from '../constants/playbackService';
-import RootLayout from './RootLayout';
+import { NotificationProvider } from '../context/NotificationContext';
+import AppShell from './_app-shell';
 
-// Notifications
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: false,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
-
-// TrackPlayer
-TrackPlayer.registerPlaybackService(() => playbackService);
-
-// React Query
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -36,22 +19,18 @@ const queryClient = new QueryClient({
       refetchOnMount: true,
       networkMode: 'offlineFirst',
     },
-    mutations: {
-      retry: 1,
-      networkMode: 'offlineFirst',
-    },
+    mutations: { retry: 1, networkMode: 'offlineFirst' },
   },
 });
 
-export default function AppLayout() {
+export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ActionSheetProvider>
         <AuthProvider>
           <ThemeProvider>
             <NotificationProvider>
-              <RootLayout />
-              <Toast config={toastConfig} />
+              <AppShell />
             </NotificationProvider>
           </ThemeProvider>
         </AuthProvider>

@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { MotiView } from 'moti';
 
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 interface QuickActionButtonProps {
   icon: string;
@@ -42,7 +43,7 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
             ? theme.colors.accent 
             : theme.colors.secondary + '80',
         }}
-        transition={{ type: 'spring', damping: 20 }}
+        transition={enter(0)}
         style={styles.button}
       >
         <FontAwesome6 

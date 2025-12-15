@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 interface CertificationBadgeProps {
   certified: boolean;
@@ -32,7 +33,7 @@ const CertificationBadge: React.FC<CertificationBadgeProps> = ({
     <MotiView
       from={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', damping: 15, delay: 300 }}
+      transition={enter(0)}
     >
       <LinearGradient
         colors={['#4CAF50', '#45A049']}

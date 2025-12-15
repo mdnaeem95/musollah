@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../context/ThemeContext';
 import { getCategoryIcon } from '../../utils/categoryIcons';
+import { enter } from '../../utils';
 
 interface CategoryPillProps {
   label: string;
@@ -50,7 +51,7 @@ const CategoryPill: React.FC<CategoryPillProps> = ({
             : 'transparent',
           scale: selected ? 1.02 : 1,
         }}
-        transition={{ type: 'spring', damping: 20 }}
+        transition={enter(0)}
         style={[styles.pill, {
           shadowColor: selected ? theme.colors.accent : '#000',
           shadowOffset: { width: 0, height: selected ? 4 : 2 },
@@ -80,7 +81,7 @@ const CategoryPill: React.FC<CategoryPillProps> = ({
           <MotiView
             from={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ type: 'spring', damping: 15, delay: 200 }}
+            transition={enter(0)}
             style={[styles.countBadge, {
               backgroundColor: selected 
                 ? 'rgba(255,255,255,0.3)' 

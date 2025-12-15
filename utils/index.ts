@@ -1,11 +1,7 @@
-import { format, parse } from 'date-fns';
 import { ayahList } from './constants';
 import { Animated, Dimensions } from 'react-native';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
-import * as FileSystem from "expo-file-system";
-import * as MediaLibrary from "expo-media-library";
-import { Alert } from "react-native";
 
 export const formatIslamicDate = (hijriDate: string): string => {
     const [day, month, year] = hijriDate.split('-');
@@ -88,3 +84,14 @@ export const maskEmail = (email: string): string => {
   }
   return `${'*'.repeat(5)}${localPart.slice(5)}@${domain}`;
 };
+
+import { Easing } from 'react-native-reanimated';
+import { storage } from './storage';
+import { cacheStorage, userStorage } from '../api/client/storage';
+
+export const enter = (delay = 0) => ({
+  type: 'timing' as const,
+  duration: 220,
+  delay,
+  easing: Easing.out(Easing.cubic),
+});

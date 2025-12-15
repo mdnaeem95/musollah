@@ -15,7 +15,7 @@ import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
 
 import { useTheme } from '../../../../context/ThemeContext';
-import { maskEmail } from '../../../../utils';
+import { enter, maskEmail } from '../../../../utils';
 
 // Medal colors for top 3
 const MEDAL_COLORS = {
@@ -79,11 +79,7 @@ const LeaderboardScreen = () => {
             <MotiView
                 from={{ opacity: 0, translateX: -20 }}
                 animate={{ opacity: 1, translateX: 0 }}
-                transition={{
-                    type: 'spring',
-                    delay: index * 50,
-                    damping: 20,
-                }}
+                transition={enter(0)}
             >
                 <BlurView
                     intensity={20}
@@ -164,7 +160,7 @@ const LeaderboardScreen = () => {
             <MotiView
                 from={{ opacity: 0, translateY: -20 }}
                 animate={{ opacity: 1, translateY: 0 }}
-                transition={{ type: 'spring', damping: 20 }}
+                transition={enter(0)}
             >
                 <View style={styles.header}>
                     <View style={[styles.headerIcon, { backgroundColor: theme.colors.accent + '15' }]}>
@@ -192,7 +188,7 @@ const LeaderboardScreen = () => {
                     <MotiView
                         from={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ type: 'spring', damping: 15 }}
+                        transition={enter(0)}
                     >
                         <BlurView
                             intensity={20}

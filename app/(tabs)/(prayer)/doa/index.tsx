@@ -20,6 +20,7 @@ import DoaListHeader from '../../../../components/prayer/doa/DoaListHeader';
 import DoaInfoModal from '../../../../components/prayer/doa/DoaInfoModal';
 import { LoadingState, ErrorState } from '../../../../components/prayer/doa/DoaStates';
 import type { DoaAfterPrayer } from '../../../../types/doa.types';
+import { enter } from '../../../../utils';
 
 /**
  * Main Doa component
@@ -53,11 +54,7 @@ const Doa: React.FC = () => {
       <MotiView
         from={{ opacity: 0, translateY: 20 }}
         animate={{ opacity: 1, translateY: 0 }}
-        transition={{
-          type: 'spring',
-          delay: index * 60, // Stagger effect
-          damping: 20,
-        }}
+        transition={enter(0)}
       >
         <DoaItem item={item} index={index} />
       </MotiView>
@@ -96,7 +93,6 @@ const Doa: React.FC = () => {
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
-        estimatedItemSize={200}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
       />

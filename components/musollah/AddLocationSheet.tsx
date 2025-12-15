@@ -39,6 +39,7 @@ import Toast from 'react-native-toast-message';
 
 import { useTheme } from '../../context/ThemeContext';
 import { useSubmitLocationRequest } from '../../api/services/musollah';
+import { enter } from '../../utils';
 
 // =====================================================================
 // CONSTANTS
@@ -406,7 +407,7 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
             <MotiView
               from={{ opacity: 0, translateY: 20 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'spring', damping: 20 }}
+              transition={enter(0)}
             >
               <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
                 Location Type
@@ -422,7 +423,7 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
             <MotiView
               from={{ opacity: 0, translateY: 20 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'spring', delay: 50, damping: 20 }}
+              transition={enter(0)}
             >
               <Text style={[styles.fieldLabel, { color: theme.colors.text.secondary }]}>
                 Building Name <Text style={{ color: '#ff6b6b' }}>*</Text>
@@ -448,7 +449,7 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
             <MotiView
               from={{ opacity: 0, translateY: 20 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'spring', delay: 100, damping: 20 }}
+              transition={enter(0)}
             >
               <Text style={[styles.fieldLabel, { color: theme.colors.text.secondary }]}>
                 Address <Text style={{ color: '#ff6b6b' }}>*</Text>
@@ -474,7 +475,7 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
             <MotiView
               from={{ opacity: 0, translateY: 20 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'spring', delay: 150, damping: 20 }}
+              transition={enter(0)}
             >
               <Text style={[styles.fieldLabel, { color: theme.colors.text.secondary }]}>
                 Postal Code <Text style={{ color: '#ff6b6b' }}>*</Text>
@@ -501,7 +502,7 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
             <MotiView
               from={{ opacity: 0, translateY: 20 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'spring', delay: 200, damping: 20 }}
+              transition={enter(0)}
             >
               <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
                 {locationType === 'Bidet' ? 'Facilities Available' : 'Amenities'}

@@ -23,6 +23,7 @@ import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 // ============================================================================
 // TYPES
@@ -208,7 +209,7 @@ const EligibilityModal: React.FC<EligibilityModalProps> = ({
                 <MotiView
                     from={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: 'spring', damping: 20 }}
+                    transition={enter(0)}
                     style={styles.modalWrapper}
                 >
                     <BlurView
@@ -252,11 +253,7 @@ const EligibilityModal: React.FC<EligibilityModalProps> = ({
                                         key={category.id}
                                         from={{ opacity: 0, translateX: -20 }}
                                         animate={{ opacity: 1, translateX: 0 }}
-                                        transition={{
-                                            type: 'spring',
-                                            delay: index * 80,
-                                            damping: 20,
-                                        }}
+                                        transition={enter(0)}
                                     >
                                         <BlurView
                                             intensity={20}

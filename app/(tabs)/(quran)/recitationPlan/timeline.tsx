@@ -13,10 +13,9 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
-
-import { usePlan } from './context';
 import { useTheme } from '../../../../context/ThemeContext';
-import { calculateContrastColor } from '../../../../utils';
+import { usePlan } from '../../../../context/PlanContext';
+import { calculateContrastColor, enter } from '../../../../utils';
 
 const TIMELINE_OPTIONS = [
   { days: 7, icon: 'bolt', label: 'Express' },
@@ -44,7 +43,7 @@ export default function TimelineScreen() {
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 20 }}
+          transition={enter(0)}
           style={styles.header}>
           <View style={[styles.headerIcon, { backgroundColor: theme.colors.accent + '15' }]}>
             <FontAwesome6
@@ -69,11 +68,7 @@ export default function TimelineScreen() {
                 key={option.days}
                 from={{ opacity: 0, translateX: -20 }}
                 animate={{ opacity: 1, translateX: 0 }}
-                transition={{
-                  type: 'spring',
-                  delay: index * 100,
-                  damping: 20,
-                }}
+                transition={enter(0)}
               >
                 <TouchableOpacity
                   onPress={() => handleSelect(option.days)}

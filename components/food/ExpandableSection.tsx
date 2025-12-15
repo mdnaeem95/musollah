@@ -11,6 +11,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { AnimatePresence } from 'moti';
 
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 interface ExpandableSectionProps {
   title: string;
@@ -35,7 +36,7 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
     <MotiView
       from={{ opacity: 0, translateY: 20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'spring', damping: 20, delay }}
+      transition={enter(0)}
     >
       <View style={[styles.container, {
         backgroundColor: theme.colors.secondary,

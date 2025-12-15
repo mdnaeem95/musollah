@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../../context/ThemeContext';
 import ThemedButton from '../../../../components/ThemedButton';
+import { enter } from '../../../../utils';
 
 // ============================================================================
 // MAIN COMPONENT
@@ -99,7 +100,7 @@ const SupportPage = () => {
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 20 }}
+          transition={enter(0)}
         >
           <View style={styles.header}>
             <View style={[styles.headerIcon, { backgroundColor: theme.colors.accent + '15' }]}>
@@ -120,7 +121,7 @@ const SupportPage = () => {
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 100, damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}
@@ -243,7 +244,7 @@ const SupportPage = () => {
               <MotiView
                 from={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: 'spring', damping: 15 }}
+                transition={enter(0)}
                 style={[styles.successBanner, { backgroundColor: theme.colors.text.success + '15' }]}
               >
                 <View style={[styles.successIcon, { backgroundColor: theme.colors.text.success }]}>
@@ -261,7 +262,7 @@ const SupportPage = () => {
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 200, damping: 20 }}
+          transition={enter(0)}
         >
           <View style={styles.infoCards}>
             {/* Response Time Card */}

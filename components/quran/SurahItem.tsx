@@ -13,6 +13,7 @@ import { MotiView } from 'moti';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { Surah } from '../../utils/types';
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 interface SurahProps {
   surah: Surah;
@@ -38,10 +39,7 @@ const SurahItem = ({ surah, onPress, readCount = 0, index }: SurahProps) => {
             opacity: 1, 
             scale: pressed ? 0.98 : 1 
           }}
-          transition={{ 
-            type: 'spring', 
-            damping: 20,
-          }}
+          transition={enter(0)}
           style={{ marginBottom: 12 }}
         >
           <BlurView

@@ -19,6 +19,7 @@ import { useTheme } from '../../../../context/ThemeContext';
 import { useDoaBookmarksStore } from '../../../../stores/useDoaBookmarkStore';
 import { useDoa } from '../../../../api/services/duas';
 import BookmarkIcon from '../../../../components/quran/BookmarkIcon';
+import { enter } from '../../../../utils';
 
 const DoaContent = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -102,7 +103,7 @@ const DoaContent = () => {
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}
@@ -138,7 +139,7 @@ const DoaContent = () => {
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 100, damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}
@@ -179,7 +180,7 @@ const DoaContent = () => {
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 150, damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}
@@ -220,7 +221,7 @@ const DoaContent = () => {
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 200, damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}
@@ -261,7 +262,7 @@ const DoaContent = () => {
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 250, damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}

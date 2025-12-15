@@ -1,56 +1,86 @@
-import { MMKV } from 'react-native-mmkv';
+import { createMMKV, type MMKV } from 'react-native-mmkv';
 
 // ============================================================================
-// STORAGE INSTANCES
+// STORAGE INSTANCES (MMKV v4)
 // ============================================================================
 
-// Default storage
-export const storage = new MMKV({
+export const storage = createMMKV({
   id: 'musollah-default',
-  encryptionKey: 'musollah-secure-key', // Consider using a more secure key from env
+  encryptionKey: 'musollah-secure-key', // TODO: use a real key in prod
 });
 
-// Cache storage with separate namespace
-export const cacheStorage = new MMKV({
+export const cacheStorage = createMMKV({
   id: 'musollah-cache',
 });
 
-// User-specific storage (cleared on logout)
-export const userStorage = new MMKV({
+export const userStorage = createMMKV({
   id: 'musollah-user',
 });
 
 // ============================================================================
 // STORAGE UTILITIES
 // ============================================================================
+
 export class StorageService {
   constructor(private mmkv: MMKV) {}
 
   get<T>(key: string): T | null {
     try {
       const value = this.mmkv.getString(key);
-      if (!value) return null;
-      
+
+      // Guard against missing or corrupted values
+      if (!value || value === 'undefined' || value === 'null') {
+        if (value === 'undefined' || value === 'null') {
+          // Clean up corrupted key so it doesn't keep crashing
+          this.mmkv.remove(key);
+        }
+        return null;
+      }
+
       return JSON.parse(value) as T;
     } catch (error) {
+      // If JSON parsing fails, delete the bad value so we recover
       console.error(`Failed to get ${key} from storage:`, error);
+      try {
+        this.mmkv.remove(key);
+      } catch {}
       return null;
     }
   }
 
   set<T>(key: string, value: T): void {
     try {
-      this.mmkv.set(key, JSON.stringify(value));
+      // Prevent storing undefined (JSON.stringify(undefined) => undefined)
+      // Also prevents storing functions/symbols etc that serialize to undefined.
+      const json = JSON.stringify(value);
+
+      if (json === undefined) {
+        // safest behavior: remove the key (or just return)
+        this.mmkv.remove(key);
+        return;
+      }
+
+      this.mmkv.set(key, json);
     } catch (error) {
       console.error(`Failed to set ${key} in storage:`, error);
     }
   }
 
   getString(key: string): string | undefined {
-    return this.mmkv.getString(key);
+    const v = this.mmkv.getString(key);
+    if (v === 'undefined' || v === 'null') {
+      this.mmkv.remove(key);
+      return undefined;
+    }
+    return v;
   }
 
   setString(key: string, value: string): void {
+    // guard against accidental "undefined" strings being stored
+    if (value === 'undefined' || value === 'null') {
+      this.mmkv.remove(key);
+      return;
+    }
     this.mmkv.set(key, value);
   }
 
@@ -75,7 +105,7 @@ export class StorageService {
   }
 
   delete(key: string): void {
-    this.mmkv.delete(key);
+    this.mmkv.remove(key);
   }
 
   clearAll(): void {
@@ -94,18 +124,25 @@ export class StorageService {
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
-  ttl: number; // in milliseconds
+  ttl: number; // ms
 }
 
 export class CacheService {
   constructor(private storage: StorageService) {}
 
   set<T>(key: string, value: T, ttlMs: number): void {
+    // Never cache undefined; it leads to corrupted storage and weird runtime states
+    if (value === (undefined as any)) {
+      this.storage.delete(key);
+      return;
+    }
+
     const entry: CacheEntry<T> = {
       data: value,
       timestamp: Date.now(),
-      ttl: ttlMs,
+      ttl: Math.max(0, ttlMs),
     };
+
     this.storage.set(key, entry);
   }
 
@@ -113,10 +150,27 @@ export class CacheService {
     const entry = this.storage.get<CacheEntry<T>>(key);
     if (!entry) return null;
 
+    // Validate shape (protect against partially-written entries)
+    if (
+      typeof entry.timestamp !== 'number' ||
+      typeof entry.ttl !== 'number' ||
+      !isFinite(entry.timestamp) ||
+      !isFinite(entry.ttl)
+    ) {
+      this.storage.delete(key);
+      return null;
+    }
+
     const now = Date.now();
     const isExpired = now - entry.timestamp > entry.ttl;
 
     if (isExpired) {
+      this.storage.delete(key);
+      return null;
+    }
+
+    // If data is missing (e.g. older corrupted write), treat as cache miss
+    if ((entry as any).data === undefined) {
       this.storage.delete(key);
       return null;
     }
@@ -136,10 +190,12 @@ export class CacheService {
     const keys = this.storage.getAllKeys();
     const now = Date.now();
 
-    keys.forEach(key => {
+    keys.forEach((key) => {
       const entry = this.storage.get<CacheEntry<any>>(key);
-      if (entry && now - entry.timestamp > entry.ttl) {
-        this.storage.delete(key);
+      if (entry && typeof entry.timestamp === 'number' && typeof entry.ttl === 'number') {
+        if (now - entry.timestamp > entry.ttl) {
+          this.storage.delete(key);
+        }
       }
     });
   }
@@ -167,7 +223,7 @@ export const TTL = {
 } as const;
 
 // ============================================================================
-// MIGRATION FROM ASYNCSTORAGE (if needed)
+// MIGRATION FROM ASYNCSTORAGE (optional)
 // ============================================================================
 
 export async function migrateFromAsyncStorage(
@@ -176,7 +232,7 @@ export async function migrateFromAsyncStorage(
 ): Promise<void> {
   try {
     console.log('🔄 Starting AsyncStorage → MMKV migration...');
-    
+
     for (const key of keysToMigrate) {
       try {
         const value = await AsyncStorage.getItem(key);
@@ -189,7 +245,7 @@ export async function migrateFromAsyncStorage(
         console.error(`❌ Failed to migrate ${key}:`, error);
       }
     }
-    
+
     console.log('✅ AsyncStorage → MMKV migration complete!');
   } catch (error) {
     console.error('❌ Migration failed:', error);

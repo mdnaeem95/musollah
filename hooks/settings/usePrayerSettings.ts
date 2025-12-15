@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
-import { Audio } from 'expo-av';
+import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { usePreferencesStore, type AdhanSelection } from '../../stores/userPreferencesStore';
 
 // ============================================================================
@@ -10,7 +10,7 @@ import { usePreferencesStore, type AdhanSelection } from '../../stores/userPrefe
 export type AdhanOption = {
   id: number;
   label: 'None' | 'Ahmad Al-Nafees' | 'Mishary Rashid Alafasy';
-  file: any;
+  file: any; // AudioSource-compatible (require(...) or { uri })
 };
 
 export const ADHAN_OPTIONS: AdhanOption[] = [
@@ -21,7 +21,7 @@ export const ADHAN_OPTIONS: AdhanOption[] = [
 
 // Map UI label -> store enum
 const labelToSelection: Record<AdhanOption['label'], AdhanSelection> = {
-  'None': 'None',
+  None: 'None',
   'Ahmad Al-Nafees': 'Ahmad Al-Nafees',
   'Mishary Rashid Alafasy': 'Mishary Rashid Alafasy',
 };
@@ -32,13 +32,19 @@ const labelToSelection: Record<AdhanOption['label'], AdhanSelection> = {
 
 export function usePrayerSettings() {
   const router = useRouter();
-  
+
   // Modal state
   const [isReminderPickerVisible, setIsReminderPickerVisible] = useState(false);
-  
-  // Audio state
-  const [currentSound, setCurrentSound] = useState<Audio.Sound | null>(null);
-  const [isPlayingAdhan, setIsPlayingAdhan] = useState(false);
+
+  // Audio state (expo-audio)
+  const [previewSource, setPreviewSource] = useState<any | null>(null);
+  const [previewOptionId, setPreviewOptionId] = useState<number | null>(null);
+
+  // Create a player that rebinds when source changes (source can be null)
+  const player = useAudioPlayer(previewSource);
+  const playerStatus = useAudioPlayerStatus(player);
+
+  const isPlayingAdhan = !!playerStatus?.playing;
 
   // Preferences store
   const {
@@ -53,35 +59,35 @@ export function usePrayerSettings() {
   } = usePreferencesStore();
 
   // ============================================================================
-  // AUDIO SETUP & CLEANUP
+  // AUDIO SETUP
   // ============================================================================
 
-  // Configure audio mode on mount
   useEffect(() => {
-    const configureAudio = async () => {
-      try {
-        await Audio.setAudioModeAsync({
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: false,
-          shouldDuckAndroid: true,
-        });
-      } catch (error) {
-        console.error('Failed to configure audio:', error);
-      }
-    };
-    configureAudio();
+    // Configure global audio behavior (expo-audio)
+    // Note: expo-audio uses different option names vs expo-av
+    setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: false,
+      interruptionModeAndroid: 'duckOthers',
+      interruptionMode: 'mixWithOthers',
+    }).catch((error) => {
+      console.error('Failed to configure audio mode:', error);
+    });
   }, []);
 
-  // Cleanup sound on unmount
+  // When preview source changes, restart from 0 and play.
+  // expo-audio does NOT auto-reset to 0 after it finishes; you must seekTo(0) before replay. :contentReference[oaicite:2]{index=2}
   useEffect(() => {
-    return () => {
-      if (currentSound) {
-        currentSound.unloadAsync().catch((error) => {
-          console.error('Failed to unload sound:', error);
-        });
-      }
-    };
-  }, [currentSound]);
+    if (!previewSource) return;
+
+    try {
+      player.seekTo(0);
+      player.play();
+    } catch (e) {
+      console.error('Failed to autoplay preview:', e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewSource]);
 
   // ============================================================================
   // TIME FORMAT
@@ -95,79 +101,83 @@ export function usePrayerSettings() {
   // REMINDER INTERVAL
   // ============================================================================
 
-  const handleReminderIntervalChange = useCallback((value: number) => {
-    setReminderInterval(value);
-    setIsReminderPickerVisible(false);
-  }, [setReminderInterval]);
+  const handleReminderIntervalChange = useCallback(
+    (value: number) => {
+      setReminderInterval(value);
+      setIsReminderPickerVisible(false);
+    },
+    [setReminderInterval]
+  );
 
-  const openReminderPicker = useCallback(() => {
-    setIsReminderPickerVisible(true);
-  }, []);
-
-  const closeReminderPicker = useCallback(() => {
-    setIsReminderPickerVisible(false);
-  }, []);
+  const openReminderPicker = useCallback(() => setIsReminderPickerVisible(true), []);
+  const closeReminderPicker = useCallback(() => setIsReminderPickerVisible(false), []);
 
   // ============================================================================
   // PRAYER NOTIFICATIONS
   // ============================================================================
 
-  const handleToggleNotification = useCallback((prayerName: string) => {
-    toggleNotificationForPrayer(prayerName);
-  }, [toggleNotificationForPrayer]);
+  const handleToggleNotification = useCallback(
+    (prayerName: string) => {
+      toggleNotificationForPrayer(prayerName);
+    },
+    [toggleNotificationForPrayer]
+  );
 
   // ============================================================================
   // ADHAN SELECTION
   // ============================================================================
 
-  const stopCurrentSound = useCallback(async () => {
-    if (currentSound) {
-      try {
-        await currentSound.stopAsync();
-        await currentSound.unloadAsync();
-        setCurrentSound(null);
-        setIsPlayingAdhan(false);
-      } catch (error) {
-        console.error('Error stopping sound:', error);
-      }
+  const stopCurrentSound = useCallback(() => {
+    try {
+      player.pause();
+      player.seekTo(0);
+    } catch (e) {
+      console.error('Error stopping preview:', e);
+    } finally {
+      setPreviewSource(null);
+      setPreviewOptionId(null);
     }
-  }, [currentSound]);
+  }, [player]);
 
   const playAdhanPreview = useCallback(
-    async (file: any) => {
-      try {
-        await stopCurrentSound();
-        if (!file) return; // None selected
-
-        const { sound: newSound } = await Audio.Sound.createAsync(file, {
-          shouldPlay: true,
-          isLooping: false,
-        });
-
-        setCurrentSound(newSound);
-        setIsPlayingAdhan(true);
-
-        newSound.setOnPlaybackStatusUpdate((status) => {
-          if ('isLoaded' in status && status.isLoaded && (status as any).didJustFinish) {
-            setIsPlayingAdhan(false);
-          }
-        });
-      } catch (error) {
-        console.error('Error playing adhan preview:', error);
-        setIsPlayingAdhan(false);
+    (file: any, optionId: number) => {
+      // None selected
+      if (!file) {
+        stopCurrentSound();
+        return;
       }
+
+      // If same option tapped again, replay
+      if (previewOptionId === optionId) {
+        try {
+          player.seekTo(0);
+          player.play();
+        } catch (e) {
+          console.error('Error replaying preview:', e);
+        }
+        return;
+      }
+
+      // Switch to new source (autoplays via effect)
+      try {
+        player.pause();
+        player.seekTo(0);
+      } catch {
+        // ignore
+      }
+
+      setPreviewOptionId(optionId);
+      setPreviewSource(file);
     },
-    [stopCurrentSound]
+    [player, previewOptionId, stopCurrentSound]
   );
 
   const handleAdhanSelect = useCallback(
-    async (option: AdhanOption) => {
-      // Convert UI label to store type
+    (option: AdhanOption) => {
       const selection = labelToSelection[option.label];
       setSelectedAdhan(selection);
 
-      // Play preview
-      await playAdhanPreview(option.file);
+      playAdhanPreview(option.file, option.id);
     },
     [setSelectedAdhan, playAdhanPreview]
   );

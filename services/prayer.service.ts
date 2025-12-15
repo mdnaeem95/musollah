@@ -1,4 +1,4 @@
-import { format, parse, subDays, isValid } from 'date-fns';
+import { format, parse, isValid } from 'date-fns';
 import NetInfo from '@react-native-community/netinfo';
 import firestore from '@react-native-firebase/firestore';
 import * as Location from 'expo-location';
@@ -31,24 +31,24 @@ class ModernPrayerService {
       if (!cached) return null;
 
       const parsedCache: CachedData<T> = JSON.parse(cached);
-      
-      // Check version compatibility
+
       if (parsedCache.version !== this.CACHE_VERSION) {
         storage.delete(key);
         return null;
       }
 
-      // Check if cache is still valid
-      const now = Date.now();
-      const cacheAge = now - parsedCache.timestamp;
-      
-      if (cacheAge > CACHE_DURATION.PRAYER_TIMES) {
-        return null;
-      }
+      const cacheAge = Date.now() - parsedCache.timestamp;
+      if (cacheAge > CACHE_DURATION.PRAYER_TIMES) return null;
 
       return parsedCache.data;
     } catch (error) {
-      console.error('Cache read error:', error);
+      const raw = storage.getString(key);
+      console.error('❌ Cache JSON parse failed (deleting key):', {
+        key,
+        preview: raw ? raw.slice(0, 80) : raw,
+        error,
+      });
+      storage.delete(key); // ✅ important
       return null;
     }
   }
@@ -62,16 +62,19 @@ class ModernPrayerService {
       if (!cached) return null;
 
       const parsedCache: CachedData<T> = JSON.parse(cached);
-      const now = Date.now();
-      const cacheAge = now - parsedCache.timestamp;
 
-      // Return stale cache only if it's not too old
-      if (cacheAge < this.STALE_CACHE_THRESHOLD) {
-        return parsedCache.data;
-      }
+      const cacheAge = Date.now() - parsedCache.timestamp;
+      if (cacheAge < this.STALE_CACHE_THRESHOLD) return parsedCache.data;
 
       return null;
-    } catch {
+    } catch (error) {
+      const raw = storage.getString(key);
+      console.error('❌ Stale cache JSON parse failed (deleting key):', {
+        key,
+        preview: raw ? raw.slice(0, 80) : raw,
+        error,
+      });
+      storage.delete(key);
       return null;
     }
   }
@@ -81,12 +84,26 @@ class ModernPrayerService {
    */
   private setCachedData<T>(key: string, data: T): void {
     try {
+      if (data === undefined) {
+        console.warn('⚠️ Refusing to cache undefined. Deleting key:', key);
+        storage.delete(key);
+        return;
+      }
+
       const cacheData: CachedData<T> = {
         data,
         timestamp: Date.now(),
         version: this.CACHE_VERSION,
       };
-      storage.set(key, JSON.stringify(cacheData));
+
+      const str = JSON.stringify(cacheData);
+      if (!str) {
+        console.warn('⚠️ JSON.stringify returned empty/undefined. Deleting key:', key);
+        storage.delete(key);
+        return;
+      }
+
+      storage.set(key, str);
     } catch (error) {
       console.error('Cache write error:', error);
     }
@@ -99,32 +116,11 @@ class ModernPrayerService {
     const netInfo = await NetInfo.fetch();
     return netInfo.isConnected ?? false;
   }
-
-  /**
-   * Validate and format date
-   */
-  private validateAndFormatDate(dateString: string, inputFormat: string): string {
-    const parsedDate = parse(dateString, inputFormat, new Date());
-    
-    if (!isValid(parsedDate)) {
-      throw new ValidationError(`Invalid date: ${dateString}`);
-    }
-
-    return format(parsedDate, DATE_FORMATS.API);
-  }
-
+  
   private convertISOToFirebaseDate(isoDate: string): string {
     // ISO: '2025-01-19' → Firebase: '19/1/2025'
     const [year, month, day] = isoDate.split('-');
     return `${parseInt(day, 10)}/${parseInt(month, 10)}/${year}`;
-  }
-
-  private convertFirebaseDateToISO(firebaseDate: string): string {
-    // Firebase: '19/1/2025' → ISO: '2025-01-19'
-    const [day, month, year] = firebaseDate.split('/');
-    const paddedDay = day.padStart(2, '0');
-    const paddedMonth = month.padStart(2, '0');
-    return `${year}-${paddedMonth}-${paddedDay}`;
   }
 
   /**
@@ -285,38 +281,69 @@ class ModernPrayerService {
   /**
    * Fetch Islamic date
    */
-  private async fetchIslamicDate(gregorianDate: string): Promise<string> {
-    console.log('📅 Fetching Islamic date for:', gregorianDate);
+  private islamicDateInFlight = new Map<string, Promise<string>>();
 
-    try {
-      // 1. ✅ No day subtraction
-      const parsedDate = parse(gregorianDate, DATE_FORMATS.FIREBASE, new Date());
-      const formattedDate = format(parsedDate, DATE_FORMATS.ISLAMIC_API);
-      
-      console.log('🔄 Formatted for API:', formattedDate);
+  private async fetchIslamicDate(gregorianDateISO: string): Promise<string> {
+    // ✅ DEDUPE: if same date requested concurrently, reuse promise
+    const existing = this.islamicDateInFlight.get(gregorianDateISO);
+    if (existing) return existing;
 
-      const response = await fetch(`${this.API_BASE_URL}/gToH/${formattedDate}`);
-      
-      console.log('📡 Response status:', response.status);
+    const task = (async () => {
+      console.log('📅 Fetching Islamic date for:', gregorianDateISO);
 
-      if (!response.ok) {
-        // 2. ✅ Better error logging
-        const errorText = await response.text();
-        console.error('❌ API Error:', { status: response.status, body: errorText });
-        
-        // 3. ✅ User-friendly errors
-        if (response.status === 404) return 'Invalid date format';
-        if (response.status === 429) return 'Too many requests';
-        return `API error: ${response.status}`;
+      try {
+        const parsedDate = parse(gregorianDateISO, DATE_FORMATS.API, new Date());
+        if (!isValid(parsedDate)) return 'Invalid date';
+
+        const formattedDate = format(parsedDate, DATE_FORMATS.ISLAMIC_API);
+        const url = `${this.API_BASE_URL}/gToH/${formattedDate}`;
+
+        const response = await fetch(url);
+        const contentType = response.headers.get('content-type') || 'unknown';
+        console.log('📡 Response status:', response.status, 'content-type:', contentType);
+
+        // Read as text first (most debuggable)
+        const rawStr = await response.text();
+
+        // ✅ Make logs safe even if something weird happens
+        const rawSafe = typeof rawStr === 'string' ? rawStr : String(rawStr);
+        if (__DEV__) {
+          console.log('🧾 gToH raw preview:', rawSafe.slice(0, 200));
+          console.log('🧾 gToH raw length:', rawSafe.length);
+        }
+
+        // If not OK, log body and bail
+        if (!response.ok) {
+          console.error('❌ gToH non-OK:', response.status, rawSafe.slice(0, 300));
+          return `API error: ${response.status}`;
+        }
+
+        // ✅ Handle the exact failure you're seeing
+        if (rawSafe.trim() === 'undefined' || rawSafe.trim() === '') {
+          console.error('❌ gToH returned empty/undefined body (200). URL:', url);
+          return 'Unable to fetch Islamic date';
+        }
+
+        // Parse JSON
+        let json: any;
+        try {
+          json = JSON.parse(rawSafe);
+        } catch {
+          console.error('❌ gToH returned non-JSON body (despite 200):', rawSafe.slice(0, 300));
+          return 'Unable to fetch Islamic date';
+        }
+
+        return this.formatIslamicDate(json?.data?.hijri);
+      } catch (error) {
+        console.error('❌ fetchIslamicDate error:', error);
+        return 'Unable to fetch Islamic date';
+      } finally {
+        this.islamicDateInFlight.delete(gregorianDateISO);
       }
+    })();
 
-      const data = await response.json();
-      return this.formatIslamicDate(data.data.hijri);
-    } catch (error) {
-      console.error('❌ Error:', error);
-      if (error instanceof TypeError) return 'Network error';
-      return 'Unable to fetch Islamic date';
-    }
+    this.islamicDateInFlight.set(gregorianDateISO, task);
+    return task;
   }
 
   /**

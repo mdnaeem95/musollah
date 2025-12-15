@@ -16,7 +16,7 @@ import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../../context/ThemeContext';
 import { usePrayerSettings } from '../../../../hooks/settings/usePrayerSettings';
-import { calculateContrastColor } from '../../../../utils';
+import { calculateContrastColor, enter } from '../../../../utils';
 
 const PRAYER_SESSIONS = ['Subuh', 'Syuruk', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
 const REMINDER_INTERVALS = [5, 10, 15, 20, 25, 30];
@@ -58,7 +58,7 @@ const PrayersSettings = () => {
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 20 }}
+          transition={enter(0)}
         >
           <SectionHeader icon="gear" label="General" theme={theme} />
 
@@ -166,7 +166,7 @@ const PrayersSettings = () => {
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 100, damping: 20 }}
+          transition={enter(0)}
         >
           <SectionHeader icon="bell" label="Prayer Notifications" theme={theme} />
           <Text style={[styles.sectionDescription, { color: theme.colors.text.secondary }]}>
@@ -183,11 +183,7 @@ const PrayersSettings = () => {
                 <MotiView
                   from={{ opacity: 0, translateX: -20 }}
                   animate={{ opacity: 1, translateX: 0 }}
-                  transition={{
-                    type: 'spring',
-                    delay: index * 50,
-                    damping: 20,
-                  }}
+                  transition={enter(0)}
                 >
                   <View style={styles.prayerRow}>
                     <View style={[styles.prayerIcon, { backgroundColor: theme.colors.accent + '15' }]}>

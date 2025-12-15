@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useQuranStore, QuranBookmark } from '../../../../stores/useQuranStore';
 import { useDoaBookmarksStore, DoaBookmark } from '../../../../stores/useDoaBookmarkStore';
-import { calculateContrastColor } from '../../../../utils';
+import { calculateContrastColor, enter } from '../../../../utils';
 
 // ============================================================================
 // TYPES
@@ -70,7 +70,7 @@ const FolderHeader = React.memo<FolderHeaderProps>(({
     <MotiView
       from={{ opacity: 0, translateY: 20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'spring', damping: 20 }}
+      transition={enter(0)}
     >
       <TouchableOpacity
         onPress={() => {
@@ -139,11 +139,7 @@ const QuranBookmarkItem = React.memo<QuranBookmarkItemProps>(({
     <MotiView
       from={{ opacity: 0, translateY: 20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{
-        type: 'spring',
-        delay: index * 50,
-        damping: 20,
-      }}
+      transition={enter(0)}
     >
       <TouchableOpacity
         onPress={handlePress}
@@ -214,11 +210,7 @@ const DoaBookmarkItem = React.memo<DoaBookmarkItemProps>(({
     <MotiView
       from={{ opacity: 0, translateY: 20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{
-        type: 'spring',
-        delay: index * 50,
-        damping: 20,
-      }}
+      transition={enter(0)}
     >
       <TouchableOpacity
         onPress={handlePress}
@@ -269,7 +261,7 @@ const EmptyState = React.memo<{
     <MotiView
       from={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', damping: 15 }}
+      transition={enter(0)}
       style={styles.emptyStateWrapper}
     >
       <BlurView
@@ -311,7 +303,7 @@ const OverallEmptyState = React.memo<{
       <MotiView
         from={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', damping: 15 }}
+        transition={enter(0)}
       >
         <BlurView
           intensity={20}

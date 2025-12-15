@@ -9,6 +9,7 @@ import {
   NormalizedPrayerTimes,
   CalculationMethod,
 } from './types';
+import { collection, getDocs } from '@react-native-firebase/firestore';
 
 // ============================================================================
 // EXTERNAL API CALLS (Aladhan)
@@ -87,37 +88,37 @@ export async function fetchMonthlyPrayerTimesFromFirebase(
   try {
     console.log(`📅 Fetching monthly prayer times for: ${month}/${year}`);
 
-    const monthStr = month.toString();
-    
-    const snapshot = await db
-      .collection('prayerTimes2025')
-      .get();
+    const monthStr = String(month);
+    const yearStr = String(year);
 
-    if (snapshot.empty) {
+    // ✅ Modular Firestore read
+    const snap = await getDocs(collection(db, 'prayerTimes2025'));
+
+    if (snap.empty) {
       throw new Error('No prayer times found in Firebase');
     }
 
-    const prayerTimesList = snapshot.docs
-      .map(doc => doc.data() as any)
-      .filter(prayerTime => {
-        // Extract month from stored date format (D/M/YYYY)
-        const [, prayerMonth, prayerYear] = prayerTime.date.split('/');
-        return prayerMonth === monthStr && prayerYear === year.toString();
+    const prayerTimesList = snap.docs
+      .map((d: any) => d.data() as any)
+      .filter((pt: any) => {
+        // stored format: D/M/YYYY
+        const [, prayerMonth, prayerYear] = String(pt.date ?? '').split('/');
+        return prayerMonth === monthStr && prayerYear === yearStr;
       })
-      .map(prayerTime => {
-        const [day] = prayerTime.date.split('/');
+      .map((pt: any) => {
+        const [day] = String(pt.date).split('/');
         return {
           date: day,
           day: parseInt(day, 10),
-          subuh: prayerTime.time.subuh,
-          syuruk: prayerTime.time.syuruk,
-          zohor: prayerTime.time.zohor,
-          asar: prayerTime.time.asar,
-          maghrib: prayerTime.time.maghrib,
-          isyak: prayerTime.time.isyak,
-        };
+          subuh: pt.time?.subuh,
+          syuruk: pt.time?.syuruk,
+          zohor: pt.time?.zohor,
+          asar: pt.time?.asar,
+          maghrib: pt.time?.maghrib,
+          isyak: pt.time?.isyak,
+        } as DailyPrayerTime;
       })
-      .sort((a, b) => a.day! - b.day!);
+      .sort((a: any, b: any) => (a.day ?? 0) - (b.day ?? 0));
 
     console.log(`✅ Retrieved ${prayerTimesList.length} records for ${month}/${year}`);
     return prayerTimesList;
@@ -126,6 +127,7 @@ export async function fetchMonthlyPrayerTimesFromFirebase(
     throw error;
   }
 }
+
 
 // ============================================================================
 // DATA TRANSFORMATION

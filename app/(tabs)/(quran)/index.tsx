@@ -28,6 +28,7 @@ import RecitationProgress from '../../../components/quran/RecitationProgress';
 import { useTheme } from '../../../context/ThemeContext';
 import { getLastReadAyah, getLastListenedAyah } from '../../../utils/quran/storage';
 import { useQuranStore } from '../../../stores/useQuranStore';
+import { enter } from '../../../utils';
 
 const { width } = Dimensions.get('window');
 
@@ -126,7 +127,7 @@ const QuranDashboard = () => {
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 20, delay: 0 }}
+          transition={enter(0)}
         >
           <LinearGradient
             colors={heroGradient}
@@ -151,11 +152,7 @@ const QuranDashboard = () => {
               key={index}
               from={{ opacity: 0, translateY: 20, scale: 0.9 }}
               animate={{ opacity: 1, translateY: 0, scale: 1 }}
-              transition={{
-                type: 'spring',
-                damping: 20,
-                delay: (index + 1) * 50,
-              }}
+              transition={enter(0)}
               style={styles.mainActionWrapper}
             >
               <TouchableOpacity
@@ -199,11 +196,7 @@ const QuranDashboard = () => {
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{
-            type: 'spring',
-            damping: 20,
-            delay: 250,
-          }}
+          transition={enter(0)}
         >
           <View style={styles.sectionHeader}>
             <FontAwesome6
@@ -222,11 +215,7 @@ const QuranDashboard = () => {
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{
-            type: 'spring',
-            damping: 20,
-            delay: 300,
-          }}
+          transition={enter(0)}
         >
           <View style={styles.sectionHeader}>
             <FontAwesome6
@@ -246,11 +235,7 @@ const QuranDashboard = () => {
           <MotiView
             from={{ opacity: 0, translateY: 20 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{
-              type: 'spring',
-              damping: 20,
-              delay: 350,
-            }}
+            transition={enter(0)}
           >
             <TouchableOpacity
               onPress={() => {
@@ -307,11 +292,7 @@ const QuranDashboard = () => {
           <MotiView
             from={{ opacity: 0, translateY: 20 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{
-              type: 'spring',
-              damping: 20,
-              delay: 400,
-            }}
+            transition={enter(0)}
           >
             <TouchableOpacity
               onPress={() => {
@@ -367,11 +348,7 @@ const QuranDashboard = () => {
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{
-            type: 'spring',
-            damping: 20,
-            delay: 450,
-          }}
+          transition={enter(0)}
         >
           <TouchableOpacity
             onPress={() => handleNavigate('/recitationPlan')}

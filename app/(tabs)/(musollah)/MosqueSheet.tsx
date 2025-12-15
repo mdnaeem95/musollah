@@ -34,6 +34,7 @@ import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../context/ThemeContext';
 import { MosqueLocation } from '../../../api/services/musollah';
+import { enter } from '../../../utils';
 
 // ===================================================================
 // CONSTANTS
@@ -117,7 +118,7 @@ const DistanceBadge = React.memo(({ distance, theme }: DistanceBadgeProps) => {
     <MotiView
       from={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', damping: 15, delay: 100 }}
+      transition={enter(0)}
     >
       <BlurView
         intensity={20}
@@ -137,7 +138,7 @@ const ShiaBadge = React.memo(({ theme }: ShiaBadgeProps) => (
   <MotiView
     from={{ opacity: 0, translateY: 10 }}
     animate={{ opacity: 1, translateY: 0 }}
-    transition={{ type: 'spring', damping: 20, delay: 200 }}
+    transition={enter(0)}
   >
     <BlurView
       intensity={20}
@@ -305,7 +306,7 @@ export default function MosqueSheet({
         <MotiView
           from={{ opacity: 0, translateY: -10 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 20 }}
+          transition={enter(0)}
           style={styles.headerContainer}
         >
           <FontAwesome6 name="mosque" size={24} color={theme.colors.accent} solid />
@@ -345,7 +346,7 @@ export default function MosqueSheet({
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 20, delay: isShia ? 300 : 200 }}
+          transition={enter(0)}
           style={styles.actionsContainer}
         >
           <ActionButton

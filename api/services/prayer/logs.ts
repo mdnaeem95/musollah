@@ -2,8 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, eachDayOfInterval } from 'date-fns';
 import { Platform } from 'react-native';
 import { ExtensionStorage } from '@bacons/apple-targets';
-import firestore from '@react-native-firebase/firestore';
+import firestore, { doc, getDoc, updateDoc } from '@react-native-firebase/firestore';
 import { cache, TTL } from '../../client/storage';
+import { db } from '../../client/firebase';
 
 // Widget storage for iOS
 const widgetStorage = Platform.OS === 'ios' 
@@ -57,22 +58,18 @@ const PRAYER_LOG_QUERY_KEYS = {
 // API FUNCTIONS
 // ============================================================================
 
-async function fetchPrayerLog(
-  userId: string,
-  date: string
-): Promise<PrayerLog | null> {
+async function fetchPrayerLog(userId: string, date: string): Promise<PrayerLog | null> {
   try {
-    const docRef = firestore()
-      .collection('users')
-      .doc(userId);
-    
-    const userDoc = await docRef.get();
-    const userData = userDoc.data();
-    
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) return null;
+
+    const userData = userSnap.data() as any;
     const prayers = userData?.prayerLogs?.[date];
-    
+
     if (!prayers) return null;
-    
+
     return {
       userId,
       date,
@@ -92,16 +89,14 @@ async function savePrayerLog(
   prayers: PrayerLog['prayers']
 ): Promise<PrayerLog> {
   try {
-    const docRef = firestore()
-      .collection('users')
-      .doc(userId);
-    
-    await docRef.update({
+    const userRef = doc(db, 'users', userId);
+
+    await updateDoc(userRef, {
       [`prayerLogs.${date}`]: prayers,
     });
-    
+
     console.log('✅ Prayer log saved:', date);
-    
+
     return {
       userId,
       date,
@@ -121,22 +116,19 @@ async function fetchWeeklyPrayerLogs(
   endDate: string
 ): Promise<WeeklyLogs> {
   try {
-    const docRef = firestore()
-      .collection('users')
-      .doc(userId);
-    
-    const userDoc = await docRef.get();
-    const userData = userDoc.data();
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+
+    const userData = userSnap.exists() ? (userSnap.data() as any) : null;
     const prayerLogs = userData?.prayerLogs || {};
-    
+
     const weeklyLogs: WeeklyLogs = {};
-    
-    // Generate all dates in range
+
     const dateRange = eachDayOfInterval({
       start: new Date(startDate),
       end: new Date(endDate),
     });
-    
+
     dateRange.forEach((date) => {
       const formattedDate = format(date, 'yyyy-MM-dd');
       weeklyLogs[formattedDate] = prayerLogs[formattedDate] || {
@@ -147,7 +139,7 @@ async function fetchWeeklyPrayerLogs(
         Isyak: false,
       };
     });
-    
+
     return weeklyLogs;
   } catch (error) {
     console.error('❌ Error fetching weekly logs:', error);
@@ -157,32 +149,28 @@ async function fetchWeeklyPrayerLogs(
 
 async function calculatePrayerStats(userId: string): Promise<PrayerStats> {
   try {
-    const docRef = firestore()
-      .collection('users')
-      .doc(userId);
-    
-    const userDoc = await docRef.get();
-    const userData = userDoc.data();
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+
+    const userData = userSnap.exists() ? (userSnap.data() as any) : null;
     const prayerLogs = userData?.prayerLogs || {};
-    
+
     let totalPrayers = 0;
     let completedPrayers = 0;
     let currentStreak = 0;
     let longestStreak = 0;
     let tempStreak = 0;
-    
-    // Sort dates
+
     const sortedDates = Object.keys(prayerLogs).sort();
-    
+
     sortedDates.forEach((date) => {
       const prayers = prayerLogs[date];
       const prayerNames = Object.keys(prayers);
       const completedCount = Object.values(prayers).filter(Boolean).length;
-      
+
       totalPrayers += prayerNames.length;
       completedPrayers += completedCount;
-      
-      // Calculate streak (all prayers completed for the day)
+
       if (completedCount === prayerNames.length) {
         tempStreak++;
         currentStreak = tempStreak;
@@ -191,35 +179,17 @@ async function calculatePrayerStats(userId: string): Promise<PrayerStats> {
         tempStreak = 0;
       }
     });
-    
-    const stats: PrayerStats = {
+
+    return {
       totalPrayers,
       completedPrayers,
       currentStreak,
       longestStreak,
-      completionRate: totalPrayers > 0
-        ? Math.round((completedPrayers / totalPrayers) * 100)
-        : 0,
+      completionRate: totalPrayers > 0 ? Math.round((completedPrayers / totalPrayers) * 100) : 0,
     };
-    
-    console.log('✅ Prayer stats calculated:', stats);
-    
-    return stats;
   } catch (error) {
     console.error('❌ Error calculating stats:', error);
     throw error;
-  }
-}
-
-async function updateWidget(prayers: any): Promise<void> {
-  if (widgetStorage && Platform.OS === 'ios') {
-    try {
-      await widgetStorage.set('prayerTimes', JSON.stringify(prayers));
-      ExtensionStorage.reloadWidget();
-      console.log('✅ iOS widget updated');
-    } catch (error) {
-      console.error('❌ Failed to update widget:', error);
-    }
   }
 }
 

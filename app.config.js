@@ -58,6 +58,17 @@ export default {
     },
     "plugins": [
       [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "deploymentTarget": "15.6",
+            "buildReactNativeFromSource": true,
+            "forceStaticLinking": ["RNFBApp"]
+          }
+        }
+      ],
+      [
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-3113906121142395~8011626070",
@@ -118,17 +129,9 @@ export default {
       [
         "@bacons/apple-targets"
       ],
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static",
-            "deploymentTarget": "15.6"
-          }
-        }
-      ],
       "expo-router",
       "expo-font",
+      "expo-audio",
       [
         "expo-location",
         {

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { MotiView } from 'moti';
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 interface PrayerErrorFallbackProps {
   error: Error;
@@ -37,7 +38,7 @@ export const PrayerErrorFallback: React.FC<PrayerErrorFallbackProps> = ({
     <MotiView
       from={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', damping: 15 }}
+      transition={enter(0)}
       style={styles.container}
     >
       <View style={styles.iconContainer}>

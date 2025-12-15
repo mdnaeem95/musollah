@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useFoodAdditivesPage } from '../../../../hooks/foodAdditives/useFoodAdditivesPage';
 import { FoodAdditive } from '../../../../utils/types';
+import { enter } from '../../../../utils';
 
 // ============================================================================
 // MAIN COMPONENT
@@ -62,11 +63,7 @@ const FoodAdditivesPage = () => {
             <MotiView
                 from={{ opacity: 0, translateX: -20 }}
                 animate={{ opacity: 1, translateX: 0 }}
-                transition={{
-                    type: 'spring',
-                    delay: index * 50,
-                    damping: 20,
-                }}
+                transition={enter(0)}
             >
                 <BlurView
                     intensity={20}
@@ -166,7 +163,7 @@ const FoodAdditivesPage = () => {
             <MotiView
                 from={{ opacity: 0, translateY: -20 }}
                 animate={{ opacity: 1, translateY: 0 }}
-                transition={{ type: 'spring', damping: 20 }}
+                transition={enter(0)}
             >
                 <View style={styles.header}>
                     <View style={[styles.headerIcon, { backgroundColor: theme.colors.accent + '15' }]}>
@@ -187,7 +184,7 @@ const FoodAdditivesPage = () => {
             <MotiView
                 from={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: 'spring', delay: 100, damping: 20 }}
+                transition={enter(0)}
             >
                 <BlurView
                     intensity={20}
@@ -207,7 +204,7 @@ const FoodAdditivesPage = () => {
             <MotiView
                 from={{ opacity: 0, translateY: -20 }}
                 animate={{ opacity: 1, translateY: 0 }}
-                transition={{ type: 'spring', delay: 150, damping: 20 }}
+                transition={enter(0)}
             >
                 <BlurView
                     intensity={20}
@@ -259,7 +256,6 @@ const FoodAdditivesPage = () => {
             {/* Additives List */}
             {filteredAdditives.length > 0 ? (
                 <FlashList
-                    estimatedItemSize={180}
                     data={filteredAdditives}
                     keyExtractor={(item) => item.id}
                     renderItem={renderFoodAdditive}
@@ -270,7 +266,7 @@ const FoodAdditivesPage = () => {
                 <MotiView
                     from={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: 'spring', damping: 15 }}
+                    transition={enter(0)}
                     style={styles.noResultsWrapper}
                 >
                     <BlurView
@@ -296,7 +292,7 @@ const FoodAdditivesPage = () => {
                 <MotiView
                     from={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: 'spring', damping: 15 }}
+                    transition={enter(0)}
                     style={styles.noResultsWrapper}
                 >
                     <BlurView

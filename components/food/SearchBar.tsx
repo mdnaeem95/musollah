@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 const SearchBar = () => {
   const { theme, isDarkMode } = useTheme();
@@ -31,7 +32,7 @@ const SearchBar = () => {
     <MotiView
       from={{ opacity: 0, translateY: -20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'spring', damping: 15, delay: 100 }}
+      transition={enter(0)}
     >
       <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
         {/* Solid background with shadow for depth */}

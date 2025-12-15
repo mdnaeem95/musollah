@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native
 import { FontAwesome6 } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { MotiView } from 'moti';
-import { scaleSize } from '../../utils';
+import { enter, scaleSize } from '../../utils';
 
 interface PrayerDateSelectorProps {
   selectedDate: Date;
@@ -30,7 +30,7 @@ export const PrayerDateSelector: React.FC<PrayerDateSelectorProps> = memo(({
     <MotiView
       from={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', damping: 15 }}
+      transition={enter(0)}
       style={styles.container}
     >
       {/* Date navigation */}

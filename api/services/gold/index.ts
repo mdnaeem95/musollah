@@ -4,6 +4,8 @@ import { metalPriceClient, handleApiError } from '../../client/http';
 import { db } from '../../client/firebase';
 import { cache, TTL } from '../../client/storage';
 
+import { doc, getDoc, setDoc } from '@react-native-firebase/firestore';
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -26,7 +28,7 @@ interface MetalPriceAPIResponse {
 // CONSTANTS
 // ============================================================================
 
-const API_KEY = 'ac71d0fa4cfd6f4733484d2a30af6184'; // Move to env later
+const API_KEY = 'ac71d0fa4cfd6f4733484d2a30af6184'; // TODO: move to env
 const OUNCES_TO_GRAMS = 31.1035;
 
 // ============================================================================
@@ -47,27 +49,33 @@ async function fetchGoldPriceFromAPI(): Promise<GoldPriceData> {
     const pricePerGram = Number((pricePerOunce / OUNCES_TO_GRAMS).toFixed(2));
     const timestamp = new Date().toISOString();
 
-    return {
-      pricePerGram,
-      timestamp,
-    };
+    return { pricePerGram, timestamp };
   } catch (error) {
+    // If your handleApiError throws, this will never continue.
+    // If it doesn't throw, we throw here to avoid returning undefined.
     handleApiError(error, 'fetchGoldPriceFromAPI');
+    throw error;
   }
 }
 
-async function getGoldPriceFromFirestore(
-  todayDate: string
-): Promise<GoldPriceData | null> {
+async function getGoldPriceFromFirestore(todayDate: string): Promise<GoldPriceData | null> {
   try {
-    const doc = await db.collection('goldPrice').doc(todayDate).get();
+    const ref = doc(db, 'goldPrice', todayDate);
+    const snap = await getDoc(ref);
 
-    if (doc.exists()) {
-      const data = doc.data();
+    if (snap.exists()) {
+      const data = snap.data() as any;
       console.log('🎯 Fetched gold price from Firestore:', data);
+
+      // Defensive: ensure shape
+      if (typeof data?.pricePerGram !== 'number' || typeof data?.timestamp !== 'string') {
+        console.warn('⚠️ Invalid gold price doc shape, ignoring:', data);
+        return null;
+      }
+
       return {
-        pricePerGram: data?.pricePerGram,
-        timestamp: data?.timestamp,
+        pricePerGram: data.pricePerGram,
+        timestamp: data.timestamp,
       };
     }
 
@@ -79,12 +87,10 @@ async function getGoldPriceFromFirestore(
   }
 }
 
-async function storeGoldPriceInFirestore(
-  todayDate: string,
-  data: GoldPriceData
-): Promise<void> {
+async function storeGoldPriceInFirestore(todayDate: string, data: GoldPriceData): Promise<void> {
   try {
-    await db.collection('goldPrice').doc(todayDate).set(data);
+    const ref = doc(db, 'goldPrice', todayDate);
+    await setDoc(ref, data);
     console.log('✅ Stored gold price in Firestore');
   } catch (error) {
     console.error('❌ Error storing gold price in Firestore:', error);
@@ -96,26 +102,24 @@ async function getTodayGoldPrice(): Promise<GoldPriceData> {
   const todayDate = format(new Date(), 'yyyy-MM-dd');
   const cacheKey = `gold-price-${todayDate}`;
 
-  // Layer 1: Check MMKV cache
+  // Layer 1: MMKV
   const cachedPrice = cache.get<GoldPriceData>(cacheKey);
   if (cachedPrice) {
     console.log('⚡ Using cached gold price from MMKV');
     return cachedPrice;
   }
 
-  // Layer 2: Check Firestore
+  // Layer 2: Firestore
   const firestorePrice = await getGoldPriceFromFirestore(todayDate);
   if (firestorePrice) {
-    // Cache in MMKV for instant access
     cache.set(cacheKey, firestorePrice, TTL.ONE_DAY);
     return firestorePrice;
   }
 
-  // Layer 3: Fetch from API
+  // Layer 3: API
   console.log('🌐 Fetching gold price from API');
   const apiPrice = await fetchGoldPriceFromAPI();
 
-  // Store in both caches
   cache.set(cacheKey, apiPrice, TTL.ONE_DAY);
   await storeGoldPriceInFirestore(todayDate, apiPrice);
 
@@ -136,8 +140,8 @@ export function useGoldPrice() {
   return useQuery({
     queryKey: GOLD_QUERY_KEYS.todayPrice,
     queryFn: getTodayGoldPrice,
-    staleTime: TTL.ONE_HOUR, // Consider fresh for 1 hour
-    gcTime: TTL.ONE_DAY, // Keep in memory for 1 day
+    staleTime: TTL.ONE_HOUR,
+    gcTime: TTL.ONE_DAY,
     retry: 2,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
@@ -160,6 +164,10 @@ export function useInvalidateGoldPrice() {
   const queryClient = useQueryClient();
 
   return () => {
+    // Optional: also clear MMKV so invalidate actually forces a refresh
+    const todayDate = format(new Date(), 'yyyy-MM-dd');
+    cache.clear(`gold-price-${todayDate}`);
+
     queryClient.invalidateQueries({
       queryKey: GOLD_QUERY_KEYS.price,
     });
@@ -188,7 +196,7 @@ export function getPriceChange(
 } {
   const amount = currentPrice - previousPrice;
   const percentage = (amount / previousPrice) * 100;
-  
+
   return {
     amount: Number(amount.toFixed(2)),
     percentage: Number(percentage.toFixed(2)),

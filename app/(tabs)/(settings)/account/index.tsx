@@ -17,7 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../../context/ThemeContext';
 import SignInModal from '../../../../components/SignInModal';
 import { useAccountSettings } from '../../../../hooks/settings/useAccountSettings';
-import { calculateContrastColor } from '../../../../utils';
+import { calculateContrastColor, enter } from '../../../../utils';
 
 // ============================================================================
 // MAIN COMPONENT
@@ -50,7 +50,7 @@ const AccountSettings = () => {
         <MotiView
           from={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', damping: 15 }}
+          transition={enter(0)}
         >
           <View style={[styles.loadingIcon, { backgroundColor: theme.colors.accent + '15' }]}>
             <ActivityIndicator size="large" color={theme.colors.accent} />
@@ -75,7 +75,7 @@ const AccountSettings = () => {
             <MotiView
               from={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'spring', damping: 20 }}
+              transition={enter(0)}
             >
               <BlurView
                 intensity={20}
@@ -105,7 +105,7 @@ const AccountSettings = () => {
             <MotiView
               from={{ opacity: 0, translateY: 20 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'spring', delay: 200, damping: 20 }}
+              transition={enter(0)}
             >
               <SectionHeader icon="user" label="Account Details" theme={theme} />
 
@@ -143,7 +143,7 @@ const AccountSettings = () => {
             <MotiView
               from={{ opacity: 0, translateY: 20 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'spring', delay: 250, damping: 20 }}
+              transition={enter(0)}
               style={styles.actionsContainer}
             >
               <TouchableOpacity
@@ -180,7 +180,7 @@ const AccountSettings = () => {
           <MotiView
             from={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: 'spring', damping: 15 }}
+            transition={enter(0)}
           >
             <BlurView
               intensity={20}
