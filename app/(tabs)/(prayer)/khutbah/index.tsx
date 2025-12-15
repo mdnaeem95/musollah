@@ -15,6 +15,7 @@ import { MotiView } from 'moti';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useKhutbahs } from '../../../../api/services/khutbah';
 import KhutbahCard from '../../../../components/prayer/KhutbahCard';
+import { enter } from '../../../../utils';
 
 /**
  * Khutbah Screen
@@ -72,16 +73,11 @@ const KhutbahScreen: React.FC = () => {
           <MotiView
             from={{ opacity: 0, translateY: 20 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{
-              type: 'spring',
-              delay: index * 60,
-              damping: 20,
-            }}
+            transition={enter(0)}
           >
             <KhutbahCard khutbah={item} />
           </MotiView>
         )}
-        estimatedItemSize={250}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={<KhutbahHeader />}
@@ -101,7 +97,7 @@ const KhutbahHeader: React.FC = () => {
     <MotiView
       from={{ opacity: 0, translateY: -20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'spring', damping: 20 }}
+      transition={enter(0)}
       style={styles.headerContainer}
     >
       {/* Icon Badge */}
@@ -142,7 +138,7 @@ const LoadingState: React.FC = () => {
       <MotiView
         from={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', damping: 15 }}
+        transition={enter(0)}
         style={styles.stateContent}
       >
         <View style={[styles.stateIcon, { backgroundColor: theme.colors.accent + '15' }]}>
@@ -179,7 +175,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({ error, onRetry }) => {
       <MotiView
         from={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', damping: 15 }}
+        transition={enter(0)}
         style={styles.stateContent}
       >
         <View style={[styles.stateIcon, { backgroundColor: '#ff6b6b' + '15' }]}>
@@ -216,7 +212,7 @@ const EmptyState: React.FC = () => {
       <MotiView
         from={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', damping: 15 }}
+        transition={enter(0)}
         style={styles.stateContent}
       >
         <View style={[styles.stateIcon, { backgroundColor: theme.colors.accent + '15' }]}>

@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../../context/ThemeContext';
 import { usePrayerSettings } from '../../../../hooks/settings/usePrayerSettings';
-import { calculateContrastColor } from '../../../../utils';
+import { calculateContrastColor, enter } from '../../../../utils';
 
 // ============================================================================
 // MAIN COMPONENT
@@ -38,7 +38,7 @@ const AdhanSelectionScreen = () => {
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}
@@ -69,11 +69,7 @@ const AdhanSelectionScreen = () => {
               <MotiView
                 from={{ opacity: 0, translateX: -20 }}
                 animate={{ opacity: 1, translateX: 0 }}
-                transition={{
-                  type: 'spring',
-                  delay: index * 80,
-                  damping: 20,
-                }}
+                transition={enter(0)}
               >
                 <TouchableOpacity
                   onPress={() => {
@@ -145,7 +141,7 @@ const AdhanSelectionScreen = () => {
             from={{ opacity: 0, translateY: 20 }}
             animate={{ opacity: 1, translateY: 0 }}
             exit={{ opacity: 0, translateY: 20 }}
-            transition={{ type: 'spring', damping: 20 }}
+            transition={enter(0)}
             style={styles.playingContainer}
           >
             <BlurView

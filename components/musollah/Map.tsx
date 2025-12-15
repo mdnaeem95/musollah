@@ -27,6 +27,7 @@ import {
   MosqueLocation,
   MusollahLocation,
 } from '../../api/services/musollah';
+import { enter } from '../../utils';
 
 // ============================================================================
 // MARKER IMAGES
@@ -158,7 +159,7 @@ const MapControls = ({ onRefocusPress, onAddLocationPress }: MapControlsProps) =
     <MotiView
       from={{ opacity: 0, translateX: -20 }}
       animate={{ opacity: 1, translateX: 0 }}
-      transition={{ type: 'spring', damping: 20, delay: 300 }}
+      transition={enter(0)}
       style={styles.controlsContainer}
     >
       {/* Refocus Button */}

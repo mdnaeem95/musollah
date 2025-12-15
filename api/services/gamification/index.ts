@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import firestore from '@react-native-firebase/firestore';
+import { db } from '../../client/firebase';
 import { cache, TTL } from '../../client/storage';
+
+import { doc, getDoc, updateDoc } from '@react-native-firebase/firestore';
 
 // ============================================================================
 // TYPES
@@ -17,34 +19,31 @@ export interface GamificationData {
 }
 
 // ============================================================================
-// API FUNCTIONS
+// API FUNCTIONS (MODULAR)
 // ============================================================================
 
 async function fetchGamificationData(userId: string): Promise<GamificationData> {
-  const gamificationDoc = await firestore()
-    .collection('users')
-    .doc(userId)
-    .get();
-  
-  const data = gamificationDoc.data();
-  
+  const userRef = doc(db, 'users', userId);
+  const snap = await getDoc(userRef);
+
+  const data = snap.data() as any;
+
   if (!data?.gamification) {
     throw new Error('Gamification data not found');
   }
 
-  return data.gamification;
+  return data.gamification as GamificationData;
 }
 
 async function updatePrayerStreak(
-  userId: string, 
+  userId: string,
   streak: PrayerStreak
 ): Promise<PrayerStreak> {
-  await firestore()
-    .collection('users')
-    .doc(userId)
-    .update({
-      'gamification.prayerStreak': streak
-    });
+  const userRef = doc(db, 'users', userId);
+
+  await updateDoc(userRef, {
+    'gamification.prayerStreak': streak,
+  });
 
   return streak;
 }
@@ -71,7 +70,7 @@ export function useGamificationData(userId: string | null) {
 
       const cacheKey = `gamification-${userId}`;
       const cached = cache.get<GamificationData>(cacheKey);
-      
+
       if (cached) {
         console.log('⚡ Using cached gamification data');
         return cached;
@@ -79,7 +78,7 @@ export function useGamificationData(userId: string | null) {
 
       console.log('🌐 Fetching gamification data from Firestore');
       const data = await fetchGamificationData(userId);
-      
+
       cache.set(cacheKey, data, TTL.FIVE_MINUTES);
       return data;
     },
@@ -93,26 +92,26 @@ export function useUpdatePrayerStreak() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ 
-      userId, 
-      streak 
-    }: { 
-      userId: string; 
+    mutationFn: ({
+      userId,
+      streak,
+    }: {
+      userId: string;
       streak: PrayerStreak;
     }) => updatePrayerStreak(userId, streak),
-    
+
     onMutate: async ({ userId, streak }) => {
       await queryClient.cancelQueries({
         queryKey: GAMIFICATION_QUERY_KEYS.user(userId),
       });
 
-      const previous = queryClient.getQueryData(
+      const previous = queryClient.getQueryData<GamificationData>(
         GAMIFICATION_QUERY_KEYS.user(userId)
       );
 
-      queryClient.setQueryData(
+      queryClient.setQueryData<GamificationData>(
         GAMIFICATION_QUERY_KEYS.user(userId),
-        (old: GamificationData | undefined) => {
+        (old) => {
           if (!old) return { prayerStreak: streak };
           return { ...old, prayerStreak: streak };
         }
@@ -120,8 +119,8 @@ export function useUpdatePrayerStreak() {
 
       return { previous };
     },
-    
-    onError: (err, { userId }, context) => {
+
+    onError: (_err, { userId }, context) => {
       if (context?.previous) {
         queryClient.setQueryData(
           GAMIFICATION_QUERY_KEYS.user(userId),
@@ -129,18 +128,19 @@ export function useUpdatePrayerStreak() {
         );
       }
     },
-    
+
     onSuccess: (data, { userId }) => {
       console.log('✅ Prayer streak updated');
-      
-      // Update cache
+
+      // Update MMKV cache
       const cacheKey = `gamification-${userId}`;
       const currentData = cache.get<GamificationData>(cacheKey);
       if (currentData) {
-        cache.set(cacheKey, {
-          ...currentData,
-          prayerStreak: data
-        }, TTL.FIVE_MINUTES);
+        cache.set(
+          cacheKey,
+          { ...currentData, prayerStreak: data },
+          TTL.FIVE_MINUTES
+        );
       }
     },
   });

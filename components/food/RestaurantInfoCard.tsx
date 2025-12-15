@@ -11,6 +11,7 @@ import { AirbnbRating } from 'react-native-ratings';
 
 import { useTheme } from '../../context/ThemeContext';
 import FavoriteButton from '../FavouriteButton';
+import { enter } from '../../utils';
 
 interface RestaurantInfoCardProps {
   name: string;
@@ -35,7 +36,7 @@ const RestaurantInfoCard: React.FC<RestaurantInfoCardProps> = ({
     <MotiView
       from={{ opacity: 0, translateY: 20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'spring', damping: 20 }}
+      transition={enter(0)}
     >
       <View style={[styles.card, {
         backgroundColor: theme.colors.secondary,

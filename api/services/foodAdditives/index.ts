@@ -108,11 +108,11 @@ export function useInvalidateFoodAdditives() {
   const queryClient = useQueryClient();
 
   return () => {
-    queryClient.invalidateQueries({
-      queryKey: FOOD_ADDITIVES_QUERY_KEYS.all,
-    });
+    cache.clear(CACHE_KEY); // ✅ clear MMKV cache too
+    queryClient.invalidateQueries({ queryKey: FOOD_ADDITIVES_QUERY_KEYS.all });
   };
 }
+
 
 // ============================================================================
 // UTILITY FUNCTIONS

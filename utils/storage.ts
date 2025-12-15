@@ -1,43 +1,41 @@
-import { MMKV } from 'react-native-mmkv';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { defaultStorage } from '../api/client/storage'; // <-- adjust path if needed
 
-// Initialize MMKV with encryption for sensitive data
-// Note: Using MMKV v2.x.x for compatibility with old React Native architecture
-export const storage = new MMKV({
-  id: 'rihlah-storage',
-  encryptionKey: 'rihlah-2025-secure-key' // Generate a proper key in production
-});
+/**
+ * Compatibility shim.
+ * Keeps the same "storage" export used across older code,
+ * but routes all reads/writes to the canonical MMKV instance
+ * from api/client/storage.ts.
+ */
+export const storage = {
+  getString: (k: string) => defaultStorage.getString(k),
+  set: (k: string, v: string) => defaultStorage.setString(k, v),
+  delete: (k: string) => defaultStorage.delete(k),
+  getAllKeys: () => defaultStorage.getAllKeys(),
+  clearAll: () => defaultStorage.clearAll(),
+  // Optional (some code might call these)
+  getBoolean: (k: string) => defaultStorage.getBoolean(k),
+  getNumber: (k: string) => defaultStorage.getNumber(k),
+};
 
-// Create AsyncStorage-compatible wrapper for easy migration
-export const MMKVStorage = {
-  async getItem(key: string): Promise<string | null> {
-    try {
-      return storage.getString(key) ?? null;
-    } catch {
-      return null;
-    }
+/**
+ * Legacy AsyncStorage-like wrapper (if anything still uses it).
+ * We write to MMKV primarily; AsyncStorage is only a fallback read.
+ */
+export const Storage = {
+  async getItem(key: string) {
+    const v = storage.getString(key);
+    if (v !== undefined) return v;
+    return await AsyncStorage.getItem(key);
   },
-
-  async setItem(key: string, value: string): Promise<void> {
+  async setItem(key: string, value: string) {
     storage.set(key, value);
+    // Optional: if you want dual-write during migration period, uncomment:
+    // await AsyncStorage.setItem(key, value);
   },
-
-  async removeItem(key: string): Promise<void> {
+  async removeItem(key: string) {
     storage.delete(key);
+    // Optional:
+    // await AsyncStorage.removeItem(key);
   },
-
-  async getAllKeys(): Promise<string[]> {
-    return storage.getAllKeys();
-  },
-
-  async multiGet(keys: string[]): Promise<[string, string | null][]> {
-    return keys.map(key => [key, storage.getString(key) ?? null]);
-  },
-
-  async multiSet(kvPairs: [string, string][]): Promise<void> {
-    kvPairs.forEach(([key, value]) => storage.set(key, value));
-  },
-
-  async clear(): Promise<void> {
-    storage.clearAll();
-  }
 };

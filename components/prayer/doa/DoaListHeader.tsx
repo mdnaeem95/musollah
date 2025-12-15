@@ -13,6 +13,7 @@ import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
 
 import { useTheme } from '../../../context/ThemeContext';
+import { enter } from '../../../utils';
 
 interface DoaListHeaderProps {
   onInfoPress: () => void;
@@ -25,7 +26,7 @@ const DoaListHeader: React.FC<DoaListHeaderProps> = ({ onInfoPress }) => {
     <MotiView
       from={{ opacity: 0, translateY: -20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'spring', damping: 20 }}
+      transition={enter(0)}
       style={styles.container}
     >
       {/* Header Card */}

@@ -1,77 +1,91 @@
-import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
-import storage from '@react-native-firebase/storage';
-import analytics from '@react-native-firebase/analytics';
-import crashlytics from '@react-native-firebase/crashlytics';
+import { getApp } from '@react-native-firebase/app';
+import firestore from '@react-native-firebase/firestore'
+import type { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import { collection, doc, getFirestore, initializeFirestore, runTransaction, writeBatch, serverTimestamp,
+  increment, arrayUnion, arrayRemove, deleteField, Timestamp } from '@react-native-firebase/firestore';
+import { onAuthStateChanged, signOut } from '@react-native-firebase/auth';
+ import { getAuth } from '@react-native-firebase/auth';
+import { getStorage } from '@react-native-firebase/storage';
 
-firestore().settings({
+// Analytics modular functions exist even if older docs show namespaced usage
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+
+// Crashlytics modular API is documented via type declarations in the migration guide
+import { getCrashlytics, recordError, setUserId, log } from '@react-native-firebase/crashlytics';
+
+const app = getApp();
+
+// Must run before first Firestore usage
+initializeFirestore(app, {
   cacheSizeBytes: firestore.CACHE_SIZE_UNLIMITED,
   persistence: true,
 });
 
-export const db = firestore();
-export const authService = auth();
-export const storageService = storage();
-export const analyticsService = analytics();
-export const crashlyticsService = crashlytics();
+export const db = getFirestore(app);
+export const authService = getAuth(app);
+export const storageService = getStorage(app);
+export const analyticsService = getAnalytics(app);
+export const crashlyticsService = getCrashlytics();
 
-export function getCollection<T = any>(collectionPath: string) {
-  return db.collection(collectionPath) as FirebaseFirestoreTypes.CollectionReference<FirebaseFirestoreTypes.DocumentData>;
+// ---------------------------------------------------------------------------
+// Firestore helpers (modular)
+// ---------------------------------------------------------------------------
+
+export function getCollection<
+  T extends FirebaseFirestoreTypes.DocumentData = FirebaseFirestoreTypes.DocumentData
+>(collectionPath: string) {
+  return collection(db, collectionPath) as unknown as FirebaseFirestoreTypes.CollectionReference<T>;
 }
 
-export function getDocument<T = any>(collectionPath: string, docId: string) {
-  return db.collection(collectionPath).doc(docId) as FirebaseFirestoreTypes.DocumentReference<FirebaseFirestoreTypes.DocumentData>;
+export function getDocument<
+  T extends FirebaseFirestoreTypes.DocumentData = FirebaseFirestoreTypes.DocumentData
+>(collectionPath: string, docId: string) {
+  return doc(db, collectionPath, docId) as unknown as FirebaseFirestoreTypes.DocumentReference<T>;
 }
 
 export function createBatch() {
-  return db.batch();
+  return writeBatch(db);
 }
 
-export function runTransaction<T>(
-  updateFunction: (transaction: FirebaseFirestoreTypes.Transaction) => Promise<T>
+export function runFirestoreTransaction<T>(
+  updateFn: (tx: FirebaseFirestoreTypes.Transaction) => Promise<T>,
 ) {
-  return db.runTransaction(updateFunction);
+  return runTransaction(db, updateFn as any) as Promise<T>;
 }
 
-// ============================================================================
-// FIRESTORE TYPES
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Timestamp / FieldValue replacements (recommended)
+// ---------------------------------------------------------------------------
 
-export type FirestoreTimestamp = FirebaseFirestoreTypes.Timestamp;
-export type FirestoreFieldValue = FirebaseFirestoreTypes.FieldValue;
+export { Timestamp, serverTimestamp, increment, arrayUnion, arrayRemove, deleteField };
 
-// Export commonly used field values
-export const FieldValue = firestore.FieldValue;
-export const Timestamp = firestore.Timestamp;
+// ---------------------------------------------------------------------------
+// Analytics helpers (modular)
+// ---------------------------------------------------------------------------
 
-// ============================================================================
-// ANALYTICS HELPERS
-// ============================================================================
-
-export const logAnalyticsEvent = async (
-  eventName: string,
-  params?: { [key: string]: any }
-) => {
+export const logAnalyticsEvent = async (eventName: string, params?: Record<string, any>) => {
   try {
-    await analyticsService.logEvent(eventName, params);
-  } catch (error) {
-    console.error('Failed to log analytics event:', error);
+    await logEvent(analyticsService, eventName as any, params as any);
+  } catch (e) {
+    console.error('Failed to log analytics event:', e);
   }
 };
 
-// ============================================================================
-// CRASHLYTICS HELPERS
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Crashlytics helpers (modular)
+// ---------------------------------------------------------------------------
 
 export const logError = (error: Error, context?: string) => {
   console.error(context ? `[${context}]` : '', error);
-  crashlyticsService.recordError(error);
+  recordError(crashlyticsService, error);
 };
 
-export const setUserId = (userId: string) => {
-  crashlyticsService.setUserId(userId);
+export const setCrashlyticsUserId = (userId: string) => {
+  setUserId(crashlyticsService, userId);
 };
 
-export const log = (message: string) => {
-  crashlyticsService.log(message);
+export const crashLog = (message: string) => {
+  log(crashlyticsService, message);
 };
+
+export { onAuthStateChanged, signOut };

@@ -12,6 +12,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 interface AddressCardProps {
   address: string;
@@ -33,7 +34,7 @@ const AddressCard: React.FC<AddressCardProps> = ({ address, distance }) => {
     <MotiView
       from={{ opacity: 0, translateY: 20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'spring', damping: 20, delay: 200 }}
+      transition={enter(0)}
     >
       <View style={[styles.card, {
         backgroundColor: theme.colors.secondary,

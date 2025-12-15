@@ -17,6 +17,7 @@ import { MotiView } from 'moti';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../context/ThemeContext';
+import { enter } from '../../../utils';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -79,7 +80,7 @@ const StatusOption = React.memo(({
     <MotiView
       from={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', damping: 20, delay: 100 + index * 30 }}
+      transition={enter(0)}
       style={{ flex: 1 }}
     >
       <TouchableOpacity
@@ -150,7 +151,7 @@ const SectionHeader = React.memo(({ title, icon, theme, index }: any) => (
   <MotiView
     from={{ opacity: 0, translateX: -20 }}
     animate={{ opacity: 1, translateX: 0 }}
-    transition={{ type: 'spring', damping: 20, delay: 80 + index * 30 }}
+    transition={enter(0)}
     style={styles.sectionHeader}
   >
     <View style={[styles.sectionIconCircle, { backgroundColor: `${theme.colors.accent}20` }]}>
@@ -242,7 +243,7 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
           <MotiView
             from={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
-            transition={{ type: 'spring', damping: 20 }}
+            transition={enter(0)}
           >
             <View style={[styles.handleBar, { backgroundColor: theme.colors.text.muted }]} />
           </MotiView>
@@ -252,7 +253,7 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
             <MotiView
               from={{ opacity: 0, translateY: -10 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'spring', damping: 20, delay: 50 }}
+              transition={enter(0)}
             >
               <Text style={[styles.title, { color: theme.colors.text.primary }]}>
                 Report Current Status
@@ -448,7 +449,7 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
             <MotiView
               from={{ opacity: 0, translateY: 20 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'spring', damping: 20, delay: 200 }}
+              transition={enter(0)}
             >
               <TouchableOpacity
                 onPress={handleSubmit}

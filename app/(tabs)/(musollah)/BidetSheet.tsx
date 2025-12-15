@@ -27,6 +27,7 @@ import BidetReportStatusSheet from './BidetReportStatusSheet';
 import { BidetLocation } from '../../../utils/types';
 import { useUpdateBidetStatus, useUpdateLocationStatus } from '../../../api/services/musollah';
 import Toast from 'react-native-toast-message';
+import { enter } from '../../../utils';
 
 // ============================================================================
 // CONSTANTS
@@ -100,7 +101,7 @@ const StatusBadge = ({ status, lastUpdated, theme, isDarkMode }: StatusBadgeProp
     <MotiView
       from={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', damping: 15, delay: 100 }}
+      transition={enter(0)}
     >
       <BlurView
         intensity={15}
@@ -152,7 +153,7 @@ const GenderAvailability = ({
     <MotiView
       from={{ opacity: 0, translateY: 20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'spring', damping: 20, delay: 200 + index * 50 }}
+      transition={enter(0)}
       style={styles.genderItem}
     >
       <BlurView
@@ -210,7 +211,7 @@ const ActionButton = ({
     <MotiView
       from={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', damping: 15, delay: 400 + index * 50 }}
+      transition={enter(0)}
     >
       <TouchableOpacity
         onPress={handlePress}
@@ -387,7 +388,7 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
           <MotiView
             from={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: 'spring', damping: 15 }}
+            transition={enter(0)}
           >
             <TouchableOpacity
               onPress={handleClose}
@@ -402,7 +403,7 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
           <MotiView
             from={{ opacity: 0, translateY: -10 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: 'spring', damping: 20, delay: 50 }}
+            transition={enter(0)}
           >
             <Text style={[styles.title, { color: theme.colors.text.primary }]}>
               {location.building}

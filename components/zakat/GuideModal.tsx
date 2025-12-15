@@ -21,6 +21,7 @@ import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 // ============================================================================
 // TYPES
@@ -106,7 +107,7 @@ const GuideModal: React.FC<GuideModalProps> = ({ isVisible, onClose }) => {
                 <MotiView
                     from={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: 'spring', damping: 20 }}
+                    transition={enter(0)}
                     style={styles.modalWrapper}
                 >
                     <BlurView
@@ -151,11 +152,7 @@ const GuideModal: React.FC<GuideModalProps> = ({ isVisible, onClose }) => {
                                         key={index}
                                         from={{ opacity: 0, translateX: -20 }}
                                         animate={{ opacity: 1, translateX: 0 }}
-                                        transition={{
-                                            type: 'spring',
-                                            delay: index * 100,
-                                            damping: 20,
-                                        }}
+                                        transition={enter(0)}
                                     >
                                         <BlurView
                                             intensity={20}
@@ -193,11 +190,7 @@ const GuideModal: React.FC<GuideModalProps> = ({ isVisible, onClose }) => {
                                         key={index}
                                         from={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        transition={{
-                                            type: 'spring',
-                                            delay: (GUIDE_STEPS.length * 100) + (index * 80),
-                                            damping: 20,
-                                        }}
+                                        transition={enter(0)}
                                     >
                                         <View style={[styles.infoCard, { backgroundColor: theme.colors.secondary }]}>
                                             <View style={[styles.infoIcon, { backgroundColor: item.color + '15' }]}>
@@ -220,11 +213,7 @@ const GuideModal: React.FC<GuideModalProps> = ({ isVisible, onClose }) => {
                             <MotiView
                                 from={{ opacity: 0, translateY: 20 }}
                                 animate={{ opacity: 1, translateY: 0 }}
-                                transition={{
-                                    type: 'spring',
-                                    delay: (GUIDE_STEPS.length * 100) + (INFO_ITEMS.length * 80) + 100,
-                                    damping: 20,
-                                }}
+                                transition={enter(0)}
                             >
                                 <View style={[styles.noteCard, { backgroundColor: theme.colors.accent + '10' }]}>
                                     <FontAwesome6 name="lightbulb" size={16} color={theme.colors.accent} />

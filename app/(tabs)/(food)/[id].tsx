@@ -7,14 +7,13 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, StatusBar, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../../context/ThemeContext';
 import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedStyle, interpolate } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome6 } from '@expo/vector-icons';
 
-import HeroImage from '../../../components/food/HeroImage';
 import RestaurantInfoCard from '../../../components/food/RestaurantInfoCard';
 import CertificationBadge from '../../../components/food/CertificationBadge';
 import AddressCard from '../../../components/food/AddressCard';

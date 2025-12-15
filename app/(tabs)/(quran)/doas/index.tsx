@@ -18,7 +18,7 @@ import * as Haptics from 'expo-haptics';
 import { Doa, useDoas, searchDoas } from '../../../../api/services/duas';
 import { useTheme } from '../../../../context/ThemeContext';
 import DoaItem from '../../../../components/quran/DoaItem';
-import { calculateContrastColor } from '../../../../utils';
+import { calculateContrastColor, enter } from '../../../../utils';
 
 const Doas = () => {
   const { theme, isDarkMode } = useTheme();
@@ -92,11 +92,7 @@ const Doas = () => {
       <MotiView
         from={{ opacity: 0, translateY: 20 }}
         animate={{ opacity: 1, translateY: 0 }}
-        transition={{
-          type: 'spring',
-          delay: Math.min(index * 50, 500),
-          damping: 20,
-        }}
+        transition={enter(0)}
       >
         <DoaItem doa={item} onPress={handleDoaPress} />
       </MotiView>
@@ -112,7 +108,7 @@ const Doas = () => {
       <MotiView
         from={{ opacity: 0, translateY: -20 }}
         animate={{ opacity: 1, translateY: 0 }}
-        transition={{ type: 'spring', damping: 20 }}
+        transition={enter(0)}
         style={styles.headerWrapper}
       >
         {/* Search Bar */}
@@ -176,7 +172,7 @@ const Doas = () => {
           <MotiView
             from={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: 'spring', damping: 15 }}
+            transition={enter(0)}
           >
             <Text style={[styles.resultsCount, { color: theme.colors.text.secondary }]}>
               {filteredDoas.length} {filteredDoas.length === 1 ? 'dua' : 'duas'} found
@@ -202,7 +198,7 @@ const Doas = () => {
       <MotiView
         from={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', damping: 15 }}
+        transition={enter(0)}
         style={styles.emptyContainer}
       >
         <BlurView
@@ -255,7 +251,6 @@ const Doas = () => {
 
       {/* Duas List */}
       <FlashList
-        estimatedItemSize={80}
         data={filteredDoas}
         renderItem={renderDoaItem}
         keyExtractor={(item) => `doa-${item.number}`}

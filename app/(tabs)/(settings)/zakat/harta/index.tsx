@@ -24,6 +24,7 @@ import EligibilityModal from '../../../../../components/zakat/EligibilityModal';
 import ZakatTable from '../../../../../components/zakat/ZakatTable';
 import ThemedButton from '../../../../../components/ThemedButton';
 import { useZakatHartaCalculator } from '../../../../../hooks/zakat/useZakatHartaCalculator';
+import { enter } from '../../../../../utils';
 
 // ============================================================================
 // MAIN COMPONENT
@@ -113,7 +114,7 @@ const ZakatHarta = () => {
                 <MotiView
                     from={{ opacity: 0, translateY: -20 }}
                     animate={{ opacity: 1, translateY: 0 }}
-                    transition={{ type: 'spring', damping: 20 }}
+                    transition={enter(0)}
                 >
                     <View style={styles.header}>
                         <View style={[styles.headerIcon, { backgroundColor: '#FFD700' + '15' }]}>
@@ -134,7 +135,7 @@ const ZakatHarta = () => {
                 <MotiView
                     from={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: 'spring', delay: 100, damping: 20 }}
+                    transition={enter(0)}
                 >
                     <BlurView
                         intensity={20}
@@ -164,7 +165,7 @@ const ZakatHarta = () => {
                 <MotiView
                     from={{ opacity: 0, translateY: 20 }}
                     animate={{ opacity: 1, translateY: 0 }}
-                    transition={{ type: 'spring', delay: 200, damping: 20 }}
+                    transition={enter(0)}
                 >
                     <ZakatTable
                         savings={savings}
@@ -203,7 +204,7 @@ const ZakatHarta = () => {
                 <MotiView
                     from={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: 'spring', delay: 300, damping: 20 }}
+                    transition={enter(0)}
                 >
                     <View style={styles.buttonContainer}>
                         <ThemedButton

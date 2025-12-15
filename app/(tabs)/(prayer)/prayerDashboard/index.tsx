@@ -59,7 +59,7 @@ import { usePrayerDateNavigation } from '../../../../hooks/prayer/usePrayerDateN
 import SignInModal from '../../../../components/SignInModal';
 
 // Utils
-import { shakeButton } from '../../../../utils';
+import { enter, shakeButton } from '../../../../utils';
 import { getCurrentDayIndex, isSameDate } from '../../../../utils/prayers/dates';
 import { getPrayerAvailability } from '../../../../utils/prayers/logging';
 
@@ -273,7 +273,7 @@ const PrayersDashboard: React.FC = () => {
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 20 }}
+          transition={enter(0)}
           style={styles.headerSection}
         >
           <BlurView
@@ -335,7 +335,7 @@ const PrayersDashboard: React.FC = () => {
         <MotiView
           from={{ opacity: 0, translateY: -10 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 100, damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}
@@ -392,11 +392,7 @@ const PrayersDashboard: React.FC = () => {
                 key={prayer}
                 from={{ opacity: 0, translateX: -20 }}
                 animate={{ opacity: 1, translateX: 0 }}
-                transition={{
-                  type: 'spring',
-                  delay: 200 + index * 80,
-                  damping: 20,
-                }}
+                transition={enter(0)}
               >
                 <BlurView
                   intensity={20}
@@ -484,7 +480,7 @@ const PrayersDashboard: React.FC = () => {
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 600, damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}
@@ -562,7 +558,7 @@ const PrayersDashboard: React.FC = () => {
         <MotiView
           from={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', delay: 700, damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}

@@ -15,7 +15,7 @@ import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../context/ThemeContext';
-import { calculateContrastColor } from '../../../utils';
+import { calculateContrastColor, enter } from '../../../utils';
 
 // ============================================================================
 // SETTINGS ITEMS DATA
@@ -52,7 +52,7 @@ const SettingsTab = () => {
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 20 }}
+          transition={enter(0)}
         >
           <SectionHeader icon="gear" label="Settings" theme={theme} />
 
@@ -85,7 +85,7 @@ const SettingsTab = () => {
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 100, damping: 20 }}
+          transition={enter(0)}
         >
           <SectionHeader icon="sparkles" label="Other Features" theme={theme} />
 
@@ -170,11 +170,7 @@ const SettingsItem = ({
     <MotiView
       from={{ opacity: 0, translateX: -20 }}
       animate={{ opacity: 1, translateX: 0 }}
-      transition={{
-        type: 'spring',
-        delay: index * 50,
-        damping: 20,
-      }}
+      transition={enter(0)}
     >
       <TouchableOpacity
         onPress={onPress}
@@ -228,11 +224,7 @@ const FeatureCard = ({
     <MotiView
       from={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{
-        type: 'spring',
-        delay: index * 100,
-        damping: 20,
-      }}
+      transition={enter(0)}
       style={styles.featureCardWrapper}
     >
       <TouchableOpacity onPress={onPress} activeOpacity={0.7}>

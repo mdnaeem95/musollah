@@ -4,35 +4,40 @@
  * API functions and TanStack Query hooks for restaurant data.
  * Handles Firebase GeoPoint normalization and caching.
  *
- * @version 2.0 - Fixed location → coordinates mapping, improved types
+ * @version 2.1 - Modular Firestore migration (no namespaced APIs)
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { db, FieldValue, storageService } from '../../client/firebase';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { db, storageService, arrayUnion, arrayRemove } from '../../client/firebase';
 import { cache, TTL } from '../../client/storage';
+
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  runTransaction,
+  setDoc,
+  updateDoc,
+} from '@react-native-firebase/firestore';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-/**
- * Firebase GeoPoint structure
- */
 interface FirebaseGeoPoint {
   latitude: number;
   longitude: number;
 }
 
-/**
- * Raw restaurant data from Firebase (what's actually in Firestore)
- */
 interface FirebaseRestaurant {
   id?: string;
   name: string;
   categories?: string[];
-  // Firebase uses 'location' as a GeoPoint
   location?: FirebaseGeoPoint;
-  // Some records might use 'coordinates' - support both
   coordinates?: {
     latitude: number;
     longitude: number;
@@ -58,10 +63,6 @@ interface FirebaseRestaurant {
   tags?: string[];
 }
 
-/**
- * Normalized restaurant type (what consumers receive)
- * Coordinates are always present and normalized
- */
 export interface Restaurant {
   id: string;
   name: string;
@@ -114,9 +115,6 @@ type SubmitReviewParams = {
 // HELPERS
 // ============================================================================
 
-/**
- * Validate coordinates are valid numbers within bounds
- */
 function isValidCoordinates(coords: unknown): coords is { latitude: number; longitude: number } {
   if (!coords || typeof coords !== 'object') return false;
   const { latitude, longitude } = coords as { latitude: number; longitude: number };
@@ -132,86 +130,66 @@ function isValidCoordinates(coords: unknown): coords is { latitude: number; long
   );
 }
 
-/**
- * Extract and normalize coordinates from Firebase document
- * Handles both 'location' (GeoPoint) and 'coordinates' fields
- */
 function extractCoordinates(doc: FirebaseRestaurant): { latitude: number; longitude: number } | null {
-  // Priority 1: Check 'location' field (Firebase GeoPoint)
   if (doc.location && isValidCoordinates(doc.location)) {
-    return {
-      latitude: doc.location.latitude,
-      longitude: doc.location.longitude,
-    };
+    return { latitude: doc.location.latitude, longitude: doc.location.longitude };
   }
 
-  // Priority 2: Check 'coordinates' field
   if (doc.coordinates && isValidCoordinates(doc.coordinates)) {
-    return {
-      latitude: doc.coordinates.latitude,
-      longitude: doc.coordinates.longitude,
-    };
+    return { latitude: doc.coordinates.latitude, longitude: doc.coordinates.longitude };
   }
 
   return null;
 }
 
-/**
- * Transform Firebase document to normalized Restaurant
- * Returns null for invalid documents (no coordinates)
- */
-function normalizeRestaurant(id: string, doc: FirebaseRestaurant): Restaurant | null {
-  const coordinates = extractCoordinates(doc);
+function normalizeRestaurant(id: string, docData: FirebaseRestaurant): Restaurant | null {
+  const coordinates = extractCoordinates(docData);
 
   if (!coordinates) {
-    if (__DEV__) {
-      console.warn(`⚠️ Restaurant "${doc.name}" (${id}) has no valid coordinates, skipping`);
-    }
+    if (__DEV__) console.warn(`⚠️ Restaurant "${docData.name}" (${id}) has no valid coordinates, skipping`);
     return null;
   }
 
   return {
     id,
-    name: doc.name || 'Unknown Restaurant',
-    categories: doc.categories ?? [],
+    name: docData.name || 'Unknown Restaurant',
+    categories: docData.categories ?? [],
     coordinates,
-    address: doc.address ?? '',
-    image: doc.image ?? '',
-    hours: doc.hours ?? '',
-    website: doc.website ?? doc.menuUrl ?? '',
-    menuUrl: doc.menuUrl ?? doc.website ?? '',
-    socials: doc.socials ?? {},
-    status: doc.status ?? 'Unknown',
-    averageRating: doc.averageRating ?? doc.rating ?? 0,
-    totalReviews: doc.totalReviews ?? 0,
-    rating: doc.rating,
-    priceRange: doc.priceRange,
-    description: doc.description,
-    halal: doc.halal,
-    tags: doc.tags,
+    address: docData.address ?? '',
+    image: docData.image ?? '',
+    hours: docData.hours ?? '',
+    website: docData.website ?? docData.menuUrl ?? '',
+    menuUrl: docData.menuUrl ?? docData.website ?? '',
+    socials: docData.socials ?? {},
+    status: docData.status ?? 'Unknown',
+    averageRating: docData.averageRating ?? docData.rating ?? 0,
+    totalReviews: docData.totalReviews ?? 0,
+    rating: docData.rating,
+    priceRange: docData.priceRange,
+    description: docData.description,
+    halal: docData.halal,
+    tags: docData.tags,
   };
 }
 
 // ============================================================================
-// API FUNCTIONS
+// API FUNCTIONS (MODULAR FIRESTORE)
 // ============================================================================
 
 async function fetchRestaurantsFromFirebase(): Promise<Restaurant[]> {
   try {
     console.log('🌐 Fetching restaurants from Firebase');
 
-    const snapshot = await db.collection('restaurants').get();
+    const colRef = collection(db, 'restaurants');
+    const snapshot = await getDocs(colRef);
 
     const restaurants: Restaurant[] = [];
     let skippedCount = 0;
 
-    snapshot.docs.forEach((doc) => {
-      const normalized = normalizeRestaurant(doc.id, doc.data() as FirebaseRestaurant);
-      if (normalized) {
-        restaurants.push(normalized);
-      } else {
-        skippedCount++;
-      }
+    snapshot.docs.forEach((d: any) => {
+      const normalized = normalizeRestaurant(d.id, d.data() as FirebaseRestaurant);
+      if (normalized) restaurants.push(normalized);
+      else skippedCount++;
     });
 
     console.log(`✅ Fetched ${restaurants.length} restaurants (${skippedCount} skipped - no coordinates)`);
@@ -226,17 +204,13 @@ async function fetchRestaurantByIdFromFirebase(id: string): Promise<Restaurant> 
   try {
     console.log(`🌐 Fetching restaurant: ${id}`);
 
-    const doc = await db.collection('restaurants').doc(id).get();
+    const ref = doc(db, 'restaurants', id);
+    const snap = await getDoc(ref);
 
-    if (!doc.exists) {
-      throw new Error('Restaurant not found');
-    }
+    if (!snap.exists) throw new Error('Restaurant not found');
 
-    const normalized = normalizeRestaurant(doc.id, doc.data() as FirebaseRestaurant);
-
-    if (!normalized) {
-      throw new Error('Restaurant has invalid location data');
-    }
+    const normalized = normalizeRestaurant(snap.id, snap.data() as FirebaseRestaurant);
+    if (!normalized) throw new Error('Restaurant has invalid location data');
 
     return normalized;
   } catch (error) {
@@ -249,17 +223,15 @@ async function fetchReviewsFromFirebase(restaurantId: string): Promise<Restauran
   try {
     console.log(`🌐 Fetching reviews for: ${restaurantId}`);
 
-    const snapshot = await db
-      .collection('restaurants')
-      .doc(restaurantId)
-      .collection('reviews')
-      .orderBy('timestamp', 'desc')
-      .get();
+    const colRef = collection(db, 'restaurants', restaurantId, 'reviews');
+    const q = query(colRef, orderBy('timestamp', 'desc'));
 
-    const reviews = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as RestaurantReview[];
+    const snapshot = await getDocs(q);
+
+    const reviews = snapshot.docs.map((d: any) => ({
+      id: d.id,
+      ...(d.data() as Omit<RestaurantReview, 'id'>),
+    }));
 
     console.log(`✅ Fetched ${reviews.length} reviews`);
     return reviews;
@@ -273,13 +245,12 @@ async function fetchUserFavoritesFromFirebase(userId: string): Promise<string[]>
   try {
     console.log(`🌐 Fetching favorites for user: ${userId}`);
 
-    const doc = await db.collection('users').doc(userId).get();
+    const ref = doc(db, 'users', userId);
+    const snap = await getDoc(ref);
 
-    if (!doc.exists) {
-      return [];
-    }
+    if (!snap.exists) return [];
 
-    const data = doc.data();
+    const data = snap.data() as any;
     return data?.favouriteRestaurants || [];
   } catch (error) {
     console.error('❌ Error fetching favorites:', error);
@@ -291,8 +262,8 @@ async function addToFavoritesInFirebase(userId: string, restaurantId: string): P
   try {
     console.log(`➕ Adding restaurant ${restaurantId} to favorites`);
 
-    await db.collection('users').doc(userId).update({
-      favouriteRestaurants: FieldValue.arrayUnion(restaurantId),
+    await updateDoc(doc(db, 'users', userId), {
+      favouriteRestaurants: arrayUnion(restaurantId),
     });
 
     console.log('✅ Added to favorites');
@@ -306,8 +277,8 @@ async function removeFromFavoritesInFirebase(userId: string, restaurantId: strin
   try {
     console.log(`➖ Removing restaurant ${restaurantId} from favorites`);
 
-    await db.collection('users').doc(userId).update({
-      favouriteRestaurants: FieldValue.arrayRemove(restaurantId),
+    await updateDoc(doc(db, 'users', userId), {
+      favouriteRestaurants: arrayRemove(restaurantId),
     });
 
     console.log('✅ Removed from favorites');
@@ -325,18 +296,18 @@ async function submitReviewToFirebase({
   reviewText,
   imageUris,
 }: SubmitReviewParams): Promise<void> {
-  // Create the review doc first to get a stable ID for storage paths
-  const reviewRef = db.collection('restaurants').doc(restaurantId).collection('reviews').doc();
+  // Create review doc ref with auto ID
+  const reviewsCol = collection(db, 'restaurants', restaurantId, 'reviews');
+  const reviewRef = doc(reviewsCol);
   const reviewId = reviewRef.id;
 
-  // Upload images (if any) and collect download URLs
+  // Upload images (Storage kept as-is)
   const imageUrls: string[] = [];
   for (let i = 0; i < (imageUris?.length ?? 0); i++) {
     const localUri = imageUris[i];
     const ext = localUri.split('.').pop() || 'jpg';
     const objectPath = `restaurants/${restaurantId}/reviews/${reviewId}/${i}.${ext}`;
 
-    // RN Firebase Storage: use putFile on file:// URIs
     const ref = storageService.ref(objectPath);
     await ref.putFile(localUri);
     const url = await ref.getDownloadURL();
@@ -344,7 +315,7 @@ async function submitReviewToFirebase({
   }
 
   // Write the review document
-  await reviewRef.set({
+  await setDoc(reviewRef, {
     userId,
     userName,
     rating,
@@ -353,28 +324,27 @@ async function submitReviewToFirebase({
     images: imageUrls,
   });
 
-  // Update restaurant's review stats
+  // Update restaurant stats (transaction)
   try {
-    const restaurantRef = db.collection('restaurants').doc(restaurantId);
-    await db.runTransaction(async (transaction) => {
-      const restaurantDoc = await transaction.get(restaurantRef);
-      if (!restaurantDoc.exists) return;
+    const restaurantRef = doc(db, 'restaurants', restaurantId);
 
-      const data = restaurantDoc.data();
+    await runTransaction(db, async (tx) => {
+      const restaurantSnap = await tx.get(restaurantRef);
+      if (!restaurantSnap.exists) return;
+
+      const data = restaurantSnap.data() as any;
       const currentTotal = data?.totalReviews ?? 0;
       const currentAvg = data?.averageRating ?? 0;
 
-      // Calculate new average
       const newTotal = currentTotal + 1;
       const newAvg = (currentAvg * currentTotal + rating) / newTotal;
 
-      transaction.update(restaurantRef, {
+      tx.update(restaurantRef, {
         totalReviews: newTotal,
         averageRating: Number(newAvg.toFixed(1)),
       });
     });
   } catch (err) {
-    // Non-critical error - review is already saved
     console.warn('Failed to update restaurant stats:', err);
   }
 }
@@ -408,10 +378,7 @@ export function useRestaurants() {
       }
 
       const restaurants = await fetchRestaurantsFromFirebase();
-
-      // Cache for 1 day (restaurant data changes infrequently)
       cache.set(cacheKey, restaurants, TTL.ONE_DAY);
-
       return restaurants;
     },
     staleTime: TTL.ONE_HOUR,
@@ -433,10 +400,7 @@ export function useRestaurantDetail(id: string | null) {
       }
 
       const restaurant = await fetchRestaurantByIdFromFirebase(id!);
-
-      // Cache for 1 hour
       cache.set(cacheKey, restaurant, TTL.ONE_HOUR);
-
       return restaurant;
     },
     staleTime: TTL.FIFTEEN_MINUTES,
@@ -459,10 +423,7 @@ export function useRestaurantReviews(restaurantId: string | null) {
       }
 
       const reviews = await fetchReviewsFromFirebase(restaurantId!);
-
-      // Cache for 5 minutes
       cache.set(cacheKey, reviews, TTL.FIVE_MINUTES);
-
       return reviews;
     },
     staleTime: TTL.FIVE_MINUTES,
@@ -475,10 +436,7 @@ export function useRestaurantReviews(restaurantId: string | null) {
 export function useUserFavorites(userId: string | null) {
   return useQuery({
     queryKey: RESTAURANT_QUERY_KEYS.favorites(userId!),
-    queryFn: async () => {
-      const favorites = await fetchUserFavoritesFromFirebase(userId!);
-      return favorites;
-    },
+    queryFn: async () => fetchUserFavoritesFromFirebase(userId!),
     staleTime: TTL.FIVE_MINUTES,
     gcTime: TTL.FIFTEEN_MINUTES,
     retry: 2,
@@ -499,26 +457,17 @@ export function useToggleFavorite() {
       restaurantId: string;
       isFavorited: boolean;
     }) => {
-      if (isFavorited) {
-        await removeFromFavoritesInFirebase(userId, restaurantId);
-      } else {
-        await addToFavoritesInFirebase(userId, restaurantId);
-      }
+      if (isFavorited) await removeFromFavoritesInFirebase(userId, restaurantId);
+      else await addToFavoritesInFirebase(userId, restaurantId);
     },
 
-    // Optimistic update
     onMutate: async ({ userId, restaurantId, isFavorited }) => {
-      // Cancel outgoing queries
-      await queryClient.cancelQueries({
-        queryKey: RESTAURANT_QUERY_KEYS.favorites(userId),
-      });
+      await queryClient.cancelQueries({ queryKey: RESTAURANT_QUERY_KEYS.favorites(userId) });
 
-      // Snapshot previous value
       const previousFavorites = queryClient.getQueryData<string[]>(
         RESTAURANT_QUERY_KEYS.favorites(userId)
       );
 
-      // Optimistically update
       queryClient.setQueryData<string[]>(RESTAURANT_QUERY_KEYS.favorites(userId), (old = []) => {
         return isFavorited ? old.filter((id) => id !== restaurantId) : [...old, restaurantId];
       });
@@ -526,18 +475,14 @@ export function useToggleFavorite() {
       return { previousFavorites };
     },
 
-    // Rollback on error
-    onError: (err, { userId }, context) => {
+    onError: (_err, { userId }, context) => {
       if (context?.previousFavorites) {
         queryClient.setQueryData(RESTAURANT_QUERY_KEYS.favorites(userId), context.previousFavorites);
       }
     },
 
-    // Refetch on success
-    onSuccess: (_, { userId }) => {
-      queryClient.invalidateQueries({
-        queryKey: RESTAURANT_QUERY_KEYS.favorites(userId),
-      });
+    onSuccess: (_data, { userId }) => {
+      queryClient.invalidateQueries({ queryKey: RESTAURANT_QUERY_KEYS.favorites(userId) });
     },
   });
 }
@@ -558,14 +503,8 @@ export function useSubmitReview() {
   return useMutation({
     mutationFn: (vars: SubmitReviewParams) => submitReviewToFirebase(vars),
     onSuccess: (_data, vars) => {
-      // Refresh the reviews list for this restaurant
-      queryClient.invalidateQueries({
-        queryKey: RESTAURANT_QUERY_KEYS.reviews(vars.restaurantId),
-      });
-      // Also refresh restaurant detail to update rating/count
-      queryClient.invalidateQueries({
-        queryKey: RESTAURANT_QUERY_KEYS.detail(vars.restaurantId),
-      });
+      queryClient.invalidateQueries({ queryKey: RESTAURANT_QUERY_KEYS.reviews(vars.restaurantId) });
+      queryClient.invalidateQueries({ queryKey: RESTAURANT_QUERY_KEYS.detail(vars.restaurantId) });
     },
   });
 }
@@ -584,12 +523,11 @@ export function calculateDistance(
   from: { latitude: number; longitude: number },
   to: { latitude: number; longitude: number }
 ): number {
-  // Defensive check for invalid coordinates
   if (!from || !to) return Infinity;
   if (typeof from.latitude !== 'number' || typeof from.longitude !== 'number') return Infinity;
   if (typeof to.latitude !== 'number' || typeof to.longitude !== 'number') return Infinity;
 
-  const R = 6371; // Earth's radius in km
+  const R = 6371;
   const dLat = toRad(to.latitude - from.latitude);
   const dLon = toRad(to.longitude - from.longitude);
 
@@ -627,9 +565,8 @@ export function getRecommendedRestaurants(
   return sortByDistance(restaurants, userLocation).slice(0, limit);
 }
 
-export function searchRestaurants(restaurants: Restaurant[], query: string): Restaurant[] {
-  const lowerQuery = query.toLowerCase().trim();
-
+export function searchRestaurants(restaurants: Restaurant[], queryText: string): Restaurant[] {
+  const lowerQuery = queryText.toLowerCase().trim();
   if (!lowerQuery) return restaurants;
 
   return restaurants.filter((restaurant) => {
@@ -645,29 +582,18 @@ export function searchRestaurants(restaurants: Restaurant[], query: string): Res
   });
 }
 
-/**
- * Format distance for display
- */
 export function formatDistance(distanceKm: number): string {
   if (!isFinite(distanceKm) || distanceKm < 0) return 'N/A';
-  if (distanceKm < 1) {
-    return `${Math.round(distanceKm * 1000)}m`;
-  }
+  if (distanceKm < 1) return `${Math.round(distanceKm * 1000)}m`;
   return `${distanceKm.toFixed(1)}km`;
 }
 
-/**
- * Invalidate all restaurant caches
- * Useful after data updates
- */
 export function useInvalidateRestaurants() {
   const queryClient = useQueryClient();
 
   return {
     invalidateAll: () => {
-      // Clear MMKV cache
       cache.clear('restaurants-all');
-      // Invalidate TanStack Query cache
       queryClient.invalidateQueries({ queryKey: RESTAURANT_QUERY_KEYS.all });
     },
     invalidateDetail: (id: string) => {

@@ -2,6 +2,15 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '../../client/firebase';
 import { cache, TTL } from '../../client/storage';
 
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query as fsQuery,
+} from '@react-native-firebase/firestore';
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -21,19 +30,18 @@ export interface Khutbah {
 }
 
 // ============================================================================
-// API FUNCTIONS
+// API FUNCTIONS (MODULAR)
 // ============================================================================
 
 async function fetchKhutbahs(): Promise<Khutbah[]> {
   try {
-    const snapshot = await db
-      .collection('khutbahs')
-      .orderBy('date', 'desc')
-      .get();
+    const colRef = collection(db, 'khutbahs');
+    const q = fsQuery(colRef, orderBy('date', 'desc'));
+    const snapshot = await getDocs(q);
 
-    const khutbahs = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
+    const khutbahs = snapshot.docs.map((d: any) => ({
+      id: d.id,
+      ...(d.data() as Omit<Khutbah, 'id'>),
     })) as Khutbah[];
 
     console.log(`✅ Fetched ${khutbahs.length} khutbahs from Firebase`);
@@ -46,16 +54,17 @@ async function fetchKhutbahs(): Promise<Khutbah[]> {
 
 async function fetchKhutbahById(id: string): Promise<Khutbah | null> {
   try {
-    const doc = await db.collection('khutbahs').doc(id).get();
+    const ref = doc(db, 'khutbahs', id);
+    const snap = await getDoc(ref);
 
-    if (!doc.exists) {
+    if (!snap.exists) {
       console.warn(`Khutbah ${id} not found`);
       return null;
     }
 
     return {
-      id: doc.id,
-      ...doc.data(),
+      id: snap.id,
+      ...(snap.data() as Omit<Khutbah, 'id'>),
     } as Khutbah;
   } catch (error) {
     console.error(`❌ Error fetching khutbah ${id}:`, error);
@@ -63,13 +72,18 @@ async function fetchKhutbahById(id: string): Promise<Khutbah | null> {
   }
 }
 
+// ============================================================================
+// LOCAL HELPERS
+// ============================================================================
+
 function searchKhutbahs(khutbahs: Khutbah[], query: string): Khutbah[] {
   const lowerQuery = query.toLowerCase();
-  
-  return khutbahs.filter(khutbah =>
-    khutbah.title.toLowerCase().includes(lowerQuery) ||
-    khutbah.tags?.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
-    khutbah.speaker?.toLowerCase().includes(lowerQuery)
+
+  return khutbahs.filter(
+    (khutbah) =>
+      khutbah.title.toLowerCase().includes(lowerQuery) ||
+      khutbah.tags?.some((tag) => tag.toLowerCase().includes(lowerQuery)) ||
+      khutbah.speaker?.toLowerCase().includes(lowerQuery)
   );
 }
 
@@ -78,7 +92,7 @@ function filterKhutbahsByDateRange(
   startDate: string,
   endDate: string
 ): Khutbah[] {
-  return khutbahs.filter(khutbah => {
+  return khutbahs.filter((khutbah) => {
     const khutbahDate = new Date(khutbah.date);
     return khutbahDate >= new Date(startDate) && khutbahDate <= new Date(endDate);
   });
@@ -104,28 +118,24 @@ export function useKhutbahs() {
     queryKey: KHUTBAH_QUERY_KEYS.lists,
     queryFn: async () => {
       const cacheKey = 'khutbahs-all';
-      
-      // Check cache first
+
       const cached = cache.get<Khutbah[]>(cacheKey);
       if (cached) {
         console.log('⚡ Using cached khutbahs');
         return cached;
       }
 
-      // Fetch from Firebase
       console.log('🌐 Fetching khutbahs from Firebase');
       const khutbahs = await fetchKhutbahs();
 
-      // Cache for 1 hour
       cache.set(cacheKey, khutbahs, TTL.ONE_HOUR);
-
       return khutbahs;
     },
-    staleTime: TTL.ONE_HOUR, // Consider fresh for 1 hour
-    gcTime: TTL.ONE_DAY, // Keep in memory for 1 day
+    staleTime: TTL.ONE_HOUR,
+    gcTime: TTL.ONE_DAY,
     retry: 2,
     refetchOnWindowFocus: true,
-    refetchOnMount: false, // Use cached data on mount
+    refetchOnMount: false,
   });
 }
 
@@ -134,23 +144,17 @@ export function useKhutbah(id: string) {
     queryKey: KHUTBAH_QUERY_KEYS.detail(id),
     queryFn: async () => {
       const cacheKey = `khutbah-${id}`;
-      
-      // Check cache first
+
       const cached = cache.get<Khutbah>(cacheKey);
       if (cached) {
         console.log(`⚡ Using cached khutbah ${id}`);
         return cached;
       }
 
-      // Fetch from Firebase
       const khutbah = await fetchKhutbahById(id);
-      if (!khutbah) {
-        throw new Error(`Khutbah ${id} not found`);
-      }
+      if (!khutbah) throw new Error(`Khutbah ${id} not found`);
 
-      // Cache for 1 day (khutbahs don't change often)
       cache.set(cacheKey, khutbah, TTL.ONE_DAY);
-
       return khutbah;
     },
     staleTime: TTL.ONE_DAY,
@@ -160,16 +164,15 @@ export function useKhutbah(id: string) {
   });
 }
 
-export function useSearchKhutbahs(query: string) {
+export function useSearchKhutbahs(queryStr: string) {
   const { data: khutbahs } = useKhutbahs();
 
-  const results = query.trim() && khutbahs
-    ? searchKhutbahs(khutbahs, query)
-    : khutbahs || [];
+  const results =
+    queryStr.trim() && khutbahs ? searchKhutbahs(khutbahs, queryStr) : khutbahs || [];
 
   return {
     results,
-    isSearching: !!query.trim(),
+    isSearching: !!queryStr.trim(),
   };
 }
 
@@ -192,7 +195,11 @@ export function usePrefetchKhutbahs() {
     prefetchById: async (id: string) => {
       await queryClient.prefetchQuery({
         queryKey: KHUTBAH_QUERY_KEYS.detail(id),
-        queryFn: () => fetchKhutbahById(id),
+        queryFn: async () => {
+          const khutbah = await fetchKhutbahById(id);
+          if (!khutbah) throw new Error(`Khutbah ${id} not found`);
+          return khutbah;
+        },
         staleTime: TTL.ONE_DAY,
       });
     },
@@ -208,15 +215,13 @@ export function useInvalidateKhutbahs() {
 
   return {
     invalidateAll: () => {
-      queryClient.invalidateQueries({
-        queryKey: KHUTBAH_QUERY_KEYS.all,
-      });
+      cache.clear('khutbahs-all'); // ✅ also clear MMKV
+      queryClient.invalidateQueries({ queryKey: KHUTBAH_QUERY_KEYS.all });
     },
 
     invalidateById: (id: string) => {
-      queryClient.invalidateQueries({
-        queryKey: KHUTBAH_QUERY_KEYS.detail(id),
-      });
+      cache.clear(`khutbah-${id}`); // ✅ also clear MMKV
+      queryClient.invalidateQueries({ queryKey: KHUTBAH_QUERY_KEYS.detail(id) });
     },
   };
 }
@@ -245,7 +250,7 @@ export function hasLanguage(khutbah: Khutbah, language: Language): boolean {
 
 export function getMostRecentKhutbah(khutbahs: Khutbah[]): Khutbah | null {
   if (khutbahs.length === 0) return null;
-  return khutbahs.sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
+  return [...khutbahs].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   )[0];
 }

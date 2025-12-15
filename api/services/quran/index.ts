@@ -1,6 +1,6 @@
 /**
  * Quran Service (2025 Edition)
- * 
+ *
  * Modern, type-safe Quran data fetching with:
  * - Flexible query options
  * - Suspense support (React 19 ready)
@@ -8,7 +8,7 @@
  * - Offline resilience
  * - Performance monitoring
  * - Comprehensive error handling
- * 
+ *
  * ARCHITECTURE:
  * - TanStack Query v5 with all latest features
  * - MMKV caching (20-100x faster than AsyncStorage)
@@ -16,7 +16,12 @@
  * - Type-safe with strict TypeScript
  */
 
-import { useQuery, useSuspenseQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
+import {
+  UseQueryOptions,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import NetInfo from '@react-native-community/netinfo';
 import { quranClient, handleApiError } from '../../client/http';
@@ -96,8 +101,12 @@ export const QURAN_QUERY_KEYS = {
 };
 
 // ============================================================================
-// TYPE GUARDS
+// TYPE GUARDS + HELPERS
 // ============================================================================
+
+function toError(e: unknown, fallback: string) {
+  return e instanceof Error ? e : new Error(fallback);
+}
 
 export function isValidSurahNumber(num: number): boolean {
   return num >= 1 && num <= TOTAL_SURAHS;
@@ -108,16 +117,36 @@ export function isValidAyahIndex(
   index: number
 ): boolean {
   if ('arabic' in surahData) {
-    // SurahWithTranslation
     return (
       index >= 0 &&
       index < surahData.arabic.ayahs.length &&
       index < surahData.translation.ayahs.length
     );
   }
-  
-  // SurahDetail
+
   return index >= 0 && index < surahData.ayahs.length;
+}
+
+function isSurahWithTranslation(x: any): x is SurahWithTranslation {
+  return (
+    x &&
+    typeof x === 'object' &&
+    x.arabic &&
+    Array.isArray(x.arabic.ayahs) &&
+    x.translation &&
+    Array.isArray(x.translation.ayahs)
+  );
+}
+
+function safeCacheDelete(key: string) {
+  // only if your cache implementation supports delete/remove
+  try {
+    const anyCache = cache as any;
+    if (typeof anyCache.delete === 'function') anyCache.delete(key);
+    else if (typeof anyCache.remove === 'function') anyCache.remove(key);
+  } catch {
+    // ignore
+  }
 }
 
 // ============================================================================
@@ -127,9 +156,16 @@ export function isValidAyahIndex(
 export async function fetchSurahs(): Promise<Surah[]> {
   try {
     const response = await quranClient.get<SurahsAPIResponse>('/surah');
-    return response.data.data;
+    const data = response.data?.data;
+
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid /surah response shape');
+    }
+
+    return data;
   } catch (error) {
     handleApiError(error, 'fetchSurahs');
+    throw toError(error, 'Failed to fetch surahs');
   }
 }
 
@@ -145,9 +181,17 @@ export async function fetchSurahDetail(
     const response = await quranClient.get<SurahDetailAPIResponse>(
       `/surah/${surahNumber}/${edition}`
     );
-    return response.data.data;
+
+    const data = response.data?.data;
+
+    if (!data || !Array.isArray(data.ayahs)) {
+      throw new Error(`Invalid surah detail response for ${surahNumber}/${edition}`);
+    }
+
+    return data;
   } catch (error) {
     handleApiError(error, 'fetchSurahDetail');
+    throw toError(error, `Failed to fetch surah ${surahNumber} (${edition})`);
   }
 }
 
@@ -167,6 +211,7 @@ export async function fetchSurahWithTranslation(
     return { arabic, translation };
   } catch (error) {
     handleApiError(error, 'fetchSurahWithTranslation');
+    throw toError(error, `Failed to fetch surahWithTranslation ${surahNumber}`);
   }
 }
 
@@ -183,13 +228,13 @@ export function useSurahs(
       const cacheKey = 'quran-surahs';
       const cached = cache.get<Surah[]>(cacheKey);
 
-      if (cached) {
+      if (cached && Array.isArray(cached)) {
         console.log('🎯 Using cached surahs list');
         return cached;
       }
 
       console.log('🌐 Fetching surahs from API');
-      const surahs = await fetchSurahs();
+      const surahs = await fetchSurahs(); // will either return Surah[] or throw
 
       // Cache indefinitely - Quran never changes
       cache.set(cacheKey, surahs, TTL.ONE_MONTH * 12);
@@ -210,12 +255,12 @@ export function useSurahsSuspense() {
       const cacheKey = 'quran-surahs';
       const cached = cache.get<Surah[]>(cacheKey);
 
-      if (cached) {
+      if (cached && Array.isArray(cached)) {
         console.log('🎯 Using cached surahs list');
         return cached;
       }
 
-      const surahs = await fetchSurahs();
+      const surahs = await fetchSurahs(); // will either return Surah[] or throw
       cache.set(cacheKey, surahs, TTL.ONE_MONTH * 12);
       return surahs;
     },
@@ -236,10 +281,9 @@ export function useSurah(
   const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
       setIsOffline(!state.isConnected);
     });
-
     return unsubscribe;
   }, []);
 
@@ -249,27 +293,24 @@ export function useSurah(
       const cacheKey = `quran-surah-${surahNumber}-${edition}`;
       const cached = cache.get<SurahDetail>(cacheKey);
 
-      if (cached) {
+      if (cached && Array.isArray((cached as any).ayahs)) {
         console.log(`🎯 Using cached surah ${surahNumber}`);
         return cached;
       }
 
-      // If offline and no cache, throw error
       if (isOffline) {
         throw new Error('No cached data available offline');
       }
 
       console.log(`🌐 Fetching surah ${surahNumber} from API`);
-      const surah = await fetchSurahDetail(surahNumber, edition);
+      const surah = await fetchSurahDetail(surahNumber, edition); // returns or throws
 
-      // Cache indefinitely
       cache.set(cacheKey, surah, TTL.ONE_MONTH * 12);
-
       return surah;
     },
     staleTime: Infinity,
     gcTime: Infinity,
-    retry: isOffline ? 0 : 2, // Don't retry if offline
+    retry: isOffline ? 0 : 2,
     enabled: isValidSurahNumber(surahNumber),
     ...options,
   });
@@ -285,7 +326,7 @@ export function useSurahSuspense(
       const cacheKey = `quran-surah-${surahNumber}-${edition}`;
       const cached = cache.get<SurahDetail>(cacheKey);
 
-      if (cached) {
+      if (cached && Array.isArray((cached as any).ayahs)) {
         console.log(`🎯 Using cached surah ${surahNumber}`);
         return cached;
       }
@@ -305,15 +346,17 @@ export function useSurahSuspense(
 
 export function useSurahWithTranslation(
   surahNumber: number,
-  options?: Omit<UseQueryOptions<SurahWithTranslation, Error>, 'queryKey' | 'queryFn'>
+  options?: Omit<
+    UseQueryOptions<SurahWithTranslation, Error>,
+    'queryKey' | 'queryFn'
+  >
 ) {
   const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
       setIsOffline(!state.isConnected);
     });
-
     return unsubscribe;
   }, []);
 
@@ -321,24 +364,28 @@ export function useSurahWithTranslation(
     queryKey: QURAN_QUERY_KEYS.surahWithTranslation(surahNumber),
     queryFn: async () => {
       const cacheKey = `quran-surah-${surahNumber}-with-translation`;
-      const cached = cache.get<SurahWithTranslation>(cacheKey);
+      const cached = cache.get<any>(cacheKey);
 
       if (cached) {
-        console.log(`🎯 Using cached surah ${surahNumber} with translation`);
-        return cached;
+        if (isSurahWithTranslation(cached)) {
+          console.log(`🎯 Using cached surah ${surahNumber} with translation`);
+          return cached;
+        }
+
+        // purge corrupt/old-shape cache if possible
+        console.warn('🧹 Invalid cached surahWithTranslation, clearing:', cacheKey);
+        safeCacheDelete(cacheKey);
       }
 
-      // If offline and no cache, throw error
-      if (isOffline) {
-        throw new Error('No cached data available offline');
+      if (isOffline) throw new Error('No cached data available offline');
+
+      const data = await fetchSurahWithTranslation(surahNumber); // returns or throws
+
+      if (!isSurahWithTranslation(data)) {
+        throw new Error(`Invalid API response shape for surah ${surahNumber}`);
       }
 
-      console.log(`🌐 Fetching surah ${surahNumber} with translation from API`);
-      const data = await fetchSurahWithTranslation(surahNumber);
-
-      // Cache indefinitely
       cache.set(cacheKey, data, TTL.ONE_MONTH * 12);
-
       return data;
     },
     staleTime: Infinity,
@@ -356,7 +403,7 @@ export function useSurahWithTranslationSuspense(surahNumber: number) {
       const cacheKey = `quran-surah-${surahNumber}-with-translation`;
       const cached = cache.get<SurahWithTranslation>(cacheKey);
 
-      if (cached) {
+      if (cached && isSurahWithTranslation(cached)) {
         console.log(`🎯 Using cached surah ${surahNumber} with translation`);
         return cached;
       }
@@ -378,9 +425,6 @@ export function usePrefetchQuran() {
   const queryClient = useQueryClient();
 
   return {
-    /**
-     * Prefetch all surahs metadata
-     */
     prefetchSurahs: async () => {
       await queryClient.prefetchQuery({
         queryKey: QURAN_QUERY_KEYS.surahs,
@@ -389,10 +433,10 @@ export function usePrefetchQuran() {
       });
     },
 
-    /**
-     * Prefetch a specific surah
-     */
-    prefetchSurah: async (surahNumber: number, edition: string = EDITIONS.ARABIC) => {
+    prefetchSurah: async (
+      surahNumber: number,
+      edition: string = EDITIONS.ARABIC
+    ) => {
       if (!isValidSurahNumber(surahNumber)) return;
 
       await queryClient.prefetchQuery({
@@ -402,10 +446,10 @@ export function usePrefetchQuran() {
       });
     },
 
-    /**
-     * Prefetch next surah (for seamless navigation)
-     */
-    prefetchNextSurah: async (currentSurah: number, edition: string = EDITIONS.ARABIC) => {
+    prefetchNextSurah: async (
+      currentSurah: number,
+      edition: string = EDITIONS.ARABIC
+    ) => {
       if (currentSurah < TOTAL_SURAHS) {
         await queryClient.prefetchQuery({
           queryKey: QURAN_QUERY_KEYS.surah(currentSurah + 1, edition),
@@ -415,10 +459,10 @@ export function usePrefetchQuran() {
       }
     },
 
-    /**
-     * Prefetch previous surah
-     */
-    prefetchPreviousSurah: async (currentSurah: number, edition: string = EDITIONS.ARABIC) => {
+    prefetchPreviousSurah: async (
+      currentSurah: number,
+      edition: string = EDITIONS.ARABIC
+    ) => {
       if (currentSurah > 1) {
         await queryClient.prefetchQuery({
           queryKey: QURAN_QUERY_KEYS.surah(currentSurah - 1, edition),
@@ -428,9 +472,6 @@ export function usePrefetchQuran() {
       }
     },
 
-    /**
-     * Prefetch surah with translation
-     */
     prefetchSurahWithTranslation: async (surahNumber: number) => {
       if (!isValidSurahNumber(surahNumber)) return;
 
@@ -444,13 +485,7 @@ export function usePrefetchQuran() {
 }
 
 /**
- * Hook to automatically prefetch adjacent surahs for instant navigation
- * 
- * Usage:
- * ```typescript
- * usePrefetchAdjacentSurahs(currentSurah);
- * // Now navigation to next/prev surah is instant!
- * ```
+ * Prefetch adjacent surahs for instant navigation
  */
 export function usePrefetchAdjacentSurahs(currentSurah: number) {
   const queryClient = useQueryClient();
@@ -458,7 +493,6 @@ export function usePrefetchAdjacentSurahs(currentSurah: number) {
   useEffect(() => {
     if (!isValidSurahNumber(currentSurah)) return;
 
-    // Prefetch next surah
     if (currentSurah < TOTAL_SURAHS) {
       queryClient.prefetchQuery({
         queryKey: QURAN_QUERY_KEYS.surahWithTranslation(currentSurah + 1),
@@ -467,7 +501,6 @@ export function usePrefetchAdjacentSurahs(currentSurah: number) {
       });
     }
 
-    // Prefetch previous surah
     if (currentSurah > 1) {
       queryClient.prefetchQuery({
         queryKey: QURAN_QUERY_KEYS.surahWithTranslation(currentSurah - 1),
@@ -483,14 +516,14 @@ export function usePrefetchAdjacentSurahs(currentSurah: number) {
 // ============================================================================
 
 export function getSurahName(surahNumber: number, surahs: Surah[]): string {
-  const surah = surahs.find(s => s.number === surahNumber);
+  const surah = surahs.find((s) => s.number === surahNumber);
   return surah?.name || '';
 }
 
 export function searchSurahs(surahs: Surah[], query: string): Surah[] {
   const lowerQuery = query.toLowerCase();
   return surahs.filter(
-    surah =>
+    (surah) =>
       surah.name.toLowerCase().includes(lowerQuery) ||
       surah.englishName.toLowerCase().includes(lowerQuery) ||
       surah.englishNameTranslation.toLowerCase().includes(lowerQuery)
@@ -502,7 +535,7 @@ export function getSurahProgress(
   currentAyah: number,
   surahs: Surah[]
 ): number {
-  const surah = surahs.find(s => s.number === surahNumber);
+  const surah = surahs.find((s) => s.number === surahNumber);
   if (!surah) return 0;
 
   return Math.round((currentAyah / surah.numberOfAyahs) * 100);
@@ -529,32 +562,18 @@ export function parseAyahReference(reference: string): {
   };
 }
 
-/**
- * Get ayah text safely with validation
- */
-export function getAyahText(
-  surahData: SurahDetail,
-  ayahIndex: number
-): string | null {
+export function getAyahText(surahData: SurahDetail, ayahIndex: number): string | null {
   if (!isValidAyahIndex(surahData, ayahIndex)) {
     console.error('Invalid ayah index:', ayahIndex);
     return null;
   }
-
   return surahData.ayahs[ayahIndex].text;
 }
 
-/**
- * Get ayah from SurahWithTranslation safely
- */
 export function getAyahWithTranslation(
   surahData: SurahWithTranslation,
   ayahIndex: number
-): {
-  arabic: string;
-  english: string;
-  ayahNumber: number;
-} | null {
+): { arabic: string; english: string; ayahNumber: number } | null {
   if (!isValidAyahIndex(surahData, ayahIndex)) {
     console.error('Invalid ayah index:', ayahIndex);
     return null;
@@ -563,21 +582,15 @@ export function getAyahWithTranslation(
   return {
     arabic: surahData.arabic.ayahs[ayahIndex].text,
     english: surahData.translation.ayahs[ayahIndex].text,
-    ayahNumber: ayahIndex + 1, // Convert to 1-based
+    ayahNumber: ayahIndex + 1,
   };
 }
 
-/**
- * Check if surah is Meccan or Medinan
- */
 export function isMeccanSurah(surah: Surah): boolean {
   return surah.revelationType === 'Meccan';
 }
 
-/**
- * Get surah by number safely
- */
 export function getSurahByNumber(surahs: Surah[], number: number): Surah | null {
   if (!isValidSurahNumber(number)) return null;
-  return surahs.find(s => s.number === number) ?? null;
+  return surahs.find((s) => s.number === number) ?? null;
 }

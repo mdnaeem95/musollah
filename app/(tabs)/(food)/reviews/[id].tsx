@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useRestaurantReviews } from '../../../../api/services/food';
 import type { RestaurantReview as UIReview } from '../../../../utils/types';
+import { enter } from '../../../../utils';
 
 const { width } = Dimensions.get('window');
 
@@ -124,7 +125,7 @@ const AllReviews = () => {
         <MotiView
           from={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', damping: 15 }}
+          transition={enter(0)}
           style={styles.emptyContainer}
         >
           <View style={[styles.emptyIconContainer, { backgroundColor: theme.colors.accent + '15' }]}>
@@ -154,7 +155,7 @@ const AllReviews = () => {
       <MotiView
         from={{ opacity: 0, translateY: -20 }}
         animate={{ opacity: 1, translateY: 0 }}
-        transition={{ type: 'spring', damping: 20 }}
+        transition={enter(0)}
       >
         <BlurView
           intensity={20}
@@ -192,7 +193,6 @@ const AllReviews = () => {
 
       {/* Reviews List */}
       <FlashList
-        estimatedItemSize={200}
         data={uiReviews}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
@@ -201,11 +201,7 @@ const AllReviews = () => {
           <MotiView
             from={{ opacity: 0, translateY: 20 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{
-              type: 'spring',
-              delay: index * 50,
-              damping: 20,
-            }}
+            transition={enter(0)}
           >
             <BlurView
               intensity={20}

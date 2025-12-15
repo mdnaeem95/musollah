@@ -12,6 +12,7 @@ import { Amiri_400Regular } from '@expo-google-fonts/amiri';
 import { cache } from '../../api/client/storage';
 import { useLocationStore } from '../../stores/useLocationStore';
 import { modernPrayerService } from '../../services/prayer.service';
+import { storage as mmkvStorage } from '../../api/client/storage';
 
 interface InitState {
   isReady: boolean;
@@ -25,6 +26,8 @@ interface InitState {
 export const useAppInit = (): InitState => {
   const queryClient = useQueryClient();
   const { userLocation, fetchLocation } = useLocationStore();
+
+  console.log('default keys:', mmkvStorage.getAllKeys());
 
   // 1. Font Loading
   const [fontsLoaded, fontError] = useFonts({

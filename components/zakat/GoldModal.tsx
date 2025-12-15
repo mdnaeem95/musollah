@@ -21,6 +21,7 @@ import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 // ============================================================================
 // TYPES
@@ -89,7 +90,7 @@ const GoldModal: React.FC<GoldModalProps> = ({
                 <MotiView
                     from={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: 'spring', damping: 20 }}
+                    transition={enter(0)}
                     style={styles.modalWrapper}
                 >
                     <BlurView
@@ -143,7 +144,7 @@ const GoldModal: React.FC<GoldModalProps> = ({
                             <MotiView
                                 from={{ opacity: 0, translateX: -20 }}
                                 animate={{ opacity: 1, translateX: 0 }}
-                                transition={{ type: 'spring', delay: 100, damping: 20 }}
+                                transition={enter(0)}
                             >
                                 <BlurView
                                     intensity={20}
@@ -186,7 +187,7 @@ const GoldModal: React.FC<GoldModalProps> = ({
                             <MotiView
                                 from={{ opacity: 0, translateX: -20 }}
                                 animate={{ opacity: 1, translateX: 0 }}
-                                transition={{ type: 'spring', delay: 200, damping: 20 }}
+                                transition={enter(0)}
                             >
                                 <BlurView
                                     intensity={20}
@@ -229,7 +230,7 @@ const GoldModal: React.FC<GoldModalProps> = ({
                             <MotiView
                                 from={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                transition={{ type: 'spring', delay: 300, damping: 20 }}
+                                transition={enter(0)}
                             >
                                 <View style={[styles.summaryCard, { backgroundColor: '#FFD700' + '15' }]}>
                                     <View style={styles.summaryRow}>

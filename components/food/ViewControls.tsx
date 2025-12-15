@@ -12,6 +12,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 export type ViewMode = 'map' | 'list';
 
@@ -44,7 +45,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
     <MotiView
       from={{ opacity: 0, translateY: -10 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'spring', damping: 15, delay: 200 }}
+      transition={enter(0)}
       style={{ marginBottom: 10 }}
     >
       <View style={styles.controlsContainer}>
@@ -79,7 +80,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
                     ? theme.colors.accent 
                     : 'transparent',
                 }}
-                transition={{ type: 'spring', damping: 20 }}
+                transition={enter(0)}
                 style={styles.toggleButtonWrapper}
               >
                 <TouchableOpacity

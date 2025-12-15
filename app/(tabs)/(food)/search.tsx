@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../context/ThemeContext';
 import useAutoFocus from '../../../hooks/useAutoFocus';
 import { useRestaurantSearch } from '../../../hooks/food/useRestaurantSearch';
+import { enter } from '../../../utils';
 
 const SearchPage = () => {
   const { theme, isDarkMode } = useTheme();
@@ -134,11 +135,7 @@ const SearchPage = () => {
                 key={search}
                 from={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ 
-                  type: 'spring',
-                  delay: index * 50,
-                  damping: 15,
-                }}
+                transition={enter(0)}
               >
                 <BlurView
                   intensity={20}
@@ -182,7 +179,6 @@ const SearchPage = () => {
       <FlashList
         data={filteredRestaurants}
         keyExtractor={(item) => item.id}
-        estimatedItemSize={120}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmptyState}
@@ -190,11 +186,7 @@ const SearchPage = () => {
           <MotiView
             from={{ opacity: 0, translateY: 20 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{
-              type: 'spring',
-              delay: index * 50,
-              damping: 20,
-            }}
+            transition={enter(0)}
           >
             <TouchableOpacity
               onPress={() => handleRestaurantPress(item.id)}

@@ -14,6 +14,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Slider from '@react-native-community/slider';
 import { reciterOptions } from '../../utils/constants';
+import { enter } from '../../utils';
 
 interface SettingsModalProps {
   isVisible: boolean;
@@ -75,7 +76,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         <MotiView
           from={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', damping: 20 }}
+          transition={enter(0)}
           style={styles.modalWrapper}
         >
           <BlurView
@@ -198,7 +199,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={option.value}
                         from={{ opacity: 0, translateX: -20 }}
                         animate={{ opacity: 1, translateX: 0 }}
-                        transition={{ type: 'spring', delay: index * 50, damping: 20 }}
+                        transition={enter(0)}
                       >
                         <TouchableOpacity
                           style={[

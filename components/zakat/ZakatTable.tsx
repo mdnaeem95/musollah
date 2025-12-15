@@ -13,6 +13,7 @@ import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
 
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 // ============================================================================
 // TYPES
@@ -130,11 +131,7 @@ const ZakatTable = ({
                         key={category.key}
                         from={{ opacity: 0, translateX: -20 }}
                         animate={{ opacity: 1, translateX: 0 }}
-                        transition={{
-                            type: 'spring',
-                            delay: index * 80,
-                            damping: 20,
-                        }}
+                        transition={enter(0)}
                     >
                         <TouchableOpacity
                             style={[

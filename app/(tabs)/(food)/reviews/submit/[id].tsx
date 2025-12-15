@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../../../context/ThemeContext';
 import SignInModal from '../../../../../components/SignInModal';
 import { useSubmitReviewPage } from '../../../../../hooks/food/useSubmitReview';
+import { enter } from '../../../../../utils';
 
 const RATING_DESCRIPTIONS = [
   { rating: 1, label: 'Terrible', emoji: '😞' },
@@ -84,7 +85,7 @@ const SubmitReview = () => {
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 20 }}
+          transition={enter(0)}
         >
           <View style={styles.header}>
             <View style={[styles.headerIcon, { backgroundColor: theme.colors.accent + '15' }]}>
@@ -103,7 +104,7 @@ const SubmitReview = () => {
         <MotiView
           from={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', delay: 100, damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}
@@ -140,7 +141,7 @@ const SubmitReview = () => {
         <MotiView
           from={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', delay: 200, damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}
@@ -197,7 +198,7 @@ const SubmitReview = () => {
         <MotiView
           from={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', delay: 300, damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}
@@ -220,7 +221,7 @@ const SubmitReview = () => {
                   key={uri}
                   from={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ type: 'spring', delay: index * 50, damping: 15 }}
+                  transition={enter(0)}
                   style={styles.imageWrapper}
                 >
                   <Image source={{ uri }} style={styles.imagePreview} />
@@ -266,7 +267,7 @@ const SubmitReview = () => {
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 400, damping: 20 }}
+          transition={enter(0)}
         >
           <TouchableOpacity
             onPress={handleSubmitPress}

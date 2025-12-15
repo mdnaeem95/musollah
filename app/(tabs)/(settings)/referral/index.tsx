@@ -23,7 +23,7 @@ import { useTheme } from '../../../../context/ThemeContext';
 import SignInModal from '../../../../components/SignInModal';
 import ThemedButton from '../../../../components/ThemedButton';
 import BannerAdComponent from '../../../../components/BannerAd';
-import { generateReferralCode } from '../../../../utils';
+import { enter, generateReferralCode } from '../../../../utils';
 import { calculateContrastColor } from '../../../../utils';
 
 // ============================================================================
@@ -220,7 +220,7 @@ const ReferralScreen = () => {
                 <MotiView
                     from={{ opacity: 0, translateY: -20 }}
                     animate={{ opacity: 1, translateY: 0 }}
-                    transition={{ type: 'spring', damping: 20 }}
+                    transition={enter(0)}
                 >
                     <View style={styles.header}>
                         <View style={[styles.headerIcon, { backgroundColor: theme.colors.accent + '15' }]}>
@@ -241,7 +241,7 @@ const ReferralScreen = () => {
                 <MotiView
                     from={{ opacity: 0, translateY: -20 }}
                     animate={{ opacity: 1, translateY: 0 }}
-                    transition={{ type: 'spring', delay: 100, damping: 20 }}
+                    transition={enter(0)}
                 >
                     {userLoggedIn ? (
                         referralCode ? (
@@ -384,7 +384,7 @@ const ReferralScreen = () => {
                     <MotiView
                         from={{ opacity: 0, translateY: -20 }}
                         animate={{ opacity: 1, translateY: 0 }}
-                        transition={{ type: 'spring', delay: 200, damping: 20 }}
+                        transition={enter(0)}
                     >
                         <BlurView
                             intensity={20}
@@ -436,7 +436,7 @@ const ReferralScreen = () => {
                 <MotiView
                     from={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: 'spring', delay: 300, damping: 20 }}
+                    transition={enter(0)}
                 >
                     <ThemedButton
                         text="View Leaderboard"

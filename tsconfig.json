@@ -15,7 +15,8 @@
     "utils/**/*.ts", 
     "utils/toastConfig.tsx",
     "types/images.d.ts",
-    "types/*.types.ts"
+    "types/*.types.ts",
+    "types/**/*.d.ts"
   ],
   "exclude": [
     "node_modules"

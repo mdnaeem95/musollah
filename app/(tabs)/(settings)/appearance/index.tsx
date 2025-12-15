@@ -14,6 +14,7 @@ import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 import { useAppearanceSettings } from '../../../../hooks/settings/useAppearanceSettings';
+import { enter } from '../../../../utils';
 
 // Theme color mapping for preview swatches
 const THEME_COLORS = {
@@ -76,7 +77,7 @@ const Appearance = () => {
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 20 }}
+          transition={enter(0)}
         >
           <SectionHeader icon="palette" label="Theme Color" theme={theme} />
 
@@ -99,11 +100,7 @@ const Appearance = () => {
                     key={themeName}
                     from={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{
-                      type: 'spring',
-                      delay: index * 100,
-                      damping: 15,
-                    }}
+                    transition={enter(0)}
                     style={styles.themeOptionWrapper}
                   >
                     <TouchableOpacity
@@ -167,7 +164,7 @@ const Appearance = () => {
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', delay: 150, damping: 20 }}
+          transition={enter(0)}
         >
           <SectionHeader icon="moon" label="Display Mode" theme={theme} />
 
@@ -213,7 +210,7 @@ const Appearance = () => {
         <MotiView
           from={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', delay: 250, damping: 20 }}
+          transition={enter(0)}
         >
           <BlurView
             intensity={20}

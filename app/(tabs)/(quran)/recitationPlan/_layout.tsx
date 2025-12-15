@@ -3,15 +3,13 @@
  * 
  * @version 2.0
  */
-
+import React from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
-import React from 'react';
 import * as Haptics from 'expo-haptics';
-
-import { PlanProvider } from './context';
 import { useTheme } from '../../../../context/ThemeContext';
+import { PlanProvider } from '../../../../context/PlanContext';
 
 export default function RecitationPlanLayout() {
   const { theme } = useTheme();

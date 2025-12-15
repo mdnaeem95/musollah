@@ -18,6 +18,7 @@ import { MovingText } from './MovingText';
 import { SkipNextButton } from './SkipNextButton';
 import { SkipPreviousButton } from './SkipPreviousButton';
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 export const FloatingPlayer = ({ style }: ViewProps) => {
   const { theme, isDarkMode } = useTheme();
@@ -43,7 +44,7 @@ export const FloatingPlayer = ({ style }: ViewProps) => {
       from={{ translateY: 100, opacity: 0 }}
       animate={{ translateY: 0, opacity: 1 }}
       exit={{ translateY: 100, opacity: 0 }}
-      transition={{ type: 'spring', damping: 20 }}
+      transition={enter(0)}
       style={styles.wrapper}
     >
       <BlurView

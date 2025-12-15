@@ -12,6 +12,7 @@ import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 interface JuzItemProps {
   number: number;
@@ -48,10 +49,7 @@ const JuzItem = ({
             opacity: 1, 
             scale: pressed ? 0.98 : 1 
           }}
-          transition={{ 
-            type: 'spring', 
-            damping: 20,
-          }}
+          transition={enter(0)}
           style={{ marginBottom: 12 }}
         >
           <BlurView

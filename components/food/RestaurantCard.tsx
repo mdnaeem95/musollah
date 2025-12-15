@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../context/ThemeContext';
 import QuickActionButton from './QuickActionButton';
 import type { Restaurant } from '../../utils/types';
+import { enter } from '../../utils';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -67,7 +68,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, distance })
     <MotiView
       from={{ opacity: 0, translateY: 20, rotateX: '45deg' }}
       animate={{ opacity: 1, translateY: 0, rotateX: '0deg' }}
-      transition={{ type: 'spring', damping: 20 }}
+      transition={enter(0)}
     >
       <Pressable
         onPress={handleCardPress}

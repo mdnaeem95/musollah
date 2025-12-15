@@ -1,11 +1,11 @@
 /**
  * Musollah Service (v5 - Fixed Distance Calculation)
- * 
+ *
  * Key Fix: Separates data fetching from distance calculation
  * - Query fetches raw data (no distances)
  * - Distance is computed via useMemo when userLocation changes
  * - This ensures distances update reactively without re-fetching
- * 
+ *
  * Collections: Bidets, Musollahs, Mosques (capitalized)
  */
 
@@ -14,6 +14,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LocationObject } from 'expo-location';
 import { db } from '../../client/firebase';
 import { cache, TTL, cacheStorage } from '../../client/storage';
+
+import {
+  addDoc,
+  collection,
+  doc,
+  getDocs,
+  limit,
+  query as fsQuery,
+  updateDoc,
+} from '@react-native-firebase/firestore';
 
 // ============================================================================
 // TYPES
@@ -91,12 +101,12 @@ export interface LocationRequest {
   buildingName: string;
   address: string;
   postal: string;
-  
+
   // Bidet-specific fields
   maleFacility?: boolean;
   femaleFacility?: boolean;
   accessibleFacility?: boolean;
-  
+
   // Musollah-specific fields
   segregated?: boolean;
   airConditioned?: boolean;
@@ -105,7 +115,7 @@ export interface LocationRequest {
   prayerMats?: boolean;
   telekung?: boolean;
   directions?: string;
-  
+
   // Metadata
   submittedAt: string;
   status?: 'pending' | 'approved' | 'rejected';
@@ -120,7 +130,7 @@ export interface LocationRequest {
 
 const COLLECTIONS = {
   bidets: 'Bidets',
-  mosques: 'Mosques', 
+  mosques: 'Mosques',
   musollahs: 'Musollahs',
 } as const;
 
@@ -134,28 +144,27 @@ const CACHE_KEYS = {
 // DISTANCE CALCULATION (Haversine Formula)
 // ============================================================================
 
-/**
- * Calculate distance between two coordinates in kilometers
- * Uses Haversine formula for accuracy
- */
 export function calculateDistance(from: Coordinates, to: Coordinates): number {
-  if (!from || !to || 
-      !isValidCoordinate(from.latitude, from.longitude) ||
-      !isValidCoordinate(to.latitude, to.longitude)) {
+  if (
+    !from ||
+    !to ||
+    !isValidCoordinate(from.latitude, from.longitude) ||
+    !isValidCoordinate(to.latitude, to.longitude)
+  ) {
     return 0;
   }
-  
-  const R = 6371; // Earth's radius in km
+
+  const R = 6371; // km
   const dLat = toRadians(to.latitude - from.latitude);
   const dLon = toRadians(to.longitude - from.longitude);
-  
+
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(toRadians(from.latitude)) *
-    Math.cos(toRadians(to.latitude)) *
-    Math.sin(dLon / 2) *
-    Math.sin(dLon / 2);
-  
+      Math.cos(toRadians(to.latitude)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
@@ -166,37 +175,30 @@ function toRadians(degrees: number): number {
 
 function isValidCoordinate(lat: number, lng: number): boolean {
   return (
-    typeof lat === 'number' && 
+    typeof lat === 'number' &&
     typeof lng === 'number' &&
-    !isNaN(lat) && 
+    !isNaN(lat) &&
     !isNaN(lng) &&
-    lat !== 0 && 
-    lng !== 0 && 
-    lat >= -90 && lat <= 90 && 
-    lng >= -180 && lng <= 180
+    lat !== 0 &&
+    lng !== 0 &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
   );
 }
 
-/**
- * Add distances to locations and sort by nearest
- * This is a pure function - no side effects
- */
 function addDistancesAndSort<T extends { coordinates: Coordinates }>(
   locations: T[],
   userCoords: Coordinates | null
 ): (T & { distance: number })[] {
-  if (!locations || locations.length === 0) {
-    return [];
-  }
+  if (!locations || locations.length === 0) return [];
 
-  const withDistance = locations.map(loc => ({
+  const withDistance = locations.map((loc) => ({
     ...loc,
-    distance: userCoords 
-      ? calculateDistance(userCoords, loc.coordinates) 
-      : 0,
+    distance: userCoords ? calculateDistance(userCoords, loc.coordinates) : 0,
   }));
-  
-  // Sort by distance (nearest first)
+
   return withDistance.sort((a, b) => a.distance - b.distance);
 }
 
@@ -204,86 +206,60 @@ function addDistancesAndSort<T extends { coordinates: Coordinates }>(
 // COORDINATE EXTRACTION UTILITIES
 // ============================================================================
 
-/**
- * Extract coordinates from various possible field structures
- * Handles Firebase GeoPoints, nested objects, and flat fields
- */
 function extractCoordinates(data: any): Coordinates {
-  // Helper to extract from a GeoPoint or coordinate object
   const extractFromGeoPoint = (geoPoint: any): Coordinates | null => {
     if (!geoPoint) return null;
-    
-    // Firebase GeoPoint has .latitude and .longitude getters
-    // When serialized, it may have _latitude/_longitude
+
     const lat = geoPoint.latitude ?? geoPoint._latitude;
     const lng = geoPoint.longitude ?? geoPoint._longitude;
-    
+
     if (lat !== undefined && lng !== undefined) {
-      return {
-        latitude: Number(lat),
-        longitude: Number(lng),
-      };
+      return { latitude: Number(lat), longitude: Number(lng) };
     }
     return null;
   };
 
-  // 1. Capitalized "Coordinates" field (Firebase GeoPoint) - YOUR CASE
   if (data.Coordinates) {
     const coords = extractFromGeoPoint(data.Coordinates);
     if (coords) return coords;
   }
-  
-  // 2. Lowercase "coordinates" field
+
   if (data.coordinates) {
     const coords = extractFromGeoPoint(data.coordinates);
     if (coords) return coords;
   }
-  
-  // 3. Direct lat/lng fields
+
   if (data.latitude !== undefined && data.longitude !== undefined) {
-    return {
-      latitude: Number(data.latitude),
-      longitude: Number(data.longitude),
-    };
+    return { latitude: Number(data.latitude), longitude: Number(data.longitude) };
   }
-  
-  // 4. Capitalized direct fields
+
   if (data.Latitude !== undefined && data.Longitude !== undefined) {
-    return {
-      latitude: Number(data.Latitude),
-      longitude: Number(data.Longitude),
-    };
+    return { latitude: Number(data.Latitude), longitude: Number(data.Longitude) };
   }
-  
-  // 5. Shorthand lat/lng
+
   if (data.lat !== undefined && data.lng !== undefined) {
-    return {
-      latitude: Number(data.lat),
-      longitude: Number(data.lng),
-    };
+    return { latitude: Number(data.lat), longitude: Number(data.lng) };
   }
-  
-  // 6. Nested location object
+
   if (data.location) {
     const coords = extractFromGeoPoint(data.location);
     if (coords) return coords;
   }
-  
-  // 7. Capitalized Location field
+
   if (data.Location) {
     const coords = extractFromGeoPoint(data.Location);
     if (coords) return coords;
   }
-  
+
   console.warn('⚠️ Could not extract coordinates from:', Object.keys(data));
   return { latitude: 0, longitude: 0 };
 }
 
 function extractBuilding(data: any): string {
   return (
-    data.building || 
+    data.building ||
     data.Building ||
-    data.name || 
+    data.name ||
     data.Name ||
     data.title ||
     data.Title ||
@@ -295,7 +271,7 @@ function extractBuilding(data: any): string {
 
 function extractAddress(data: any): string {
   return (
-    data.address || 
+    data.address ||
     data.Address ||
     data.location ||
     data.Location ||
@@ -314,11 +290,11 @@ export function clearAllMusollahCache(): void {
   cache.clear(CACHE_KEYS.allBidets);
   cache.clear(CACHE_KEYS.allMosques);
   cache.clear(CACHE_KEYS.allMusollahs);
-  
+
   try {
     const allKeys = cacheStorage.getAllKeys();
-    const musollahKeys = allKeys.filter(key => key.includes('musollah'));
-    musollahKeys.forEach(key => cacheStorage.delete(key));
+    const musollahKeys = allKeys.filter((key) => key.includes('musollah'));
+    musollahKeys.forEach((key) => cacheStorage.remove(key));
     console.log(`✅ Cleared ${musollahKeys.length} cache entries`);
   } catch (error) {
     console.error('Error clearing cache:', error);
@@ -326,31 +302,34 @@ export function clearAllMusollahCache(): void {
 }
 
 // ============================================================================
-// FETCH FUNCTIONS (Raw Data - No Distances)
+// FETCH FUNCTIONS (Raw Data - No Distances) - MODULAR
 // ============================================================================
 
 async function fetchAllBidets(): Promise<BidetLocation[]> {
   console.log(`🚽 Fetching from "${COLLECTIONS.bidets}"...`);
-  
+
   try {
-    const snapshot = await db.collection(COLLECTIONS.bidets).get();
+    const colRef = collection(db, COLLECTIONS.bidets);
+    const snapshot = await getDocs(colRef);
     console.log(`📦 Got ${snapshot.size} bidet documents`);
-    
+
     if (snapshot.empty) return [];
-    
-    // Debug first document structure
+
     if (__DEV__ && snapshot.size > 0) {
       const firstDoc = snapshot.docs[0].data();
       console.log('📋 First bidet doc fields:', Object.keys(firstDoc));
-      console.log('📋 Coordinates field:', firstDoc.Coordinates || firstDoc.coordinates || 'NOT FOUND');
+      console.log(
+        '📋 Coordinates field:',
+        (firstDoc as any).Coordinates || (firstDoc as any).coordinates || 'NOT FOUND'
+      );
     }
-    
-    const locations = snapshot.docs.map(doc => {
-      const data = doc.data();
+
+    const locations = snapshot.docs.map((d: any) => {
+      const data: any = d.data();
       const coords = extractCoordinates(data);
-      
+
       return {
-        id: doc.id,
+        id: d.id,
         building: extractBuilding(data),
         address: extractAddress(data),
         postal: data.postal || data.Postal || 0,
@@ -362,14 +341,16 @@ async function fetchAllBidets(): Promise<BidetLocation[]> {
         lastUpdated: data.lastUpdated || data.updatedAt,
       } as BidetLocation;
     });
-    
-    // Log first item for debugging
+
     if (__DEV__ && locations.length > 0) {
       const first = locations[0];
-      console.log('✅ First bidet:', first.building,
-        `coords: (${first.coordinates.latitude}, ${first.coordinates.longitude})`);
+      console.log(
+        '✅ First bidet:',
+        first.building,
+        `coords: (${first.coordinates.latitude}, ${first.coordinates.longitude})`
+      );
     }
-    
+
     return locations;
   } catch (error) {
     console.error('❌ Error fetching bidets:', error);
@@ -379,39 +360,45 @@ async function fetchAllBidets(): Promise<BidetLocation[]> {
 
 async function fetchAllMosques(): Promise<MosqueLocation[]> {
   console.log(`🕌 Fetching from "${COLLECTIONS.mosques}"...`);
-  
+
   try {
-    const snapshot = await db.collection(COLLECTIONS.mosques).get();
+    const colRef = collection(db, COLLECTIONS.mosques);
+    const snapshot = await getDocs(colRef);
     console.log(`📦 Got ${snapshot.size} mosque documents`);
-    
+
     if (snapshot.empty) return [];
-    
-    // Debug first document structure
+
     if (__DEV__ && snapshot.size > 0) {
       const firstDoc = snapshot.docs[0].data();
       console.log('📋 First mosque doc fields:', Object.keys(firstDoc));
-      console.log('📋 Coordinates field:', firstDoc.Coordinates || firstDoc.coordinates || 'NOT FOUND');
+      console.log(
+        '📋 Coordinates field:',
+        (firstDoc as any).Coordinates || (firstDoc as any).coordinates || 'NOT FOUND'
+      );
     }
-    
-    const locations = snapshot.docs.map(doc => {
-      const data = doc.data();
+
+    const locations = snapshot.docs.map((d: any) => {
+      const data: any = d.data();
       const coords = extractCoordinates(data);
-      
+
       return {
-        id: doc.id,
+        id: d.id,
         building: extractBuilding(data),
         address: extractAddress(data),
         coordinates: coords,
         shia: data.shia || data.Shia || 'No',
       } as MosqueLocation;
     });
-    
+
     if (__DEV__ && locations.length > 0) {
       const first = locations[0];
-      console.log('✅ First mosque:', first.building,
-        `coords: (${first.coordinates.latitude}, ${first.coordinates.longitude})`);
+      console.log(
+        '✅ First mosque:',
+        first.building,
+        `coords: (${first.coordinates.latitude}, ${first.coordinates.longitude})`
+      );
     }
-    
+
     return locations;
   } catch (error) {
     console.error('❌ Error fetching mosques:', error);
@@ -421,26 +408,29 @@ async function fetchAllMosques(): Promise<MosqueLocation[]> {
 
 async function fetchAllMusollahs(): Promise<MusollahLocation[]> {
   console.log(`🛐 Fetching from "${COLLECTIONS.musollahs}"...`);
-  
+
   try {
-    const snapshot = await db.collection(COLLECTIONS.musollahs).get();
+    const colRef = collection(db, COLLECTIONS.musollahs);
+    const snapshot = await getDocs(colRef);
     console.log(`📦 Got ${snapshot.size} musollah documents`);
-    
+
     if (snapshot.empty) return [];
-    
-    // Debug first document structure
+
     if (__DEV__ && snapshot.size > 0) {
       const firstDoc = snapshot.docs[0].data();
       console.log('📋 First musollah doc fields:', Object.keys(firstDoc));
-      console.log('📋 Coordinates field:', firstDoc.Coordinates || firstDoc.coordinates || 'NOT FOUND');
+      console.log(
+        '📋 Coordinates field:',
+        (firstDoc as any).Coordinates || (firstDoc as any).coordinates || 'NOT FOUND'
+      );
     }
-    
-    const locations = snapshot.docs.map(doc => {
-      const data = doc.data();
+
+    const locations = snapshot.docs.map((d: any) => {
+      const data: any = d.data();
       const coords = extractCoordinates(data);
-      
+
       return {
-        id: doc.id,
+        id: d.id,
         building: extractBuilding(data),
         address: extractAddress(data),
         coordinates: coords,
@@ -455,13 +445,16 @@ async function fetchAllMusollahs(): Promise<MusollahLocation[]> {
         lastUpdated: data.lastUpdated || data.updatedAt,
       } as MusollahLocation;
     });
-    
+
     if (__DEV__ && locations.length > 0) {
       const first = locations[0];
-      console.log('✅ First musollah:', first.building,
-        `coords: (${first.coordinates.latitude}, ${first.coordinates.longitude})`);
+      console.log(
+        '✅ First musollah:',
+        first.building,
+        `coords: (${first.coordinates.latitude}, ${first.coordinates.longitude})`
+      );
     }
-    
+
     return locations;
   } catch (error) {
     console.error('❌ Error fetching musollahs:', error);
@@ -474,14 +467,14 @@ async function updateLocationStatus(
   id: string,
   status: 'Available' | 'Unavailable' | 'Unknown'
 ): Promise<void> {
-  const collection = type === 'bidet' ? COLLECTIONS.bidets : COLLECTIONS.musollahs;
-  
-  await db.collection(collection).doc(id).update({
+  const collectionName = type === 'bidet' ? COLLECTIONS.bidets : COLLECTIONS.musollahs;
+
+  const ref = doc(db, collectionName, id);
+  await updateDoc(ref, {
     status,
     lastUpdated: Date.now(),
   });
-  
-  // Clear relevant cache
+
   cache.clear(type === 'bidet' ? CACHE_KEYS.allBidets : CACHE_KEYS.allMusollahs);
 }
 
@@ -498,19 +491,10 @@ export const MUSOLLAH_QUERY_KEYS = {
 };
 
 // ============================================================================
-// MAIN HOOK - Fixed to properly react to location changes
+// MAIN HOOK - reacts to location changes
 // ============================================================================
 
-/**
- * Fetch all musollah data with proper distance calculation
- * 
- * Key Design:
- * 1. Query fetches RAW data (no distances) - cached in TanStack Query
- * 2. useMemo computes distances REACTIVELY when userLocation changes
- * 3. This prevents stale distances while avoiding unnecessary refetches
- */
 export function useMusollahData(userLocation: LocationObject | null) {
-  // Extract user coordinates for distance calculation
   const userCoords: Coordinates | null = useMemo(() => {
     if (!userLocation?.coords) return null;
     return {
@@ -519,24 +503,24 @@ export function useMusollahData(userLocation: LocationObject | null) {
     };
   }, [userLocation?.coords?.latitude, userLocation?.coords?.longitude]);
 
-  // Fetch raw data (without distances) - this is cached
   const query = useQuery({
     queryKey: MUSOLLAH_QUERY_KEYS.allLocations,
     queryFn: async (): Promise<RawMusollahData> => {
       console.log('🌐 Fetching musollah data...');
-      
-      // Check cache first
+
       const cachedBidets = cache.get<BidetLocation[]>(CACHE_KEYS.allBidets);
       const cachedMosques = cache.get<MosqueLocation[]>(CACHE_KEYS.allMosques);
       const cachedMusollahs = cache.get<MusollahLocation[]>(CACHE_KEYS.allMusollahs);
-      
-      // Validate cache has real data
-      const hasValidCache = 
-        cachedBidets && cachedBidets.length > 0 && 
+
+      const hasValidCache =
+        cachedBidets &&
+        cachedBidets.length > 0 &&
         isValidCoordinate(cachedBidets[0].coordinates?.latitude, cachedBidets[0].coordinates?.longitude) &&
-        cachedMosques && cachedMosques.length > 0 &&
-        cachedMusollahs && cachedMusollahs.length > 0;
-      
+        cachedMosques &&
+        cachedMosques.length > 0 &&
+        cachedMusollahs &&
+        cachedMusollahs.length > 0;
+
       if (hasValidCache) {
         console.log('⚡ Using cached data');
         return {
@@ -545,30 +529,39 @@ export function useMusollahData(userLocation: LocationObject | null) {
           musollahs: cachedMusollahs!,
         };
       }
-      
+
       console.log('📡 Fetching fresh data from Firebase...');
-      
-      // Fetch all in parallel
+
       const [bidets, mosques, musollahs] = await Promise.all([
         fetchAllBidets(),
         fetchAllMosques(),
         fetchAllMusollahs(),
       ]);
-      
-      // Cache valid data
-      if (bidets.length > 0 && isValidCoordinate(bidets[0].coordinates?.latitude, bidets[0].coordinates?.longitude)) {
+
+      if (
+        bidets.length > 0 &&
+        isValidCoordinate(bidets[0].coordinates?.latitude, bidets[0].coordinates?.longitude)
+      ) {
         cache.set(CACHE_KEYS.allBidets, bidets, TTL.ONE_HOUR);
         console.log(`💾 Cached ${bidets.length} bidets`);
       }
-      if (mosques.length > 0 && isValidCoordinate(mosques[0].coordinates?.latitude, mosques[0].coordinates?.longitude)) {
+
+      if (
+        mosques.length > 0 &&
+        isValidCoordinate(mosques[0].coordinates?.latitude, mosques[0].coordinates?.longitude)
+      ) {
         cache.set(CACHE_KEYS.allMosques, mosques, TTL.ONE_HOUR);
         console.log(`💾 Cached ${mosques.length} mosques`);
       }
-      if (musollahs.length > 0 && isValidCoordinate(musollahs[0].coordinates?.latitude, musollahs[0].coordinates?.longitude)) {
+
+      if (
+        musollahs.length > 0 &&
+        isValidCoordinate(musollahs[0].coordinates?.latitude, musollahs[0].coordinates?.longitude)
+      ) {
         cache.set(CACHE_KEYS.allMusollahs, musollahs, TTL.ONE_HOUR);
         console.log(`💾 Cached ${musollahs.length} musollahs`);
       }
-      
+
       return { bidets, mosques, musollahs };
     },
     staleTime: TTL.FIFTEEN_MINUTES,
@@ -576,17 +569,24 @@ export function useMusollahData(userLocation: LocationObject | null) {
     retry: 2,
   });
 
-  // ⭐ KEY FIX: Compute distances in useMemo, not in queryFn
-  // This ensures distances update when userLocation changes
   const dataWithDistances: MusollahData | undefined = useMemo(() => {
     if (!query.data) return undefined;
-    
+
     const { bidets, mosques, musollahs } = query.data;
-    
-    console.log('📏 Computing distances for', bidets.length, 'bidets,', 
-      mosques.length, 'mosques,', musollahs.length, 'musollahs',
-      userCoords ? `from (${userCoords.latitude.toFixed(4)}, ${userCoords.longitude.toFixed(4)})` : '(no location)');
-    
+
+    console.log(
+      '📏 Computing distances for',
+      bidets.length,
+      'bidets,',
+      mosques.length,
+      'mosques,',
+      musollahs.length,
+      'musollahs',
+      userCoords
+        ? `from (${userCoords.latitude.toFixed(4)}, ${userCoords.longitude.toFixed(4)})`
+        : '(no location)'
+    );
+
     return {
       bidetLocations: addDistancesAndSort(bidets, userCoords),
       mosqueLocations: addDistancesAndSort(mosques, userCoords),
@@ -594,28 +594,26 @@ export function useMusollahData(userLocation: LocationObject | null) {
     };
   }, [query.data, userCoords]);
 
-  // Return with computed data
   return {
     ...query,
     data: dataWithDistances,
   };
 }
 
-/**
- * Submit new location request
- * Stores in 'locationRequests' collection for admin review
- */
+// ============================================================================
+// SUBMIT LOCATION REQUEST - MODULAR
+// ============================================================================
+
 async function submitLocationRequest(data: Omit<LocationRequest, 'status'>): Promise<void> {
   try {
     const requestData: LocationRequest = {
       ...data,
-      status: 'pending', // Default status
+      status: 'pending',
     };
-    
-    await db
-      .collection('locationRequests')
-      .add(requestData);
-      
+
+    const colRef = collection(db, 'locationRequests');
+    await addDoc(colRef, requestData);
+
     console.log('✅ Location request submitted successfully');
   } catch (error) {
     console.error('❌ Error submitting location request:', error);
@@ -640,11 +638,18 @@ export function useBidetLocations(userLocation: LocationObject | null) {
     queryKey: MUSOLLAH_QUERY_KEYS.bidets,
     queryFn: async () => {
       const cached = cache.get<BidetLocation[]>(CACHE_KEYS.allBidets);
-      if (cached && cached.length > 0 && isValidCoordinate(cached[0].coordinates?.latitude, cached[0].coordinates?.longitude)) {
+      if (
+        cached &&
+        cached.length > 0 &&
+        isValidCoordinate(cached[0].coordinates?.latitude, cached[0].coordinates?.longitude)
+      ) {
         return cached;
       }
       const bidets = await fetchAllBidets();
-      if (bidets.length > 0 && isValidCoordinate(bidets[0].coordinates?.latitude, bidets[0].coordinates?.longitude)) {
+      if (
+        bidets.length > 0 &&
+        isValidCoordinate(bidets[0].coordinates?.latitude, bidets[0].coordinates?.longitude)
+      ) {
         cache.set(CACHE_KEYS.allBidets, bidets, TTL.ONE_HOUR);
       }
       return bidets;
@@ -673,11 +678,18 @@ export function useMosqueLocations(userLocation: LocationObject | null) {
     queryKey: MUSOLLAH_QUERY_KEYS.mosques,
     queryFn: async () => {
       const cached = cache.get<MosqueLocation[]>(CACHE_KEYS.allMosques);
-      if (cached && cached.length > 0 && isValidCoordinate(cached[0].coordinates?.latitude, cached[0].coordinates?.longitude)) {
+      if (
+        cached &&
+        cached.length > 0 &&
+        isValidCoordinate(cached[0].coordinates?.latitude, cached[0].coordinates?.longitude)
+      ) {
         return cached;
       }
       const mosques = await fetchAllMosques();
-      if (mosques.length > 0 && isValidCoordinate(mosques[0].coordinates?.latitude, mosques[0].coordinates?.longitude)) {
+      if (
+        mosques.length > 0 &&
+        isValidCoordinate(mosques[0].coordinates?.latitude, mosques[0].coordinates?.longitude)
+      ) {
         cache.set(CACHE_KEYS.allMosques, mosques, TTL.ONE_HOUR);
       }
       return mosques;
@@ -706,11 +718,18 @@ export function useMusollahLocations(userLocation: LocationObject | null) {
     queryKey: MUSOLLAH_QUERY_KEYS.musollahs,
     queryFn: async () => {
       const cached = cache.get<MusollahLocation[]>(CACHE_KEYS.allMusollahs);
-      if (cached && cached.length > 0 && isValidCoordinate(cached[0].coordinates?.latitude, cached[0].coordinates?.longitude)) {
+      if (
+        cached &&
+        cached.length > 0 &&
+        isValidCoordinate(cached[0].coordinates?.latitude, cached[0].coordinates?.longitude)
+      ) {
         return cached;
       }
       const musollahs = await fetchAllMusollahs();
-      if (musollahs.length > 0 && isValidCoordinate(musollahs[0].coordinates?.latitude, musollahs[0].coordinates?.longitude)) {
+      if (
+        musollahs.length > 0 &&
+        isValidCoordinate(musollahs[0].coordinates?.latitude, musollahs[0].coordinates?.longitude)
+      ) {
         cache.set(CACHE_KEYS.allMusollahs, musollahs, TTL.ONE_HOUR);
       }
       return musollahs;
@@ -752,12 +771,6 @@ export interface UpdateMusollahStatusPayload {
   telekung?: AmenityStatus;
 }
 
-/**
- * Bidet-specific update:
- * - Always updates status + lastUpdated
- * - Optionally updates Male / Female / Handicap fields
- * - Clears bidet cache afterwards
- */
 export async function updateBidetStatus({
   id,
   status,
@@ -770,19 +783,13 @@ export async function updateBidetStatus({
     lastUpdated: Date.now(),
   };
 
-  if (male !== undefined) {
-    updates.Male = male;
-  }
-  if (female !== undefined) {
-    updates.Female = female;
-  }
-  if (handicap !== undefined) {
-    updates.Handicap = handicap;
-  }
+  if (male !== undefined) updates.Male = male;
+  if (female !== undefined) updates.Female = female;
+  if (handicap !== undefined) updates.Handicap = handicap;
 
-  await db.collection(COLLECTIONS.bidets).doc(id).update(updates);
+  const ref = doc(db, COLLECTIONS.bidets, id);
+  await updateDoc(ref, updates);
 
-  // Clear relevant cache
   cache.clear(CACHE_KEYS.allBidets);
 }
 
@@ -808,9 +815,9 @@ export async function updateMusollahStatus({
   if (prayerMats !== undefined) updates.PrayerMats = prayerMats;
   if (telekung !== undefined) updates.Telekung = telekung;
 
-  await db.collection(COLLECTIONS.musollahs).doc(id).update(updates);
+  const ref = doc(db, COLLECTIONS.musollahs, id);
+  await updateDoc(ref, updates);
 
-  // Clear cache for musollahs
   cache.clear(CACHE_KEYS.allMusollahs);
 }
 
@@ -822,9 +829,13 @@ export function useUpdateLocationStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ type, id, status }: { 
-      type: 'bidet' | 'musollah'; 
-      id: string; 
+    mutationFn: ({
+      type,
+      id,
+      status,
+    }: {
+      type: 'bidet' | 'musollah';
+      id: string;
       status: 'Available' | 'Unavailable' | 'Unknown';
     }) => updateLocationStatus(type, id, status),
     onSuccess: () => {
@@ -835,24 +846,19 @@ export function useUpdateLocationStatus() {
 
 export function useRefreshMusollahData() {
   const queryClient = useQueryClient();
-  
+
   return () => {
     clearAllMusollahCache();
     queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.all });
   };
 }
 
-/**
- * Bidet-specific hook:
- * - Allows updating status + male/female/handicap
- */
 export function useUpdateBidetStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (payload: UpdateBidetStatusPayload) => updateBidetStatus(payload),
     onSuccess: () => {
-      // Invalidate all bidet-related queries so distances/update times refresh
       queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.bidets });
       queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.allLocations });
       queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.all });
@@ -860,16 +866,11 @@ export function useUpdateBidetStatus() {
   });
 }
 
-/**
- * Musollah-specific hook:
- * - Allows updating status + amenities such as ablution area
- */
 export function useUpdateMusollahStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: UpdateMusollahStatusPayload) =>
-      updateMusollahStatus(payload),
+    mutationFn: (payload: UpdateMusollahStatusPayload) => updateMusollahStatus(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.musollahs });
       queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.allLocations });
@@ -879,13 +880,9 @@ export function useUpdateMusollahStatus() {
 }
 
 export function useSubmitLocationRequest() {
-  const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: submitLocationRequest,
     onSuccess: () => {
-      // Optionally invalidate any related queries
-      // queryClient.invalidateQueries({ queryKey: ['musollah'] });
       console.log('✅ Location request mutation successful');
     },
     onError: (error) => {
@@ -895,25 +892,28 @@ export function useSubmitLocationRequest() {
 }
 
 // ============================================================================
-// DEBUG UTILITIES
+// DEBUG UTILITIES (MODULAR)
 // ============================================================================
 
 export async function debugFirestoreCollections(): Promise<void> {
   console.log('\n🔍 Debugging Firestore collections...\n');
-  
-  for (const [key, collection] of Object.entries(COLLECTIONS)) {
+
+  for (const collectionName of Object.values(COLLECTIONS)) {
     try {
-      const snapshot = await db.collection(collection).limit(1).get();
-      console.log(`📁 ${collection}: ${snapshot.size} doc(s)`);
-      
+      const colRef = collection(db, collectionName);
+      const q = fsQuery(colRef, limit(1));
+      const snapshot = await getDocs(q);
+
+      console.log(`📁 ${collectionName}: ${snapshot.size} doc(s)`);
+
       if (!snapshot.empty) {
-        const doc = snapshot.docs[0];
-        const data = doc.data();
-        console.log(`   Fields: ${Object.keys(data).join(', ')}`);
+        const first = snapshot.docs[0];
+        const data = first.data();
+        console.log(`   Fields: ${Object.keys(data as any).join(', ')}`);
         console.log(`   Coordinates:`, extractCoordinates(data));
       }
     } catch (error) {
-      console.error(`❌ ${collection}:`, error);
+      console.error(`❌ ${collectionName}:`, error);
     }
   }
 }
