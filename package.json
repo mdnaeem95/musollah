@@ -6,7 +6,8 @@
     "start": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@bacons/apple-targets": "^0.2.1",
@@ -60,7 +61,6 @@
     "expo-updates": "~29.0.15",
     "lottie-react-native": "~7.3.1",
     "moti": "^0.30.0",
-    "patch-package": "^8.0.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.53.0",
@@ -102,6 +102,7 @@
     "@types/busboy": "^1.5.4",
     "@types/react": "~19.1.10",
     "babel-preset-expo": "^54.0.8",
+    "patch-package": "^8.0.1",
     "typescript": "~5.9.2"
   },
   "private": true
