@@ -1,47 +1,40 @@
 /**
- * Quran Service (2025 Edition)
+ * Quran Service (Firestore Edition)
  *
- * Modern, type-safe Quran data fetching with:
- * - Flexible query options
- * - Suspense support (React 19 ready)
- * - Adjacent surah prefetching
- * - Offline resilience
- * - Performance monitoring
- * - Comprehensive error handling
- *
- * ARCHITECTURE:
- * - TanStack Query v5 with all latest features
- * - MMKV caching (20-100x faster than AsyncStorage)
- * - Infinite cache (Quran never changes)
- * - Type-safe with strict TypeScript
+ * - Reads Quran + translations + audio links from Firestore
+ * - Keeps TanStack Query v5 hooks API-compatible with your existing UI
+ * - Uses MMKV cache via your CacheService (cache, TTL)
+ * - Offline behavior: return cache if present, otherwise throw
  */
 
-import {
-  UseQueryOptions,
-  useQuery,
-  useQueryClient,
-  useSuspenseQuery,
-} from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import firestore from '@react-native-firebase/firestore';
 import NetInfo from '@react-native-community/netinfo';
-import { quranClient, handleApiError } from '../../client/http';
+import { useEffect, useState } from 'react';
+import { UseQueryOptions, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { cache, TTL } from '../../client/storage';
 
 // ============================================================================
-// TYPES
+// FIRESTORE CONFIG
+// ============================================================================
+
+// ✅ Change this to your actual collection name
+const QURAN_COLLECTION = 'Surahs';
+
+// ============================================================================
+// TYPES (UI-facing, mostly unchanged)
 // ============================================================================
 
 export interface Surah {
   number: number;
-  name: string;
+  name: string; // we’ll map this to ArabicName by default
   englishName: string;
   englishNameTranslation: string;
   numberOfAyahs: number;
-  revelationType: 'Meccan' | 'Medinan';
+  revelationType: 'Meccan' | 'Medinan'; // if you don't store it, we'll default
 }
 
 export interface Ayah {
-  number: number;
+  number: number; // global ayah number (not available in your doc) -> we’ll approximate
   text: string;
   numberInSurah: number;
   juz: number;
@@ -62,26 +55,29 @@ export interface SurahWithTranslation {
   translation: SurahDetail;
 }
 
-interface SurahsAPIResponse {
-  code: number;
-  status: string;
-  data: Surah[];
-}
+// This matches your Firestore doc shape (based on your example)
+interface FirestoreSurahDoc {
+  ArabicName: string;
+  EnglishName: string;
+  EnglishNameTranslation: string;
+  Number: number;
+  NumberOfAyahs: number;
 
-interface SurahDetailAPIResponse {
-  code: number;
-  status: string;
-  data: SurahDetail;
+  arabicText: string; // "ayah1 | ayah2 | ..."
+  englishTranslation: string; // "ayah1 | ayah2 | ..."
+  audioLinks: string; // "url1,url2,..."
+  RevelationType?: 'Meccan' | 'Medinan'; // optional if you have it
 }
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
+// Keep for compatibility with existing callers
 export const EDITIONS = {
   ARABIC: 'ar.alafasy',
   ENGLISH: 'en.sahih',
-  TRANSLITERATION: 'en.transliteration',
+  TRANSLITERATION: 'en.transliteration', // not supported by your doc unless you add it
 } as const;
 
 export const TOTAL_SURAHS = 114;
@@ -101,7 +97,7 @@ export const QURAN_QUERY_KEYS = {
 };
 
 // ============================================================================
-// TYPE GUARDS + HELPERS
+// HELPERS
 // ============================================================================
 
 function toError(e: unknown, fallback: string) {
@@ -112,60 +108,120 @@ export function isValidSurahNumber(num: number): boolean {
   return num >= 1 && num <= TOTAL_SURAHS;
 }
 
-export function isValidAyahIndex(
-  surahData: SurahDetail | SurahWithTranslation,
-  index: number
-): boolean {
-  if ('arabic' in surahData) {
-    return (
-      index >= 0 &&
-      index < surahData.arabic.ayahs.length &&
-      index < surahData.translation.ayahs.length
-    );
-  }
-
-  return index >= 0 && index < surahData.ayahs.length;
+function splitPipe(text: string): string[] {
+  // supports: "a | b | c" or "a|b|c"
+  return (text ?? '')
+    .split('|')
+    .map((s) => s.replace(/\uFEFF/g, '').trim()) // remove BOM + trim
+    .filter(Boolean);
 }
 
-function isSurahWithTranslation(x: any): x is SurahWithTranslation {
-  return (
-    x &&
-    typeof x === 'object' &&
-    x.arabic &&
-    Array.isArray(x.arabic.ayahs) &&
-    x.translation &&
-    Array.isArray(x.translation.ayahs)
-  );
+function splitComma(text: string): string[] {
+  return (text ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
-function safeCacheDelete(key: string) {
-  // only if your cache implementation supports delete/remove
-  try {
-    const anyCache = cache as any;
-    if (typeof anyCache.delete === 'function') anyCache.delete(key);
-    else if (typeof anyCache.remove === 'function') anyCache.remove(key);
-  } catch {
-    // ignore
-  }
+/**
+ * Your Firestore doc does NOT include juz/page/etc, so we set safe defaults.
+ * If you later store those, update this mapper.
+ */
+function buildAyahs(
+  texts: string[],
+  audioLinks?: string[]
+): Ayah[] {
+  return texts.map((t, idx) => ({
+    number: idx + 1, // ✅ not global ayah number; just stable within surah
+    text: t,
+    numberInSurah: idx + 1,
+    juz: 0,
+    manzil: 0,
+    page: 0,
+    ruku: 0,
+    hizbQuarter: 0,
+    sajda: false,
+    audio: audioLinks?.[idx],
+  }));
+}
+
+function mapDocToSurahMeta(doc: FirestoreSurahDoc): Surah {
+  return {
+    number: doc.Number,
+    name: doc.ArabicName, // default: Arabic name
+    englishName: doc.EnglishName,
+    englishNameTranslation: doc.EnglishNameTranslation,
+    numberOfAyahs: doc.NumberOfAyahs,
+    revelationType: doc.RevelationType ?? 'Meccan', // fallback if you don't store it
+  };
+}
+
+function mapDocToSurahDetailArabic(doc: FirestoreSurahDoc): SurahDetail {
+  const meta = mapDocToSurahMeta(doc);
+  const arabicAyahs = splitPipe(doc.arabicText);
+  const audio = splitComma(doc.audioLinks);
+
+  // If lengths don’t match, we still return ayahs, but audio may be missing for tail
+  const ayahs = buildAyahs(arabicAyahs, audio);
+
+  return { ...meta, ayahs };
+}
+
+function mapDocToSurahDetailTranslation(doc: FirestoreSurahDoc): SurahDetail {
+  const meta = mapDocToSurahMeta(doc);
+  const englishAyahs = splitPipe(doc.englishTranslation);
+
+  const ayahs = buildAyahs(englishAyahs);
+
+  // For translation detail, use EnglishName as "name" to keep UI intuitive if it shows it
+  return {
+    ...meta,
+    name: doc.EnglishName,
+    ayahs,
+  };
 }
 
 // ============================================================================
-// API FUNCTIONS
+// FIRESTORE READS
 // ============================================================================
+
+async function getSurahDocByNumber(surahNumber: number) {
+  // Prefer a "Number" equality query (works regardless of docId)
+  const snap = await firestore()
+    .collection(QURAN_COLLECTION)
+    .where('Number', '==', surahNumber)
+    .limit(1)
+    .get();
+
+  if (snap.empty) return null;
+
+  return snap.docs[0].data() as FirestoreSurahDoc;
+}
 
 export async function fetchSurahs(): Promise<Surah[]> {
   try {
-    const response = await quranClient.get<SurahsAPIResponse>('/surah');
-    const data = response.data?.data;
+    const cacheKey = 'quran-surahs';
+    const cached = cache.get<Surah[]>(cacheKey);
+    if (cached && Array.isArray(cached)) return cached;
 
-    if (!Array.isArray(data)) {
-      throw new Error('Invalid /surah response shape');
+    const snap = await firestore()
+      .collection(QURAN_COLLECTION)
+      .orderBy('Number', 'asc')
+      .get();
+
+    const surahs = snap.docs
+      .map((d) => d.data() as FirestoreSurahDoc)
+      .filter((d) => typeof d?.Number === 'number')
+      .map(mapDocToSurahMeta);
+
+    if (!surahs.length) {
+      throw new Error('No surahs found in Firestore');
     }
 
-    return data;
+    cache.set(cacheKey, surahs, TTL.ONE_MONTH * 12);
+    return surahs;
   } catch (error) {
-    handleApiError(error, 'fetchSurahs');
-    throw toError(error, 'Failed to fetch surahs');
+    throw toError(error, 'Failed to fetch surahs from Firestore');
   }
 }
 
@@ -178,20 +234,35 @@ export async function fetchSurahDetail(
   }
 
   try {
-    const response = await quranClient.get<SurahDetailAPIResponse>(
-      `/surah/${surahNumber}/${edition}`
-    );
+    const cacheKey = `quran-surah-${surahNumber}-${edition}`;
+    const cached = cache.get<SurahDetail>(cacheKey);
+    if (cached && Array.isArray((cached as any).ayahs)) return cached;
 
-    const data = response.data?.data;
+    const doc = await getSurahDocByNumber(surahNumber);
 
-    if (!data || !Array.isArray(data.ayahs)) {
-      throw new Error(`Invalid surah detail response for ${surahNumber}/${edition}`);
+    if (!doc) {
+      throw new Error(`Surah ${surahNumber} not found in Firestore`);
     }
 
-    return data;
+    let detail: SurahDetail;
+
+    if (edition === EDITIONS.ARABIC) {
+      detail = mapDocToSurahDetailArabic(doc);
+    } else if (edition === EDITIONS.ENGLISH) {
+      detail = mapDocToSurahDetailTranslation(doc);
+    } else {
+      // If you don’t store transliteration, this makes the failure explicit
+      throw new Error(`Edition not supported from Firestore: ${edition}`);
+    }
+
+    if (!detail.ayahs?.length) {
+      throw new Error(`Invalid surah detail (empty ayahs) for ${surahNumber}/${edition}`);
+    }
+
+    cache.set(cacheKey, detail, TTL.ONE_MONTH * 12);
+    return detail;
   } catch (error) {
-    handleApiError(error, 'fetchSurahDetail');
-    throw toError(error, `Failed to fetch surah ${surahNumber} (${edition})`);
+    throw toError(error, `Failed to fetch surah ${surahNumber} (${edition}) from Firestore`);
   }
 }
 
@@ -202,17 +273,21 @@ export async function fetchSurahWithTranslation(
     throw new Error(`Invalid surah number: ${surahNumber}`);
   }
 
-  try {
-    const [arabic, translation] = await Promise.all([
-      fetchSurahDetail(surahNumber, EDITIONS.ARABIC),
-      fetchSurahDetail(surahNumber, EDITIONS.ENGLISH),
-    ]);
+  // Single Firestore read, then derive both arabic + translation
+  const doc = await getSurahDocByNumber(surahNumber);
+  if (!doc) throw new Error(`Surah ${surahNumber} not found in Firestore`);
 
-    return { arabic, translation };
-  } catch (error) {
-    handleApiError(error, 'fetchSurahWithTranslation');
-    throw toError(error, `Failed to fetch surahWithTranslation ${surahNumber}`);
+  const arabic = mapDocToSurahDetailArabic(doc);
+  const translation = mapDocToSurahDetailTranslation(doc);
+
+  // Optional: ensure ayah counts align
+  if (arabic.ayahs.length !== translation.ayahs.length) {
+    console.warn(
+      `⚠️ Ayah count mismatch for surah ${surahNumber}: arabic=${arabic.ayahs.length} translation=${translation.ayahs.length}`
+    );
   }
+
+  return { arabic, translation };
 }
 
 // ============================================================================
@@ -224,23 +299,7 @@ export function useSurahs(
 ) {
   return useQuery({
     queryKey: QURAN_QUERY_KEYS.surahs,
-    queryFn: async () => {
-      const cacheKey = 'quran-surahs';
-      const cached = cache.get<Surah[]>(cacheKey);
-
-      if (cached && Array.isArray(cached)) {
-        console.log('🎯 Using cached surahs list');
-        return cached;
-      }
-
-      console.log('🌐 Fetching surahs from API');
-      const surahs = await fetchSurahs(); // will either return Surah[] or throw
-
-      // Cache indefinitely - Quran never changes
-      cache.set(cacheKey, surahs, TTL.ONE_MONTH * 12);
-
-      return surahs;
-    },
+    queryFn: fetchSurahs,
     staleTime: Infinity,
     gcTime: Infinity,
     retry: 2,
@@ -251,19 +310,7 @@ export function useSurahs(
 export function useSurahsSuspense() {
   return useSuspenseQuery({
     queryKey: QURAN_QUERY_KEYS.surahs,
-    queryFn: async () => {
-      const cacheKey = 'quran-surahs';
-      const cached = cache.get<Surah[]>(cacheKey);
-
-      if (cached && Array.isArray(cached)) {
-        console.log('🎯 Using cached surahs list');
-        return cached;
-      }
-
-      const surahs = await fetchSurahs(); // will either return Surah[] or throw
-      cache.set(cacheKey, surahs, TTL.ONE_MONTH * 12);
-      return surahs;
-    },
+    queryFn: fetchSurahs,
     staleTime: Infinity,
     gcTime: Infinity,
   });
@@ -290,23 +337,14 @@ export function useSurah(
   return useQuery({
     queryKey: QURAN_QUERY_KEYS.surah(surahNumber, edition),
     queryFn: async () => {
+      // cache is handled inside fetchSurahDetail, but offline needs special behavior
       const cacheKey = `quran-surah-${surahNumber}-${edition}`;
       const cached = cache.get<SurahDetail>(cacheKey);
+      if (cached && Array.isArray((cached as any).ayahs)) return cached;
 
-      if (cached && Array.isArray((cached as any).ayahs)) {
-        console.log(`🎯 Using cached surah ${surahNumber}`);
-        return cached;
-      }
+      if (isOffline) throw new Error('No cached data available offline');
 
-      if (isOffline) {
-        throw new Error('No cached data available offline');
-      }
-
-      console.log(`🌐 Fetching surah ${surahNumber} from API`);
-      const surah = await fetchSurahDetail(surahNumber, edition); // returns or throws
-
-      cache.set(cacheKey, surah, TTL.ONE_MONTH * 12);
-      return surah;
+      return fetchSurahDetail(surahNumber, edition);
     },
     staleTime: Infinity,
     gcTime: Infinity,
@@ -322,19 +360,7 @@ export function useSurahSuspense(
 ) {
   return useSuspenseQuery({
     queryKey: QURAN_QUERY_KEYS.surah(surahNumber, edition),
-    queryFn: async () => {
-      const cacheKey = `quran-surah-${surahNumber}-${edition}`;
-      const cached = cache.get<SurahDetail>(cacheKey);
-
-      if (cached && Array.isArray((cached as any).ayahs)) {
-        console.log(`🎯 Using cached surah ${surahNumber}`);
-        return cached;
-      }
-
-      const surah = await fetchSurahDetail(surahNumber, edition);
-      cache.set(cacheKey, surah, TTL.ONE_MONTH * 12);
-      return surah;
-    },
+    queryFn: () => fetchSurahDetail(surahNumber, edition),
     staleTime: Infinity,
     gcTime: Infinity,
   });
@@ -364,27 +390,12 @@ export function useSurahWithTranslation(
     queryKey: QURAN_QUERY_KEYS.surahWithTranslation(surahNumber),
     queryFn: async () => {
       const cacheKey = `quran-surah-${surahNumber}-with-translation`;
-      const cached = cache.get<any>(cacheKey);
-
-      if (cached) {
-        if (isSurahWithTranslation(cached)) {
-          console.log(`🎯 Using cached surah ${surahNumber} with translation`);
-          return cached;
-        }
-
-        // purge corrupt/old-shape cache if possible
-        console.warn('🧹 Invalid cached surahWithTranslation, clearing:', cacheKey);
-        safeCacheDelete(cacheKey);
-      }
+      const cached = cache.get<SurahWithTranslation>(cacheKey);
+      if (cached?.arabic?.ayahs && cached?.translation?.ayahs) return cached;
 
       if (isOffline) throw new Error('No cached data available offline');
 
-      const data = await fetchSurahWithTranslation(surahNumber); // returns or throws
-
-      if (!isSurahWithTranslation(data)) {
-        throw new Error(`Invalid API response shape for surah ${surahNumber}`);
-      }
-
+      const data = await fetchSurahWithTranslation(surahNumber);
       cache.set(cacheKey, data, TTL.ONE_MONTH * 12);
       return data;
     },
@@ -402,11 +413,7 @@ export function useSurahWithTranslationSuspense(surahNumber: number) {
     queryFn: async () => {
       const cacheKey = `quran-surah-${surahNumber}-with-translation`;
       const cached = cache.get<SurahWithTranslation>(cacheKey);
-
-      if (cached && isSurahWithTranslation(cached)) {
-        console.log(`🎯 Using cached surah ${surahNumber} with translation`);
-        return cached;
-      }
+      if (cached?.arabic?.ayahs && cached?.translation?.ayahs) return cached;
 
       const data = await fetchSurahWithTranslation(surahNumber);
       cache.set(cacheKey, data, TTL.ONE_MONTH * 12);
@@ -512,7 +519,7 @@ export function usePrefetchAdjacentSurahs(currentSurah: number) {
 }
 
 // ============================================================================
-// UTILITY FUNCTIONS
+// UTILITY FUNCTIONS (unchanged)
 // ============================================================================
 
 export function getSurahName(surahNumber: number, surahs: Surah[]): string {
@@ -537,7 +544,6 @@ export function getSurahProgress(
 ): number {
   const surah = surahs.find((s) => s.number === surahNumber);
   if (!surah) return 0;
-
   return Math.round((currentAyah / surah.numberOfAyahs) * 100);
 }
 
@@ -559,30 +565,6 @@ export function parseAyahReference(reference: string): {
   return {
     surahNumber: parseInt(match[1], 10),
     ayahNumber: parseInt(match[2], 10),
-  };
-}
-
-export function getAyahText(surahData: SurahDetail, ayahIndex: number): string | null {
-  if (!isValidAyahIndex(surahData, ayahIndex)) {
-    console.error('Invalid ayah index:', ayahIndex);
-    return null;
-  }
-  return surahData.ayahs[ayahIndex].text;
-}
-
-export function getAyahWithTranslation(
-  surahData: SurahWithTranslation,
-  ayahIndex: number
-): { arabic: string; english: string; ayahNumber: number } | null {
-  if (!isValidAyahIndex(surahData, ayahIndex)) {
-    console.error('Invalid ayah index:', ayahIndex);
-    return null;
-  }
-
-  return {
-    arabic: surahData.arabic.ayahs[ayahIndex].text,
-    english: surahData.translation.ayahs[ayahIndex].text,
-    ayahNumber: ayahIndex + 1,
   };
 }
 
