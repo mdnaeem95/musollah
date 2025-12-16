@@ -282,9 +282,11 @@ class ModernPrayerService {
    * Fetch Islamic date
    */
   private islamicDateInFlight = new Map<string, Promise<string>>();
+  private readonly instanceId = Math.random().toString(16).slice(2);
 
   private async fetchIslamicDate(gregorianDateISO: string): Promise<string> {
     // ✅ DEDUPE: if same date requested concurrently, reuse promise
+    console.log('🧩 prayerService instance:', this.instanceId);
     const existing = this.islamicDateInFlight.get(gregorianDateISO);
     if (existing) return existing;
 

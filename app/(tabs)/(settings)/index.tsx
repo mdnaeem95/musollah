@@ -115,7 +115,7 @@ const SettingsTab = () => {
           style={styles.appInfo}
         >
           <Text style={[styles.appName, { color: theme.colors.text.secondary }]}>
-            Musollah
+            Rihlah
           </Text>
           <Text style={[styles.appVersion, { color: theme.colors.text.muted }]}>
             Version 2.0.0
