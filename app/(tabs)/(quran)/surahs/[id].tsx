@@ -1,14 +1,24 @@
 /**
  * Surah Detail Page - Modern Design
- * 
- * Read Quran with glassmorphism cards, audio playback, and progress tracking
- * 
- * @version 2.0
+ *
+ * - Active ayah indicator: TEXT COLOR ONLY (Arabic + translation)
+ * - Bigger Arabic line-height so harakat isn’t clipped
+ * - Auto-scroll: keep active ayah centered while playing
+ *
+ * @version 2.1
  */
 
-import React, { useCallback, useLayoutEffect } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, Animated } from 'react-native';
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import React, { useCallback, useLayoutEffect, useEffect, useMemo } from 'react';
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Platform,
+} from 'react-native';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { FontAwesome6 } from '@expo/vector-icons';
@@ -24,21 +34,20 @@ import { PlayPauseButton } from '../../../../components/quran/AyahPlayPauseButto
 import { FloatingPlayer } from '../../../../components/quran/FloatingPlayer';
 import BookmarkIcon from '../../../../components/quran/BookmarkIcon';
 import { calculateContrastColor, enter } from '../../../../utils';
-import IslamicPatternOverlay from '../../../../components/food/IslamicPatternOverlay';
 
 // ============================================================================
-// READ TOGGLE COMPONENT (MODERNIZED)
+// READ TOGGLE COMPONENT
 // ============================================================================
 
-const ReadToggle = ({ 
-  isRead, 
-  onToggle, 
-  accentColor, 
+const ReadToggle = ({
+  isRead,
+  onToggle,
+  accentColor,
   mutedBorderColor,
-}: { 
-  isRead: boolean; 
-  onToggle: () => void; 
-  accentColor: string; 
+}: {
+  isRead: boolean;
+  onToggle: () => void;
+  accentColor: string;
   mutedBorderColor: string;
 }) => {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
@@ -46,7 +55,7 @@ const ReadToggle = ({
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     Animated.sequence([
       Animated.timing(scaleAnim, {
         toValue: 1.2,
@@ -66,19 +75,13 @@ const ReadToggle = ({
   if (isRead) {
     return (
       <TouchableOpacity onPress={handlePress} style={styles.iconButton}>
-        <Animated.View style={[
-          styles.readBadge, 
-          { 
-            backgroundColor: accentColor,
-            transform: [{ scale: scaleAnim }] 
-          }
-        ]}>
-          <FontAwesome6
-            name="check"
-            size={14}
-            color={checkColor}
-            solid
-          />
+        <Animated.View
+          style={[
+            styles.readBadge,
+            { backgroundColor: accentColor, transform: [{ scale: scaleAnim }] },
+          ]}
+        >
+          <FontAwesome6 name="check" size={14} color={checkColor} solid />
         </Animated.View>
       </TouchableOpacity>
     );
@@ -86,13 +89,12 @@ const ReadToggle = ({
 
   return (
     <TouchableOpacity onPress={handlePress} style={styles.iconButton}>
-      <Animated.View style={[
-        styles.unreadBadge, 
-        { 
-          borderColor: mutedBorderColor,
-          transform: [{ scale: scaleAnim }] 
-        }
-      ]} />
+      <Animated.View
+        style={[
+          styles.unreadBadge,
+          { borderColor: mutedBorderColor, transform: [{ scale: scaleAnim }] },
+        ]}
+      />
     </TouchableOpacity>
   );
 };
@@ -102,7 +104,6 @@ const ReadToggle = ({
 // ============================================================================
 
 const SurahDetailScreen = () => {
-  const router = useRouter();
   const navigation = useNavigation();
 
   const { id, ayahIndex } = useLocalSearchParams<{
@@ -137,31 +138,57 @@ const SurahDetailScreen = () => {
     reciter,
   });
 
+  // --- dynamic Arabic line height (bigger so harakat isn't clipped)
+  const arabicLineHeight = useMemo(() => {
+    // conservative, works well across sizes
+    return Math.round(textSize * 2.35);
+  }, [textSize]);
+
+  // --- keep header tappable to open picker
   useLayoutEffect(() => {
-    if (surah) {
-      navigation.setOptions({
-        headerTitle: () => (
-          <TouchableOpacity 
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              togglePickerVisibility();
-            }}
-            style={styles.headerContainer}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.headerText, { color: theme.colors.text.primary }]}>
-              {surah.englishName}
-            </Text>
-            <FontAwesome6
-              name={isPickerVisible ? 'chevron-up' : 'chevron-down'}
-              size={18}
-              color={theme.colors.text.primary}
-            />
-          </TouchableOpacity>
-        ),
+    if (!surah) return;
+
+    navigation.setOptions({
+      headerTitle: () => (
+        <TouchableOpacity
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            togglePickerVisibility();
+          }}
+          style={styles.headerContainer}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.headerText, { color: theme.colors.text.primary }]}>
+            {surah.englishName}
+          </Text>
+          <FontAwesome6
+            name={isPickerVisible ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={theme.colors.text.primary}
+          />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, surah, isPickerVisible, theme.colors.text.primary, togglePickerVisibility]);
+
+  // --- auto-scroll active ayah into middle while playing
+  useEffect(() => {
+    if (!surah) return;
+    if (typeof currentAyahIndex !== 'number') return;
+    if (currentAyahIndex < 0) return;
+    if (!listRef?.current) return;
+
+    // FlashList scrollToIndex supports viewPosition (0 = top, 0.5 = center)
+    try {
+      listRef.current.scrollToIndex({
+        index: currentAyahIndex,
+        animated: true,
+        viewPosition: 0.5,
       });
+    } catch {
+      // ignore: index might be out of range briefly during surah switches
     }
-  }, [navigation, surah, isPickerVisible, theme, togglePickerVisibility]);
+  }, [currentAyahIndex, surah, listRef]);
 
   const renderAyah = useCallback(
     ({ item, index }: { item: string; index: number }) => {
@@ -172,6 +199,11 @@ const SurahDetailScreen = () => {
       const isAyahBookmarked = isBookmarked(ayahNumber);
       const isAyahRead = isRead(ayahNumber);
       const isPlaying = currentAyahIndex === index;
+
+      // ✅ ACTIVE INDICATOR: TEXT COLOR ONLY
+      const activeTextColor = theme.colors.accent;
+      const arabicColor = isPlaying ? activeTextColor : theme.colors.text.primary;
+      const translationColor = isPlaying ? activeTextColor : theme.colors.text.secondary;
 
       const ayahPillBg = theme.colors.accent;
       const ayahPillText = calculateContrastColor(ayahPillBg);
@@ -190,14 +222,12 @@ const SurahDetailScreen = () => {
           >
             {/* Top Row: Number & Actions */}
             <View style={styles.topRow}>
-              {/* Ayah Number Badge */}
               <View style={[styles.ayahNumberBadge, { backgroundColor: ayahPillBg }]}>
                 <Text style={[styles.ayahNumberText, { color: ayahPillText }]}>
                   {ayahNumber}
                 </Text>
               </View>
 
-              {/* Action Icons */}
               <View style={styles.iconGroup}>
                 <PlayPauseButton
                   iconSize={20}
@@ -207,7 +237,7 @@ const SurahDetailScreen = () => {
                   trackIndex={index}
                 />
 
-                <BookmarkIcon 
+                <BookmarkIcon
                   isBookmarked={isAyahBookmarked}
                   onToggle={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -229,9 +259,11 @@ const SurahDetailScreen = () => {
             <Text
               style={[
                 styles.quranText,
-                { 
-                  color: theme.colors.text.primary,
-                  fontSize: textSize 
+                {
+                  color: arabicColor,
+                  fontSize: textSize,
+                  lineHeight: arabicLineHeight,
+                  ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
                 },
               ]}
             >
@@ -240,7 +272,7 @@ const SurahDetailScreen = () => {
 
             {/* Translation */}
             <View style={styles.translationContainer}>
-              <Text style={[styles.translationText, { color: theme.colors.text.secondary }]}>
+              <Text style={[styles.translationText, { color: translationColor }]}>
                 {englishText}
               </Text>
             </View>
@@ -258,6 +290,7 @@ const SurahDetailScreen = () => {
       theme,
       isDarkMode,
       textSize,
+      arabicLineHeight,
     ]
   );
 
@@ -272,7 +305,6 @@ const SurahDetailScreen = () => {
         tint={isDarkMode ? 'dark' : 'light'}
         style={[styles.progressCard, { backgroundColor: theme.colors.secondary }]}
       >
-        {/* Header */}
         <View style={styles.progressHeader}>
           <View style={styles.progressTitleRow}>
             <FontAwesome6 name="book-quran" size={16} color={theme.colors.accent} />
@@ -287,17 +319,13 @@ const SurahDetailScreen = () => {
           </View>
         </View>
 
-        {/* Progress Bar */}
         <View style={styles.progressBarContainer}>
           <View style={[styles.progressTrack, { backgroundColor: theme.colors.muted }]}>
-            <View 
+            <View
               style={[
-                styles.progressFill, 
-                { 
-                  width: `${progressPercentage}%`,
-                  backgroundColor: theme.colors.accent 
-                }
-              ]} 
+                styles.progressFill,
+                { width: `${progressPercentage}%`, backgroundColor: theme.colors.accent },
+              ]}
             />
           </View>
           <Text style={[styles.progressPercentage, { color: theme.colors.text.secondary }]}>
@@ -308,11 +336,10 @@ const SurahDetailScreen = () => {
     );
   }, [surah, readAyahsCount, theme, isDarkMode]);
 
-  // Loading State
+  // Loading
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.centerContainer, { backgroundColor: theme.colors.primary }]}>
-        <IslamicPatternOverlay opacity={0.04} />
         <ActivityIndicator size="large" color={theme.colors.accent} />
         <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
           Loading Surah...
@@ -321,7 +348,7 @@ const SurahDetailScreen = () => {
     );
   }
 
-  // Error State
+  // Error
   if (error) {
     return (
       <SafeAreaView style={[styles.centerContainer, { backgroundColor: theme.colors.primary }]}>
@@ -345,11 +372,10 @@ const SurahDetailScreen = () => {
     );
   }
 
-  // No Surah Found
+  // No Surah
   if (!surah) {
     return (
       <SafeAreaView style={[styles.centerContainer, { backgroundColor: theme.colors.primary }]}>
-        <IslamicPatternOverlay opacity={0.04} />
         <Text style={[styles.errorMessage, { color: theme.colors.text.primary }]}>
           Surah not found
         </Text>
@@ -359,24 +385,20 @@ const SurahDetailScreen = () => {
 
   return (
     <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
-      {/* Progress Tracker */}
       {renderProgressTracker()}
 
-      {/* Ayah List */}
       <FlashList
         ref={listRef}
         data={surah.arabicAyahs}
         renderItem={renderAyah}
-        keyExtractor={(item, index) => `ayah-${index}`}
+        keyExtractor={(_, index) => `ayah-${index}`}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
-        extraData={[readAyahsCount, currentAyahIndex, theme.colors.primary]}
+        extraData={[readAyahsCount, currentAyahIndex, theme.colors.primary, textSize]}
       />
 
-      {/* Floating Audio Player */}
       <FloatingPlayer />
 
-      {/* Surah Picker Modal */}
       {isPickerVisible && (
         <BlurView
           intensity={40}
@@ -411,16 +433,14 @@ const SurahDetailScreen = () => {
 // ============================================================================
 
 const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-  },
+  mainContainer: { flex: 1 },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
-  
+
   // Header
   headerContainer: {
     flexDirection: 'row',
@@ -496,13 +516,11 @@ const styles = StyleSheet.create({
   // List
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 100,
+    paddingBottom: 110, // leave space for floating player
   },
 
   // Ayah Card
-  ayahWrapper: {
-    marginBottom: 16,
-  },
+  ayahWrapper: { marginBottom: 16 },
   ayahCard: {
     borderRadius: 16,
     padding: 16,
@@ -540,9 +558,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  iconButton: {
-    padding: 4,
-  },
+  iconButton: { padding: 4 },
 
   // Read Toggle
   readBadge: {
@@ -568,7 +584,6 @@ const styles = StyleSheet.create({
   // Text Content
   quranText: {
     fontFamily: 'Amiri_400Regular',
-    lineHeight: 40,
     textAlign: 'right',
     marginBottom: 16,
   },
@@ -599,9 +614,7 @@ const styles = StyleSheet.create({
     elevation: 10,
     overflow: 'hidden',
   },
-  picker: {
-    width: '100%',
-  },
+  picker: { width: '100%' },
 
   // Loading State
   loadingText: {
