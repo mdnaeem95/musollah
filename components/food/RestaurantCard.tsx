@@ -1,9 +1,13 @@
 /**
- * Restaurant Card Component (UPGRADED)
+ * Restaurant Card Component (PRODUCTION SAFE)
  * 
  * 3D restaurant card with certification badges and quick actions.
  * 
- * @version 2.0 - 3D effects, certification, quick actions, glassmorphism
+ * ✅ FIXED: Line 143 crash - averageRating?.toFixed() type validation
+ * ✅ FIXED: Safe number handling for totalReviews
+ * ✅ FIXED: Safe array handling for categories
+ * 
+ * @version 2.1 - Production crash fixes
  */
 
 import React, { useState } from 'react';
@@ -136,25 +140,29 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, distance })
           </Text>
           
           <View style={styles.metaRow}>
-            {/* Rating */}
+            {/* Rating - FIXED: Type-safe number validation (LINE 143 CRASH FIX) */}
             <View style={styles.ratingContainer}>
               <FontAwesome6 name="star" size={12} color="#FFD700" solid />
               <Text style={[styles.rating, { color: theme.colors.text.primary }]}>
-                {restaurant.averageRating?.toFixed(1) || 'New'}
+                {typeof restaurant.averageRating === 'number' && isFinite(restaurant.averageRating)
+                  ? restaurant.averageRating.toFixed(1)
+                  : 'New'}
               </Text>
             </View>
             
-            {/* Reviews count */}
+            {/* Reviews count - FIXED: Safe number fallback */}
             <Text style={[styles.reviews, { color: theme.colors.text.secondary }]}>
-              ({restaurant.totalReviews || 0})
+              ({typeof restaurant.totalReviews === 'number' ? Math.max(0, restaurant.totalReviews) : 0})
             </Text>
             
-            {/* Categories */}
+            {/* Categories - FIXED: Safe array handling */}
             <Text 
               style={[styles.categories, { color: theme.colors.text.secondary }]}
               numberOfLines={1}
             >
-              {restaurant.categories.slice(0, 2).join(' • ')}
+              {Array.isArray(restaurant.categories) 
+                ? restaurant.categories.slice(0, 2).join(' • ') 
+                : ''}
             </Text>
           </View>
           
