@@ -5,7 +5,7 @@ import { collection, doc, getFirestore, initializeFirestore, runTransaction, wri
   increment, arrayUnion, arrayRemove, deleteField, Timestamp } from '@react-native-firebase/firestore';
 import { onAuthStateChanged, signOut } from '@react-native-firebase/auth';
  import { getAuth } from '@react-native-firebase/auth';
-import { getStorage } from '@react-native-firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL } from '@react-native-firebase/storage';
 
 // Analytics modular functions exist even if older docs show namespaced usage
 import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
@@ -58,6 +58,45 @@ export function runFirestoreTransaction<T>(
 // ---------------------------------------------------------------------------
 
 export { Timestamp, serverTimestamp, increment, arrayUnion, arrayRemove, deleteField };
+
+// ---------------------------------------------------------------------------
+// Storage helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Upload review image to Firebase Storage
+ * Returns download URL or null on failure
+ */
+export const uploadReviewImage = async (
+  localUri: string,
+  restaurantId: string
+): Promise<string | null> => {
+  try {
+    // Generate unique filename
+    const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+    const storagePath = `restaurants/${restaurantId}/reviews/${filename}`;
+    
+    // Create storage reference
+    const storageRef = ref(storageService, storagePath);
+    
+    // Fetch the file as blob
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    
+    // Upload to Firebase Storage
+    await uploadBytes(storageRef, blob);
+    
+    // Get download URL
+    const downloadURL = await getDownloadURL(storageRef);
+    
+    console.log('✅ Image uploaded:', downloadURL);
+    return downloadURL;
+    
+  } catch (error) {
+    console.error('❌ Failed to upload review image:', error);
+    return null;
+  }
+};
 
 // ---------------------------------------------------------------------------
 // Analytics helpers (modular)
