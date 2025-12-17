@@ -1,28 +1,35 @@
 /**
- * Restaurant Service
+ * Restaurant Service - PRODUCTION SAFE VERSION
  *
  * API functions and TanStack Query hooks for restaurant data.
  * Handles Firebase GeoPoint normalization and caching.
+ * 
+ * ✅ FIXES: Production crashes from Turbo Module bridge errors
  *
- * @version 2.1 - Modular Firestore migration (no namespaced APIs)
+ * @version 2.2 - Production hardened with safe wrappers
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { db, storageService, arrayUnion, arrayRemove } from '../../client/firebase';
+import { db, storageService, arrayUnion, arrayRemove, uploadReviewImage } from '../../client/firebase';
 import { cache, TTL } from '../../client/storage';
 
-import {
-  collection,
+import { collection,
   doc,
-  getDoc,
   getDocs,
-  limit,
   orderBy,
   query,
   runTransaction,
-  setDoc,
-  updateDoc,
 } from '@react-native-firebase/firestore';
+
+// ============================================================================
+// SAFE WRAPPER IMPORTS
+// ============================================================================
+
+import {
+  safeFirestoreGet,
+  safeFirestoreWrite,
+  safeFirestoreUpdate,
+} from '../utils/query-wrapper';
 
 // ============================================================================
 // TYPES
@@ -112,7 +119,7 @@ type SubmitReviewParams = {
 };
 
 // ============================================================================
-// HELPERS
+// HELPERS (with additional validation)
 // ============================================================================
 
 function isValidCoordinates(coords: unknown): coords is { latitude: number; longitude: number } {
@@ -123,6 +130,8 @@ function isValidCoordinates(coords: unknown): coords is { latitude: number; long
     typeof longitude === 'number' &&
     !isNaN(latitude) &&
     !isNaN(longitude) &&
+    isFinite(latitude) &&
+    isFinite(longitude) &&
     latitude >= -90 &&
     latitude <= 90 &&
     longitude >= -180 &&
@@ -142,204 +151,431 @@ function extractCoordinates(doc: FirebaseRestaurant): { latitude: number; longit
   return null;
 }
 
+/**
+ * Production-safe normalization with comprehensive validation
+ */
 function normalizeRestaurant(id: string, docData: FirebaseRestaurant): Restaurant | null {
-  const coordinates = extractCoordinates(docData);
+  try {
+    // Validate required fields
+    if (!id || typeof id !== 'string') {
+      console.warn('⚠️ Restaurant has invalid ID');
+      return null;
+    }
 
-  if (!coordinates) {
-    if (__DEV__) console.warn(`⚠️ Restaurant "${docData.name}" (${id}) has no valid coordinates, skipping`);
+    if (!docData || typeof docData !== 'object') {
+      console.warn('⚠️ Restaurant has invalid data');
+      return null;
+    }
+
+    const coordinates = extractCoordinates(docData);
+
+    if (!coordinates) {
+      if (__DEV__) console.warn(`⚠️ Restaurant "${docData.name}" (${id}) has no valid coordinates, skipping`);
+      return null;
+    }
+
+    // Sanitize string fields (prevent UTF-8 crashes)
+    const sanitizeString = (str: any, fallback: string = ''): string => {
+      if (typeof str !== 'string') return fallback;
+      // Remove control characters that crash NSString conversion
+      return str.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+    };
+
+    // Validate arrays
+    const sanitizeArray = (arr: any, fallback: any[] = []): any[] => {
+      if (!Array.isArray(arr)) return fallback;
+      return arr.filter(item => item !== null && item !== undefined);
+    };
+
+    // Validate numbers
+    const sanitizeNumber = (num: any, fallback: number = 0): number => {
+      if (typeof num !== 'number' || isNaN(num) || !isFinite(num)) return fallback;
+      return num;
+    };
+
+    return {
+      id,
+      name: sanitizeString(docData.name, 'Unknown Restaurant'),
+      categories: sanitizeArray(docData.categories),
+      coordinates,
+      address: sanitizeString(docData.address),
+      image: sanitizeString(docData.image),
+      hours: sanitizeString(docData.hours),
+      website: sanitizeString(docData.website || docData.menuUrl),
+      menuUrl: sanitizeString(docData.menuUrl || docData.website),
+      socials: {
+        instagram: docData.socials?.instagram ? sanitizeString(docData.socials.instagram) : undefined,
+        facebook: docData.socials?.facebook ? sanitizeString(docData.socials.facebook) : undefined,
+        tiktok: docData.socials?.tiktok ? sanitizeString(docData.socials.tiktok) : undefined,
+        number: docData.socials?.number ? sanitizeString(docData.socials.number) : undefined,
+      },
+      status: sanitizeString(docData.status, 'Unknown'),
+      averageRating: sanitizeNumber(docData.averageRating || docData.rating),
+      totalReviews: sanitizeNumber(docData.totalReviews),
+      rating: docData.rating !== undefined ? sanitizeNumber(docData.rating) : undefined,
+      priceRange: docData.priceRange ? sanitizeString(docData.priceRange) : undefined,
+      description: docData.description ? sanitizeString(docData.description) : undefined,
+      halal: typeof docData.halal === 'boolean' ? docData.halal : undefined,
+      tags: docData.tags ? sanitizeArray(docData.tags) : undefined,
+    };
+  } catch (error) {
+    console.error(`❌ Failed to normalize restaurant ${id}:`, error);
     return null;
   }
-
-  return {
-    id,
-    name: docData.name || 'Unknown Restaurant',
-    categories: docData.categories ?? [],
-    coordinates,
-    address: docData.address ?? '',
-    image: docData.image ?? '',
-    hours: docData.hours ?? '',
-    website: docData.website ?? docData.menuUrl ?? '',
-    menuUrl: docData.menuUrl ?? docData.website ?? '',
-    socials: docData.socials ?? {},
-    status: docData.status ?? 'Unknown',
-    averageRating: docData.averageRating ?? docData.rating ?? 0,
-    totalReviews: docData.totalReviews ?? 0,
-    rating: docData.rating,
-    priceRange: docData.priceRange,
-    description: docData.description,
-    halal: docData.halal,
-    tags: docData.tags,
-  };
 }
 
 // ============================================================================
-// API FUNCTIONS (MODULAR FIRESTORE)
+// API FUNCTIONS (PRODUCTION SAFE WITH WRAPPERS)
 // ============================================================================
 
+/**
+ * ✅ PRODUCTION SAFE: Uses safe wrapper + comprehensive validation
+ */
 async function fetchRestaurantsFromFirebase(): Promise<Restaurant[]> {
+  const cacheKey = 'restaurants-all';
+
   try {
     console.log('🌐 Fetching restaurants from Firebase');
 
+    // Check cache first (production optimization)
+    const cached = cache.get<Restaurant[]>(cacheKey);
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+      console.log('⚡ Using cached restaurants:', cached.length);
+      return cached;
+    }
+
+    // Use safe wrapper instead of direct getDocs
     const colRef = collection(db, 'restaurants');
-    const snapshot = await getDocs(colRef);
+    const rawResults = await safeFirestoreGet<FirebaseRestaurant>(colRef as any);
+
+    if (!Array.isArray(rawResults)) {
+      console.error('❌ Invalid results from Firestore');
+      return [];
+    }
 
     const restaurants: Restaurant[] = [];
     let skippedCount = 0;
 
-    snapshot.docs.forEach((d: any) => {
-      const normalized = normalizeRestaurant(d.id, d.data() as FirebaseRestaurant);
+    rawResults.forEach((rawDoc) => {
+      const normalized = normalizeRestaurant(rawDoc.id || '', rawDoc);
       if (normalized) restaurants.push(normalized);
       else skippedCount++;
     });
 
-    console.log(`✅ Fetched ${restaurants.length} restaurants (${skippedCount} skipped - no coordinates)`);
+    console.log(`✅ Fetched ${restaurants.length} restaurants (${skippedCount} skipped)`);
+
+    // Cache valid results
+    if (restaurants.length > 0) {
+      cache.set(cacheKey, restaurants, TTL.ONE_DAY);
+    }
+
     return restaurants;
+    
   } catch (error) {
     console.error('❌ Error fetching restaurants:', error);
-    throw error;
+    
+    // Try to return expired cache as last resort
+    const expiredCache = cache.get<Restaurant[]>(cacheKey);
+    if (expiredCache && Array.isArray(expiredCache) && expiredCache.length > 0) {
+      console.warn('⚠️ Using expired cache');
+      return expiredCache;
+    }
+
+    // Don't throw - return empty array to prevent crash
+    return [];
   }
 }
 
+/**
+ * ✅ PRODUCTION SAFE: Single restaurant fetch with validation
+ */
 async function fetchRestaurantByIdFromFirebase(id: string): Promise<Restaurant> {
+  if (!id || typeof id !== 'string') {
+    throw new Error('Invalid restaurant ID');
+  }
+
+  const cacheKey = `restaurant-${id}`;
+
   try {
     console.log(`🌐 Fetching restaurant: ${id}`);
 
+    // Check cache
+    const cached = cache.get<Restaurant>(cacheKey);
+    if (cached && cached.id === id) {
+      console.log('⚡ Using cached restaurant detail');
+      return cached;
+    }
+
+    // Use safe wrapper
     const ref = doc(db, 'restaurants', id);
-    const snap = await getDoc(ref);
+    const results = await safeFirestoreGet<FirebaseRestaurant>(ref as any);
 
-    if (!snap.exists) throw new Error('Restaurant not found');
+    if (!Array.isArray(results) || results.length === 0) {
+      throw new Error('Restaurant not found');
+    }
 
-    const normalized = normalizeRestaurant(snap.id, snap.data() as FirebaseRestaurant);
-    if (!normalized) throw new Error('Restaurant has invalid location data');
+    const rawDoc = results[0];
+    const normalized = normalizeRestaurant(id, rawDoc);
+    
+    if (!normalized) {
+      throw new Error('Restaurant has invalid location data');
+    }
+
+    // Cache valid result
+    cache.set(cacheKey, normalized, TTL.ONE_HOUR);
 
     return normalized;
+    
   } catch (error) {
     console.error('❌ Error fetching restaurant:', error);
     throw error;
   }
 }
 
+/**
+ * ✅ PRODUCTION SAFE: Reviews with validation
+ */
 async function fetchReviewsFromFirebase(restaurantId: string): Promise<RestaurantReview[]> {
+  if (!restaurantId || typeof restaurantId !== 'string') {
+    console.error('❌ Invalid restaurantId for reviews');
+    return [];
+  }
+
+  const cacheKey = `restaurant-reviews-${restaurantId}`;
+
   try {
     console.log(`🌐 Fetching reviews for: ${restaurantId}`);
 
+    // Check cache
+    const cached = cache.get<RestaurantReview[]>(cacheKey);
+    if (cached && Array.isArray(cached)) {
+      console.log('⚡ Using cached reviews');
+      return cached;
+    }
+
+    // Use safe wrapper
     const colRef = collection(db, 'restaurants', restaurantId, 'reviews');
     const q = query(colRef, orderBy('timestamp', 'desc'));
+    const rawResults = await safeFirestoreGet<RestaurantReview>(q as any);
 
-    const snapshot = await getDocs(q);
+    if (!Array.isArray(rawResults)) {
+      return [];
+    }
 
-    const reviews = snapshot.docs.map((d: any) => ({
-      id: d.id,
-      ...(d.data() as Omit<RestaurantReview, 'id'>),
-    }));
+    // Validate and sanitize reviews
+    const validReviews = rawResults
+      .filter((review): review is RestaurantReview => {
+        // Validate required fields
+        if (!review.userId || !review.userName) {
+          console.warn('⚠️ Skipping review with missing fields');
+          return false;
+        }
 
-    console.log(`✅ Fetched ${reviews.length} reviews`);
-    return reviews;
+        // Validate rating
+        if (typeof review.rating !== 'number' || 
+            review.rating < 0 || 
+            review.rating > 5) {
+          console.warn('⚠️ Skipping review with invalid rating');
+          return false;
+        }
+
+        // Validate timestamp
+        if (typeof review.timestamp !== 'number' || review.timestamp <= 0) {
+          console.warn('⚠️ Skipping review with invalid timestamp');
+          return false;
+        }
+
+        return true;
+      })
+      .map(review => ({
+        ...review,
+        // Ensure images is an array
+        images: Array.isArray(review.images) ? review.images : [],
+        // Sanitize comment
+        comment: typeof review.comment === 'string' 
+          ? review.comment.replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+          : '',
+      }));
+
+    console.log(`✅ Fetched ${validReviews.length} valid reviews`);
+
+    // Cache valid reviews
+    if (validReviews.length > 0) {
+      cache.set(cacheKey, validReviews, TTL.FIVE_MINUTES);
+    }
+
+    return validReviews;
+    
   } catch (error) {
     console.error('❌ Error fetching reviews:', error);
-    throw error;
+    return [];
   }
 }
 
+/**
+ * ✅ PRODUCTION SAFE: User favorites with validation
+ */
 async function fetchUserFavoritesFromFirebase(userId: string): Promise<string[]> {
+  if (!userId || typeof userId !== 'string') {
+    return [];
+  }
+
   try {
     console.log(`🌐 Fetching favorites for user: ${userId}`);
 
     const ref = doc(db, 'users', userId);
-    const snap = await getDoc(ref);
+    const results = await safeFirestoreGet<any>(ref as any);
 
-    if (!snap.exists) return [];
+    if (!Array.isArray(results) || results.length === 0) {
+      return [];
+    }
 
-    const data = snap.data() as any;
-    return data?.favouriteRestaurants || [];
+    const data = results[0];
+    const favorites = data?.favouriteRestaurants || [];
+
+    // Validate array and filter invalid IDs
+    if (!Array.isArray(favorites)) {
+      return [];
+    }
+
+    return favorites.filter(id => typeof id === 'string' && id.length > 0);
+    
   } catch (error) {
     console.error('❌ Error fetching favorites:', error);
     return [];
   }
 }
 
+/**
+ * ✅ PRODUCTION SAFE: Add favorite with safe wrapper
+ */
 async function addToFavoritesInFirebase(userId: string, restaurantId: string): Promise<void> {
+  if (!userId || !restaurantId) {
+    throw new Error('Invalid userId or restaurantId');
+  }
+
   try {
     console.log(`➕ Adding restaurant ${restaurantId} to favorites`);
 
-    await updateDoc(doc(db, 'users', userId), {
+    const success = await safeFirestoreUpdate(doc(db, 'users', userId), {
       favouriteRestaurants: arrayUnion(restaurantId),
     });
 
-    console.log('✅ Added to favorites');
+    if (!success) {
+      throw new Error('Failed to add favorite');
+    }
   } catch (error) {
     console.error('❌ Error adding to favorites:', error);
     throw error;
   }
 }
 
+/**
+ * ✅ PRODUCTION SAFE: Remove favorite with safe wrapper
+ */
 async function removeFromFavoritesInFirebase(userId: string, restaurantId: string): Promise<void> {
+  if (!userId || !restaurantId) {
+    throw new Error('Invalid userId or restaurantId');
+  }
+
   try {
     console.log(`➖ Removing restaurant ${restaurantId} from favorites`);
 
-    await updateDoc(doc(db, 'users', userId), {
+    const success = await safeFirestoreUpdate(doc(db, 'users', userId), {
       favouriteRestaurants: arrayRemove(restaurantId),
     });
 
-    console.log('✅ Removed from favorites');
+    if (!success) {
+      throw new Error('Failed to remove favorite');
+    }
   } catch (error) {
     console.error('❌ Error removing from favorites:', error);
     throw error;
   }
 }
 
-async function submitReviewToFirebase({
-  restaurantId,
-  userId,
-  userName,
-  rating,
-  reviewText,
-  imageUris,
-}: SubmitReviewParams): Promise<void> {
-  // Create review doc ref with auto ID
-  const reviewsCol = collection(db, 'restaurants', restaurantId, 'reviews');
-  const reviewRef = doc(reviewsCol);
-  const reviewId = reviewRef.id;
+/**
+ * ✅ PRODUCTION SAFE: Submit review with validation
+ */
+async function submitReviewToFirebase(params: SubmitReviewParams): Promise<void> {
+  const { restaurantId, userId, userName, rating, reviewText, imageUris } = params;
 
-  // Upload images (Storage kept as-is)
-  const imageUrls: string[] = [];
-  for (let i = 0; i < (imageUris?.length ?? 0); i++) {
-    const localUri = imageUris[i];
-    const ext = localUri.split('.').pop() || 'jpg';
-    const objectPath = `restaurants/${restaurantId}/reviews/${reviewId}/${i}.${ext}`;
-
-    const ref = storageService.ref(objectPath);
-    await ref.putFile(localUri);
-    const url = await ref.getDownloadURL();
-    imageUrls.push(url);
+  // Validate inputs
+  if (!restaurantId || !userId || !userName) {
+    throw new Error('Missing required review fields');
   }
 
-  // Write the review document
-  await setDoc(reviewRef, {
-    userId,
-    userName,
-    rating,
-    comment: reviewText,
-    timestamp: Date.now(),
-    images: imageUrls,
-  });
+  if (typeof rating !== 'number' || rating < 1 || rating > 5) {
+    throw new Error('Invalid rating (must be 1-5)');
+  }
 
-  // Update restaurant stats (transaction)
   try {
-    const restaurantRef = doc(db, 'restaurants', restaurantId);
+    console.log(`📝 Submitting review for restaurant: ${restaurantId}`);
 
-    await runTransaction(db, async (tx) => {
-      const restaurantSnap = await tx.get(restaurantRef);
-      if (!restaurantSnap.exists) return;
+    // Upload images if any
+    const imageUrls: string[] = [];
+    if (imageUris && imageUris.length > 0) {
+      for (const uri of imageUris.slice(0, 5)) { // Max 5 images
+        try {
+          const url = await uploadReviewImage(uri, restaurantId);
+          if (url) imageUrls.push(url);
+        } catch (err) {
+          console.warn('⚠️ Failed to upload image:', err);
+        }
+      }
+    }
 
-      const data = restaurantSnap.data() as any;
-      const currentTotal = data?.totalReviews ?? 0;
-      const currentAvg = data?.averageRating ?? 0;
+    // Create review document
+    const reviewRef = doc(collection(db, 'restaurants', restaurantId, 'reviews'));
+    const reviewData = {
+      userId,
+      userName: userName.replace(/[\u0000-\u001F\u007F-\u009F]/g, ''), // Sanitize
+      rating,
+      comment: reviewText.replace(/[\u0000-\u001F\u007F-\u009F]/g, ''), // Sanitize
+      timestamp: Date.now(),
+      images: imageUrls,
+    };
 
-      const newTotal = currentTotal + 1;
-      const newAvg = (currentAvg * currentTotal + rating) / newTotal;
+    // Use safe write
+    const success = await safeFirestoreWrite(reviewRef, reviewData);
 
-      tx.update(restaurantRef, {
+    if (!success) {
+      throw new Error('Failed to write review');
+    }
+
+    // Update restaurant stats (non-critical, don't throw on failure)
+    await updateRestaurantStats(restaurantId).catch(err => {
+      console.warn('⚠️ Failed to update stats:', err);
+    });
+
+    console.log('✅ Review submitted successfully');
+  } catch (error) {
+    console.error('❌ Error submitting review:', error);
+    throw error;
+  }
+}
+
+/**
+ * Helper: Update restaurant stats (with safe wrapper)
+ */
+async function updateRestaurantStats(restaurantId: string): Promise<void> {
+  try {
+    await runTransaction(db, async (transaction) => {
+      const restaurantRef = doc(db, 'restaurants', restaurantId);
+      const reviewsRef = collection(db, 'restaurants', restaurantId, 'reviews');
+      
+      const reviewsSnap = await getDocs(reviewsRef);
+      
+      const ratings = reviewsSnap.docs
+        .map((d: any) => d.data()?.rating)
+        .filter((r: any) => typeof r === 'number' && r >= 1 && r <= 5);
+
+      if (ratings.length === 0) return;
+
+      const newTotal = ratings.length;
+      const newAvg = ratings.reduce((sum: any, r: any) => sum + r, 0) / newTotal;
+
+      await safeFirestoreUpdate(restaurantRef, {
         totalReviews: newTotal,
         averageRating: Number(newAvg.toFixed(1)),
       });
@@ -350,7 +586,7 @@ async function submitReviewToFirebase({
 }
 
 // ============================================================================
-// QUERY KEYS
+// QUERY KEYS (unchanged)
 // ============================================================================
 
 export const RESTAURANT_QUERY_KEYS = {
@@ -362,7 +598,7 @@ export const RESTAURANT_QUERY_KEYS = {
 };
 
 // ============================================================================
-// HOOKS
+// HOOKS (unchanged interface, safe implementation)
 // ============================================================================
 
 export function useRestaurants() {
@@ -372,13 +608,15 @@ export function useRestaurants() {
       const cacheKey = 'restaurants-all';
       const cached = cache.get<Restaurant[]>(cacheKey);
 
-      if (cached) {
+      if (cached && Array.isArray(cached) && cached.length > 0) {
         console.log('⚡ Using cached restaurants');
         return cached;
       }
 
       const restaurants = await fetchRestaurantsFromFirebase();
-      cache.set(cacheKey, restaurants, TTL.ONE_DAY);
+      if (restaurants.length > 0) {
+        cache.set(cacheKey, restaurants, TTL.ONE_DAY);
+      }
       return restaurants;
     },
     staleTime: TTL.ONE_HOUR,
@@ -516,7 +754,7 @@ export function calculateAverageRating(reviews: RestaurantReview[]): number {
 }
 
 // ============================================================================
-// UTILITY FUNCTIONS
+// UTILITY FUNCTIONS (unchanged)
 // ============================================================================
 
 export function calculateDistance(

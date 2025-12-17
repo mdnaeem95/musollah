@@ -16,7 +16,8 @@
     "utils/toastConfig.tsx",
     "types/images.d.ts",
     "types/*.types.ts",
-    "types/**/*.d.ts"
+    "types/**/*.d.ts",
+    "functions/src/types.ts"
   ],
   "exclude": [
     "node_modules"
