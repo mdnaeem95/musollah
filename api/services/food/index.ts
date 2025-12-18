@@ -61,9 +61,9 @@ interface FirebaseRestaurant {
     number?: string;
   };
   status?: string;
-  averageRating?: number;
-  totalReviews?: number;
-  rating?: number;
+  averageRating?: number | string;  // ✅ Can be string from Firestore!
+  totalReviews?: number | string;   // ✅ Can be string from Firestore!
+  rating?: number | string;
   priceRange?: string;
   description?: string;
   halal?: boolean;
@@ -122,33 +122,97 @@ type SubmitReviewParams = {
 // HELPERS (with additional validation)
 // ============================================================================
 
+/**
+ * Extract latitude from various GeoPoint formats
+ */
+function extractLatitude(point: any): number | null {
+  try {
+    // Direct property
+    if (typeof point?.latitude === 'number') return point.latitude;
+    
+    // Firestore internal property
+    if (typeof point?._latitude === 'number') return point._latitude;
+    
+    // GeoPoint with toJSON method
+    if (typeof point?.toJSON === 'function') {
+      const json = point.toJSON();
+      if (typeof json?.latitude === 'number') return json.latitude;
+    }
+    
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extract longitude from various GeoPoint formats
+ */
+function extractLongitude(point: any): number | null {
+  try {
+    // Direct property
+    if (typeof point?.longitude === 'number') return point.longitude;
+    
+    // Firestore internal property
+    if (typeof point?._longitude === 'number') return point._longitude;
+    
+    // GeoPoint with toJSON method
+    if (typeof point?.toJSON === 'function') {
+      const json = point.toJSON();
+      if (typeof json?.longitude === 'number') return json.longitude;
+    }
+    
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function isValidCoordinates(coords: unknown): coords is { latitude: number; longitude: number } {
   if (!coords || typeof coords !== 'object') return false;
-  const { latitude, longitude } = coords as { latitude: number; longitude: number };
+  
+  const lat = extractLatitude(coords);
+  const lon = extractLongitude(coords);
+  
+  if (lat === null || lon === null) return false;
+  
   return (
-    typeof latitude === 'number' &&
-    typeof longitude === 'number' &&
-    !isNaN(latitude) &&
-    !isNaN(longitude) &&
-    isFinite(latitude) &&
-    isFinite(longitude) &&
-    latitude >= -90 &&
-    latitude <= 90 &&
-    longitude >= -180 &&
-    longitude <= 180
+    !isNaN(lat) &&
+    !isNaN(lon) &&
+    isFinite(lat) &&
+    isFinite(lon) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lon >= -180 &&
+    lon <= 180
   );
 }
 
 function extractCoordinates(doc: FirebaseRestaurant): { latitude: number; longitude: number } | null {
-  if (doc.location && isValidCoordinates(doc.location)) {
-    return { latitude: doc.location.latitude, longitude: doc.location.longitude };
-  }
+  try {
+    // Try location field first (Firestore GeoPoint)
+    if (doc.location) {
+      const lat = extractLatitude(doc.location);
+      const lon = extractLongitude(doc.location);
+      
+      if (lat !== null && lon !== null && isValidCoordinates({ latitude: lat, longitude: lon })) {
+        return { latitude: lat, longitude: lon };
+      }
+    }
 
-  if (doc.coordinates && isValidCoordinates(doc.coordinates)) {
-    return { latitude: doc.coordinates.latitude, longitude: doc.coordinates.longitude };
-  }
+    // Try coordinates field (plain object)
+    if (doc.coordinates && isValidCoordinates(doc.coordinates)) {
+      return { 
+        latitude: doc.coordinates.latitude, 
+        longitude: doc.coordinates.longitude 
+      };
+    }
 
-  return null;
+    return null;
+  } catch (error) {
+    console.error('❌ Error extracting coordinates:', error);
+    return null;
+  }
 }
 
 /**
@@ -170,8 +234,8 @@ function normalizeRestaurant(id: string, docData: FirebaseRestaurant): Restauran
     const coordinates = extractCoordinates(docData);
 
     if (!coordinates) {
-      if (__DEV__) console.warn(`⚠️ Restaurant "${docData.name}" (${id}) has no valid coordinates, skipping`);
-      return null;
+      console.warn(`⚠️ Restaurant "${docData.name}" (${id}) has no valid coordinates, using fallback`);
+      // ✅ Don't return null - use fallback coordinates instead
     }
 
     // Sanitize string fields (prevent UTF-8 crashes)
@@ -197,7 +261,10 @@ function normalizeRestaurant(id: string, docData: FirebaseRestaurant): Restauran
       id,
       name: sanitizeString(docData.name, 'Unknown Restaurant'),
       categories: sanitizeArray(docData.categories),
-      coordinates,
+      coordinates: coordinates || {
+        latitude: 1.3521,   // ✅ Singapore center fallback
+        longitude: 103.8198,
+      },
       address: sanitizeString(docData.address),
       image: sanitizeString(docData.image),
       hours: sanitizeString(docData.hours),
@@ -210,8 +277,8 @@ function normalizeRestaurant(id: string, docData: FirebaseRestaurant): Restauran
         number: docData.socials?.number ? sanitizeString(docData.socials.number) : undefined,
       },
       status: sanitizeString(docData.status, 'Unknown'),
-      averageRating: sanitizeNumber(docData.averageRating || docData.rating),
-      totalReviews: sanitizeNumber(docData.totalReviews),
+      averageRating: parseNumber(docData.averageRating || docData.rating, 0),
+      totalReviews: parseNumber(docData.totalReviews, 0),
       rating: docData.rating !== undefined ? sanitizeNumber(docData.rating) : undefined,
       priceRange: docData.priceRange ? sanitizeString(docData.priceRange) : undefined,
       description: docData.description ? sanitizeString(docData.description) : undefined,
@@ -221,6 +288,31 @@ function normalizeRestaurant(id: string, docData: FirebaseRestaurant): Restauran
   } catch (error) {
     console.error(`❌ Failed to normalize restaurant ${id}:`, error);
     return null;
+  }
+}
+
+/**
+ * Safely parse string or number to number
+ * Handles: "3.3" → 3.3, "3" → 3, 3.3 → 3.3, null → fallback
+ */
+function parseNumber(value: any, fallback: number = 0): number {
+  try {
+    // Already a valid number
+    if (typeof value === 'number' && !isNaN(value) && isFinite(value)) {
+      return value;
+    }
+    
+    // Try to parse string
+    if (typeof value === 'string') {
+      const parsed = parseFloat(value);
+      if (!isNaN(parsed) && isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    
+    return fallback;
+  } catch {
+    return fallback;
   }
 }
 
