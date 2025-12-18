@@ -126,6 +126,7 @@ export default {
       ],
       "@react-native-firebase/auth",
       "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics",
       [
         "@bacons/apple-targets"
       ],
