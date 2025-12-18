@@ -19,6 +19,7 @@ import { collection,
   orderBy,
   query,
   runTransaction,
+  where,
 } from '@react-native-firebase/firestore';
 
 // ============================================================================
@@ -445,51 +446,63 @@ async function fetchReviewsFromFirebase(restaurantId: string): Promise<Restauran
       return cached;
     }
 
-    // Use safe wrapper
-    const colRef = collection(db, 'restaurants', restaurantId, 'reviews');
-    const q = query(colRef, orderBy('timestamp', 'desc'));
-    const rawResults = await safeFirestoreGet<RestaurantReview>(q as any);
+    // ✅ FIXED: Query top-level collection with restaurantId filter
+    const colRef = collection(db, 'restaurantReviews');
+    const q = query(
+      colRef, 
+      where('restaurantId', '==', restaurantId),
+      orderBy('timestamp', 'desc')
+    );
+    
+    console.log('📍 Querying: restaurantReviews where restaurantId ==', restaurantId);
+    
+    const rawResults = await safeFirestoreGet<any>(q as any);
 
-    if (!Array.isArray(rawResults)) {
+    console.log(`📊 Found ${rawResults?.length ?? 0} reviews`);
+
+    if (!Array.isArray(rawResults) || rawResults.length === 0) {
+      console.warn('⚠️ No reviews found');
       return [];
     }
 
-    // Validate and sanitize reviews
+    // Validate and normalize reviews
     const validReviews = rawResults
       .filter((review): review is RestaurantReview => {
         // Validate required fields
-        if (!review.userId || !review.userName) {
-          console.warn('⚠️ Skipping review with missing fields');
+        if (!review.userId) {
+          console.warn('⚠️ Skipping review with missing userId');
           return false;
         }
 
         // Validate rating
-        if (typeof review.rating !== 'number' || 
-            review.rating < 0 || 
-            review.rating > 5) {
-          console.warn('⚠️ Skipping review with invalid rating');
+        if (typeof review.rating !== 'number' || review.rating < 0 || review.rating > 5) {
+          console.warn('⚠️ Skipping review with invalid rating:', review.rating);
           return false;
         }
 
-        // Validate timestamp
-        if (typeof review.timestamp !== 'number' || review.timestamp <= 0) {
-          console.warn('⚠️ Skipping review with invalid timestamp');
+        // Timestamp can be string or number
+        if (!review.timestamp) {
+          console.warn('⚠️ Skipping review with missing timestamp');
           return false;
         }
 
         return true;
       })
       .map(review => ({
-        ...review,
-        // Ensure images is an array
+        id: review.id,
+        userId: review.userId,
+        userName: review.userName || 'Anonymous', // ✅ Fallback if userName missing
+        rating: review.rating,
+        // ✅ Support both 'review' and 'comment' fields
+        comment: (review.comment || '').replace(/[\u0000-\u001F\u007F-\u009F]/g, ''),
+        // ✅ Convert ISO string timestamp to number (milliseconds)
+        timestamp: typeof review.timestamp === 'string' 
+          ? new Date(review.timestamp).getTime() 
+          : review.timestamp,
         images: Array.isArray(review.images) ? review.images : [],
-        // Sanitize comment
-        comment: typeof review.comment === 'string' 
-          ? review.comment.replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
-          : '',
       }));
 
-    console.log(`✅ Fetched ${validReviews.length} valid reviews`);
+    console.log(`✅ Processed ${validReviews.length} valid reviews`);
 
     // Cache valid reviews
     if (validReviews.length > 0) {
@@ -539,47 +552,63 @@ async function fetchUserFavoritesFromFirebase(userId: string): Promise<string[]>
 }
 
 /**
- * ✅ PRODUCTION SAFE: Add favorite with safe wrapper
+ * Add favorite - DIRECT (no wrapper)
  */
 async function addToFavoritesInFirebase(userId: string, restaurantId: string): Promise<void> {
   if (!userId || !restaurantId) {
     throw new Error('Invalid userId or restaurantId');
   }
 
-  try {
-    console.log(`➕ Adding restaurant ${restaurantId} to favorites`);
+  console.log(`➕ Adding restaurant ${restaurantId} to favorites`);
+  
+  // ✅ Define userRef OUTSIDE try block for catch scope
+  const userRef = doc(db, 'users', userId);
 
-    const success = await safeFirestoreUpdate(doc(db, 'users', userId), {
+  try {
+    // ✅ Direct update without wrapper
+    await userRef.update({
       favouriteRestaurants: arrayUnion(restaurantId),
     });
-
-    if (!success) {
-      throw new Error('Failed to add favorite');
-    }
-  } catch (error) {
+    
+    console.log('✅ Successfully added to favorites');
+  } catch (error: any) {
     console.error('❌ Error adding to favorites:', error);
-    throw error;
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    
+    // Create user document if it doesn't exist
+    if (error.code === 'not-found') {
+      console.log('📝 Creating user document...');
+      await userRef.set({
+        favouriteRestaurants: [restaurantId],
+      }, { merge: true });
+      console.log('✅ User document created');
+    } else {
+      throw error;
+    }
   }
 }
 
 /**
- * ✅ PRODUCTION SAFE: Remove favorite with safe wrapper
+ * Remove favorite - DIRECT (no wrapper)
  */
 async function removeFromFavoritesInFirebase(userId: string, restaurantId: string): Promise<void> {
   if (!userId || !restaurantId) {
     throw new Error('Invalid userId or restaurantId');
   }
 
-  try {
-    console.log(`➖ Removing restaurant ${restaurantId} from favorites`);
+  console.log(`➖ Removing restaurant ${restaurantId} from favorites`);
+  
+  // ✅ Define userRef OUTSIDE try block
+  const userRef = doc(db, 'users', userId);
 
-    const success = await safeFirestoreUpdate(doc(db, 'users', userId), {
+  try {
+    // ✅ Direct update without wrapper
+    await userRef.update({
       favouriteRestaurants: arrayRemove(restaurantId),
     });
-
-    if (!success) {
-      throw new Error('Failed to remove favorite');
-    }
+    
+    console.log('✅ Successfully removed from favorites');
   } catch (error) {
     console.error('❌ Error removing from favorites:', error);
     throw error;
@@ -787,32 +816,70 @@ export function useToggleFavorite() {
       restaurantId: string;
       isFavorited: boolean;
     }) => {
-      if (isFavorited) await removeFromFavoritesInFirebase(userId, restaurantId);
-      else await addToFavoritesInFirebase(userId, restaurantId);
-    },
-
-    onMutate: async ({ userId, restaurantId, isFavorited }) => {
-      await queryClient.cancelQueries({ queryKey: RESTAURANT_QUERY_KEYS.favorites(userId) });
-
-      const previousFavorites = queryClient.getQueryData<string[]>(
-        RESTAURANT_QUERY_KEYS.favorites(userId)
-      );
-
-      queryClient.setQueryData<string[]>(RESTAURANT_QUERY_KEYS.favorites(userId), (old = []) => {
-        return isFavorited ? old.filter((id) => id !== restaurantId) : [...old, restaurantId];
-      });
-
-      return { previousFavorites };
-    },
-
-    onError: (_err, { userId }, context) => {
-      if (context?.previousFavorites) {
-        queryClient.setQueryData(RESTAURANT_QUERY_KEYS.favorites(userId), context.previousFavorites);
+      console.log('🔄 Mutation START:', { userId, restaurantId, isFavorited });
+      
+      try {
+        if (isFavorited) {
+          await removeFromFavoritesInFirebase(userId, restaurantId);
+        } else {
+          await addToFavoritesInFirebase(userId, restaurantId);
+        }
+        console.log('✅ Mutation COMPLETE');
+      } catch (error) {
+        console.error('❌ Mutation FAILED:', error);
+        throw error;
       }
     },
 
-    onSuccess: (_data, { userId }) => {
-      queryClient.invalidateQueries({ queryKey: RESTAURANT_QUERY_KEYS.favorites(userId) });
+    onMutate: async ({ userId, restaurantId, isFavorited }) => {
+      console.log('🎯 onMutate START');
+      
+      try {
+        await queryClient.cancelQueries({ queryKey: RESTAURANT_QUERY_KEYS.favorites(userId) });
+        console.log('✅ Queries cancelled');
+
+        const previousFavorites = queryClient.getQueryData<string[]>(
+          RESTAURANT_QUERY_KEYS.favorites(userId)
+        );
+        console.log('📊 Previous favorites:', previousFavorites);
+
+        queryClient.setQueryData<string[]>(RESTAURANT_QUERY_KEYS.favorites(userId), (old = []) => {
+          const newData = isFavorited ? old.filter((id) => id !== restaurantId) : [...old, restaurantId];
+          console.log('📝 New optimistic data:', newData);
+          return newData;
+        });
+
+        console.log('✅ onMutate COMPLETE');
+        return { previousFavorites };
+      } catch (error) {
+        console.error('❌ onMutate FAILED:', error);
+        throw error;
+      }
+    },
+
+    onError: (err, { userId }, context) => {
+      console.log('❌ onError START');
+      console.error('Error details:', err);
+      
+      if (context?.previousFavorites) {
+        console.log('🔄 Rolling back to:', context.previousFavorites);
+        queryClient.setQueryData(RESTAURANT_QUERY_KEYS.favorites(userId), context.previousFavorites);
+      }
+      
+      console.log('✅ onError COMPLETE');
+    },
+
+    onSuccess: (data, { userId }) => {
+      console.log('🎉 onSuccess START');
+      
+      try {
+        console.log('🔄 Invalidating favorites query for:', userId);
+        queryClient.invalidateQueries({ queryKey: RESTAURANT_QUERY_KEYS.favorites(userId) });
+        console.log('✅ onSuccess COMPLETE');
+      } catch (error) {
+        console.error('❌ onSuccess FAILED:', error);
+        throw error;
+      }
     },
   });
 }

@@ -6,13 +6,7 @@
 
 import { useState, useMemo } from 'react';
 import { useAuthStore } from '../../stores/useAuthStore';
-import {
-  useRestaurantDetail,
-  useRestaurantReviews,
-  useUserFavorites,
-  useToggleFavorite,
-  // ❌ remove calculateAverageRating import to avoid type mismatch
-} from '../../api/services/food';
+import { useRestaurantDetail, useRestaurantReviews, useUserFavorites, useToggleFavorite } from '../../api/services/food';
 import type { RestaurantReview as UIReview } from '../../utils/types';
 
 function toIsoStringTimestamp(ts: unknown): string {
@@ -30,8 +24,17 @@ function toIsoStringTimestamp(ts: unknown): string {
 // Local average calculator for UIReview[]
 function averageFromUIReviews(reviews: UIReview[]): number {
   if (!reviews || reviews.length === 0) return 0;
-  const total = reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
-  return Number((total / reviews.length).toFixed(1));
+  
+  // Filter out reviews with invalid ratings
+  const validReviews = reviews.filter(r => {
+    const rating = r.rating;
+    return typeof rating === 'number' && rating > 0 && rating <= 5;
+  });
+  
+  if (validReviews.length === 0) return 0;
+  
+  const total = validReviews.reduce((acc, r) => acc + r.rating, 0);
+  return Number((total / validReviews.length).toFixed(1));
 }
 
 export function useRestaurantDetails(restaurantId: string | null) {
@@ -61,15 +64,35 @@ export function useRestaurantDetails(restaurantId: string | null) {
   // Normalize reviews to match utils/types RestaurantReview
   const reviews: UIReview[] = useMemo(() => {
     if (!restaurantId) return [];
-    return rawReviews.map((r: any) => ({
-      id: r.id,
-      restaurantId,                                 // required by canonical type
-      userId: r.userId,                             // optional
-      rating: r.rating ?? 0,
-      review: r.review ?? r.comment ?? '',          // support legacy "comment"
-      timestamp: toIsoStringTimestamp(r.timestamp), // ISO string
-      images: Array.isArray(r.images) ? r.images : [],
-    }));
+    
+    console.log('🔍 Raw Reviews Debug:', {
+      restaurantId,
+      count: rawReviews.length,
+      sample: rawReviews[0], // First review structure
+    });
+    
+    return rawReviews.map((r: any) => {
+      // Parse rating more robustly
+      const rating = typeof r.rating === 'string' 
+        ? parseFloat(r.rating) 
+        : (typeof r.rating === 'number' ? r.rating : 0);
+      
+      console.log('📊 Review Rating Parse:', {
+        original: r.rating,
+        originalType: typeof r.rating,
+        parsed: rating,
+      });
+      
+      return {
+        id: r.id,
+        restaurantId,
+        userId: r.userId,
+        rating: rating,
+        review: r.review ?? r.comment ?? '',
+        timestamp: toIsoStringTimestamp(r.timestamp),
+        images: Array.isArray(r.images) ? r.images : [],
+      };
+    });
   }, [rawReviews, restaurantId]);
 
   // Computed values
@@ -78,7 +101,22 @@ export function useRestaurantDetails(restaurantId: string | null) {
     return favorites.includes(restaurantId);
   }, [favorites, restaurantId]);
 
-  const averageRating = useMemo(() => averageFromUIReviews(reviews), [reviews]);
+  const averageRating = useMemo(() => {
+    // Use pre-calculated average from restaurant document
+    if (restaurant?.averageRating) {
+      const rating = typeof restaurant.averageRating === 'string' 
+        ? parseFloat(restaurant.averageRating) 
+        : restaurant.averageRating;
+      
+      // Validate it's a valid number
+      if (typeof rating === 'number' && !isNaN(rating) && isFinite(rating)) {
+        return rating;
+      }
+    }
+    
+    // Fallback to calculating from reviews (if any)
+    return averageFromUIReviews(reviews);
+  }, [restaurant, reviews]);
 
   const isLoading = isLoadingRestaurant || isLoadingReviews;
 

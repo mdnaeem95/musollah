@@ -120,18 +120,19 @@ const SubmitReview = () => {
 
             <AirbnbRating
               count={5}
-              defaultRating={5}
-              size={36}
+              defaultRating={rating || 5}
+              size={40}
               onFinishRating={handleRatingChange}
-              showRating={false}
-              selectedColor="#FFD700"
               starContainerStyle={styles.starContainer}
             />
 
-            <View style={[styles.ratingFeedback, { backgroundColor: theme.colors.accent + '10' }]}>
-              <Text style={styles.ratingEmoji}>{currentRatingInfo.emoji}</Text>
-              <Text style={[styles.ratingLabel, { color: theme.colors.accent }]}>
+            {/* ✅ Simple text label instead of emoji */}
+            <View style={styles.ratingLabelContainer}>
+              <Text style={[styles.ratingLabel, { color: theme.colors.text.primary }]}>
                 {currentRatingInfo.label}
+              </Text>
+              <Text style={[styles.ratingSubtext, { color: theme.colors.text.secondary }]}>
+                Tap to change rating
               </Text>
             </View>
           </BlurView>
@@ -366,6 +367,14 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 16,
   },
+  ratingLabelContainer: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  ratingLabel: {
+    fontSize: 20,         // ✅ Larger, more prominent
+    fontFamily: 'Outfit_700Bold',
+  },
   ratingFeedback: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -378,9 +387,9 @@ const styles = StyleSheet.create({
   ratingEmoji: {
     fontSize: 28,
   },
-  ratingLabel: {
-    fontSize: 18,
-    fontFamily: 'Outfit_700Bold',
+  ratingSubtext: {
+    fontSize: 13,
+    fontFamily: 'Outfit_400Regular',
   },
   textArea: {
     height: 140,

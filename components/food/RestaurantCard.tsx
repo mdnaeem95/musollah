@@ -140,19 +140,27 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, distance })
           </Text>
           
           <View style={styles.metaRow}>
-            {/* Rating - FIXED: Type-safe number validation (LINE 143 CRASH FIX) */}
+            {/* Rating - Parse string from Firebase */}
             <View style={styles.ratingContainer}>
               <FontAwesome6 name="star" size={12} color="#FFD700" solid />
               <Text style={[styles.rating, { color: theme.colors.text.primary }]}>
-                {typeof restaurant.averageRating === 'number' && isFinite(restaurant.averageRating)
-                  ? restaurant.averageRating.toFixed(1)
-                  : 'New'}
+                {(() => {
+                  const rating = typeof restaurant.averageRating === 'string' 
+                    ? parseFloat(restaurant.averageRating) 
+                    : restaurant.averageRating;
+                  
+                  if (typeof rating === 'number' && !isNaN(rating) && rating > 0) {
+                    return rating.toFixed(1);
+                  }
+                  
+                  return 'No rating';
+                })()}
               </Text>
             </View>
             
-            {/* Reviews count - FIXED: Safe number fallback */}
+            {/* Reviews count - Use stored totalReviews */}
             <Text style={[styles.reviews, { color: theme.colors.text.secondary }]}>
-              ({typeof restaurant.totalReviews === 'number' ? Math.max(0, restaurant.totalReviews) : 0})
+              ({restaurant.totalReviews ?? 0})
             </Text>
             
             {/* Categories - FIXED: Safe array handling */}

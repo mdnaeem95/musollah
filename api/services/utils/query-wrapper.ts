@@ -54,9 +54,20 @@ const isValidArray = (value: any): value is any[] => Array.isArray(value);
 
 /**
  * Sanitizes Firestore document data to prevent Turbo Module crashes
+ * ✅ FIXED: Skip Firebase FieldValue objects (arrayUnion, arrayRemove, etc.)
  */
 const sanitizeDocumentData = <T = any>(data: any): T => {
   if (data === null || data === undefined) return {} as T;
+
+  // ✅ NEW: Detect Firebase FieldValue (arrayUnion, arrayRemove, increment, etc.)
+  if (typeof data === 'object' && data !== null) {
+    // Firebase FieldValue has a special _methodName property
+    const dataAny = data as any;
+    if (dataAny._methodName || dataAny._delegate?._methodName) {
+      console.log('🔥 Preserving Firebase FieldValue');
+      return data as T;
+    }
+  }
 
   // primitives are safe to return directly
   if (typeof data !== "object") return data as T;
@@ -68,6 +79,16 @@ const sanitizeDocumentData = <T = any>(data: any): T => {
       if (value === undefined || value === null) {
         sanitized[key] = null;
         continue;
+      }
+
+      // ✅ NEW: Preserve Firebase FieldValue in nested data
+      if (typeof value === 'object' && value !== null) {
+        const valueAny = value as any;
+        if (valueAny._methodName || valueAny._delegate?._methodName) {
+          console.log(`🔥 Preserving Firebase FieldValue for key: ${key}`);
+          sanitized[key] = value; // Don't sanitize FieldValues!
+          continue;
+        }
       }
 
       if (Array.isArray(value)) {

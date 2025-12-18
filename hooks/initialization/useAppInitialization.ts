@@ -13,6 +13,7 @@ import { cache } from '../../api/client/storage';
 import { useLocationStore } from '../../stores/useLocationStore';
 import { modernPrayerService } from '../../services/prayer.service';
 import { storage as mmkvStorage } from '../../api/client/storage';
+import { FontAwesome } from '@expo/vector-icons';
 
 interface InitState {
   isReady: boolean;
@@ -31,6 +32,7 @@ export const useAppInit = (): InitState => {
 
   // 1. Font Loading
   const [fontsLoaded, fontError] = useFonts({
+    ...FontAwesome.font, 
     Outfit_300Light,
     Outfit_400Regular,
     Outfit_500Medium,
