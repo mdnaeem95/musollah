@@ -128,6 +128,65 @@ export async function fetchMonthlyPrayerTimesFromFirebase(
   }
 }
 
+// ============================================================================
+// FIREBASE SINGLE DAY QUERY (NEW - MUIS Accurate)
+// ============================================================================
+
+/**
+ * Fetch prayer times for a specific date from Firebase
+ * 
+ * @param date - ISO format YYYY-MM-DD (e.g., "2025-12-17")
+ * @returns DailyPrayerTime or null if not found
+ */
+export async function fetchDailyPrayerTimeFromFirebase(
+  date: string
+): Promise<DailyPrayerTime | null> {
+  try {
+    console.log(`📅 Fetching Firebase prayer times for: ${date}`);
+
+    // Convert ISO format (YYYY-MM-DD) to Firebase format (D/M/YYYY)
+    const [year, month, day] = date.split('-');
+    const firebaseDate = `${parseInt(day)}/${parseInt(month)}/${year}`;
+    
+    console.log(`🔄 Converted ${date} → ${firebaseDate}`);
+
+    // Query Firebase
+    const snap = await getDocs(collection(db, 'prayerTimes2025'));
+
+    if (snap.empty) {
+      console.warn('⚠️ Firebase prayerTimes2025 collection is empty');
+      return null;
+    }
+
+    // Find matching date
+    const matchingDoc = snap.docs.find((doc: any) => {
+      const data = doc.data();
+      return data.date === firebaseDate;
+    });
+
+    if (!matchingDoc) {
+      console.warn(`⚠️ No Firebase data found for ${firebaseDate}`);
+      return null;
+    }
+
+    const data = matchingDoc.data();
+    console.log(`✅ Found Firebase data for ${firebaseDate}:`, data.time);
+
+    return {
+      date: firebaseDate,
+      day: parseInt(day),
+      subuh: data.time?.subuh,
+      syuruk: data.time?.syuruk,
+      zohor: data.time?.zohor,
+      asar: data.time?.asar,
+      maghrib: data.time?.maghrib,
+      isyak: data.time?.isyak,
+    } as DailyPrayerTime;
+  } catch (error) {
+    console.error('❌ Error fetching daily prayer time from Firebase:', error);
+    return null;
+  }
+}
 
 // ============================================================================
 // DATA TRANSFORMATION

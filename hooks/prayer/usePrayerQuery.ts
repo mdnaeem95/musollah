@@ -4,7 +4,6 @@ import { AppState, AppStateStatus } from 'react-native';
 import { modernPrayerService } from '../../services/prayer.service';
 import { useNetworkStatus } from '../useNetworkStatus';
 import { DailyPrayerTimes } from '../../utils/types/prayer.types';
-import { CACHE_KEYS } from '../../constants/prayer.constants';
 
 const PRAYER_QUERY_KEYS = {
   all: ['prayer-times'] as const,
@@ -25,7 +24,7 @@ type UsePrayerQueryReturn = UseQueryResult<DailyPrayerTimes, Error> & {
 /**
  * React Query wrapper for fetching prayer times
  * 
- * ✅ SIMPLIFIED: Removed complex logic that was causing issues
+ * ✅ FIXED: Removed placeholderData, using proper cache behavior
  */
 export const usePrayerQuery = ({
   date,
@@ -35,35 +34,34 @@ export const usePrayerQuery = ({
   const queryClient = useQueryClient();
   const isOnline = useNetworkStatus();
   
-  // Track last successful invocation to prevent duplicate callbacks
+  // Track callbacks to prevent duplicates
   const lastSuccessDate = useRef<string | null>(null);
   const lastErrorMessage = useRef<string | null>(null);
 
-  // Main query - SIMPLIFIED
+  // ✅ Main query - SIMPLIFIED, no placeholderData
   const query = useQuery<DailyPrayerTimes, Error>({
-    queryKey: PRAYER_QUERY_KEYS.daily(date), // ✅ Standard key format
+    queryKey: PRAYER_QUERY_KEYS.daily(date),
     queryFn: async () => {
-      console.log('🌐 Executing query function for date:', date);
+      console.log('🌐 Fetching prayer times for:', date);
       const result = await modernPrayerService.fetchPrayerTimesForDate(date);
-      console.log('✅ Query function returned:', {
-        date: result?.date,
-        hasData: !!result,
-      });
+      console.log('✅ Prayer times fetched:', result ? 'success' : 'null');
       return result;
     },
     
-    staleTime: 1000 * 60 * 60, // 1 hour
-    gcTime: 1000 * 60 * 60 * 24, // 24 hours
-    enabled: true,
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
-    refetchOnMount: false,
+    staleTime: 1000 * 60 * 60 * 24, // ✅ 24 hours (Firebase data doesn't change)
+    gcTime: 1000 * 60 * 60 * 24 * 7, // ✅ Keep in cache for 7 days
+    
+    // ✅ IMPORTANT: Enable refetch on mount to ensure fresh data
+    refetchOnMount: 'always', // Always check if data is stale
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
+    
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
     networkMode: isOnline ? 'online' : 'offlineFirst',
   });
 
-  // ✅ SIMPLIFIED: Success callback with duplicate prevention
+  // Success callback
   useEffect(() => {
     if (query.isSuccess && query.data && onSuccess) {
       const dataDate = query.data.date || date;
@@ -74,7 +72,7 @@ export const usePrayerQuery = ({
     }
   }, [query.isSuccess, query.data, onSuccess, date]);
 
-  // ✅ SIMPLIFIED: Error callback with duplicate prevention
+  // Error callback
   useEffect(() => {
     if (query.isError && query.error && onError) {
       const errorMsg = query.error.message;
@@ -85,19 +83,21 @@ export const usePrayerQuery = ({
     }
   }, [query.isError, query.error, onError]);
 
-  // ✅ SIMPLIFIED: Auto-refetch on foreground (no dependencies on query.refetch)
+  // ✅ FIXED: Only invalidate on app foreground, NOT on date change
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      // Only refetch when app comes to foreground AND we're online
       if (nextAppState === 'active' && isOnline) {
-        // Use queryClient directly to avoid dependency issues
+        console.log('📱 App foregrounded, refreshing current date:', date);
         queryClient.invalidateQueries({ 
-          queryKey: [CACHE_KEYS.PRAYER_TIMES, date],
+          queryKey: PRAYER_QUERY_KEYS.daily(date),
         });
       }
-    });
+    };
 
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
-  }, [date, isOnline, queryClient]); // ✅ Stable dependencies only
+  }, [date, isOnline, queryClient]);
 
   // Determine if using stale data
   const usingStaleData = !isOnline && !!query.data;
@@ -109,7 +109,6 @@ export const usePrayerQuery = ({
   };
 };
 
-// Keep prefetch and invalidate hooks unchanged
 export const usePrefetchPrayerTimes = () => {
   const queryClient = useQueryClient();
   const isOnline = useNetworkStatus();
@@ -118,9 +117,9 @@ export const usePrefetchPrayerTimes = () => {
     if (!isOnline) return;
 
     await queryClient.prefetchQuery({
-      queryKey: [CACHE_KEYS.PRAYER_TIMES, date],
+      queryKey: PRAYER_QUERY_KEYS.daily(date),
       queryFn: () => modernPrayerService.fetchPrayerTimesForDate(date),
-      staleTime: 1000 * 60 * 60,
+      staleTime: 1000 * 60 * 60 * 24,
     });
   };
 
@@ -137,13 +136,13 @@ export const useInvalidatePrayerCache = () => {
 
   const invalidateDate = async (date: string) => {
     await queryClient.invalidateQueries({
-      queryKey: [CACHE_KEYS.PRAYER_TIMES, date],
+      queryKey: PRAYER_QUERY_KEYS.daily(date),
     });
   };
 
   const invalidateAll = async () => {
     await queryClient.invalidateQueries({
-      queryKey: [CACHE_KEYS.PRAYER_TIMES],
+      queryKey: PRAYER_QUERY_KEYS.all,
     });
   };
 

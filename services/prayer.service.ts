@@ -6,9 +6,10 @@ import { storage } from '../utils/storage'; // Your MMKV storage
 
 import { DailyPrayerTimes, PrayerName, PrayerLog } from '../utils/types/prayer.types';
 import { DATE_FORMATS, CACHE_KEYS, CACHE_DURATION } from '../constants/prayer.constants';
-import { ApiError, NetworkError, ValidationError } from '../utils/errors';
+import { ApiError } from '../utils/errors';
 import { Platform } from 'react-native';
 import { updatePrayerTimesWidget } from '../utils/widgetBridge';
+import { CalculationMethod, fetchDailyPrayerTimeFromFirebase, fetchPrayerTimes } from '../api/services/prayer';
 
 interface CachedData<T> { data: T; timestamp: number; version: string;}
 
@@ -125,82 +126,109 @@ class ModernPrayerService {
 
   /**
    * Fetch prayer times for a specific date
-   * Cache-first strategy with stale-while-revalidate
+   * 
+   * ✅ FIXED: Uses Firebase (MUIS) as PRIMARY source, Aladhan as fallback
+   * 
+   * @param date - ISO format YYYY-MM-DD
    */
   async fetchPrayerTimesForDate(date: string): Promise<DailyPrayerTimes> {
-    // ✅ Convert ISO format to Firebase format for query
-    const firebaseDate = this.convertISOToFirebaseDate(date);
-    const cacheKey = `${CACHE_KEYS.PRAYER_TIMES}_${date}`; // Use ISO for cache key
+    const cacheKey = `prayer-times-${date}`;
 
     try {
-      // 1. Check fresh cache first (synchronous!)
+      // 1️⃣ Check MMKV cache first (fastest)
       const cached = this.getCachedData<DailyPrayerTimes>(cacheKey);
       if (cached) {
-        console.log('✅ Cache hit (fresh):', date);
+        console.log(`✅ MMKV Cache HIT for ${date}`);
         return cached;
       }
 
-      // 2. Check network
-      const isOnline = await this.checkNetworkConnection();
+      console.log(`⚠️ MMKV Cache MISS for ${date}, fetching from Firebase...`);
+
+      // 2️⃣ Fetch from Firebase (MUIS accurate data - PRIMARY SOURCE)
+      const firebaseData = await fetchDailyPrayerTimeFromFirebase(date);
       
-      if (!isOnline) {
-        const staleCache = this.getStaleCachedData<DailyPrayerTimes>(cacheKey);
-        if (staleCache) {
-          console.log('⚠️ Using stale cache (offline):', date);
-          return staleCache;
-        }
-        throw new NetworkError('No internet connection and no cached data');
+      if (firebaseData) {
+        console.log(`✅ Firebase data found for ${date}`);
+        
+        // Convert Firebase format to app format
+        const result: DailyPrayerTimes = {
+          date,
+          hijriDate: '', // ✅ Firebase data doesn't have hijri date, will be populated separately
+          prayers: {
+            Subuh: firebaseData.subuh || '',
+            Syuruk: firebaseData.syuruk || '',
+            Zohor: firebaseData.zohor || '',
+            Asar: firebaseData.asar || '',
+            Maghrib: firebaseData.maghrib || '',
+            Isyak: firebaseData.isyak || '',
+          },
+          location: {
+            latitude: 1.3521,
+            longitude: 103.8198,
+            city: 'Singapore',
+            country: 'Singapore',
+          },
+        };
+
+        // Cache for 24 hours (Firebase data is official)
+        this.setCachedData(cacheKey, result);
+        
+        return result;
       }
 
-      // 3. Fetch from Firebase using Firebase date format
-      console.log('🔄 Fetching from Firebase:', firebaseDate);
-      const snapshot = await firestore()
-        .collection('prayerTimes2025')
-        .where('date', '==', firebaseDate) // Use Firebase format for query
-        .limit(1)
-        .get();
+      console.warn(`⚠️ No Firebase data for ${date}, falling back to Aladhan API...`);
 
-      if (snapshot.empty) {
-        const staleCache = this.getStaleCachedData<DailyPrayerTimes>(cacheKey);
-        if (staleCache) {
-          console.log('⚠️ Using stale cache (no data):', date);
-          return staleCache;
-        }
-        throw new ApiError(`No prayer times found for date: ${date}`);
-      }
+      // 3️⃣ Fallback to Aladhan API (for dates not in Firebase)
+      const [year, month, day] = date.split('-');
+      const aladhanDate = `${day}-${month}-${year}`; // DD-MM-YYYY format
+      
+      const response = await fetchPrayerTimes({
+        latitude: 1.3521, // Singapore
+        longitude: 103.8198,
+        method: CalculationMethod.SINGAPORE,
+        date: aladhanDate,
+      });
 
-      const doc = snapshot.docs[0];
-      const data = doc.data();
+      // Helper function to clean API times (remove timezone suffix)
+      const cleanTime = (time: string) => time.split(' ')[0];
 
-      // 4. Transform and validate data
-      const prayerTimes: DailyPrayerTimes = {
-        date: date, // ✅ Return ISO format
-        hijriDate: await this.fetchIslamicDate(date),
+      // Format hijri date from API response
+      const hijriDate = `${response.data.date.hijri.day} ${response.data.date.hijri.month.en} ${response.data.date.hijri.year}`;
+
+      const result: DailyPrayerTimes = {
+        date,
+        hijriDate,
         prayers: {
-          [PrayerName.SUBUH]: data.time.subuh,
-          [PrayerName.SYURUK]: data.time.syuruk,
-          [PrayerName.ZOHOR]: data.time.zohor,
-          [PrayerName.ASAR]: data.time.asar,
-          [PrayerName.MAGHRIB]: data.time.maghrib,
-          [PrayerName.ISYAK]: data.time.isyak,
+          Subuh: cleanTime(response.data.timings.Fajr),
+          Syuruk: cleanTime(response.data.timings.Sunrise),
+          Zohor: cleanTime(response.data.timings.Dhuhr),
+          Asar: cleanTime(response.data.timings.Asr),
+          Maghrib: cleanTime(response.data.timings.Maghrib),
+          Isyak: cleanTime(response.data.timings.Isha),
+        },
+        location: {
+          latitude: response.data.meta.latitude,
+          longitude: response.data.meta.longitude,
+          city: 'Singapore',
+          country: 'Singapore',
         },
       };
 
-      // 5. Cache the result (synchronous!)
-      this.setCachedData(cacheKey, prayerTimes);
-      console.log('✅ Cached successfully:', date);
+      // Cache for 1 hour (API data is less reliable)
+      this.setCachedData(cacheKey, result);
 
-      return prayerTimes;
+      return result;
     } catch (error) {
-      console.error('❌ Error fetching prayer times:', error);
+      console.error(`❌ Error fetching prayer times for ${date}:`, error);
       
-      const staleCache = this.getStaleCachedData<DailyPrayerTimes>(cacheKey);
+      // Last resort: Check if we have any cached data (even if stale)
+      const staleCache = this.getCachedData<DailyPrayerTimes>(cacheKey);
       if (staleCache) {
-        console.log('⚠️ Using stale cache (error):', date);
+        console.warn(`⚠️ Returning stale cache for ${date}`);
         return staleCache;
       }
 
-      throw error;
+      throw new Error(`Failed to fetch prayer times for ${date}`);
     }
   }
 

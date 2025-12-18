@@ -7,20 +7,13 @@
  */
 
 import React, { useCallback, useRef, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Animated,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Alert } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { format, subDays, addDays, startOfWeek } from 'date-fns';
 import { Skeleton } from 'moti/skeleton';
 import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
+import { useQueryClient } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import * as Haptics from 'expo-haptics';
 
@@ -46,12 +39,7 @@ import { useTheme } from '../../../../context/ThemeContext';
 import { useAuth } from '../../../../stores/useAuthStore';
 import { useLocationStore } from '../../../../stores/useLocationStore';
 import { useTodayPrayerTimes } from '../../../../api/services/prayer';
-import {
-  usePrayerLog,
-  useWeeklyPrayerLogs,
-  useSavePrayerLog,
-  usePrayerStats,
-} from '../../../../api/services/prayer/logs';
+import { usePrayerLog, useWeeklyPrayerLogs, useSavePrayerLog, PrayerLog, WeeklyLogs } from '../../../../api/services/prayer/logs';
 import { usePrayerStreakManager } from '../../../../hooks/usePrayerStreakManager';
 import { usePrayerDateNavigation } from '../../../../hooks/prayer/usePrayerDateNavigation';
 
@@ -63,9 +51,6 @@ import { enter, shakeButton } from '../../../../utils';
 import { getCurrentDayIndex, isSameDate } from '../../../../utils/prayers/dates';
 import { getPrayerAvailability } from '../../../../utils/prayers/logging';
 
-// Types
-import { PrayerLog } from '../../../../utils/types/prayer.types';
-
 // ============================================================================
 // CONSTANTS
 // ============================================================================
@@ -76,7 +61,7 @@ const PRAYER_CONFIG = {
   Subuh: { icon: 'cloud-sun', color: '#87CEEB' },
   Zohor: { icon: 'sun', color: '#FFD700' },
   Asar: { icon: 'cloud-sun', color: '#FFA500' },
-  Maghrib: { icon: 'sunset', color: '#FF6B6B' },
+  Maghrib: { icon: 'moon', color: '#FF6B6B' },
   Isyak: { icon: 'moon', color: '#9C27B0' },
 } as const;
 
@@ -90,6 +75,7 @@ const PrayersDashboard: React.FC = () => {
   const { theme, isDarkMode } = useTheme();
   const { userId } = useAuth();
   const { userLocation } = useLocationStore();
+  const queryClient = useQueryClient();
 
   // Date navigation
   const { selectedDate, goToPrevDay, goToNextDay, canGoNext } =
@@ -127,15 +113,9 @@ const PrayersDashboard: React.FC = () => {
   // Weekly logs
   const startDate = format(subDays(new Date(), 3), 'yyyy-MM-dd');
   const endDate = format(addDays(new Date(), 3), 'yyyy-MM-dd');
-  const { data: weeklyLogs, isLoading: isLoadingWeekly } = useWeeklyPrayerLogs(
-    userId,
-    startDate,
-    endDate
-  );
+  const { data: weeklyLogs, isLoading: isLoadingWeekly } = useWeeklyPrayerLogs(userId, startDate, endDate);
 
-  const { data: prayerStats } = usePrayerStats(userId);
-
-  const weeklyAsRecord = weeklyLogs as unknown as Record<string, PrayerLog> | undefined;
+  const weeklyAsRecord = weeklyLogs as WeeklyLogs | undefined;
   const streakInfo = usePrayerStreakManager(weeklyAsRecord, userId);
 
   const { mutate: savePrayerLog } = useSavePrayerLog();
@@ -152,9 +132,8 @@ const PrayersDashboard: React.FC = () => {
   const isLogged = useCallback(
     (dayIndex: number, session: string) => {
       const date = format(addDays(weekStart, dayIndex), 'yyyy-MM-dd');
-      return (
-        weeklyAsRecord?.[date]?.prayers?.[session as keyof PrayerLog['prayers']] || false
-      );
+      const logged = weeklyAsRecord?.[date]?.[session as keyof PrayerLog['prayers']] ?? false;
+      return logged;
     },
     [weekStart, weeklyAsRecord]
   );
@@ -195,7 +174,11 @@ const PrayersDashboard: React.FC = () => {
         return;
       }
 
-      const currentPrayers = prayerLog?.prayers || {
+      // ✅ CRITICAL FIX: Read CURRENT data from React Query cache
+      const queryKey = ['prayerLogs', userId, dateStr];
+      const currentLog = queryClient.getQueryData<PrayerLog>(queryKey);
+      
+      const currentPrayers = currentLog?.prayers || {
         Subuh: false,
         Zohor: false,
         Asar: false,
@@ -209,6 +192,12 @@ const PrayersDashboard: React.FC = () => {
         ...currentPrayers,
         [prayer]: !isCurrentlyLogged,
       };
+
+      console.log(`🔄 Dashboard toggle ${prayer} on ${dateStr}:`, {
+        before: isCurrentlyLogged,
+        after: !isCurrentlyLogged,
+        allPrayers: updatedPrayers,
+      });
 
       // Haptic feedback
       if (!isCurrentlyLogged) {
@@ -237,7 +226,7 @@ const PrayersDashboard: React.FC = () => {
         }
       );
     },
-    [userId, isToday, toggablePrayers, prayerLog, dateStr, shakeAnimation, savePrayerLog]
+    [userId, isToday, toggablePrayers, dateStr, shakeAnimation, savePrayerLog, queryClient]
   );
 
   // Calculate completion stats

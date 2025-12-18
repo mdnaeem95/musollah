@@ -5,15 +5,21 @@ import { format } from 'date-fns';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../stores/useAuthStore';
-import { useTodayPrayerLog, usePrayerLog, useSavePrayerLog } from '../../api/services/prayer/logs';
+import { useTodayPrayerLog, usePrayerLog, useSavePrayerLog, PrayerLog } from '../../api/services/prayer/logs';
 import PrayerTimeItem from './PrayerTimeItem';
 import { PrayerName } from '../../utils/types/prayer.types';
 import { isPrayerAvailable } from '../../utils/prayers/prayerTimeUtils';
 import { PRAYER_NAMES } from '../../constants/prayer.constants';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface PrayerTimesListProps {
   prayerTimes: Record<PrayerName, string> | null;
   selectedDate: Date;
+  currentPrayer?: PrayerName | null;  // ✅ NEW
+  nextPrayerInfo?: {                   // ✅ NEW
+    nextPrayer: PrayerName;
+    timeUntilNextPrayer: string;
+  } | null;
 }
 
 /** Fixed-shape expected by savePrayerLog */
@@ -36,17 +42,17 @@ const EMPTY_PRAYERS: PrayersPayload = {
 /**
  * Prayer Times List with Prayer Logging
  * 
- * Improvements over Redux version:
+ * Features:
+ * - Current prayer highlighted with accent background
+ * - Next prayer shows countdown
  * - Uses TanStack Query for prayer logs
- * - Better error handling with Toast
  * - Optimistic updates
- * - Type-safe with proper hooks
- * - Cleaner separation of concerns
- * - Checkbox integrated into PrayerTimeItem for better alignment
  */
 const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({ 
   prayerTimes, 
-  selectedDate 
+  selectedDate,
+  currentPrayer,      // ✅ NEW
+  nextPrayerInfo,     // ✅ NEW
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -62,10 +68,9 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
 
   // Mutation for saving prayer log
   const { mutate: savePrayerLog } = useSavePrayerLog();
+  const queryClient = useQueryClient();
 
   // Handle prayer toggle
-  // ✅ FIX: Only include stable dependencies
-  // Read current values inside the callback instead of closing over them
   const handlePrayerToggle = useCallback((prayerName: PrayerName) => {
     if (!userId) {
       Toast.show({
@@ -77,7 +82,7 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
       return;
     }
 
-    // Skip Syuruk (sunrise) - should never be called but safety check
+    // Skip Syuruk (sunrise)
     if (prayerName === PrayerName.SYURUK) return;
 
     // Check if prayer time has passed (only for today)
@@ -94,26 +99,30 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
       }
     }
 
-    // Always start from a full, fixed-shape object
-    const currentPrayers: PrayersPayload =
-      (prayerLog?.prayers as PrayersPayload | undefined) ?? EMPTY_PRAYERS;
+    const queryKey = ['prayerLogs', userId, dateStr];
+    const currentLog = queryClient.getQueryData<PrayerLog>(queryKey);
 
-    // Toggle with strong typing (exclude Syuruk)
+    const currentPrayers: PrayersPayload =
+      currentLog?.prayers ?? EMPTY_PRAYERS;
+
     const key = prayerName as keyof PrayersPayload;
     const updatedPrayers: PrayersPayload = {
       ...currentPrayers,
       [key]: !currentPrayers[key],
     };
 
-    // Save with optimistic update (mutation handles it)
+    console.log(`🔄 Toggling ${prayerName} on ${dateStr}:`, {
+      before: currentPrayers[key],
+      after: updatedPrayers[key],
+      allPrayers: updatedPrayers,
+    });
+
     savePrayerLog({
       userId,
       date: dateStr,
       prayers: updatedPrayers,
     });
-  }, [userId, dateStr, isToday]); 
-  // ✅ Only stable primitives: userId, dateStr, isToday
-  // ❌ Removed: prayerLog, prayerTimes, savePrayerLog (they're read inside callback)
+  }, [userId, dateStr, isToday, queryClient, prayerTimes, savePrayerLog]);
 
   // Empty state
   if (!prayerTimes) {
@@ -131,6 +140,11 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
         const loggedMap = (prayerLog?.prayers as PrayersPayload | undefined);
         const isLogged = isLoggable ? (loggedMap?.[prayerName as keyof PrayersPayload] ?? false) : false;
         
+        // ✅ NEW: Check if this is current or next prayer
+        const isCurrent = currentPrayer === prayerName;
+        const isNext = nextPrayerInfo?.nextPrayer === prayerName;
+        const countdown = isNext ? nextPrayerInfo?.timeUntilNextPrayer : undefined;
+        
         return (
           <MotiView
             key={prayerName}
@@ -145,7 +159,9 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
               isLogged={isLogged}
               onToggle={() => handlePrayerToggle(prayerName)}
               isLoggable={isLoggable}
-              showCheckbox={!!userId} // Only show checkbox if user is signed in
+              showCheckbox={!!userId}
+              isCurrent={isCurrent}        // ✅ NEW
+              countdown={countdown}        // ✅ NEW
             />
           </MotiView>
         );
@@ -169,7 +185,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: theme.colors.text.muted,
   },
   itemContainer: {
-    marginBottom: 15,
+    marginBottom: 12, // ✅ Reduced from 15 for tighter spacing
     justifyContent: 'center',
     alignItems: 'center'
   },

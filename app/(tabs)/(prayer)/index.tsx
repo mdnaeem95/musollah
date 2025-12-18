@@ -25,6 +25,7 @@ import { usePrayerActions } from '../../../hooks/prayer/usePrayerActions';
 import { usePrayerQuery } from '../../../hooks/prayer/usePrayerQuery';
 import { analyticsService } from '../../../services/analytics/service';
 import { formatIslamicDateResponseSingapore, useTodayIslamicDate } from '../../../api/services/prayer';
+import { LocationDisplay } from '../../../components/prayer/LocationDisplay';
 
 const PrayerTab: React.FC = () => {
   const { theme } = useTheme();  // Keep this as is!
@@ -91,17 +92,34 @@ const PrayerTab: React.FC = () => {
   }, [closeLocationModal, refetch]);
 
   const renderContent = () => {
-    // ✅ SIMPLIFIED loading check
+    // Show data if available
+    if (prayerData) {
+      console.log('✅ Rendering prayer data for:', dateNavigation.formattedDate);
+      return (
+        <View key={dateNavigation.formattedDate} style={styles.contentContainer}>
+          <PrayerTimesList
+            prayerTimes={prayerData.prayers}
+            selectedDate={dateNavigation.selectedDate}
+            currentPrayer={currentPrayer}
+            nextPrayerInfo={nextPrayerInfo}
+          />
+        </View>
+      );
+    }
+
+    // Show skeleton if loading
     if (isLoading) {
+      console.log('🔄 Loading initial data...');
       return <PrayerTimesSkeleton key="skeleton" />;
     }
 
-    // ✅ Show error state if no data after loading
-    if (!prayerData && !isLoading) {
+    // Show error if we have error AND no data
+    if (error) {
+      console.log('❌ Error with no cached data');
       return (
         <View style={styles.contentContainer}>
           <PrayerErrorFallback
-            error={error || new Error('No prayer data available')}
+            error={error}
             resetError={refetch}
             isOffline={isOffline}
           />
@@ -109,21 +127,21 @@ const PrayerTab: React.FC = () => {
       );
     }
 
-    return (
-      <AnimatePresence exitBeforeEnter>
-        <View key={dateNavigation.formattedDate} style={styles.contentContainer}>
-          <CurrentPrayerInfo
-            currentPrayer={currentPrayer}
-            nextPrayerInfo={nextPrayerInfo}
-          />
-          <PrayerTimesList
-            prayerTimes={prayerData?.prayers || null}
-            selectedDate={dateNavigation.selectedDate}
-          />
-        </View>
-      </AnimatePresence>
-    );
+    // Fallback
+    console.warn('⚠️ No data, no loading, no error - unexpected state');
+    return <PrayerTimesSkeleton key="skeleton-fallback" />;
   };
+
+  // Debug logging for data flow
+  useEffect(() => {
+    console.log('📊 Prayer UI State:', {
+      date: dateNavigation.formattedDate,
+      isLoading,
+      hasData: !!prayerData,
+      hasPrayers: !!prayerData?.prayers,
+      prayerCount: prayerData?.prayers ? Object.keys(prayerData.prayers).length : 0,
+    });
+  }, [dateNavigation.formattedDate, isLoading, prayerData]);
 
   return (
     <ErrorBoundary
@@ -153,6 +171,7 @@ const PrayerTab: React.FC = () => {
             />
 
             <CustomClock />
+            <LocationDisplay />
           </View>
 
           {/* Offline indicator */}
@@ -199,19 +218,23 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   mainContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start', // ✅ Changed from 'center'
     alignItems: 'center',
+    paddingTop: 60, // ✅ Add top padding for status bar
   },
   header: {
     alignItems: 'center',
+    marginBottom: 20, // ✅ Add spacing below header section
+    gap: 12, // ✅ Add gap between header items (Date, Clock, Location)
   },
   contentContainer: {
     width: '100%',
     alignItems: 'center',
+    paddingTop: 8, // ✅ Small padding above prayer list
   },
   fab: {
     position: 'absolute',
-    bottom: 15,
+    bottom: 20, // ✅ Moved up to avoid tab bar overlap
     right: 20,
     backgroundColor: theme.colors.fab.background,
     width: 52,

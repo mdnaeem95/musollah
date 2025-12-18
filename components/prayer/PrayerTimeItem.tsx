@@ -2,18 +2,18 @@
  * Prayer Time Item Component
  * 
  * Displays a single prayer time with name, formatted time, and logging checkbox.
- * Adapts to user's time format preference (12-hour or 24-hour).
  * 
- * Improvements:
- * - Integrated logging checkbox for better visual alignment
- * - Disabled state for non-loggable prayers (Syuruk)
- * - Cleaner layout with consistent spacing
+ * ✨ NEW Features:
+ * - Current prayer highlighted with accent background
+ * - Next prayer shows countdown (e.g., "in 2h 45m")
+ * - Adapts to user's time format preference
  */
 
 import React, { useMemo, memo } from 'react';
 import { View, Text, StyleSheet, TextStyle, Dimensions, Platform, TouchableOpacity } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { format, parse } from 'date-fns';
+import { BlurView } from 'expo-blur';
 import { usePreferencesStore } from '../../stores/userPreferencesStore';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -36,6 +36,8 @@ interface PrayerTimeItemProps {
   onToggle?: () => void;
   isLoggable?: boolean;
   showCheckbox?: boolean;
+  isCurrent?: boolean;      // ✅ NEW
+  countdown?: string;       // ✅ NEW (e.g., "2h 45m")
 }
 
 // ============================================================================
@@ -50,8 +52,10 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(({
   onToggle,
   isLoggable = true,
   showCheckbox = false,
+  isCurrent = false,        // ✅ NEW
+  countdown,                // ✅ NEW
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const timeFormat = usePreferencesStore(state => state.timeFormat);
 
   // ============================================================================
@@ -85,7 +89,7 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(({
 
     const iconName = isLogged ? 'check-circle' : 'circle';
     const iconColor = isLoggable 
-      ? (isLogged ? theme.colors.text.success : theme.colors.text.muted)
+      ? (isLogged ? '#4CAF50' : theme.colors.text.muted)
       : 'rgba(0, 0, 0, 0.2)'; // Greyed out for disabled
 
     return (
@@ -102,7 +106,7 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(({
       >
         <FontAwesome6
           name={iconName}
-          size={24}
+          size={isCurrent ? 26 : 24}  // ✅ Larger icon for current prayer
           color={iconColor}
         />
       </TouchableOpacity>
@@ -113,16 +117,77 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(({
   // RENDER
   // ============================================================================
 
+  // ✅ Choose container component based on isCurrent
+  const ContainerComponent = isCurrent ? BlurView : View;
+  const containerProps = isCurrent
+    ? {
+        intensity: 25,
+        tint: (isDarkMode ? 'dark' : 'light') as 'dark' | 'light', // ✅ Type assertion
+      }
+    : {};
+
   return (
-    <View style={[styles.container, !isLoggable && styles.disabledContainer]}>
-      <Text style={[styles.prayerName, style, !isLoggable && styles.disabledText]}>
-        {name}
-      </Text>
-      <Text style={[styles.prayerTime, style, !isLoggable && styles.disabledText]}>
+    <ContainerComponent
+      {...containerProps}
+      style={[
+        styles.container,
+        isCurrent && {
+          backgroundColor: theme.colors.accent + '25', // ✅ Highlighted background
+          borderColor: theme.colors.accent,
+          borderWidth: 1.5,
+        },
+        !isLoggable && styles.disabledContainer,
+      ]}
+    >
+      {/* Prayer Name + Countdown */}
+      <View style={styles.nameContainer}>
+        <Text
+          style={[
+            styles.prayerName,
+            style,
+            isCurrent && {
+              fontFamily: 'Outfit_700Bold', // ✅ Bolder for current
+              fontSize: 19,
+              color: theme.colors.accent,
+            },
+            !isLoggable && styles.disabledText,
+          ]}
+        >
+          {name}
+        </Text>
+        
+        {/* ✅ Show countdown for next prayer */}
+        {countdown && (
+          <Text
+            style={[
+              styles.countdownText,
+              { color: theme.colors.text.muted },
+            ]}
+          >
+            in {countdown}
+          </Text>
+        )}
+      </View>
+
+      {/* Prayer Time */}
+      <Text
+        style={[
+          styles.prayerTime,
+          style,
+          isCurrent && {
+            fontFamily: 'Outfit_700Bold', // ✅ Bolder for current
+            fontSize: 19,
+            color: theme.colors.accent,
+          },
+          !isLoggable && styles.disabledText,
+        ]}
+      >
         {formattedTime}
       </Text>
+
+      {/* Checkbox */}
       {renderCheckbox()}
-    </View>
+    </ContainerComponent>
   );
 });
 
@@ -141,7 +206,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingRight: 12, // Slightly less padding on right for checkbox
+    paddingRight: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     shadowColor: '#000',
     shadowOffset: { 
@@ -151,9 +216,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: Platform.OS === 'android' ? 0 : 6,
     elevation: Platform.OS === 'android' ? 0 : 4,
+    overflow: 'hidden', // ✅ Required for BlurView
   },
   disabledContainer: {
     opacity: 0.6,
+  },
+  nameContainer: {
+    // ✅ NEW: Container for name + countdown
+    flexDirection: 'column',
+    gap: 2,
   },
   prayerName: {
     fontFamily: 'Outfit_500Medium',
@@ -161,6 +232,12 @@ const styles = StyleSheet.create({
     color: '#333333',
     textAlign: 'left',
     marginRight: 12,
+  },
+  countdownText: {
+    // ✅ NEW: Countdown text style
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 11,
+    textAlign: 'left',
   },
   prayerTime: {
     fontFamily: 'Outfit_500Medium',
