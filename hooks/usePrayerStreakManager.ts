@@ -13,6 +13,9 @@ export interface StreakInfo {
   todayCompleted: boolean;
 }
 
+// ✅ NEW: Accept prayers directly, not full PrayerLog objects
+type PrayersRecord = Record<string, PrayerLog['prayers']>;
+
 // Default state - extracted as constant to avoid recreation
 const DEFAULT_STREAK_INFO: StreakInfo = Object.freeze({
   current: 0,
@@ -25,11 +28,12 @@ const DEFAULT_STREAK_INFO: StreakInfo = Object.freeze({
 // ============================================================================
 
 /**
- * Check if a prayer log has all prayers completed
+ * Check if prayers object has all prayers completed
+ * ✅ UPDATED: Now accepts prayers directly, not wrapped in PrayerLog
  */
-const isDayFullyCompleted = (log: PrayerLog | undefined): boolean => {
-  if (!log?.prayers) return false;
-  return LOGGABLE_PRAYERS.every((prayer) => log.prayers[prayer] === true);
+const isDayFullyCompleted = (prayers: PrayerLog['prayers'] | undefined): boolean => {
+  if (!prayers) return false;
+  return LOGGABLE_PRAYERS.every((prayer) => prayers[prayer] === true);
 };
 
 /**
@@ -50,12 +54,13 @@ const getTodayDateStr = (): string => format(new Date(), 'yyyy-MM-dd');
  * - Memoized for performance
  * - Type-safe with proper null checks
  *
- * @param weeklyLogs - Record of prayer logs by date (YYYY-MM-DD format)
+ * ✅ UPDATED: Now accepts WeeklyLogs format (prayers directly, not wrapped)
+ * @param weeklyLogs - Record of prayers by date (YYYY-MM-DD format)
  * @param userId - User ID (required for valid calculation)
  * @returns Streak information (current, longest, todayCompleted)
  */
 export const usePrayerStreakManager = (
-  weeklyLogs: Record<string, PrayerLog> | undefined | null,
+  weeklyLogs: PrayersRecord | undefined | null,
   userId: string | null
 ): StreakInfo => {
   return useMemo<StreakInfo>(() => {
@@ -83,15 +88,15 @@ export const usePrayerStreakManager = (
 
     // Calculate streaks by iterating through sorted dates
     for (const dateStr of sortedDates) {
-      const log = logs[dateStr];
+      const prayers = logs[dateStr]; // ✅ Now "prayers" directly, not "log.prayers"
       
-      // Skip if log is undefined (defensive check)
-      if (!log) continue;
+      // Skip if prayers are undefined (defensive check)
+      if (!prayers) continue;
 
       const date = new Date(dateStr);
 
       // Check if day is fully completed
-      const isFullyCompleted = isDayFullyCompleted(log);
+      const isFullyCompleted = isDayFullyCompleted(prayers);
 
       if (isFullyCompleted) {
         // Check if this day continues the streak (consecutive days)
@@ -143,9 +148,10 @@ export const usePrayerStreakManager = (
 /**
  * Calculate streak info without React hooks
  * Useful for background calculations or testing
+ * ✅ UPDATED: Now accepts WeeklyLogs format
  */
 export const calculateStreakInfo = (
-  weeklyLogs: Record<string, PrayerLog> | undefined | null,
+  weeklyLogs: PrayersRecord | undefined | null,
   userId: string | null
 ): StreakInfo => {
   if (!userId) return DEFAULT_STREAK_INFO;
@@ -163,11 +169,11 @@ export const calculateStreakInfo = (
   let lastDate: Date | null = null;
 
   for (const dateStr of sortedDates) {
-    const log = logs[dateStr];
-    if (!log) continue;
+    const prayers = logs[dateStr]; // ✅ Now "prayers" directly
+    if (!prayers) continue;
 
     const date = new Date(dateStr);
-    const isFullyCompleted = isDayFullyCompleted(log);
+    const isFullyCompleted = isDayFullyCompleted(prayers);
 
     if (isFullyCompleted) {
       const isConsecutive = lastDate === null || differenceInDays(date, lastDate) === 1;

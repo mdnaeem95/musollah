@@ -1,10 +1,11 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { addDays, subDays, format, isAfter, startOfDay } from 'date-fns';
+import { usePrefetchPrayerTimes } from './usePrayerQuery';
 
 interface UsePrayerDateNavigationReturn {
   selectedDate: Date;
-  formattedDate: string; // ISO format: YYYY-MM-DD
-  displayDate: string;   // Display format: DD MMM YYYY
+  formattedDate: string;
+  displayDate: string;
   canGoNext: boolean;
   canGoPrev: boolean;
   goToNextDay: () => void;
@@ -13,15 +14,11 @@ interface UsePrayerDateNavigationReturn {
   setDate: (date: Date) => void;
 }
 
-/**
- * Hook for managing prayer date navigation
- * 
- * ✅ FIXED: Uses consistent ISO date format (YYYY-MM-DD) for all queries
- */
 export const usePrayerDateNavigation = (
   initialDate: Date = new Date()
 ): UsePrayerDateNavigationReturn => {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
+  const { prefetchDate } = usePrefetchPrayerTimes();
 
   // Calculate boundaries
   const tomorrow = useMemo(() => {
@@ -30,25 +27,34 @@ export const usePrayerDateNavigation = (
     return startOfDay(tom);
   }, []);
 
-  // ✅ Format date for queries (ISO format for consistency)
   const formattedDate = useMemo(
-    () => format(selectedDate, 'yyyy-MM-dd'), // ISO format
+    () => format(selectedDate, 'yyyy-MM-dd'),
     [selectedDate]
   );
 
-  // ✅ Format date for display
   const displayDate = useMemo(
     () => format(selectedDate, 'dd MMM yyyy'),
     [selectedDate]
   );
 
-  // Check if can navigate
   const canGoNext = useMemo(
     () => selectedDate < tomorrow,
     [selectedDate, tomorrow]
   );
 
   const canGoPrev = useMemo(() => true, []);
+
+  // ✅ NEW: Prefetch adjacent dates when selected date changes
+  useEffect(() => {
+    const prevDate = format(subDays(selectedDate, 1), 'yyyy-MM-dd');
+    const nextDate = format(addDays(selectedDate, 1), 'yyyy-MM-dd');
+    
+    // Prefetch previous and next dates silently in background
+    prefetchDate(prevDate).catch(() => {});
+    prefetchDate(nextDate).catch(() => {});
+    
+    console.log(`🔮 Prefetched adjacent dates: ${prevDate}, ${nextDate}`);
+  }, [formattedDate, prefetchDate]);
 
   // Navigation handlers
   const goToNextDay = useCallback(() => {
@@ -76,8 +82,8 @@ export const usePrayerDateNavigation = (
 
   return {
     selectedDate,
-    formattedDate,   // ISO format for queries
-    displayDate,     // Display format for UI
+    formattedDate,
+    displayDate,
     canGoNext,
     canGoPrev,
     goToNextDay,

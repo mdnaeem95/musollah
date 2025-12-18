@@ -1,8 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { cache, TTL } from '../../client/storage';
-import { fetchPrayerTimes, fetchTodayPrayerTimes, fetchPrayerTimesByDate, convertToIslamicDate, fetchMonthlyPrayerTimesFromFirebase, getTodayDateForAPI } from './api';
-import { PrayerTimesParams, PrayerTimesResponse, IslamicDateResponse, PRAYER_QUERY_KEYS, LocationCoordinates, DailyPrayerTime, HijriDate } from './types';
+import { 
+  fetchPrayerTimes, 
+  fetchTodayPrayerTimes, 
+  fetchPrayerTimesByDate, 
+  convertToIslamicDate, 
+  fetchMonthlyPrayerTimesFromFirebase, 
+  fetchDailyPrayerTimeFromFirebase, // ✅ ADD THIS
+  getTodayDateForAPI 
+} from './api';
+import { 
+  PrayerTimesParams, 
+  PrayerTimesResponse, 
+  IslamicDateResponse, 
+  PRAYER_QUERY_KEYS, 
+  LocationCoordinates, 
+  DailyPrayerTime, 
+  HijriDate 
+} from './types';
 import { ENGLISH_TO_MONTH_NUMBER, SINGAPORE_ISLAMIC_MONTHS } from '../../../constants/prayer.constants';
 
 // ============================================================================
@@ -127,7 +143,7 @@ export function usePrayerTimes(params: PrayerTimesParams) {
 
 /**
  * Fetch today's prayer times with MUIS priority
- * ✅ FIXED: Proper async handling for convertMUISToResponse
+ * ✅ OPTIMIZED: Now uses fetchDailyPrayerTimeFromFirebase (more efficient)
  */
 export function useTodayPrayerTimes(location: LocationCoordinates) {
   const today = getTodayDateForAPI();
@@ -146,17 +162,15 @@ export function useTodayPrayerTimes(location: LocationCoordinates) {
         return cached;
       }
 
-      // ✅ LAYER 2: Try Firebase MUIS official times (for Singapore)
+      // ✅ LAYER 2: Try Firebase MUIS official times (OPTIMIZED)
       try {
         const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1;
-        const day = now.getDate();
+        const dateISO = format(now, 'yyyy-MM-dd'); // YYYY-MM-DD format
         
-        console.log('🕌 Attempting to fetch MUIS official times from Firebase...');
-        const monthlyTimes = await fetchMonthlyPrayerTimesFromFirebase(year, month);
+        console.log('🕌 Fetching MUIS official times from Firebase...');
         
-        const todayTime = monthlyTimes.find(t => t.day === day);
+        // ✅ OPTIMIZED: Fetch only today's data (not entire month)
+        const todayTime = await fetchDailyPrayerTimeFromFirebase(dateISO);
         
         if (todayTime) {
           console.log('✅ SUCCESS: Using MUIS official times from Firebase');
@@ -169,7 +183,6 @@ export function useTodayPrayerTimes(location: LocationCoordinates) {
             Isyak: todayTime.isyak,
           });
           
-          // ✅ Await the async function
           const muisResponse = await convertMUISToResponse(todayTime, location);
           
           // Cache until end of day
@@ -180,7 +193,7 @@ export function useTodayPrayerTimes(location: LocationCoordinates) {
           cache.set(cacheKey, muisResponse, ttl);
           return muisResponse;
         } else {
-          console.warn(`⚠️ No MUIS data found for ${day}/${month}/${year}`);
+          console.warn(`⚠️ No MUIS data found for ${dateISO}`);
         }
       } catch (error) {
         console.warn('⚠️ Firebase MUIS times unavailable:', error);
@@ -214,6 +227,10 @@ export function useTodayPrayerTimes(location: LocationCoordinates) {
   });
 }
 
+/**
+ * Fetch prayer times for a specific date with MUIS priority
+ * ✅ OPTIMIZED: Now uses fetchDailyPrayerTimeFromFirebase
+ */
 export function usePrayerTimesByDate(
   location: LocationCoordinates,
   date: Date
@@ -221,24 +238,25 @@ export function usePrayerTimesByDate(
   return useQuery({
     queryKey: PRAYER_QUERY_KEYS.daily(date.toISOString(), location),
     queryFn: async () => {
+      // ✅ OPTIMIZED: Fetch single day instead of entire month
       try {
-        const year = date.getFullYear();
-        const month = date.getMonth() + 1;
-        const day = date.getDate();
+        const dateISO = format(date, 'yyyy-MM-dd'); // YYYY-MM-DD format
         
-        const monthlyTimes = await fetchMonthlyPrayerTimesFromFirebase(year, month);
-        const dayTime = monthlyTimes.find(t => t.day === day);
+        console.log(`🕌 Fetching MUIS times for ${dateISO} from Firebase...`);
+        const dayTime = await fetchDailyPrayerTimeFromFirebase(dateISO);
         
         if (dayTime) {
-          console.log(`✅ Using MUIS official times for ${day}/${month}/${year}`);
-          // ✅ Await the async function
+          console.log(`✅ Using MUIS official times for ${dateISO}`);
           return await convertMUISToResponse(dayTime, location);
+        } else {
+          console.warn(`⚠️ No MUIS data found for ${dateISO}`);
         }
       } catch (error) {
-        console.warn('Firebase MUIS times unavailable for date, using Aladhan');
+        console.warn(`⚠️ Firebase MUIS times unavailable for ${format(date, 'yyyy-MM-dd')}:`, error);
       }
       
       // Fallback to Aladhan
+      console.log('🌐 FALLBACK: Using Aladhan API for date:', format(date, 'yyyy-MM-dd'));
       const response = await fetchPrayerTimesByDate(
         location.latitude,
         location.longitude,
