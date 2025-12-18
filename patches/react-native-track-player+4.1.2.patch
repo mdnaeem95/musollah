@@ -1,8 +1,8 @@
 diff --git a/node_modules/react-native-track-player/android/src/main/java/com/doublesymmetry/trackplayer/module/MusicModule.kt b/node_modules/react-native-track-player/android/src/main/java/com/doublesymmetry/trackplayer/module/MusicModule.kt
-index b2409a0..eb4e881 100644
+index b2409a0..31c5fa1 100644
 --- a/node_modules/react-native-track-player/android/src/main/java/com/doublesymmetry/trackplayer/module/MusicModule.kt
 +++ b/node_modules/react-native-track-player/android/src/main/java/com/doublesymmetry/trackplayer/module/MusicModule.kt
-@@ -251,379 +251,425 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
+@@ -251,379 +251,427 @@ class MusicModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
      }
  
      @ReactMethod
@@ -66,6 +66,13 @@ index b2409a0..eb4e881 100644
 -        if (data == null) {
 -            callback.resolve(null)
 -            return@launch
+-        }
+-        val bundle = Arguments.toBundle(data);
+-        if (bundle is Bundle) {
+-            musicService.load(bundleToTrack(bundle))
+-            callback.resolve(null)
+-        } else {
+-            callback.reject("invalid_track_object", "Track was not a dictionary type")
 +    fun load(data: ReadableMap?, callback: Promise) {
 +        scope.launch {
 +            if (verifyServiceBoundOrReject(callback)) return@launch
@@ -82,19 +89,6 @@ index b2409a0..eb4e881 100644
 +                callback.reject("invalid_track_object", "Track was not a dictionary type")
 +            }
          }
--        val bundle = Arguments.toBundle(data);
--        if (bundle is Bundle) {
--            musicService.load(bundleToTrack(bundle))
-+
-+    @ReactMethod
-+    fun move(fromIndex: Int, toIndex: Int, callback: Promise) {
-+        scope.launch {
-+            if (verifyServiceBoundOrReject(callback)) return@launch
-+            musicService.move(fromIndex, toIndex)
-             callback.resolve(null)
--        } else {
--            callback.reject("invalid_track_object", "Track was not a dictionary type")
-         }
      }
  
      @ReactMethod
@@ -102,12 +96,15 @@ index b2409a0..eb4e881 100644
 -        if (verifyServiceBoundOrReject(callback)) return@launch
 -        musicService.move(fromIndex, toIndex)
 -        callback.resolve(null)
--    }
-+    fun remove(data: ReadableArray?, callback: Promise) {
++    fun move(fromIndex: Int, toIndex: Int, callback: Promise) {
 +        scope.launch {
 +            if (verifyServiceBoundOrReject(callback)) return@launch
++            musicService.move(fromIndex, toIndex)
++            callback.resolve(null)
++        }
+     }
  
--    @ReactMethod
+     @ReactMethod
 -    fun remove(data: ReadableArray?, callback: Promise) = scope.launch {
 -        if (verifyServiceBoundOrReject(callback)) return@launch
 -        val inputIndexes = Arguments.toList(data)
@@ -122,6 +119,10 @@ index b2409a0..eb4e881 100644
 -                        "One or more indexes was out of bounds"
 -                    )
 -                    return@launch
++    fun remove(data: ReadableArray?, callback: Promise) {
++        scope.launch {
++            if (verifyServiceBoundOrReject(callback)) return@launch
++
 +            val inputIndexes = Arguments.toList(data)
 +            if (inputIndexes != null) {
 +                val size = musicService.tracks.size
@@ -658,4 +659,4 @@ index b2409a0..eb4e881 100644
 +            callback.resolve(Arguments.fromBundle(musicService.getPlayerStateBundle(musicService.state)))
 +        }
      }
--}
+ }
