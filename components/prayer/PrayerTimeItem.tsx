@@ -1,11 +1,14 @@
 /**
- * Prayer Time Item Component
+ * Prayer Time Item Component (ENHANCED v2.0)
  * 
  * Displays a single prayer time with name, formatted time, and logging checkbox.
  * 
- * ✨ NEW Features:
- * - Current prayer highlighted with accent background
- * - Next prayer shows countdown (e.g., "in 2h 45m")
+ * ✨ ENHANCED Features:
+ * - **MUCH BETTER** dark mode visibility for current prayer
+ * - Stronger background opacity (40% vs 25%)
+ * - Added prominent border for current prayer
+ * - Increased BlurView intensity for better glassmorphism effect
+ * - Next prayer countdown display (e.g., "in 2h 45m")
  * - Adapts to user's time format preference
  */
 
@@ -36,8 +39,8 @@ interface PrayerTimeItemProps {
   onToggle?: () => void;
   isLoggable?: boolean;
   showCheckbox?: boolean;
-  isCurrent?: boolean;      // ✅ NEW
-  countdown?: string;       // ✅ NEW (e.g., "2h 45m")
+  isCurrent?: boolean;
+  countdown?: string;
 }
 
 // ============================================================================
@@ -52,8 +55,8 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(({
   onToggle,
   isLoggable = true,
   showCheckbox = false,
-  isCurrent = false,        // ✅ NEW
-  countdown,                // ✅ NEW
+  isCurrent = false,
+  countdown,
 }) => {
   const { theme, isDarkMode } = useTheme();
   const timeFormat = usePreferencesStore(state => state.timeFormat);
@@ -62,21 +65,15 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(({
   // TIME FORMATTING
   // ============================================================================
 
-  /**
-   * Format time string (HH:mm) to user's preferred format
-   */
   const formattedTime = useMemo(() => {
     try {
-      // Parse 24-hour time string (e.g., "13:15")
       const parsedTime = parse(time, 'HH:mm', new Date());
-      
-      // Format according to user preference
       return timeFormat === '12-hour'
-        ? format(parsedTime, 'hh:mm a')  // e.g., "01:15 PM"
-        : format(parsedTime, 'HH:mm');   // e.g., "13:15"
+        ? format(parsedTime, 'hh:mm a')
+        : format(parsedTime, 'HH:mm');
     } catch (error) {
       console.error('Error formatting time:', error);
-      return time; // Fallback to original time if parsing fails
+      return time;
     }
   }, [time, timeFormat]);
 
@@ -90,7 +87,7 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(({
     const iconName = isLogged ? 'check-circle' : 'circle';
     const iconColor = isLoggable 
       ? (isLogged ? '#4CAF50' : theme.colors.text.muted)
-      : 'rgba(0, 0, 0, 0.2)'; // Greyed out for disabled
+      : 'rgba(0, 0, 0, 0.2)';
 
     return (
       <TouchableOpacity
@@ -106,7 +103,7 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(({
       >
         <FontAwesome6
           name={iconName}
-          size={isCurrent ? 26 : 24}  // ✅ Larger icon for current prayer
+          size={isCurrent ? 26 : 24}
           color={iconColor}
         />
       </TouchableOpacity>
@@ -117,12 +114,11 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(({
   // RENDER
   // ============================================================================
 
-  // ✅ Choose container component based on isCurrent
   const ContainerComponent = isCurrent ? BlurView : View;
   const containerProps = isCurrent
     ? {
-        intensity: 25,
-        tint: (isDarkMode ? 'dark' : 'light') as 'dark' | 'light', // ✅ Type assertion
+        intensity: 35,  // ✅ INCREASED from 25 to 35 for stronger blur
+        tint: (isDarkMode ? 'dark' : 'light') as 'dark' | 'light',
       }
     : {};
 
@@ -132,9 +128,14 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(({
       style={[
         styles.container,
         isCurrent && {
-          backgroundColor: theme.colors.accent + '25', // ✅ Highlighted background
+          backgroundColor: theme.colors.accent + '40',  // ✅ INCREASED from 25% to 40%
           borderColor: theme.colors.accent,
-          borderWidth: 1.5,
+          borderWidth: 2,  // ✅ INCREASED from 1.5 to 2 for stronger presence
+          shadowColor: theme.colors.accent,  // ✅ Added accent shadow
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
+          elevation: 6,  // ✅ Increased elevation
         },
         !isLoggable && styles.disabledContainer,
       ]}
@@ -146,9 +147,12 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(({
             styles.prayerName,
             style,
             isCurrent && {
-              fontFamily: 'Outfit_700Bold', // ✅ Bolder for current
+              fontFamily: 'Outfit_700Bold',
               fontSize: 19,
               color: theme.colors.accent,
+              textShadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'transparent',  // ✅ Text shadow for dark mode
+              textShadowOffset: { width: 0, height: 1 },
+              textShadowRadius: 2,
             },
             !isLoggable && styles.disabledText,
           ]}
@@ -156,12 +160,18 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(({
           {name}
         </Text>
         
-        {/* ✅ Show countdown for next prayer */}
         {countdown && (
           <Text
             style={[
               styles.countdownText,
-              { color: theme.colors.text.muted },
+              { 
+                color: isCurrent 
+                  ? theme.colors.accent  // ✅ Use accent color for current prayer countdown
+                  : theme.colors.text.muted 
+              },
+              isCurrent && {
+                fontFamily: 'Outfit_600SemiBold',  // ✅ Bold countdown for current prayer
+              },
             ]}
           >
             in {countdown}
@@ -175,9 +185,12 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(({
           styles.prayerTime,
           style,
           isCurrent && {
-            fontFamily: 'Outfit_700Bold', // ✅ Bolder for current
+            fontFamily: 'Outfit_700Bold',
             fontSize: 19,
             color: theme.colors.accent,
+            textShadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'transparent',  // ✅ Text shadow for dark mode
+            textShadowOffset: { width: 0, height: 1 },
+            textShadowRadius: 2,
           },
           !isLoggable && styles.disabledText,
         ]}
@@ -216,13 +229,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: Platform.OS === 'android' ? 0 : 6,
     elevation: Platform.OS === 'android' ? 0 : 4,
-    overflow: 'hidden', // ✅ Required for BlurView
+    overflow: 'hidden',
   },
   disabledContainer: {
     opacity: 0.6,
   },
   nameContainer: {
-    // ✅ NEW: Container for name + countdown
     flexDirection: 'column',
     gap: 2,
   },
@@ -234,7 +246,6 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   countdownText: {
-    // ✅ NEW: Countdown text style
     fontFamily: 'Outfit_400Regular',
     fontSize: 11,
     textAlign: 'left',
