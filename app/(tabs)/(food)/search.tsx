@@ -40,7 +40,7 @@ const SearchPage = () => {
     if (Platform.OS === 'ios') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    router.push(`/food/${id}`);
+    router.push(`/${id}`);
   };
 
   const handleRecentPress = (search: string) => {

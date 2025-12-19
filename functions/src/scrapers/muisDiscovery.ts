@@ -1,6 +1,6 @@
 /* eslint-disable valid-jsdoc */
-/* eslint-disable max-len */
 /* eslint-disable require-jsdoc */
+/* eslint-disable max-len */
 import * as admin from "firebase-admin";
 import axios from "axios";
 import https from "https";
@@ -13,10 +13,10 @@ if (!admin.apps.length) {
 }
 
 /**
- * MUIS Discovery Scraper
+ * MUIS Discovery Scraper - Alphabet Sweep Strategy
  *
- * Fetches ALL halal-certified establishments from MUIS
- * Creates new restaurant entries for ones not in database
+ * Since the API doesn't support "get all", we search by letter (a-z, 0-9)
+ * and combine/deduplicate the results.
  *
  * Runs: Weekly on Saturdays at 1 AM SGT (or manually)
  */
@@ -36,7 +36,8 @@ export const discoverMUISRestaurants = onSchedule(
 /**
  * Manual test version (HTTP-triggered)
  *
- * URL: ?dryRun=true&limit=50
+ * URL: ?dryRun=true&testMode=true
+ * testMode: Only searches 'a' and 'b' for quick testing
  */
 export const testMuisDiscovery = onRequest({
   memory: "2GiB",
@@ -45,10 +46,10 @@ export const testMuisDiscovery = onRequest({
   invoker: "public",
 }, async (request, response) => {
   const dryRun = request.query.dryRun !== "false";
-  const limit = parseInt(request.query.limit as string) || 50;
+  const testMode = request.query.testMode === "true"; // Quick test with just a few letters
 
   try {
-    const result = await runDiscovery(dryRun, limit);
+    const result = await runDiscovery(dryRun, testMode);
     response.json(result);
   } catch (error) {
     logger.error("Discovery test failed:", error);
@@ -62,11 +63,11 @@ export const testMuisDiscovery = onRequest({
 /**
  * Main discovery logic
  */
-async function runDiscovery(dryRun = false, limit?: number) {
+async function runDiscovery(dryRun = false, testMode = false) {
   const startTime = Date.now();
   const db = admin.firestore();
 
-  logger.info("🔍 Starting MUIS discovery scraper...", {dryRun, limit});
+  logger.info("🔍 Starting MUIS discovery scraper...", {dryRun, testMode});
 
   try {
     // Step 1: Get CSRF token
@@ -79,9 +80,9 @@ async function runDiscovery(dryRun = false, limit?: number) {
 
     logger.info("✅ Got CSRF token");
 
-    // Step 2: Fetch ALL establishments from MUIS
-    logger.info("Fetching all MUIS establishments...");
-    const allEstablishments = await fetchAllMUISEstablishments(csrfToken, cookies, limit);
+    // Step 2: Fetch ALL establishments using alphabet sweep
+    logger.info("Fetching all MUIS establishments (alphabet sweep)...");
+    const allEstablishments = await fetchAllMUISEstablishments(csrfToken, cookies, testMode);
 
     logger.info(`📊 Found ${allEstablishments.length} total establishments from MUIS`);
 
@@ -97,11 +98,20 @@ async function runDiscovery(dryRun = false, limit?: number) {
         subScheme.includes("restaurant") ||
         subScheme.includes("cafe") ||
         subScheme.includes("food court") ||
-        subScheme.includes("canteen")
+        subScheme.includes("canteen") ||
+        subScheme.includes("hawker")
       );
     });
 
     logger.info(`🍽️ Filtered to ${restaurants.length} restaurants (excluding caterers, suppliers, etc.)`);
+
+    // Log scheme breakdown
+    const schemeBreakdown: any = {};
+    restaurants.forEach((r) => {
+      const key = `${r.schemeText} - ${r.subSchemeText}`;
+      schemeBreakdown[key] = (schemeBreakdown[key] || 0) + 1;
+    });
+    logger.info("📊 Scheme breakdown:", schemeBreakdown);
 
     // Step 4: Get existing restaurants from database
     const existingSnapshot = await db.collection("restaurants").get();
@@ -137,6 +147,8 @@ async function runDiscovery(dryRun = false, limit?: number) {
           muisPostal: estPostal,
           muisAddress: est.address,
           certNumber: est.number,
+          scheme: est.schemeText,
+          subScheme: est.subSchemeText,
         });
         continue; // Skip - possible duplicate
       }
@@ -152,53 +164,66 @@ async function runDiscovery(dryRun = false, limit?: number) {
     const created: any[] = [];
 
     if (!dryRun && newRestaurants.length > 0) {
-      const batch = db.batch();
+      // Process in batches of 500 (Firestore limit)
+      const batchSize = 500;
+      for (let i = 0; i < newRestaurants.length; i += batchSize) {
+        const batch = db.batch();
+        const batchItems = newRestaurants.slice(i, i + batchSize);
 
-      for (const est of newRestaurants) {
-        const newRestaurantRef = db.collection("restaurants").doc();
+        for (const est of batchItems) {
+          const newRestaurantRef = db.collection("restaurants").doc();
 
-        const newRestaurant = {
-          // From MUIS
-          name: est.name,
-          address: est.address,
-          postal: est.postal,
-          status: "MUIS Halal-Certified",
-          muisCertNumber: est.number,
-          muisScheme: est.schemeText,
-          muisSubScheme: est.subSchemeText,
+          const newRestaurant = {
+            // From MUIS
+            name: est.name,
+            address: est.address,
+            postal: est.postal,
+            status: "MUIS Halal-Certified",
+            muisCertNumber: est.number,
+            muisScheme: est.schemeText,
+            muisSubScheme: est.subSchemeText,
 
-          // Extract coordinates from postal (or set to Singapore default)
-          location: new admin.firestore.GeoPoint(1.3521, 103.8198), // Singapore center - to be updated
+            // Extract coordinates from postal (or set to Singapore default)
+            location: new admin.firestore.GeoPoint(1.3521, 103.8198),
 
-          // Empty fields for manual completion
-          categories: [],
-          hours: "",
-          number: "",
-          image: "",
-          socials: {},
-          website: "",
+            // Required fields (empty for manual completion)
+            categories: [],
+            hours: "",
+            number: "",
+            image: "",
+            socials: {},
 
-          // Metadata
-          isActive: true,
-          needsReview: true, // 🚨 Flag for manual review
-          source: "MUIS Discovery",
-          createdAt: admin.firestore.Timestamp.now(),
-          lastVerified: admin.firestore.Timestamp.now(),
-          lastUpdated: admin.firestore.Timestamp.now(),
-        };
+            // Optional fields
+            menuUrl: "", // ✅ Changed from website
+            averageRating: 0, // ✅ Added
+            totalReviews: 0, // ✅ Added
 
-        batch.set(newRestaurantRef, newRestaurant);
+            // Metadata
+            isActive: true,
+            needsReview: true,
+            source: "MUIS Discovery",
+            createdAt: admin.firestore.Timestamp.now(),
+            lastVerified: admin.firestore.Timestamp.now(),
+            lastUpdated: admin.firestore.Timestamp.now(),
+          };
 
-        created.push({
-          id: newRestaurantRef.id,
-          name: est.name,
-          address: est.address,
-          certNumber: est.number,
-        });
+          batch.set(newRestaurantRef, newRestaurant);
+
+          created.push({
+            id: newRestaurantRef.id,
+            name: est.name,
+            address: est.address,
+            certNumber: est.number,
+            scheme: est.schemeText,
+            subScheme: est.subSchemeText,
+          });
+        }
+
+        await batch.commit();
+        logger.info(`✅ Created batch ${i / batchSize + 1}: ${batchItems.length} restaurants`);
       }
 
-      await batch.commit();
-      logger.info(`✅ Created ${created.length} new restaurant entries`);
+      logger.info(`✅ Created ${created.length} new restaurant entries total`);
     }
 
     // Step 7: Log results
@@ -209,6 +234,8 @@ async function runDiscovery(dryRun = false, limit?: number) {
       newDiscovered: newRestaurants.length,
       possibleDuplicates: possibleDuplicates.length,
       created: created.length,
+      testMode,
+      schemeBreakdown,
     };
 
     await db.collection("scraper_logs").add({
@@ -224,10 +251,11 @@ async function runDiscovery(dryRun = false, limit?: number) {
     return {
       success: true,
       dryRun,
+      testMode,
       duration: `${((Date.now() - startTime) / 1000).toFixed(2)}s`,
       summary,
-      newRestaurants: dryRun ? newRestaurants.slice(0, 10) : created, // Show first 10 in dry-run
-      possibleDuplicates: possibleDuplicates.slice(0, 10), // Show first 10
+      newRestaurants: dryRun ? newRestaurants.slice(0, 20) : created.slice(0, 20), // Show first 20
+      possibleDuplicates: possibleDuplicates.slice(0, 20), // Show first 20
       message: dryRun ?
         `Dry-run: Would create ${newRestaurants.length} new restaurants` :
         `Created ${created.length} new restaurants (marked for review)`,
@@ -252,66 +280,42 @@ async function runDiscovery(dryRun = false, limit?: number) {
 }
 
 /**
- * Fetch ALL establishments from MUIS API with pagination
+ * Fetch ALL establishments from MUIS API using alphabet sweep
+ *
+ * Strategy: Search for each letter (a-z) and number (0-9) individually,
+ * then combine and deduplicate results.
  */
 async function fetchAllMUISEstablishments(
   csrfToken: string,
   cookies: string,
-  limit?: number
+  testMode = false
 ): Promise<any[]> {
   const httpsAgent = new https.Agent({
     rejectUnauthorized: false,
   });
 
   const apiUrl = "https://halal.muis.gov.sg/api/halal/establishments";
+
+  // Full alphabet + numbers
+  const searchTerms = testMode ?
+    ["a", "b", "c"] : // Quick test with just 3 letters
+    ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+      "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+      "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+
   const allEstablishments: any[] = [];
+  const seenIds = new Set<string>();
 
-  try {
-    // First request to get total count
-    const firstResponse = await axios.post(
-      apiUrl,
-      {
-        text: "", // Empty search = all results
-      },
-      {
-        httpsAgent,
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          "X-CSRF-TOKEN": csrfToken,
-          "Cookie": cookies,
-          "Origin": "https://halal.muis.gov.sg",
-          "Referer": "https://halal.muis.gov.sg/",
-        },
-        timeout: 30000,
-      }
-    );
+  logger.info(`🔄 Searching ${searchTerms.length} terms (alphabet sweep)...`);
 
-    const totalRecords = firstResponse.data?.totalRecords || 0;
-    logger.info(`📊 Total MUIS records: ${totalRecords}`);
-
-    // If limit specified (for testing), use that instead
-    const recordsToFetch = limit ? Math.min(limit, totalRecords) : totalRecords;
-
-    // Add first batch
-    if (firstResponse.data?.data) {
-      allEstablishments.push(...firstResponse.data.data);
-    }
-
-    // Fetch remaining pages
-    const pageSize = 100; // Request 100 at a time
-    const totalPages = Math.ceil(recordsToFetch / pageSize);
-
-    for (let page = 1; page < totalPages; page++) {
-      logger.info(`Fetching page ${page + 1}/${totalPages}...`);
+  for (const term of searchTerms) {
+    try {
+      logger.info(`Searching: "${term}"...`);
 
       const response = await axios.post(
         apiUrl,
         {
-          text: "",
-          start: page * pageSize,
-          length: pageSize,
+          text: term,
         },
         {
           httpsAgent,
@@ -328,25 +332,33 @@ async function fetchAllMUISEstablishments(
         }
       );
 
-      if (response.data?.data) {
-        allEstablishments.push(...response.data.data);
+      const data = response.data?.data || [];
+      const totalRecords = response.data?.totalRecords || 0;
+
+      logger.info(`  Found ${totalRecords} results for "${term}" (returned ${data.length})`);
+
+      // Add unique establishments (deduplicate by ID)
+      let newCount = 0;
+      for (const est of data) {
+        if (!seenIds.has(est.id)) {
+          seenIds.add(est.id);
+          allEstablishments.push(est);
+          newCount++;
+        }
       }
 
-      // Rate limiting
+      logger.info(`  Added ${newCount} new unique establishments`);
+
+      // Rate limiting (be respectful to MUIS server)
       await sleep(300);
-
-      // Stop if we've reached the limit (for testing)
-      if (limit && allEstablishments.length >= limit) {
-        break;
-      }
+    } catch (error) {
+      logger.error(`Error searching "${term}":`, error);
+      // Continue with next term even if one fails
     }
-
-    logger.info(`✅ Fetched ${allEstablishments.length} establishments`);
-    return allEstablishments;
-  } catch (error) {
-    logger.error("Error fetching MUIS establishments:", error);
-    throw error;
   }
+
+  logger.info(`✅ Alphabet sweep complete: ${allEstablishments.length} unique establishments`);
+  return allEstablishments;
 }
 
 /**
