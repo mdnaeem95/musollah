@@ -1,19 +1,24 @@
 /**
- * Restaurant Locator Screen - PRODUCTION SAFE VERSION
+ * Restaurant Locator Screen - PRODUCTION SAFE VERSION WITH FAVORITES
  *
  * Prayer-aware halal food discovery with glassmorphism design,
  * certification badges, and 3D restaurant cards.
  * 
  * ✅ FIXES: Production crashes with comprehensive error handling
+ * ✅ NEW: Favorite functionality with auth integration
  *
- * @version 3.1 - Production hardened with error boundaries
+ * @version 3.2 - Added favorites + maintained error boundaries
  */
 
-import React, { memo, useCallback, useState, Component, ErrorInfo, ReactNode } from 'react';
+import React, { memo, useCallback, useState, Component, ErrorInfo, ReactNode, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView, ListRenderItem, TouchableOpacity } from 'react-native';
 import { MotiView } from 'moti';
 import { useTheme } from '../../../context/ThemeContext';
 import { useFoodTab } from '../../../hooks/food/useFoodTab';
+
+// ✅ NEW: Favorite hooks
+import { useUserFavorites, useToggleFavorite } from '../../../api/services/food';
+import { useAuthStore } from '../../../stores/useAuthStore';
 
 // Components
 import DynamicHero from '../../../components/food/DynamicHero';
@@ -24,10 +29,12 @@ import RestaurantCard from '../../../components/food/RestaurantCard';
 import RestaurantMap from '../../../components/food/RestaurantMap';
 import RestaurantCardSkeleton from '../../../components/food/RestaurantCardSkeleton';
 import CategoryPillSkeleton from '../../../components/food/CategoryPillSkeleton';
+import SignInModal from '../../../components/SignInModal'; // ✅ NEW
 
 // Types
-import type { Restaurant } from '../../../utils/types';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { Restaurant } from '../../../api/services/food';
+import * as Location from 'expo-location';
 
 // ============================================================================
 // ERROR BOUNDARY
@@ -150,8 +157,8 @@ const CategoryItem = memo<CategoryItemProps>(
           transition={{ delay: index * 80 }}
         >
           <CategoryPill
-            label={item}
-            selected={isSelected}
+            category={item}
+            isSelected={isSelected}
             count={count}
             onPress={() => onPress(item)}
           />
@@ -168,9 +175,19 @@ interface RestaurantItemProps {
   item: unknown;
   index: number;
   distance: string;
+  isFavorited?: boolean; // ✅ NEW
+  onToggleFavorite?: () => void; // ✅ NEW
+  isOpenNow?: boolean; // ✅ NEW
 }
 
-const RestaurantItem = memo<RestaurantItemProps>(({ item, index, distance }) => {
+const RestaurantItem = memo<RestaurantItemProps>(({ 
+  item, 
+  index, 
+  distance,
+  isFavorited,
+  onToggleFavorite,
+  isOpenNow,
+}) => {
   try {
     // Validate restaurant before rendering
     if (!isValidRestaurant(item)) {
@@ -178,7 +195,16 @@ const RestaurantItem = memo<RestaurantItemProps>(({ item, index, distance }) => 
       return null;
     }
 
-    return <RestaurantCard restaurant={item} distance={distance} />;
+    return (
+      <RestaurantCard 
+        restaurant={item} 
+        distance={distance}
+        isFavorited={isFavorited} // ✅ NEW
+        onToggleFavorite={onToggleFavorite} // ✅ NEW
+        isOpenNow={isOpenNow} // ✅ NEW
+        index={index}
+      />
+    );
   } catch (error) {
     console.error('❌ Error rendering restaurant:', error);
     return null;
@@ -192,6 +218,70 @@ const RestaurantItem = memo<RestaurantItemProps>(({ item, index, distance }) => 
 const RestaurantLocatorContent = () => {
   const { theme } = useTheme();
   const [viewMode, setViewMode] = useState<ViewMode>('map');
+
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
+  // ✅ NEW: Fetch location on mount
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchFreshLocation = async () => {
+      try {
+        console.log('🔍 DEBUG [Food Tab] Fetching fresh GPS location...');
+        
+        // Request permission
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        
+        if (status !== 'granted') {
+          console.warn('⚠️ WARN [Food Tab] Location permission denied - using Singapore');
+          if (isMounted) {
+            setUserLocation({ latitude: 1.3521, longitude: 103.8198 }); // Singapore
+          }
+          return;
+        }
+
+        // Get current location
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        console.log('✅ SUCCESS [Food Tab] Fresh location obtained', {
+          latitude: location.coords.latitude.toFixed(4),
+          longitude: location.coords.longitude.toFixed(4),
+        });
+
+        if (isMounted) {
+          setUserLocation({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          });
+        }
+      } catch (error) {
+        console.error('❌ ERROR [Food Tab] Location fetch failed:', error);
+        // Fallback to Singapore
+        if (isMounted) {
+          setUserLocation({ latitude: 1.3521, longitude: 103.8198 });
+        }
+      }
+    };
+
+    fetchFreshLocation();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Run once on mount
+  
+  // ✅ NEW: Auth and favorites
+  const { user } = useAuthStore();
+  const [showSignInModal, setShowSignInModal] = useState(false);
+  
+  // ✅ NEW: Fetch favorites
+  const { data: favorites = [] } = useUserFavorites(user?.uid ?? null);
+  const { mutate: toggleFavorite } = useToggleFavorite();
 
   // Wrap hook in try-catch
   let hookData;
@@ -218,6 +308,43 @@ const RestaurantLocatorContent = () => {
   const recommendedRestaurants = filterValidRestaurants(rawRecommended || []);
   const categories = validateCategories(rawCategories);
   const selectedCategories = validateCategories(rawSelected);
+
+  // ✅ NEW: Toggle favorite handler
+  const handleToggleFavorite = useCallback((restaurantId: string) => {
+    if (!user) {
+      setShowSignInModal(true);
+      return;
+    }
+
+    const currentlyFavorited = favorites.includes(restaurantId);
+    
+    toggleFavorite({
+      userId: user.uid,
+      restaurantId,
+      isFavorited: !currentlyFavorited,
+    });
+  }, [user, favorites, toggleFavorite]);
+
+  // ✅ NEW: Check if open now (basic logic)
+  const isOpenNow = useCallback((restaurant: Restaurant): boolean | undefined => {
+    if (!restaurant.hours) return undefined;
+
+    try {
+      const hoursStr = restaurant.hours.toLowerCase();
+      
+      // Simple check for "24 hours"
+      if (hoursStr.includes('24 hour') || hoursStr.includes('24/7')) {
+        return true;
+      }
+
+      // For now, return undefined for complex parsing
+      // TODO: Implement robust hours parsing
+      return undefined;
+    } catch (error) {
+      console.warn('Error parsing hours:', error);
+      return undefined;
+    }
+  }, []);
 
   // Safe category count calculation
   const getCategoryCount = useCallback((category: string) => {
@@ -278,6 +405,9 @@ const RestaurantLocatorContent = () => {
             item={item}
             index={index}
             distance={getSafeDistance(item)}
+            isFavorited={favorites.includes(item.id)} 
+            onToggleFavorite={() => handleToggleFavorite(item.id)} // ✅ NEW
+            isOpenNow={isOpenNow(item)} // ✅ NEW
           />
         );
       } catch (error) {
@@ -285,40 +415,26 @@ const RestaurantLocatorContent = () => {
         return null;
       }
     },
-    [getSafeDistance]
+    [getSafeDistance, favorites, handleToggleFavorite, isOpenNow]
   );
 
-  // Key extractors with null safety
-  const categoryKeyExtractor = useCallback(
-    (item: string | null, index: number) => {
-      try {
-        return item ?? `skeleton-cat-${index}`;
-      } catch {
-        return `error-cat-${index}`;
-      }
-    },
-    []
-  );
+  // Key extractors
+  const categoryKeyExtractor = useCallback((item: string | null, index: number) => {
+    return item || `skeleton-category-${index}`;
+  }, []);
 
-  const restaurantKeyExtractor = useCallback(
-    (item: Restaurant | null, index: number) => {
-      try {
-        return item?.id ?? `skeleton-rest-${index}`;
-      } catch {
-        return `error-rest-${index}`;
-      }
-    },
-    []
-  );
+  const restaurantKeyExtractor = useCallback((item: Restaurant | null, index: number) => {
+    return item?.id || `skeleton-restaurant-${index}`;
+  }, []);
 
-  // Skeleton data with validation
-  const skeletonCategories = isLoading 
-    ? Array(SKELETON_COUNT).fill(null) 
-    : (Array.isArray(categories) ? categories : []);
-    
+  // Skeleton data
+  const skeletonCategories = isLoading
+    ? Array(SKELETON_COUNT).fill(null)
+    : categories;
+
   const skeletonRestaurants = isLoading
     ? Array(SKELETON_COUNT).fill(null)
-    : (Array.isArray(recommendedRestaurants) ? recommendedRestaurants : []);
+    : recommendedRestaurants;
 
   return (
     <ScrollView
@@ -326,7 +442,7 @@ const RestaurantLocatorContent = () => {
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
     >
-      {/* Dynamic Hero Section - wrapped in error boundary */}
+      {/* Dynamic Hero - wrapped in error boundary */}
       <ErrorBoundary fallback={<View style={styles.heroPlaceholder} />}>
         <DynamicHero />
       </ErrorBoundary>
@@ -466,6 +582,12 @@ const RestaurantLocatorContent = () => {
           </MotiView>
         </View>
       )}
+
+      {/* ✅ NEW: Sign In Modal */}
+      <SignInModal
+        visible={showSignInModal}
+        onClose={() => setShowSignInModal(false)}
+      />
     </ScrollView>
   );
 };

@@ -1,53 +1,80 @@
 /**
  * All Reviews Page (REDESIGNED)
- * 
+ *
  * Modern reviews page with enhanced UI, animations, and better image gallery.
- * 
- * @version 2.0
+ *
+ * @version 2.0.1
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Image, Modal, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  Image,
+  Modal,
+  Dimensions,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { AirbnbRating } from 'react-native-ratings';
+import { AirbnbRating } from '@rn-vui/ratings';
 import { FlashList } from '@shopify/flash-list';
 import { MotiView } from 'moti';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../../../context/ThemeContext';
-import { useRestaurantReviews } from '../../../../api/services/food';
-import type { RestaurantReview as UIReview } from '../../../../utils/types';
+import { RestaurantReview, useRestaurantReviews } from '../../../../api/services/food';
 import { enter } from '../../../../utils';
 
 const { width } = Dimensions.get('window');
 
-function toIsoStringTimestamp(ts: unknown): string {
+// Convert various timestamp formats -> milliseconds number
+function toMillisTimestamp(ts: unknown): number {
+  // Firestore Timestamp
   if (ts && typeof ts === 'object' && typeof (ts as any).toDate === 'function') {
-    return (ts as any).toDate().toISOString();
+    const d = (ts as any).toDate();
+    const ms = d?.getTime?.();
+    return typeof ms === 'number' && !isNaN(ms) ? ms : Date.now();
   }
-  if (typeof ts === 'number') return new Date(ts).toISOString();
-  if (typeof ts === 'string') return ts;
-  return new Date().toISOString();
+
+  // number (already millis)
+  if (typeof ts === 'number') {
+    return !isNaN(ts) ? ts : Date.now();
+  }
+
+  // string (ISO or parseable)
+  if (typeof ts === 'string') {
+    const d = new Date(ts);
+    const ms = d.getTime();
+    return !isNaN(ms) ? ms : Date.now();
+  }
+
+  return Date.now();
 }
 
-function formatDate(isoString: string): string {
-  const date = new Date(isoString);
+function formatDate(timestampMs: number): string {
+  const date = new Date(timestampMs);
   const now = new Date();
+
+  // If date is invalid for any reason, just show "Today"
+  if (isNaN(date.getTime())) return 'Today';
+
   const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
   if (diffDays < 7) return `${diffDays} days ago`;
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
   if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-  
-  return date.toLocaleDateString('en-SG', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
+
+  return date.toLocaleDateString('en-SG', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
   });
 }
 
@@ -63,23 +90,21 @@ const AllReviews = () => {
 
   const { data: reviews = [], isLoading } = useRestaurantReviews(id as string);
 
-  const uiReviews: UIReview[] = React.useMemo(() => {
-    const restaurantId = (id as string) ?? '';
-    return reviews.map((r: any) => ({
+  const uiReviews: RestaurantReview[] = React.useMemo(() => {
+    return reviews.map((r: any): RestaurantReview => ({
       id: r.id,
-      restaurantId,
       userId: r.userId,
       userName: r.userName || 'Anonymous',
-      rating: r.rating ?? 0,
-      review: r.review ?? r.comment ?? '',
-      timestamp: toIsoStringTimestamp(r.timestamp),
+      rating: typeof r.rating === 'number' ? r.rating : Number(r.rating ?? 0),
+      comment: r.comment ?? r.review ?? '',
+      timestamp: toMillisTimestamp(r.timestamp),
       images: Array.isArray(r.images) ? r.images : [],
     }));
-  }, [reviews, id]);
+  }, [reviews]);
 
   const averageRating = React.useMemo(() => {
     if (uiReviews.length === 0) return 0;
-    const sum = uiReviews.reduce((acc, review) => acc + review.rating, 0);
+    const sum = uiReviews.reduce((acc, review) => acc + (review.rating || 0), 0);
     return sum / uiReviews.length;
   }, [uiReviews]);
 
@@ -131,9 +156,7 @@ const AllReviews = () => {
           <View style={[styles.emptyIconContainer, { backgroundColor: theme.colors.accent + '15' }]}>
             <FontAwesome6 name="comment-dots" size={48} color={theme.colors.accent} />
           </View>
-          <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>
-            No reviews yet
-          </Text>
+          <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>No reviews yet</Text>
           <Text style={[styles.emptySubtitle, { color: theme.colors.text.secondary }]}>
             Be the first to share your experience!
           </Text>
@@ -178,7 +201,7 @@ const AllReviews = () => {
               {uiReviews.length} {uiReviews.length === 1 ? 'review' : 'reviews'}
             </Text>
           </View>
-          
+
           <View style={styles.statsRight}>
             <TouchableOpacity
               style={[styles.writeButton, { backgroundColor: theme.colors.accent }]}
@@ -197,7 +220,7 @@ const AllReviews = () => {
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
-        renderItem={({ item, index }) => (
+        renderItem={({ item }) => (
           <MotiView
             from={{ opacity: 0, translateY: 20 }}
             animate={{ opacity: 1, translateY: 0 }}
@@ -216,14 +239,14 @@ const AllReviews = () => {
                   </View>
                   <View style={styles.userDetails}>
                     <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
-                      'Anonymous'
+                      {item.userName}
                     </Text>
                     <Text style={[styles.reviewDate, { color: theme.colors.text.muted }]}>
                       {formatDate(item.timestamp)}
                     </Text>
                   </View>
                 </View>
-                
+
                 {/* Rating */}
                 <View style={[styles.ratingBadge, { backgroundColor: '#FFD700' + '20' }]}>
                   <FontAwesome6 name="star" size={14} color="#FFD700" solid />
@@ -235,7 +258,7 @@ const AllReviews = () => {
 
               {/* Review Text */}
               <Text style={[styles.reviewText, { color: theme.colors.text.primary }]}>
-                {item.review}
+                {item.comment}
               </Text>
 
               {/* Review Images */}
@@ -243,15 +266,16 @@ const AllReviews = () => {
                 <View style={styles.imagesContainer}>
                   {item.images.slice(0, 4).map((image, imgIndex) => (
                     <TouchableOpacity
-                      key={imgIndex}
-                      onPress={() => openImageViewer(item.images!, imgIndex)}
+                      key={`${item.id}-${imgIndex}`}
+                      onPress={() => openImageViewer(item.images ?? [], imgIndex)}
                       style={styles.imageWrapper}
+                      activeOpacity={0.85}
                     >
                       <Image source={{ uri: image }} style={styles.thumbnail} />
-                      {imgIndex === 3 && item.images!.length > 4 && (
+                      {imgIndex === 3 && (item.images?.length ?? 0) > 4 && (
                         <View style={styles.moreImagesOverlay}>
                           <Text style={styles.moreImagesText}>
-                            +{item.images!.length - 4}
+                            +{(item.images?.length ?? 0) - 4}
                           </Text>
                         </View>
                       )}
@@ -277,12 +301,13 @@ const AllReviews = () => {
       />
 
       {/* Image Viewer Modal */}
-      <Modal visible={!!selectedImage} transparent animationType="fade">
+      <Modal visible={!!selectedImage} transparent animationType="fade" onRequestClose={closeImageViewer}>
         <View style={styles.modalContainer}>
           {/* Close Button */}
           <TouchableOpacity
             onPress={closeImageViewer}
             style={[styles.closeButton, { top: insets.top + 16 }]}
+            activeOpacity={0.85}
           >
             <View style={styles.closeButtonCircle}>
               <FontAwesome6 name="xmark" size={20} color="#fff" />
@@ -291,11 +316,7 @@ const AllReviews = () => {
 
           {/* Image */}
           {selectedImage && (
-            <Image 
-              source={{ uri: selectedImage }} 
-              style={styles.fullScreenImage}
-              resizeMode="contain"
-            />
+            <Image source={{ uri: selectedImage }} style={styles.fullScreenImage} resizeMode="contain" />
           )}
 
           {/* Image Counter */}
@@ -311,10 +332,8 @@ const AllReviews = () => {
               <TouchableOpacity
                 onPress={prevImage}
                 disabled={currentImageIndex === 0}
-                style={[
-                  styles.navButton,
-                  currentImageIndex === 0 && styles.navButtonDisabled,
-                ]}
+                style={[styles.navButton, currentImageIndex === 0 && styles.navButtonDisabled]}
+                activeOpacity={0.85}
               >
                 <FontAwesome6
                   name="chevron-left"
@@ -322,7 +341,7 @@ const AllReviews = () => {
                   color={currentImageIndex === 0 ? '#666' : '#fff'}
                 />
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 onPress={nextImage}
                 disabled={currentImageIndex === currentImages.length - 1}
@@ -330,6 +349,7 @@ const AllReviews = () => {
                   styles.navButton,
                   currentImageIndex === currentImages.length - 1 && styles.navButtonDisabled,
                 ]}
+                activeOpacity={0.85}
               >
                 <FontAwesome6
                   name="chevron-right"
@@ -346,9 +366,8 @@ const AllReviews = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+
   statsCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -364,21 +383,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  statsLeft: {
-    gap: 4,
-  },
-  averageRating: {
-    fontSize: 32,
-    fontFamily: 'Outfit_700Bold',
-  },
-  reviewCount: {
-    fontSize: 13,
-    fontFamily: 'Outfit_400Regular',
-    marginTop: 4,
-  },
-  statsRight: {
-    alignItems: 'flex-end',
-  },
+  statsLeft: { gap: 4 },
+  averageRating: { fontSize: 32, fontFamily: 'Outfit_700Bold' },
+  reviewCount: { fontSize: 13, fontFamily: 'Outfit_400Regular', marginTop: 4 },
+  statsRight: { alignItems: 'flex-end' },
+
   writeButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -387,15 +396,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
   },
-  writeButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontFamily: 'Outfit_600SemiBold',
-  },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-  },
+  writeButtonText: { color: '#fff', fontSize: 14, fontFamily: 'Outfit_600SemiBold' },
+
+  listContent: { paddingHorizontal: 16, paddingBottom: 20 },
+
   reviewCard: {
     borderRadius: 16,
     padding: 16,
@@ -407,37 +411,19 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+
   reviewHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  userDetails: {
-    flex: 1,
-    gap: 2,
-  },
-  userName: {
-    fontSize: 15,
-    fontFamily: 'Outfit_600SemiBold',
-  },
-  reviewDate: {
-    fontSize: 12,
-    fontFamily: 'Outfit_400Regular',
-  },
+  userInfo: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  avatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  userDetails: { flex: 1, gap: 2 },
+  userName: { fontSize: 15, fontFamily: 'Outfit_600SemiBold' },
+  reviewDate: { fontSize: 12, fontFamily: 'Outfit_400Regular' },
+
   ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -446,30 +432,14 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 10,
   },
-  ratingNumber: {
-    fontSize: 14,
-    fontFamily: 'Outfit_700Bold',
-  },
-  reviewText: {
-    fontSize: 14,
-    fontFamily: 'Outfit_400Regular',
-    lineHeight: 22,
-    marginBottom: 12,
-  },
-  imagesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  imageWrapper: {
-    position: 'relative',
-  },
-  thumbnail: {
-    width: (width - 72) / 4,
-    height: (width - 72) / 4,
-    borderRadius: 8,
-  },
+  ratingNumber: { fontSize: 14, fontFamily: 'Outfit_700Bold' },
+
+  reviewText: { fontSize: 14, fontFamily: 'Outfit_400Regular', lineHeight: 22, marginBottom: 12 },
+
+  imagesContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  imageWrapper: { position: 'relative' },
+  thumbnail: { width: (width - 72) / 4, height: (width - 72) / 4, borderRadius: 8 },
+
   moreImagesOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.6)',
@@ -477,22 +447,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  moreImagesText: {
-    color: '#fff',
-    fontSize: 18,
-    fontFamily: 'Outfit_700Bold',
-  },
-  reviewFooter: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(128,128,128,0.1)',
-    paddingTop: 12,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
+  moreImagesText: { color: '#fff', fontSize: 18, fontFamily: 'Outfit_700Bold' },
+
+  reviewFooter: { borderTopWidth: 1, borderTopColor: 'rgba(128,128,128,0.1)', paddingTop: 12 },
+
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
   emptyIconContainer: {
     width: 100,
     height: 100,
@@ -501,17 +460,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  emptyTitle: {
-    fontSize: 22,
-    fontFamily: 'Outfit_700Bold',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 15,
-    fontFamily: 'Outfit_400Regular',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
+  emptyTitle: { fontSize: 22, fontFamily: 'Outfit_700Bold', marginBottom: 8 },
+  emptySubtitle: { fontSize: 15, fontFamily: 'Outfit_400Regular', textAlign: 'center', marginBottom: 24 },
+
   writeReviewButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -520,26 +471,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
   },
-  writeReviewButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontFamily: 'Outfit_600SemiBold',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fullScreenImage: {
-    width: width,
-    height: '80%',
-  },
-  closeButton: {
-    position: 'absolute',
-    right: 20,
-    zIndex: 10,
-  },
+  writeReviewButtonText: { color: '#fff', fontSize: 16, fontFamily: 'Outfit_600SemiBold' },
+
+  modalContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
+  fullScreenImage: { width: width, height: '80%' },
+
+  closeButton: { position: 'absolute', right: 20, zIndex: 10 },
   closeButtonCircle: {
     width: 44,
     height: 44,
@@ -548,6 +485,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   imageCounter: {
     position: 'absolute',
     top: 60,
@@ -557,11 +495,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
   },
-  imageCounterText: {
-    color: '#fff',
-    fontSize: 14,
-    fontFamily: 'Outfit_600SemiBold',
-  },
+  imageCounterText: { color: '#fff', fontSize: 14, fontFamily: 'Outfit_600SemiBold' },
+
   navigationButtons: {
     position: 'absolute',
     flexDirection: 'row',
@@ -578,9 +513,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  navButtonDisabled: {
-    opacity: 0.3,
-  },
+  navButtonDisabled: { opacity: 0.3 },
 });
 
 export default AllReviews;

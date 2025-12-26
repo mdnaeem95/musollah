@@ -2,56 +2,48 @@ import { useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { format } from 'date-fns';
 import { usePreferencesStore } from '../../stores/userPreferencesStore';
-import { DailyPrayerTimes, validatePrayerNames } from '../../utils/types/prayer.types';
-import { notificationService } from '../../services/notification.service';
+import { NormalizedPrayerTimes, LoggablePrayerName } from '../../api/services/prayer/types/index';
+import { prayerNotificationService } from '../../services/notifications/prayerNotificationService';
 
 /**
  * Hook for scheduling prayer notifications
- * 
- * ✅ FIXED: Only schedules notifications for today or future dates
- * 
- * Improvements:
- * - Uses Zustand instead of Redux
- * - Better memoization with scheduleKey
- * - Proper cleanup and re-scheduling
- * - Skips past dates to prevent unnecessary cancellation/rescheduling
+ * Updated to use new prayer types
  */
-export const usePrayerNotifications = (prayerData: DailyPrayerTimes | null) => {
+export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null) => {
   const lastScheduledRef = useRef<string | null>(null);
   
-  const mutedNotifications = usePreferencesStore((state: any) => state.mutedNotifications);
-  const reminderInterval = usePreferencesStore((state: any) => state.reminderInterval);
-  const selectedAdhan = usePreferencesStore((state: any) => state.selectedAdhan);
+  const mutedNotifications = usePreferencesStore((state) => state.mutedNotifications);
+  const reminderInterval = usePreferencesStore((state) => state.reminderInterval);
+  const selectedAdhan = usePreferencesStore((state) => state.selectedAdhan);
 
   useEffect(() => {
-    // ✅ CRITICAL: Skip if no data
     if (!prayerData) {
       console.log('⏭️ No prayer data, skipping notifications');
       return;
     }
 
-    // ✅ CRITICAL: Only schedule notifications for today or future dates
+    // Only schedule for today or future
     const today = format(new Date(), 'yyyy-MM-dd');
     const selectedDate = prayerData.date;
     
     if (selectedDate < today) {
-      console.log(`⏭️ Skipping notification scheduling for past date: ${selectedDate}`);
-      return; // Don't schedule notifications for past dates
-    }
-
-    console.log(`📅 Current date is ${selectedDate}, scheduling notifications...`);
-
-    // Skip if all notifications muted
-    if (mutedNotifications.length === 5) {
-      console.log('🔇 All notifications muted, skipping');
+      console.log(`⏭️ Skipping notification for past date: ${selectedDate}`);
       return;
     }
 
-    // Create unique key to prevent redundant scheduling
+    console.log(`📅 Scheduling notifications for ${selectedDate}`);
+
+    // Skip if all muted
+    if (mutedNotifications.length === 5) {
+      console.log('🔇 All notifications muted');
+      return;
+    }
+
+    // Create unique key
     const scheduleKey = `${prayerData.date}_${reminderInterval}_${selectedAdhan}_${mutedNotifications.sort().join(',')}`;
     
     if (lastScheduledRef.current === scheduleKey) {
-      console.log('✅ Notifications already scheduled with same config');
+      console.log('✅ Notifications already scheduled');
       return;
     }
 
@@ -61,22 +53,40 @@ export const usePrayerNotifications = (prayerData: DailyPrayerTimes | null) => {
       if (!mounted) return;
 
       try {
-        console.log('🗑️ Cancelling all existing notifications...');
-        await notificationService.cancelAllNotifications();
+        console.log('🗑️ Cancelling existing notifications...');
+        await prayerNotificationService.cancelAllNotifications();
         
-        const validMutedPrayers = validatePrayerNames(mutedNotifications);
+        // Validate muted prayers
+        const validMutedPrayers = mutedNotifications.filter(
+          (name): name is LoggablePrayerName => 
+            ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'].includes(name)
+        );
+        
+        // ✅ Transform NormalizedPrayerTimes to format notification service expects
+        const prayerTimesForNotification = {
+          date: prayerData.date,
+          hijriDate: undefined,
+          prayers: {
+            Subuh: prayerData.subuh,
+            Syuruk: prayerData.syuruk,
+            Zohor: prayerData.zohor,
+            Asar: prayerData.asar,
+            Maghrib: prayerData.maghrib,
+            Isyak: prayerData.isyak,
+          }
+        };
         
         console.log('📅 Scheduling notifications for next 5 days');
-        await notificationService.schedulePrayerNotifications(
-          prayerData,
+        await prayerNotificationService.schedulePrayerNotifications(
+          prayerTimesForNotification as any, // ✅ Cast to avoid type conflict
           reminderInterval,
-          validMutedPrayers,
+          validMutedPrayers as any,
           selectedAdhan
         );
 
         if (mounted) {
           lastScheduledRef.current = scheduleKey;
-          console.log('✅ Prayer notifications scheduled');
+          console.log('✅ Notifications scheduled');
         }
       } catch (error) {
         if (mounted) {
@@ -87,16 +97,13 @@ export const usePrayerNotifications = (prayerData: DailyPrayerTimes | null) => {
 
     scheduleNotifications();
 
-    // ✅ Re-schedule when app becomes active (only for current/future dates)
+    // Re-schedule on app foreground
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (mounted && nextAppState === 'active') {
-        // Re-check date in case day changed while app was in background
         const currentToday = format(new Date(), 'yyyy-MM-dd');
         if (prayerData.date >= currentToday) {
-          console.log('📱 App resumed, re-scheduling notifications');
+          console.log('📱 App resumed, re-scheduling');
           scheduleNotifications();
-        } else {
-          console.log('⏭️ App resumed but viewing past date, skipping notification update');
         }
       }
     };

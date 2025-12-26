@@ -1,15 +1,25 @@
 /**
- * Quran Store
+ * Quran Store (REFACTORED WITH STRUCTURED LOGGING)
  * 
  * Manages Quran-related client state:
  * - Quran bookmarks
  * - Recitation plan
  * - Reading progress (general & daily)
+ * 
+ * @version 2.0
+ * @refactored 2025-12-23
  */
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { defaultStorage } from '../api/client/storage';
+import { createLogger } from '../services/logging/logger';
+
+// ============================================================================
+// LOGGER
+// ============================================================================
+
+const logger = createLogger('Quran Store');
 
 // ============================================================================
 // TYPES
@@ -76,35 +86,70 @@ export const useQuranStore = create<QuranState>()(
       readAyahsToday: [],
       lastListenedAyah: null,
       
-      // Bookmark Actions
+      // ========================================================================
+      // BOOKMARK ACTIONS
+      // ========================================================================
+      
       addBookmark: (bookmark) => {
-        console.log('📖 Adding Quran bookmark:', `${bookmark.surahNumber}:${bookmark.ayahNumber}`);
+        const ayahKey = `${bookmark.surahNumber}:${bookmark.ayahNumber}`;
+        
         set((state) => {
           // Prevent duplicates
           const exists = state.bookmarks.some(
             (b) => b.surahNumber === bookmark.surahNumber && b.ayahNumber === bookmark.ayahNumber
           );
-          if (exists) return state;
+          
+          if (exists) {
+            logger.debug('Bookmark already exists, skipping', {
+              ayahKey,
+              surahName: bookmark.surahName,
+              reason: 'duplicate',
+            });
+            return state;
+          }
+          
+          const newBookmark = {
+            ...bookmark,
+            timestamp: Date.now(),
+          };
+          
+          logger.info('Bookmark added', {
+            ayahKey,
+            surahName: bookmark.surahName,
+            totalBookmarks: state.bookmarks.length + 1,
+          });
           
           return {
-            bookmarks: [
-              ...state.bookmarks,
-              {
-                ...bookmark,
-                timestamp: Date.now(),
-              },
-            ],
+            bookmarks: [...state.bookmarks, newBookmark],
           };
         });
       },
       
       removeBookmark: (surahNumber, ayahNumber) => {
-        console.log('🗑️ Removing Quran bookmark:', `${surahNumber}:${ayahNumber}`);
-        set((state) => ({
-          bookmarks: state.bookmarks.filter(
-            (b) => !(b.surahNumber === surahNumber && b.ayahNumber === ayahNumber)
-          ),
-        }));
+        const ayahKey = `${surahNumber}:${ayahNumber}`;
+        
+        set((state) => {
+          const bookmark = state.bookmarks.find(
+            (b) => b.surahNumber === surahNumber && b.ayahNumber === ayahNumber
+          );
+          
+          if (!bookmark) {
+            logger.warn('Bookmark not found, cannot remove', { ayahKey });
+            return state;
+          }
+          
+          logger.info('Bookmark removed', {
+            ayahKey,
+            surahName: bookmark.surahName,
+            totalBookmarks: state.bookmarks.length - 1,
+          });
+          
+          return {
+            bookmarks: state.bookmarks.filter(
+              (b) => !(b.surahNumber === surahNumber && b.ayahNumber === ayahNumber)
+            ),
+          };
+        });
       },
       
       isBookmarked: (surahNumber, ayahNumber) => {
@@ -114,31 +159,73 @@ export const useQuranStore = create<QuranState>()(
       },
       
       clearBookmarks: () => {
-        console.log('🗑️ Clearing all Quran bookmarks');
+        const count = get().bookmarks.length;
+        
+        logger.info('All bookmarks cleared', {
+          previousCount: count,
+        });
+        
         set({ bookmarks: [] });
       },
       
-      // Recitation Plan Actions
+      // ========================================================================
+      // RECITATION PLAN ACTIONS
+      // ========================================================================
+      
       setRecitationPlan: (plan) => {
-        console.log('📅 Setting recitation plan:', plan.planType, plan.daysToFinish, 'days');
+        logger.info('Recitation plan set', {
+          planType: plan.planType,
+          daysToFinish: plan.daysToFinish,
+          startDate: plan.startDate,
+          dailyTarget: calculateDailyTarget(plan),
+        });
+        
         set({ recitationPlan: plan });
       },
       
       clearRecitationPlan: () => {
-        console.log('🗑️ Clearing recitation plan');
+        const currentPlan = get().recitationPlan;
+        
+        if (currentPlan) {
+          logger.info('Recitation plan cleared', {
+            planType: currentPlan.planType,
+            completedAyahs: currentPlan.completedAyahKeys.length,
+          });
+        } else {
+          logger.debug('No recitation plan to clear');
+        }
+        
         set({ recitationPlan: null });
       },
       
       updateRecitationProgress: (ayahKey) => {
         set((state) => {
-          if (!state.recitationPlan) return state;
-          
-          // Prevent duplicates
-          if (state.recitationPlan.completedAyahKeys.includes(ayahKey)) {
+          if (!state.recitationPlan) {
+            logger.warn('Cannot update progress: No recitation plan active', { ayahKey });
             return state;
           }
           
-          console.log('✅ Marking ayah as completed in plan:', ayahKey);
+          // Prevent duplicates
+          if (state.recitationPlan.completedAyahKeys.includes(ayahKey)) {
+            logger.debug('Ayah already completed in plan, skipping', {
+              ayahKey,
+              reason: 'duplicate',
+            });
+            return state;
+          }
+          
+          const newCompletedCount = state.recitationPlan.completedAyahKeys.length + 1;
+          const progress = calculateRecitationProgress({
+            ...state.recitationPlan,
+            completedAyahKeys: [...state.recitationPlan.completedAyahKeys, ayahKey],
+          });
+          
+          logger.success('Ayah marked as completed in plan', {
+            ayahKey,
+            completedCount: newCompletedCount,
+            expectedCount: progress.expected,
+            progressRatio: `${(progress.progressRatio * 100).toFixed(1)}%`,
+          });
           
           return {
             recitationPlan: {
@@ -154,18 +241,32 @@ export const useQuranStore = create<QuranState>()(
         return plan ? plan.completedAyahKeys.includes(ayahKey) : false;
       },
       
-      // Reading Progress Actions
+      // ========================================================================
+      // READING PROGRESS ACTIONS
+      // ========================================================================
+      
       markAyahAsRead: (surahNumber, ayahNumber) => {
         const ayahKey = `${surahNumber}:${ayahNumber}`;
         
         set((state) => {
-          // Prevent duplicates
           const alreadyRead = state.readAyahs.includes(ayahKey);
           const alreadyReadToday = state.readAyahsToday.includes(ayahKey);
           
-          if (alreadyRead && alreadyReadToday) return state;
+          if (alreadyRead && alreadyReadToday) {
+            logger.debug('Ayah already marked as read', {
+              ayahKey,
+              reason: 'duplicate',
+            });
+            return state;
+          }
           
-          console.log('📗 Marking ayah as read:', ayahKey);
+          logger.info('Ayah marked as read', {
+            ayahKey,
+            newRead: !alreadyRead,
+            newReadToday: !alreadyReadToday,
+            totalRead: alreadyRead ? state.readAyahs.length : state.readAyahs.length + 1,
+            totalReadToday: alreadyReadToday ? state.readAyahsToday.length : state.readAyahsToday.length + 1,
+          });
           
           return {
             readAyahs: alreadyRead ? state.readAyahs : [...state.readAyahs, ayahKey],
@@ -176,12 +277,26 @@ export const useQuranStore = create<QuranState>()(
       
       unmarkAyahAsRead: (surahNumber, ayahNumber) => {
         const ayahKey = `${surahNumber}:${ayahNumber}`;
-        console.log('📕 Unmarking ayah as read:', ayahKey);
         
-        set((state) => ({
-          readAyahs: state.readAyahs.filter((key) => key !== ayahKey),
-          readAyahsToday: state.readAyahsToday.filter((key) => key !== ayahKey),
-        }));
+        set((state) => {
+          const wasRead = state.readAyahs.includes(ayahKey);
+          
+          if (!wasRead) {
+            logger.debug('Ayah not marked as read, nothing to unmark', { ayahKey });
+            return state;
+          }
+          
+          logger.info('Ayah unmarked as read', {
+            ayahKey,
+            totalRead: state.readAyahs.length - 1,
+            totalReadToday: state.readAyahsToday.length - 1,
+          });
+          
+          return {
+            readAyahs: state.readAyahs.filter((key) => key !== ayahKey),
+            readAyahsToday: state.readAyahsToday.filter((key) => key !== ayahKey),
+          };
+        });
       },
       
       isAyahRead: (surahNumber, ayahNumber) => {
@@ -198,18 +313,39 @@ export const useQuranStore = create<QuranState>()(
       },
       
       clearReadAyahs: () => {
-        console.log('🗑️ Clearing all read ayahs');
+        const state = get();
+        
+        logger.info('All read ayahs cleared', {
+          totalRead: state.readAyahs.length,
+          totalReadToday: state.readAyahsToday.length,
+        });
+        
         set({ readAyahs: [], readAyahsToday: [] });
       },
       
       resetDailyProgress: () => {
-        console.log('🔄 Resetting daily progress');
+        const todayCount = get().readAyahsToday.length;
+        
+        logger.info('Daily progress reset', {
+          previousCount: todayCount,
+        });
+        
         set({ readAyahsToday: [] });
       },
       
-      // Last Listened Position
+      // ========================================================================
+      // LAST LISTENED POSITION
+      // ========================================================================
+      
       setLastListenedAyah: (surahNumber, ayahNumber) => {
-        console.log('🎧 Setting last listened ayah:', `${surahNumber}:${ayahNumber}`);
+        const ayahKey = `${surahNumber}:${ayahNumber}`;
+        
+        logger.debug('Last listened ayah updated', {
+          ayahKey,
+          surahNumber,
+          ayahNumber,
+        });
+        
         set({ lastListenedAyah: { surahNumber, ayahNumber } });
       },
     }),
@@ -228,6 +364,24 @@ export const useQuranStore = create<QuranState>()(
         },
       })),
       version: 1,
+      // Optionally log store hydration
+      onRehydrateStorage: () => {
+        logger.debug('Hydrating Quran store from MMKV');
+        
+        return (state, error) => {
+          if (error) {
+            logger.error('Hydration failed', { error: error });
+          } else if (state) {
+            logger.success('Hydration complete', {
+              bookmarkCount: state.bookmarks.length,
+              readAyahsCount: state.readAyahs.length,
+              readTodayCount: state.readAyahsToday.length,
+              hasRecitationPlan: !!state.recitationPlan,
+              hasListenPosition: !!state.lastListenedAyah,
+            });
+          }
+        };
+      },
     }
   )
 );

@@ -1,15 +1,16 @@
 /**
- * Submit Review Page (REDESIGNED)
+ * Submit Review Page (REDESIGNED) - RATING VISIBILITY FIX
  * 
  * Modern review submission with enhanced UI, better image picker, and animations.
+ * ✅ FIXED: Rating stars now visible with proper contrast
  * 
- * @version 2.0
+ * @version 2.1
  */
 
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView, TouchableWithoutFeedback, Keyboard, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { AirbnbRating } from 'react-native-ratings';
+import { AirbnbRating } from '@rn-vui/ratings';
 import { MotiView } from 'moti';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -118,15 +119,27 @@ const SubmitReview = () => {
               </Text>
             </View>
 
-            <AirbnbRating
-              count={5}
-              defaultRating={rating || 5}
-              size={40}
-              onFinishRating={handleRatingChange}
-              starContainerStyle={styles.starContainer}
-            />
+            {/* ✅ FIX: Add visible background for stars */}
+            <View style={[
+              styles.ratingContainer,
+              { 
+                backgroundColor: isDarkMode 
+                  ? 'rgba(255, 255, 255, 0.05)'  // Subtle light bg in dark mode
+                  : 'rgba(0, 0, 0, 0.03)'         // Subtle dark bg in light mode
+              }
+            ]}>
+              <AirbnbRating
+                count={5}
+                defaultRating={rating || 5}
+                size={44}
+                showRating={false}
+                selectedColor="#FFD700"
+                starContainerStyle={styles.starContainer}
+                onFinishRating={handleRatingChange}
+              />
+            </View>
 
-            {/* ✅ Simple text label instead of emoji */}
+            {/* Rating label */}
             <View style={styles.ratingLabelContainer}>
               <Text style={[styles.ratingLabel, { color: theme.colors.text.primary }]}>
                 {currentRatingInfo.label}
@@ -301,7 +314,7 @@ const SubmitReview = () => {
         <View style={styles.bottomPadding} />
 
         {/* Sign In Modal */}
-        <SignInModal isVisible={authModalVisible} onClose={() => setAuthModalVisible(false)} />
+        <SignInModal visible={authModalVisible} onClose={() => setAuthModalVisible(false)} />
       </ScrollView>
     </TouchableWithoutFeedback>
   );
@@ -363,16 +376,23 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_400Regular',
     marginLeft: 'auto',
   },
-  starContainer: {
-    gap: 8,
+  // ✅ NEW: Container for stars with visible background
+  ratingContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     marginBottom: 16,
+    alignItems: 'center',
+  },
+  starContainer: {
+    gap: 12,  // ✅ Increased gap between stars
   },
   ratingLabelContainer: {
     alignItems: 'center',
     gap: 4,
   },
   ratingLabel: {
-    fontSize: 20,         // ✅ Larger, more prominent
+    fontSize: 20,
     fontFamily: 'Outfit_700Bold',
   },
   ratingFeedback: {

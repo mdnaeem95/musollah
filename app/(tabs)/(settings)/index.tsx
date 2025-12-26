@@ -87,7 +87,7 @@ const SettingsTab = () => {
           animate={{ opacity: 1, translateY: 0 }}
           transition={enter(0)}
         >
-          <SectionHeader icon="sparkles" label="Other Features" theme={theme} />
+          <SectionHeader icon="plus" label="Other Features" theme={theme} />
 
           <View style={styles.featuresGrid}>
             {FEATURE_CARDS.map((feature, index) => (

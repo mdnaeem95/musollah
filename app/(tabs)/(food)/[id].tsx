@@ -246,7 +246,7 @@ const RestaurantDetails = () => {
       </Animated.ScrollView>
 
       {/* Sign In Modal */}
-      <SignInModal isVisible={isAuthModalVisible} onClose={closeAuthModal} />
+      <SignInModal visible={isAuthModalVisible} onClose={closeAuthModal} />
     </View>
   );
 };

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { isYesterday, isToday, differenceInDays, format } from 'date-fns';
-import { PrayerLog } from '../utils/types/prayer.types';
-import { LOGGABLE_PRAYERS } from '../constants/prayer.constants';
+import { PrayerLog } from '../../utils/types/prayer.types';
+import { LOGGABLE_PRAYERS } from '../../constants/prayer.constants';
 
 // ============================================================================
 // TYPES

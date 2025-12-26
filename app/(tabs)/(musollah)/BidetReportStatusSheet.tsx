@@ -11,7 +11,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Dimensions, TextInput } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { MotiView } from 'moti';
 import { BlurView } from 'expo-blur';
@@ -46,14 +46,14 @@ interface ReportStatusSheetProps {
   type: 'bidet' | 'musollah';
   locationId: string;
   currentStatus?: 'Available' | 'Unavailable' | 'Unknown';
-  currentMale?: 'Yes' | 'No' | 'Unknown';
-  currentFemale?: 'Yes' | 'No' | 'Unknown';
-  currentHandicap?: 'Yes' | 'No' | 'Unknown';
+  currentMale?: 'Yes' | 'No' | 'Unknown' | string;  // Can be Yes/No or location text
+  currentFemale?: 'Yes' | 'No' | 'Unknown' | string;
+  currentHandicap?: 'Yes' | 'No' | 'Unknown' | string;
   onStatusUpdate: (updates: {
     status: 'Available' | 'Unavailable' | 'Unknown';
-    male?: 'Yes' | 'No' | 'Unknown';
-    female?: 'Yes' | 'No' | 'Unknown';
-    handicap?: 'Yes' | 'No' | 'Unknown';
+    male?: 'Yes' | 'No' | 'Unknown' | string;  // Can send location text
+    female?: 'Yes' | 'No' | 'Unknown' | string;
+    handicap?: 'Yes' | 'No' | 'Unknown' | string;
   }) => void;
 }
 
@@ -161,6 +161,50 @@ const SectionHeader = React.memo(({ title, icon, theme, index }: any) => (
   </MotiView>
 ));
 
+// Location Input Component (appears when facility is "Yes")
+const LocationInput = React.memo(({
+  value,
+  onChangeText,
+  placeholder,
+  theme,
+  isDarkMode,
+}: any) => (
+  <MotiView
+    from={{ opacity: 0, height: 0 }}
+    animate={{ opacity: 1, height: 'auto' }}
+    exit={{ opacity: 0, height: 0 }}
+    transition={{ type: 'timing', duration: 200 }}
+    style={styles.locationInputContainer}
+  >
+    <BlurView
+      intensity={15}
+      tint={isDarkMode ? 'dark' : 'light'}
+      style={[styles.locationInputWrapper, { backgroundColor: theme.colors.secondary }]}
+    >
+      <View style={[styles.locationIconContainer, { backgroundColor: `${theme.colors.accent}15` }]}>
+        <FontAwesome6 name="location-dot" size={14} color={theme.colors.accent} />
+      </View>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={theme.colors.text.muted}
+        style={[styles.locationInput, { color: theme.colors.text.primary }]}
+        maxLength={50}
+        autoCapitalize="words"
+      />
+      {value.length > 0 && (
+        <TouchableOpacity onPress={() => onChangeText('')} activeOpacity={0.7}>
+          <FontAwesome6 name="circle-xmark" size={18} color={theme.colors.text.muted} solid />
+        </TouchableOpacity>
+      )}
+    </BlurView>
+    <Text style={[styles.helperText, { color: theme.colors.text.muted }]}>
+      e.g., "Level 3, near lifts" or "Basement 1"
+    </Text>
+  </MotiView>
+));
+
 const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
   visible,
   onClose,
@@ -174,25 +218,54 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
 }) => {
   const { theme, isDarkMode } = useTheme();
 
+  // Helper to check if value is a location detail (not Yes/No/Unknown)
+  const isLocationDetail = (value: string) => {
+    const normalized = value?.toLowerCase();
+    return normalized !== 'yes' && normalized !== 'no' && normalized !== 'unknown' && value.length > 0;
+  };
+
   // State
   const [selectedStatus, setSelectedStatus] = useState(currentStatus);
-  const [male, setMale] = useState(currentMale);
-  const [female, setFemale] = useState(currentFemale);
-  const [handicap, setHandicap] = useState(currentHandicap);
+  
+  // For facility availability, default to 'Unknown' if current value is location text
+  const [male, setMale] = useState<'Yes' | 'No' | 'Unknown'>(
+    isLocationDetail(currentMale) ? 'Yes' : (currentMale as 'Yes' | 'No' | 'Unknown')
+  );
+  const [female, setFemale] = useState<'Yes' | 'No' | 'Unknown'>(
+    isLocationDetail(currentFemale) ? 'Yes' : (currentFemale as 'Yes' | 'No' | 'Unknown')
+  );
+  const [handicap, setHandicap] = useState<'Yes' | 'No' | 'Unknown'>(
+    isLocationDetail(currentHandicap) ? 'Yes' : (currentHandicap as 'Yes' | 'No' | 'Unknown')
+  );
+  
+  // Location detail text inputs
+  const [maleLocation, setMaleLocation] = useState(isLocationDetail(currentMale) ? currentMale : '');
+  const [femaleLocation, setFemaleLocation] = useState(isLocationDetail(currentFemale) ? currentFemale : '');
+  const [handicapLocation, setHandicapLocation] = useState(isLocationDetail(currentHandicap) ? currentHandicap : '');
+  
   const [isPending, setIsPending] = useState(false);
 
   // Check if any changes were made
   const hasChanges = useMemo(() => {
     if (type === 'bidet') {
+      // Check if basic selections changed OR location details were added/modified
+      const maleChanged = male !== (isLocationDetail(currentMale) ? 'Yes' : currentMale) || 
+                         maleLocation !== (isLocationDetail(currentMale) ? currentMale : '');
+      const femaleChanged = female !== (isLocationDetail(currentFemale) ? 'Yes' : currentFemale) || 
+                           femaleLocation !== (isLocationDetail(currentFemale) ? currentFemale : '');
+      const handicapChanged = handicap !== (isLocationDetail(currentHandicap) ? 'Yes' : currentHandicap) || 
+                             handicapLocation !== (isLocationDetail(currentHandicap) ? currentHandicap : '');
+      
       return (
         selectedStatus !== currentStatus ||
-        male !== currentMale ||
-        female !== currentFemale ||
-        handicap !== currentHandicap
+        maleChanged ||
+        femaleChanged ||
+        handicapChanged
       );
     }
     return selectedStatus !== currentStatus;
-  }, [selectedStatus, male, female, handicap, currentStatus, currentMale, currentFemale, currentHandicap, type]);
+  }, [selectedStatus, male, female, handicap, maleLocation, femaleLocation, handicapLocation, 
+      currentStatus, currentMale, currentFemale, currentHandicap, type]);
 
   // Handle submit
   const handleSubmit = useCallback(async () => {
@@ -205,9 +278,19 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
       const updates: any = { status: selectedStatus };
 
       if (type === 'bidet') {
-        updates.male = male;
-        updates.female = female;
-        updates.handicap = handicap;
+        // For each facility, send location text if provided AND facility is "Yes"
+        // Otherwise send the Yes/No/Unknown value
+        updates.male = male === 'Yes' && maleLocation.trim() 
+          ? maleLocation.trim() 
+          : male;
+        
+        updates.female = female === 'Yes' && femaleLocation.trim() 
+          ? femaleLocation.trim() 
+          : female;
+        
+        updates.handicap = handicap === 'Yes' && handicapLocation.trim() 
+          ? handicapLocation.trim() 
+          : handicap;
       }
 
       await onStatusUpdate(updates);
@@ -220,7 +303,8 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
     } finally {
       setIsPending(false);
     }
-  }, [hasChanges, isPending, selectedStatus, male, female, handicap, type, onStatusUpdate, onClose]);
+  }, [hasChanges, isPending, selectedStatus, male, female, handicap, 
+      maleLocation, femaleLocation, handicapLocation, type, onStatusUpdate, onClose]);
 
   // Handle close
   const handleClose = useCallback(() => {
@@ -272,7 +356,7 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
             bounces={true}
           >
             {/* Overall Status Section */}
-            <SectionHeader title="Overall Status" icon="info-circle" theme={theme} index={0} />
+            <SectionHeader title="Overall Status" icon="check" theme={theme} index={0} />
 
             <View style={styles.optionsRow}>
               <StatusOption
@@ -355,6 +439,17 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
                       disabled={isPending}
                     />
                   </View>
+                  
+                  {/* Location Input (only shown when Male = Yes) */}
+                  {male === 'Yes' && (
+                    <LocationInput
+                      value={maleLocation}
+                      onChangeText={setMaleLocation}
+                      placeholder="Where exactly? (optional)"
+                      theme={theme}
+                      isDarkMode={isDarkMode}
+                    />
+                  )}
                 </View>
 
                 {/* Female Facilities */}
@@ -397,6 +492,17 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
                       disabled={isPending}
                     />
                   </View>
+                  
+                  {/* Location Input (only shown when Female = Yes) */}
+                  {female === 'Yes' && (
+                    <LocationInput
+                      value={femaleLocation}
+                      onChangeText={setFemaleLocation}
+                      placeholder="Where exactly? (optional)"
+                      theme={theme}
+                      isDarkMode={isDarkMode}
+                    />
+                  )}
                 </View>
 
                 {/* Accessible Facilities */}
@@ -439,6 +545,17 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
                       disabled={isPending}
                     />
                   </View>
+                  
+                  {/* Location Input (only shown when Accessible = Yes) */}
+                  {handicap === 'Yes' && (
+                    <LocationInput
+                      value={handicapLocation}
+                      onChangeText={setHandicapLocation}
+                      placeholder="Where exactly? (optional)"
+                      theme={theme}
+                      isDarkMode={isDarkMode}
+                    />
+                  )}
                 </View>
               </>
             )}
@@ -619,6 +736,44 @@ const styles = StyleSheet.create({
   facilityLabel: {
     fontSize: 15,
     fontFamily: 'Outfit_500Medium',
+  },
+
+  // Location Input
+  locationInputContainer: {
+    marginTop: SPACING.md,
+  },
+  locationInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  locationIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  locationInput: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Outfit_400Regular',
+    paddingVertical: 0,
+  },
+  helperText: {
+    fontSize: 11,
+    fontFamily: 'Outfit_400Regular',
+    marginTop: SPACING.xs,
+    marginLeft: SPACING.lg,
   },
 
   // Actions Section (Fixed at Bottom)

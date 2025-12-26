@@ -1,23 +1,23 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { MotiView } from 'moti';
 import { format } from 'date-fns';
 import Toast from 'react-native-toast-message';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../stores/useAuthStore';
-import { useTodayPrayerLog, usePrayerLog, useSavePrayerLog, PrayerLog } from '../../api/services/prayer/logs';
+import { useTodayPrayerLog, usePrayerLog, useSavePrayerLog } from '../../api/services/prayer/queries/prayer-logs';
+import { type PrayerLog, LocalPrayerName } from '../../api/services/prayer/types/index';
+import { LOGGABLE_PRAYERS, PRAYER_ORDER } from '../../api/services/prayer/types/constants';
 import PrayerTimeItem from './PrayerTimeItem';
-import { PrayerName } from '../../utils/types/prayer.types';
-import { isPrayerAvailable } from '../../utils/prayers/prayerTimeUtils';
-import { PRAYER_NAMES } from '../../constants/prayer.constants';
-import { useQueryClient } from '@tanstack/react-query';
+import SignInModal from '../SignInModal'; // ✅ Add this import
 
 interface PrayerTimesListProps {
-  prayerTimes: Record<PrayerName, string> | null;
+  prayerTimes: Record<LocalPrayerName, string> | null;
   selectedDate: Date;
-  currentPrayer?: PrayerName | null;  // ✅ NEW
-  nextPrayerInfo?: {                   // ✅ NEW
-    nextPrayer: PrayerName;
+  currentPrayer?: LocalPrayerName | null;
+  nextPrayerInfo?: {
+    nextPrayer: LocalPrayerName;
     timeUntilNextPrayer: string;
   } | null;
 }
@@ -40,6 +40,19 @@ const EMPTY_PRAYERS: PrayersPayload = {
 };
 
 /**
+ * Check if prayer time has passed (can be logged)
+ * @param prayerTime - Prayer time string (HH:MM)
+ * @returns True if current time is past prayer time
+ */
+function canLogPrayer(prayerTime: string): boolean {
+  const [hours, minutes] = prayerTime.split(':').map(Number);
+  const prayerDate = new Date();
+  prayerDate.setHours(hours, minutes, 0, 0);
+  
+  return new Date() >= prayerDate;
+}
+
+/**
  * Prayer Times List with Prayer Logging
  * 
  * Features:
@@ -47,16 +60,20 @@ const EMPTY_PRAYERS: PrayersPayload = {
  * - Next prayer shows countdown
  * - Uses TanStack Query for prayer logs
  * - Optimistic updates
+ * - ✅ Always shows checkboxes (prompts sign-in if needed)
  */
 const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({ 
   prayerTimes, 
   selectedDate,
-  currentPrayer,      // ✅ NEW
-  nextPrayerInfo,     // ✅ NEW
+  currentPrayer,
+  nextPrayerInfo,
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const { userId } = useAuth();
+  
+  // ✅ NEW: Sign-in modal state
+  const [showSignInModal, setShowSignInModal] = useState(false);
   
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
   const isToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
@@ -71,23 +88,21 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
   const queryClient = useQueryClient();
 
   // Handle prayer toggle
-  const handlePrayerToggle = useCallback((prayerName: PrayerName) => {
+  const handlePrayerToggle = useCallback((prayerName: LocalPrayerName) => {
+    // ✅ IMPROVED: Show modal instead of toast
     if (!userId) {
-      Toast.show({
-        type: 'info',
-        text1: 'Sign in required',
-        text2: 'Please sign in to log your prayers',
-        position: 'bottom',
-      });
+      setShowSignInModal(true);
       return;
     }
 
     // Skip Syuruk (sunrise)
-    if (prayerName === PrayerName.SYURUK) return;
+    if (prayerName === 'Syuruk') return;
 
     // Check if prayer time has passed (only for today)
     if (isToday && prayerTimes) {
-      const isAvailable = isPrayerAvailable(prayerName, prayerTimes[prayerName], new Date());
+      const prayerTime = prayerTimes[prayerName];
+      const isAvailable = canLogPrayer(prayerTime); 
+      
       if (!isAvailable) {
         Toast.show({
           type: 'error',
@@ -102,20 +117,13 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
     const queryKey = ['prayerLogs', userId, dateStr];
     const currentLog = queryClient.getQueryData<PrayerLog>(queryKey);
 
-    const currentPrayers: PrayersPayload =
-      currentLog?.prayers ?? EMPTY_PRAYERS;
+    const currentPrayers: PrayersPayload = currentLog?.prayers ?? EMPTY_PRAYERS;
 
     const key = prayerName as keyof PrayersPayload;
     const updatedPrayers: PrayersPayload = {
       ...currentPrayers,
       [key]: !currentPrayers[key],
     };
-
-    console.log(`🔄 Toggling ${prayerName} on ${dateStr}:`, {
-      before: currentPrayers[key],
-      after: updatedPrayers[key],
-      allPrayers: updatedPrayers,
-    });
 
     savePrayerLog({
       userId,
@@ -134,39 +142,46 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
   }
 
   return (
-    <View style={styles.container}>
-      {PRAYER_NAMES.map((prayerName, index) => {
-        const isLoggable = prayerName !== PrayerName.SYURUK;
-        const loggedMap = (prayerLog?.prayers as PrayersPayload | undefined);
-        const isLogged = isLoggable ? (loggedMap?.[prayerName as keyof PrayersPayload] ?? false) : false;
-        
-        // ✅ NEW: Check if this is current or next prayer
-        const isCurrent = currentPrayer === prayerName;
-        const isNext = nextPrayerInfo?.nextPrayer === prayerName;
-        const countdown = isNext ? nextPrayerInfo?.timeUntilNextPrayer : undefined;
-        
-        return (
-          <MotiView
-            key={prayerName}
-            from={{ opacity: 0, translateY: 20 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition={{ delay: index * 50 }}
-            style={styles.itemContainer}
-          >
-            <PrayerTimeItem
-              name={prayerName}
-              time={prayerTimes[prayerName]}
-              isLogged={isLogged}
-              onToggle={() => handlePrayerToggle(prayerName)}
-              isLoggable={isLoggable}
-              showCheckbox={!!userId}
-              isCurrent={isCurrent}        // ✅ NEW
-              countdown={countdown}        // ✅ NEW
-            />
-          </MotiView>
-        );
-      })}
-    </View>
+    <>
+      <View style={styles.container}>
+        {PRAYER_ORDER.map((prayerName, index) => {
+          const isLoggable = LOGGABLE_PRAYERS.includes(prayerName as any);
+          const loggedMap = prayerLog?.prayers as PrayersPayload | undefined;
+          const isLogged = isLoggable ? (loggedMap?.[prayerName as keyof PrayersPayload] ?? false) : false;
+          
+          const isCurrent = currentPrayer === prayerName;
+          const isNext = nextPrayerInfo?.nextPrayer === prayerName;
+          const countdown = isNext ? nextPrayerInfo?.timeUntilNextPrayer : undefined;
+          
+          return (
+            <MotiView
+              key={prayerName}
+              from={{ opacity: 0, translateY: 20 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ delay: index * 50 }}
+              style={styles.itemContainer}
+            >
+              <PrayerTimeItem
+                name={prayerName}
+                time={prayerTimes[prayerName]}
+                isLogged={isLogged}
+                onToggle={() => handlePrayerToggle(prayerName)}
+                isLoggable={isLoggable}
+                showCheckbox={true} 
+                isCurrent={isCurrent}
+                countdown={countdown}
+              />
+            </MotiView>
+          );
+        })}
+      </View>
+
+      {/* ✅ NEW: Sign-in modal */}
+      <SignInModal 
+        visible={showSignInModal}
+        onClose={() => setShowSignInModal(false)}
+      />
+    </>
   );
 });
 
@@ -185,7 +200,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: theme.colors.text.muted,
   },
   itemContainer: {
-    marginBottom: 12, // ✅ Reduced from 15 for tighter spacing
+    marginBottom: 12,
     justifyContent: 'center',
     alignItems: 'center'
   },

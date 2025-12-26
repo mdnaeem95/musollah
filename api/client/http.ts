@@ -1,5 +1,15 @@
+/**
+ * HTTP Client - Infrastructure Layer with Structured Logging
+ * 
+ * Provides Axios-based HTTP clients for external APIs with comprehensive
+ * request/response logging, error handling, and retry logic
+ * 
+ * @version 3.0 - Structured Logging Migration
+ */
+
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 import { logError } from './firebase';
+import { logger } from '../../services/logging/logger';
 
 // ============================================================================
 // ERROR TYPES
@@ -25,10 +35,18 @@ type ApiErrorBody = {
 };
 
 // ============================================================================
-// HTTP CLIENT
+// HTTP CLIENT FACTORY
 // ============================================================================
 
 function createHttpClient(config?: AxiosRequestConfig): AxiosInstance {
+  const clientStart = Date.now();
+  
+  logger.debug('Creating HTTP client', {
+    baseURL: config?.baseURL || 'default',
+    timeout: config?.timeout || 30000,
+    operation: 'http-client-create',
+  });
+  
   const client = axios.create({
     timeout: 30000, // 30 seconds
     headers: {
@@ -37,32 +55,65 @@ function createHttpClient(config?: AxiosRequestConfig): AxiosInstance {
     ...config,
   });
 
-  // Request interceptor
+  // ============================================================================
+  // REQUEST INTERCEPTOR
+  // ============================================================================
+  
   client.interceptors.request.use(
     (cfg) => {
-      // Log request in dev mode
-      if (__DEV__) {
-        const method = cfg.method?.toUpperCase() ?? 'GET';
-        console.log(`🔵 ${method} ${cfg.baseURL ?? ''}${cfg.url ?? ''}`);
-      }
+      const requestStart = Date.now();
+      const method = cfg.method?.toUpperCase() ?? 'GET';
+      const url = (cfg.baseURL ?? '') + (cfg.url ?? '');
+      
+      logger.debug('HTTP request initiated', {
+        method,
+        url,
+        timeout: cfg.timeout,
+        hasAuth: !!cfg.headers?.Authorization,
+        operation: 'http-request',
+      });
+      
+      // Store request start time for duration tracking
+      (cfg as any).__requestStartTime = requestStart;
+      
       return cfg;
     },
     (error) => {
-      console.error('❌ Request error:', error);
+      logger.error('HTTP request interceptor error', {
+        error: error instanceof Error ? error.message : String(error),
+        operation: 'http-request',
+      });
+      
       return Promise.reject(error);
     }
   );
 
-  // Response interceptor (typed with ApiErrorBody)
+  // ============================================================================
+  // RESPONSE INTERCEPTOR
+  // ============================================================================
+  
   client.interceptors.response.use(
     (response) => {
-      // Log response in dev mode
-      if (__DEV__) {
-        console.log(`✅ ${response.config.url} - ${response.status}`);
-      }
+      const requestStart = (response.config as any).__requestStartTime || Date.now();
+      const duration = Date.now() - requestStart;
+      const method = response.config.method?.toUpperCase() ?? 'GET';
+      const url = response.config.url ?? 'unknown';
+      const status = response.status;
+      
+      logger.success('HTTP request completed', {
+        method,
+        url,
+        status,
+        duration: `${duration}ms`,
+        dataSize: response.data ? JSON.stringify(response.data).length : 0,
+        operation: 'http-response',
+      });
+      
       return response;
     },
     (error: AxiosError<ApiErrorBody>) => {
+      const requestStart = (error.config as any)?.__requestStartTime || Date.now();
+      const duration = Date.now() - requestStart;
       const statusCode = error.response?.status;
       const data = error.response?.data;
 
@@ -74,16 +125,39 @@ function createHttpClient(config?: AxiosRequestConfig): AxiosInstance {
 
       const message = msgFromBody || error.message || 'Network error';
 
-      // Log error
+      // Extract request details
       const method = error.config?.method?.toUpperCase() ?? 'UNKNOWN';
       const url = (error.config?.baseURL ?? '') + (error.config?.url ?? '');
-      console.error(`❌ ${url} - ${statusCode ?? 'NETWORK_ERROR'}:`, message);
+      
+      // Determine error type
+      const isNetworkError = !error.response;
+      const isClientError = statusCode && statusCode >= 400 && statusCode < 500;
+      const isServerError = statusCode && statusCode >= 500;
+      
+      logger.error('HTTP request failed', {
+        method,
+        url,
+        status: statusCode ?? 'NETWORK_ERROR',
+        errorMessage: message,
+        isNetworkError,
+        isClientError,
+        isServerError,
+        duration: `${duration}ms`,
+        operation: 'http-response',
+      });
 
       // Create custom error
       const apiError = new ApiError(message, statusCode, data);
 
-      // Log to Crashlytics in production
-      if (!__DEV__) {
+      // Log to Crashlytics in production (only for server errors and network errors)
+      if (!__DEV__ && (isServerError || isNetworkError)) {
+        logger.debug('Recording HTTP error to Crashlytics', {
+          method,
+          url,
+          status: statusCode ?? 'NETWORK_ERROR',
+          operation: 'http-crashlytics',
+        });
+        
         logError(apiError, `HTTP ${method} ${url}`);
       }
 
@@ -91,12 +165,26 @@ function createHttpClient(config?: AxiosRequestConfig): AxiosInstance {
     }
   );
 
+  const clientDuration = Date.now() - clientStart;
+  
+  logger.success('HTTP client created', {
+    baseURL: config?.baseURL || 'default',
+    timeout: config?.timeout || 30000,
+    createDuration: `${clientDuration}ms`,
+    operation: 'http-client-create',
+  });
+
   return client;
 }
 
 // ============================================================================
 // EXPORTED CLIENTS
 // ============================================================================
+
+logger.debug('Initializing HTTP clients', {
+  clients: ['default', 'aladhan', 'quran', 'metalPrice'],
+  operation: 'http-clients-init',
+});
 
 // Default HTTP client
 export const httpClient = createHttpClient();
@@ -119,11 +207,25 @@ export const metalPriceClient = createHttpClient({
   timeout: 15000,
 });
 
+logger.success('All HTTP clients initialized', {
+  clients: ['httpClient', 'aladhanClient', 'quranClient', 'metalPriceClient'],
+  operation: 'http-clients-init',
+});
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
+/**
+ * Handle API errors with logging
+ */
 export function handleApiError(error: unknown, context?: string): never {
+  logger.debug('Handling API error', {
+    context,
+    errorType: error instanceof ApiError ? 'ApiError' : error instanceof Error ? 'Error' : 'Unknown',
+    operation: 'http-error-handler',
+  });
+  
   if (error instanceof ApiError) {
     throw error;
   }
@@ -135,29 +237,85 @@ export function handleApiError(error: unknown, context?: string): never {
   throw new ApiError('Unknown error occurred', undefined, error);
 }
 
+/**
+ * Retry failed requests with exponential backoff
+ */
 export async function retryRequest<T>(
   requestFn: () => Promise<T>,
   maxRetries: number = 3,
   baseDelay: number = 1000
 ): Promise<T> {
+  const retryStart = Date.now();
   let lastError: Error | undefined;
 
+  logger.debug('Starting request with retry logic', {
+    maxRetries,
+    baseDelay: `${baseDelay}ms`,
+    operation: 'http-retry',
+  });
+
   for (let i = 0; i < maxRetries; i++) {
+    const attemptStart = Date.now();
+    
     try {
-      return await requestFn();
+      logger.debug('Executing retry attempt', {
+        attempt: i + 1,
+        maxRetries,
+        operation: 'http-retry',
+      });
+      
+      const result = await requestFn();
+      const attemptDuration = Date.now() - attemptStart;
+      const totalDuration = Date.now() - retryStart;
+      
+      logger.success('Retry request succeeded', {
+        attempt: i + 1,
+        maxRetries,
+        attemptDuration: `${attemptDuration}ms`,
+        totalDuration: `${totalDuration}ms`,
+        operation: 'http-retry',
+      });
+      
+      return result;
+      
     } catch (error) {
       lastError = error as Error;
+      const attemptDuration = Date.now() - attemptStart;
 
       // Don't retry on client errors (4xx)
       if (error instanceof ApiError && error.statusCode && error.statusCode >= 400 && error.statusCode < 500) {
+        logger.warn('Client error detected, skipping retry', {
+          attempt: i + 1,
+          statusCode: error.statusCode,
+          errorMessage: error.message,
+          attemptDuration: `${attemptDuration}ms`,
+          operation: 'http-retry',
+        });
+        
         throw error;
       }
 
       // Wait before retrying (exponential backoff)
       if (i < maxRetries - 1) {
         const delay = baseDelay * Math.pow(2, i);
-        console.log(`⏳ Retrying in ${delay}ms... (attempt ${i + 1}/${maxRetries})`);
+        
+        logger.warn('Retry attempt failed, waiting before next attempt', {
+          attempt: i + 1,
+          maxRetries,
+          errorMessage: lastError.message,
+          nextDelay: `${delay}ms`,
+          attemptDuration: `${attemptDuration}ms`,
+          operation: 'http-retry',
+        });
+        
         await new Promise((resolve) => setTimeout(resolve, delay));
+      } else {
+        logger.error('All retry attempts exhausted', {
+          attempts: maxRetries,
+          totalDuration: `${Date.now() - retryStart}ms`,
+          finalError: lastError.message,
+          operation: 'http-retry',
+        });
       }
     }
   }
@@ -168,11 +326,13 @@ export async function retryRequest<T>(
 // ============================================================================
 // TYPE UTILITIES
 // ============================================================================
+
 export interface ApiResponse<T> {
   data: T;
   code: number;
   status: string;
 }
+
 export interface PaginationParams {
   page?: number;
   limit?: number;

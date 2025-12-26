@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
-import type { Restaurant } from '../../utils/types';
+import { Restaurant } from '../../api/services/food';
 
 // ============================================================================
 // CONSTANTS

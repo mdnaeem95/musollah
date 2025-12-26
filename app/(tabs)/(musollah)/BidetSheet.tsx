@@ -24,8 +24,7 @@ import firestore from '@react-native-firebase/firestore';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatTimeAgo, getStatusColor } from '../../../utils/musollah';
 import BidetReportStatusSheet from './BidetReportStatusSheet';
-import { BidetLocation } from '../../../utils/types';
-import { useUpdateBidetStatus, useUpdateLocationStatus } from '../../../api/services/musollah';
+import { BidetLocation, useUpdateBidetStatus, useUpdateLocationStatus } from '../../../api/services/musollah';
 import Toast from 'react-native-toast-message';
 import { enter } from '../../../utils';
 
@@ -126,7 +125,11 @@ const StatusBadge = ({ status, lastUpdated, theme, isDarkMode }: StatusBadgeProp
 };
 
 /**
- * Gender Availability Item
+ * Gender Availability Item (Enhanced)
+ * Now handles:
+ * - "Yes" → Shows green checkmark
+ * - "No" → Shows red X
+ * - "Level 4R" (descriptive) → Shows info badge with location details
  */
 interface GenderAvailabilityProps {
   label: string;
@@ -145,15 +148,56 @@ const GenderAvailability = ({
   theme,
   isDarkMode,
 }: GenderAvailabilityProps) => {
-  const isAvailable = value?.toLowerCase() === 'yes';
-  const iconName = isAvailable ? 'check' : 'xmark';
-  const iconColor = isAvailable ? '#4CAF50' : '#ff6b6b';
+  // Determine the type of value we have
+  const normalizedValue = value?.toString().trim().toLowerCase() || '';
+  const isYes = normalizedValue === 'yes';
+  const isNo = normalizedValue === 'no';
+  const hasLocationDetails = !isYes && !isNo && normalizedValue.length > 0;
+
+  // Determine display properties
+  const getDisplayInfo = () => {
+    if (isYes) {
+      return {
+        statusIcon: 'check',
+        statusColor: '#4CAF50',
+        statusBgColor: '#4CAF50' + '15',
+        showDetails: false,
+        detailsText: null,
+      };
+    } else if (isNo) {
+      return {
+        statusIcon: 'xmark',
+        statusColor: '#ff6b6b',
+        statusBgColor: '#ff6b6b' + '15',
+        showDetails: false,
+        detailsText: null,
+      };
+    } else if (hasLocationDetails) {
+      return {
+        statusIcon: 'location-dot',
+        statusColor: '#2196F3', // Blue for info
+        statusBgColor: '#2196F3' + '15',
+        showDetails: true,
+        detailsText: value.trim(),
+      };
+    } else {
+      return {
+        statusIcon: 'question',
+        statusColor: '#9CA3AF',
+        statusBgColor: '#9CA3AF' + '15',
+        showDetails: false,
+        detailsText: null,
+      };
+    }
+  };
+
+  const displayInfo = getDisplayInfo();
 
   return (
     <MotiView
       from={{ opacity: 0, translateY: 20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={enter(0)}
+      transition={enter(index * 50)}
       style={styles.genderItem}
     >
       <BlurView
@@ -161,19 +205,44 @@ const GenderAvailability = ({
         tint={isDarkMode ? 'dark' : 'light'}
         style={[styles.genderCard, { backgroundColor: theme.colors.secondary }]}
       >
-        {/* Icon Circle */}
-        <View style={[styles.genderIconContainer, { backgroundColor: theme.colors.accent + '15' }]}>
-          <FontAwesome6 name={icon} size={20} color={theme.colors.accent} />
+        {/* Main Content Container */}
+        <View style={styles.genderCardContent}>
+          {/* Icon Circle */}
+          <View style={[styles.genderIconContainer, { backgroundColor: theme.colors.accent + '15' }]}>
+            <FontAwesome6 name={icon} size={20} color={theme.colors.accent} />
+          </View>
+
+          {/* Label */}
+          <Text style={[styles.genderLabel, { color: theme.colors.text.primary }]}>
+            {label}
+          </Text>
+
+          {/* Status Icon (checkmark, X, or location pin) */}
+          <View style={[styles.genderStatus, { backgroundColor: displayInfo.statusBgColor }]}>
+            <FontAwesome6 name={displayInfo.statusIcon} size={14} color={displayInfo.statusColor} />
+          </View>
         </View>
 
-        {/* Label */}
-        <Text style={[styles.genderLabel, { color: theme.colors.text.primary }]}>
-          {label}
-        </Text>
-
-        {/* Status Icon */}
-        <View style={[styles.genderStatus, { backgroundColor: iconColor + '15' }]}>
-          <FontAwesome6 name={iconName} size={14} color={iconColor} />
+        {/* Location Details Badge (if available) - Fixed height container */}
+        <View style={styles.detailsBadgeContainer}>
+          {displayInfo.showDetails && displayInfo.detailsText ? (
+            <MotiView
+              from={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 100 + index * 50 }}
+            >
+              <View style={[styles.detailsBadge, { backgroundColor: displayInfo.statusBgColor }]}>
+                <Text
+                  style={[styles.detailsText, { color: displayInfo.statusColor }]}
+                  numberOfLines={2}
+                >
+                  {displayInfo.detailsText}
+                </Text>
+              </View>
+            </MotiView>
+          ) : (
+            <View style={styles.detailsPlaceholder} />
+          )}
         </View>
       </BlurView>
     </MotiView>
@@ -262,9 +331,9 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
   // Handle status update from ReportStatusSheet
   const handleStatusUpdate = async (updates: {
     status: 'Available' | 'Unavailable' | 'Unknown';
-    male?: 'Yes' | 'No' | 'Unknown';
-    female?: 'Yes' | 'No' | 'Unknown';
-    handicap?: 'Yes' | 'No' | 'Unknown';
+    male?: string;
+    female?: string;
+    handicap?: string;
   }) => {
     if (!location) return;
 
@@ -478,6 +547,53 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
               index={1}
             />
           </View>
+
+          {/* Data Attribution */}
+          <MotiView
+            from={{ opacity: 0, translateY: 10 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{
+              type: 'timing',
+              duration: 400,
+              delay: 400,
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Linking.openURL('https://www.instagram.com/toiletswithbidetssg/').catch((err) =>
+                  console.error('Error opening Instagram:', err)
+                );
+              }}
+              activeOpacity={0.7}
+            >
+              <BlurView
+                intensity={10}
+                tint={isDarkMode ? 'dark' : 'light'}
+                style={[styles.creditCard, { backgroundColor: theme.colors.secondary }]}
+              >
+                <View style={styles.creditContent}>
+                  <FontAwesome6 
+                    name="heart" 
+                    size={14} 
+                    color={theme.colors.accent}
+                    solid
+                  />
+                  <Text style={[styles.creditText, { color: theme.colors.text.secondary }]}>
+                    Data provided by{' '}
+                    <Text style={[styles.creditHandle, { color: theme.colors.accent }]}>
+                      @toiletswithbidetssg
+                    </Text>
+                  </Text>
+                  <FontAwesome6 
+                    name="arrow-up-right-from-square" 
+                    size={12} 
+                    color={theme.colors.text.muted}
+                  />
+                </View>
+              </BlurView>
+            </TouchableOpacity>
+          </MotiView>
         </BottomSheetView>
       </BottomSheet>
 
@@ -488,9 +604,9 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
         type="bidet"
         locationId={location.id}
         currentStatus={location.status || 'Unknown'}
-        currentMale={normalizeGenderStatus(location.male)}
-        currentFemale={normalizeGenderStatus(location.female)}
-        currentHandicap={normalizeGenderStatus(location.handicap)}
+        currentMale={location.male || 'Unknown'}        // Preserves "Level 4R"
+        currentFemale={location.female || 'Unknown'}
+        currentHandicap={location.handicap || 'Unknown'}
         onStatusUpdate={handleStatusUpdate}
       />
     </>
@@ -594,6 +710,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    minHeight: 160, // Fixed minimum height for consistency
+    justifyContent: 'space-between', // Distribute content evenly
+  },
+  genderCardContent: {
+    alignItems: 'center',
+    gap: SPACING.sm,
   },
   genderIconContainer: {
     width: 48,
@@ -601,12 +723,10 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
   },
   genderLabel: {
     fontSize: 13,
     fontFamily: 'Outfit_500Medium',
-    marginBottom: SPACING.sm,
   },
   genderStatus: {
     width: 32,
@@ -614,6 +734,26 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  detailsBadgeContainer: {
+    marginTop: SPACING.sm,
+    width: '100%',
+    minHeight: 40, // Reserve space for badge or placeholder
+  },
+  detailsPlaceholder: {
+    height: 40, // Same as badge height to maintain consistency
+  },
+  detailsBadge: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  detailsText: {
+    fontSize: 11,
+    fontFamily: 'Outfit_600SemiBold',
+    textAlign: 'center',
+    lineHeight: 14,
   },
 
   // Action Buttons
@@ -635,5 +775,29 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 16,
+  },
+
+  // Data Attribution
+  creditCard: {
+    marginTop: SPACING.xl,
+    padding: SPACING.md,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  creditContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+  },
+  creditText: {
+    fontSize: 12,
+    fontFamily: 'Outfit_400Regular',
+    textAlign: 'center',
+  },
+  creditHandle: {
+    fontFamily: 'Outfit_600SemiBold',
   },
 });

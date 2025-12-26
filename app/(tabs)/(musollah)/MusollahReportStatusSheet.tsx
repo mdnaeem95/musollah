@@ -352,7 +352,7 @@ const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
             {/* Overall status */}
             <SectionHeader
               title="Overall Status"
-              icon="info-circle"
+              icon="check"
               theme={theme}
               index={0}
             />

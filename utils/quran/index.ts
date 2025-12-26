@@ -1,6 +1,5 @@
 import { JuzMeta } from "../../data/juzMeta";
 import { surahMeta } from "../../data/surahMeta"
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const calculateTotalAyahs = (juz: JuzMeta): number => {
   const { start, end } = juz;

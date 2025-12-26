@@ -1,50 +1,100 @@
 /**
- * LocationDisplay Component (ENHANCED v2.0)
+ * LocationDisplay Component (GLASSMORPHISM v3.1)
  * 
- * Shows current location (city, country) for prayer times
+ * Shows current location with live updates
+ * - Listens to location store changes
+ * - Shows loading state during fetch
+ * - Updates city/country dynamically
  * 
- * ✨ IMPROVEMENTS:
- * - Better dark mode visibility with 30% opacity background
- * - Added border for definition
- * - Improved contrast and readability
+ * @version 3.1
  */
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import * as Location from 'expo-location';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocationStore } from '../../stores/useLocationStore';
 
-interface LocationDisplayProps {
-  city?: string;
-  country?: string;
-}
+export const LocationDisplay: React.FC = () => {
+  const { theme, isDarkMode } = useTheme();
+  const { userLocation, useCustomLocation } = useLocationStore();
+  const [locationText, setLocationText] = useState<string>('Singapore');
+  const [isLoading, setIsLoading] = useState(false);
 
-export const LocationDisplay: React.FC<LocationDisplayProps> = ({ 
-  city = 'Singapore',
-  country = 'Singapore',
-}) => {
-  const { theme } = useTheme();
+  // Update location text when userLocation changes
+  useEffect(() => {
+    const updateLocationText = async () => {
+      if (!userLocation) {
+        setLocationText('Singapore');
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const { latitude, longitude } = userLocation.coords;
+        
+        const reverseGeocode = await Location.reverseGeocodeAsync({ latitude, longitude });
+        
+        if (reverseGeocode.length > 0) {
+          const { city, country } = reverseGeocode[0];
+          const displayCity = city || 'Unknown';
+          const displayCountry = country || 'Unknown';
+          
+          // Show only city if city === country (like Singapore)
+          setLocationText(
+            displayCity === displayCountry 
+              ? displayCity 
+              : `${displayCity}, ${displayCountry}`
+          );
+        } else {
+          setLocationText('Unknown Location');
+        }
+      } catch (error) {
+        console.error('Error reverse geocoding:', error);
+        setLocationText('Location Detected');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    updateLocationText();
+  }, [userLocation]);
+  
+  const textColor = isDarkMode ? '#ffffff' : '#1a1a1a';
+  const iconColor = isDarkMode ? '#ffffff' : theme.colors.accent;
 
   return (
     <View style={styles.container}>
-      <View 
+      <BlurView
+        intensity={20}
+        tint={isDarkMode ? 'dark' : 'light'}
         style={[
-          styles.locationBadge, 
-          { 
-            backgroundColor: theme.colors.accent + '30',  // ✅ Increased from 15% to 30%
-            borderColor: theme.colors.accent + '40',      // ✅ Added border for definition
+          styles.locationBadge,
+          {
+            backgroundColor: isDarkMode 
+              ? 'rgba(255, 255, 255, 0.15)'
+              : 'rgba(255, 255, 255, 0.75)',
           }
         ]}
       >
-        <FontAwesome6 
-          name="location-dot" 
-          size={12} 
-          color={theme.colors.accent} 
-        />
-        <Text style={[styles.locationText, { color: theme.colors.accent }]}>
-          {city === country ? city : `${city}, ${country}`}
+        {isLoading ? (
+          <ActivityIndicator size="small" color={iconColor} />
+        ) : (
+          <FontAwesome6 
+            name={useCustomLocation ? "location-crosshairs" : "location-dot"} 
+            size={12} 
+            color={iconColor}
+          />
+        )}
+        <Text style={[styles.locationText, { color: textColor }]}>
+          {locationText}
         </Text>
-      </View>
+        {useCustomLocation && (
+          <View style={[styles.customIndicator, { backgroundColor: theme.colors.accent }]} />
+        )}
+      </BlurView>
     </View>
   );
 };
@@ -58,18 +108,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 14,      // ✅ Slightly increased for better presence
-    paddingVertical: 7,         // ✅ Slightly increased for better presence
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 999,
-    borderWidth: 1.5,           // ✅ Added border
-    shadowColor: '#000',        // ✅ Added subtle shadow
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   locationText: {
     fontSize: 13,
-    fontFamily: 'Outfit_600SemiBold',  // ✅ Increased weight for better visibility
+    fontFamily: 'Outfit_600SemiBold',
+    letterSpacing: 0.2,
+  },
+  customIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
 });

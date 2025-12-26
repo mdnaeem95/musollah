@@ -452,7 +452,7 @@ const ReferralScreen = () => {
             <BannerAdComponent />
 
             {/* Sign In Modal */}
-            <SignInModal isVisible={isAuthModalVisible} onClose={() => setAuthModalVisible(false)} />
+            <SignInModal visible={isAuthModalVisible} onClose={() => setAuthModalVisible(false)} />
         </View>
     );
 };

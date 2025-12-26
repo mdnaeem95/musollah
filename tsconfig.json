@@ -18,7 +18,7 @@
     "types/*.types.ts",
     "types/**/*.d.ts",
     "functions/src/types.ts"
-  ],
+, "services/notifications/registerForPushNotificationsAsync.ts"  ],
   "exclude": [
     "node_modules"
   ]

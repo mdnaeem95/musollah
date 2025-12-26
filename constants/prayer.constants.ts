@@ -1,53 +1,109 @@
-import { PrayerName } from '../utils/types/prayer.types'
+/**
+ * Prayer Constants (Modernized)
+ * 
+ * Updated to work with new prayer service string literal types.
+ * 
+ * @version 4.0
+ * @since 2025-12-24
+ */
 
-export const PRAYER_NAMES = Object.values(PrayerName);
+import type { LocalPrayerName } from '../api/services/prayer/types';
 
-export const LOGGABLE_PRAYERS = PRAYER_NAMES.filter(
-  prayer => prayer !== PrayerName.SYURUK
-);
+// ============================================================================
+// PRAYER BACKGROUNDS
+// ============================================================================
 
-export const PRAYER_BACKGROUNDS = {
-  [PrayerName.SUBUH]: {
+export type ThemeColor = 'green' | 'purple' | 'blue';
+
+/**
+ * Prayer time background images by prayer and theme
+ * ✅ Uses string literal keys to match LocalPrayerName type
+ */
+export const PRAYER_BACKGROUNDS: Record<
+  LocalPrayerName,
+  Record<ThemeColor, any>
+> = {
+  Subuh: {
     green: require('../assets/prayerBackgroundImages/subuhBackground.png'),
     purple: require('../assets/prayerBackgroundImages/subuhBackgroundPurple.png'),
     blue: require('../assets/prayerBackgroundImages/subuhBackgroundBlue.png'),
   },
-  [PrayerName.SYURUK]: {
+  Syuruk: {
     green: require('../assets/prayerBackgroundImages/subuhBackground.png'),
     purple: require('../assets/prayerBackgroundImages/subuhBackgroundPurple.png'),
     blue: require('../assets/prayerBackgroundImages/subuhBackgroundBlue.png'),
   },
-  [PrayerName.ZOHOR]: {
+  Zohor: {
     green: require('../assets/prayerBackgroundImages/zuhurBackground.png'),
     purple: require('../assets/prayerBackgroundImages/zuhurBackgroundPurple.png'),
     blue: require('../assets/prayerBackgroundImages/zuhurBackgroundBlue.png'),
   },
-  [PrayerName.ASAR]: {
+  Asar: {
     green: require('../assets/prayerBackgroundImages/asarBackground.png'),
     purple: require('../assets/prayerBackgroundImages/asarBackgroundPurple.png'),
     blue: require('../assets/prayerBackgroundImages/asarBackgroundBlue.png'),
   },
-  [PrayerName.MAGHRIB]: {
+  Maghrib: {
     green: require('../assets/prayerBackgroundImages/maghribBackground.png'),
     purple: require('../assets/prayerBackgroundImages/maghribBackgroundPurple.png'),
     blue: require('../assets/prayerBackgroundImages/maghribBackgroundBlue.png'),
   },
-  [PrayerName.ISYAK]: {
+  Isyak: {
     green: require('../assets/prayerBackgroundImages/isyaBackground.png'),
     purple: require('../assets/prayerBackgroundImages/isyaBackgroundPurple.png'),
     blue: require('../assets/prayerBackgroundImages/isyaBackgroundBlue.png'),
   },
 } as const;
 
-export type ThemeColor = 'green' | 'purple' | 'blue';
+// ============================================================================
+// PRAYER NAMES & LISTS
+// ============================================================================
 
-export const PRAYER_COLORS = {
-  [PrayerName.SUBUH]: { light: '#DCEFFB', dark: '#1E2A36' },
-  [PrayerName.ZOHOR]: { light: '#FFF4D6', dark: '#332B1E' },
-  [PrayerName.ASAR]: { light: '#FFE3C8', dark: '#3A2A22' },
-  [PrayerName.MAGHRIB]: { light: '#F9D0D3', dark: '#3A1F24' },
-  [PrayerName.ISYAK]: { light: '#D7D3F9', dark: '#272547' },
+/**
+ * All prayers in order
+ */
+export const PRAYER_NAMES: readonly LocalPrayerName[] = [
+  'Subuh',
+  'Syuruk',
+  'Zohor',
+  'Asar',
+  'Maghrib',
+  'Isyak',
+] as const;
+
+/**
+ * Loggable prayers (excludes Syuruk)
+ */
+export const LOGGABLE_PRAYERS: readonly LocalPrayerName[] = [
+  'Subuh',
+  'Zohor',
+  'Asar',
+  'Maghrib',
+  'Isyak',
+] as const;
+
+// ============================================================================
+// PRAYER COLORS
+// ============================================================================
+
+/**
+ * Prayer-specific color schemes for UI
+ */
+export const PRAYER_COLORS: Record<
+  LocalPrayerName,
+  { light: string; dark: string }
+> = {
+  Subuh: { light: '#DCEFFB', dark: '#1E2A36' },
+  Syuruk: { light: '#DCEFFB', dark: '#1E2A36' },
+  Zohor: { light: '#FFF4D6', dark: '#332B1E' },
+  Asar: { light: '#FFE3C8', dark: '#3A2A22' },
+  Maghrib: { light: '#F9D0D3', dark: '#3A1F24' },
+  Isyak: { light: '#D7D3F9', dark: '#272547' },
 } as const;
+
+// ============================================================================
+// DATE FORMATS
+// ============================================================================
 
 export const DATE_FORMATS = {
   API: 'yyyy-MM-dd',
@@ -55,6 +111,10 @@ export const DATE_FORMATS = {
   DISPLAY: 'dd MMM yyyy',
   ISLAMIC_API: 'dd-MM-yyyy',
 } as const;
+
+// ============================================================================
+// CACHE CONFIGURATION
+// ============================================================================
 
 export const CACHE_KEYS = {
   PRAYER_TIMES: 'prayer_times',
@@ -68,6 +128,10 @@ export const CACHE_DURATION = {
   LOCATION: 60 * 60 * 1000, // 1 hour
   MONTHLY: 30 * 24 * 60 * 60 * 1000, // 30 days
 } as const;
+
+// ============================================================================
+// ISLAMIC CALENDAR
+// ============================================================================
 
 export const SINGAPORE_ISLAMIC_MONTHS: Record<number, string> = {
   1: 'Muharram',
@@ -113,3 +177,20 @@ export const ENGLISH_TO_MONTH_NUMBER: Record<string, number> = {
   'Dhu al-Hijjah': 12,
   'Dhū al-Ḥijjah': 12,
 } as const;
+
+// ============================================================================
+// LEGACY ENUM (for backwards compatibility)
+// ============================================================================
+
+/**
+ * @deprecated Use LocalPrayerName string literals instead
+ * Kept for backwards compatibility with old code
+ */
+export enum PrayerName {
+  SUBUH = 'Subuh',
+  SYURUK = 'Syuruk',
+  ZOHOR = 'Zohor',
+  ASAR = 'Asar',
+  MAGHRIB = 'Maghrib',
+  ISYAK = 'Isyak',
+}

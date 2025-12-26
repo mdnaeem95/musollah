@@ -1,37 +1,42 @@
 /**
- * Category Pill Component (UPGRADED)
+ * Category Pill Component v3.1
  * 
- * Enhanced category pills with icons, counts, and smooth animations.
+ * Enhanced category filter with:
+ * - UNIFORM WIDTH (no more varying sizes)
+ * - Dynamic icon from utility
+ * - Restaurant count badge
+ * - Selected state with accent color
+ * - Haptic feedback (iOS)
+ * - Staggered entrance animations
+ * - 3D press effect
  * 
- * @version 2.0 - Icons, counts, haptics, 3D effects
+ * @version 3.1 - Fixed uniform width
  */
 
 import React from 'react';
 import { Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { MotiView } from 'moti';
-import { FontAwesome6 } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../context/ThemeContext';
-import { getCategoryIcon } from '../../utils/categoryIcons';
-import { enter } from '../../utils';
 
 interface CategoryPillProps {
-  label: string;
-  selected: boolean;
+  category: string;
+  count: number;
+  isSelected: boolean;
   onPress: () => void;
-  count?: number;
+  index?: number;
 }
 
 const CategoryPill: React.FC<CategoryPillProps> = ({ 
-  label, 
-  selected, 
+  category, 
+  count, 
+  isSelected, 
   onPress,
-  count,
+  index = 0,
 }) => {
-  const { theme } = useTheme();
-  const icon = getCategoryIcon(label);
-  
+  const { theme, isDarkMode } = useTheme();  
   const handlePress = () => {
     if (Platform.OS === 'ios') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -40,92 +45,123 @@ const CategoryPill: React.FC<CategoryPillProps> = ({
   };
   
   return (
-    <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
-      <MotiView
-        animate={{
-          backgroundColor: selected 
-            ? theme.colors.accent 
-            : theme.colors.secondary,
-          borderColor: selected 
-            ? theme.colors.accent 
-            : 'transparent',
-          scale: selected ? 1.02 : 1,
-        }}
-        transition={enter(0)}
-        style={[styles.pill, {
-          shadowColor: selected ? theme.colors.accent : '#000',
-          shadowOffset: { width: 0, height: selected ? 4 : 2 },
-          shadowOpacity: selected ? 0.3 : 0.1,
-          shadowRadius: selected ? 8 : 4,
-          elevation: selected ? 4 : 2,
-        }]}
+    <MotiView
+      from={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{
+        type: 'spring',
+        delay: index * 40,
+        damping: 15,
+      }}
+    >
+      <TouchableOpacity
+        onPress={handlePress}
+        activeOpacity={0.7}
+        style={styles.touchable}
       >
-        {/* Icon */}
-        {icon && (
-          <FontAwesome6
-            name={icon}
-            size={16}
-            color={selected ? '#fff' : theme.colors.text.primary}
-          />
-        )}
-        
-        {/* Label */}
-        <Text style={[styles.label, {
-          color: selected ? '#fff' : theme.colors.text.primary,
-        }]}>
-          {label}
-        </Text>
-        
-        {/* Count badge */}
-        {count !== undefined && count > 0 && (
+        {/* ✅ Glassmorphism Pill */}
+        <BlurView
+          intensity={isSelected ? 25 : 15}
+          tint={isDarkMode ? 'dark' : 'light'}
+          style={[
+            styles.pill,
+            {
+              backgroundColor: isSelected 
+                ? theme.colors.accent + '20'
+                : theme.colors.secondary,
+              borderColor: isSelected 
+                ? theme.colors.accent
+                : 'transparent',
+            }
+          ]}
+        >          
+          {/* Category Name */}
+          <Text 
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={[
+              styles.text,
+              {
+                color: isSelected 
+                  ? theme.colors.accent 
+                  : theme.colors.text.primary,
+                fontFamily: isSelected 
+                  ? 'Outfit_700Bold' 
+                  : 'Outfit_500Medium',
+              }
+            ]}
+          >
+            {category}
+          </Text>
+          
+          {/* Count Badge */}
           <MotiView
             from={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={enter(0)}
-            style={[styles.countBadge, {
-              backgroundColor: selected 
-                ? 'rgba(255,255,255,0.3)' 
-                : theme.colors.accent + '20',
-            }]}
+            transition={{ type: 'spring', delay: (index * 40) + 150 }}
+            style={[
+              styles.countBadge,
+              {
+                backgroundColor: isSelected 
+                  ? theme.colors.accent 
+                  : theme.colors.accent + '20',
+              }
+            ]}
           >
-            <Text style={[styles.countText, {
-              color: selected ? '#fff' : theme.colors.accent,
-            }]}>
+            <Text 
+              style={[
+                styles.countText,
+                {
+                  color: isSelected ? '#fff' : theme.colors.accent,
+                }
+              ]}
+            >
               {count}
             </Text>
           </MotiView>
-        )}
-      </MotiView>
-    </TouchableOpacity>
+        </BlurView>
+      </TouchableOpacity>
+    </MotiView>
   );
 };
 
 const styles = StyleSheet.create({
+  touchable: {
+    marginRight: 8,
+  },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 2,
+    justifyContent: 'center', // ✅ Center content
     gap: 8,
-    marginRight: 8,
-    marginVertical: 2
+    minWidth: 120, // ✅ Fixed minimum width for uniformity
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  label: {
+  text: {
     fontSize: 14,
-    fontFamily: 'Outfit_600SemiBold',
+    lineHeight: 18,
+    flex: 1, // ✅ Takes available space between edges and badge
+    textAlign: 'center', // ✅ Center text
   },
   countBadge: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 6,
   },
   countText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Outfit_700Bold',
   },
 });

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Linking, StyleSheet, Alert } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { Khutbah } from '../../utils/types';
 import { useTheme } from '../../context/ThemeContext';
-import { useTypewriterParagraphs } from '../../hooks/useTypewriterParagraphs';
+import { useTypewriterParagraphs } from '../../hooks/prayer/khutbah/useTypewriterParagraphs';
 import * as Clipboard from 'expo-clipboard';
+import { Khutbah } from '../../api/services/khutbah';
 
 interface Props {
   khutbah: Khutbah;

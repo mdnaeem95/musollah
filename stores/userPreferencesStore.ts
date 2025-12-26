@@ -1,5 +1,5 @@
 /**
- * Preferences Store
+ * Preferences Store (REFACTORED WITH STRUCTURED LOGGING)
  * 
  * Manages user preferences and app settings.
  * Replaces Redux userPreferencesSlice with Zustand.
@@ -14,11 +14,21 @@
  * - Prayer notifications
  * - Ramadan mode
  * - MMKV persistence
+ * 
+ * @version 2.0
+ * @refactored 2025-12-23
  */
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { defaultStorage } from '../api/client/storage';
+import { createLogger } from '../services/logging/logger';
+
+// ============================================================================
+// LOGGER
+// ============================================================================
+
+const logger = createLogger('Preferences');
 
 // ============================================================================
 // TYPES
@@ -80,50 +90,99 @@ export const usePreferencesStore = create<PreferencesState>()(
       // Initial state
       ...initialState,
       
-      // Actions
+      // ========================================================================
+      // APPEARANCE ACTIONS
+      // ========================================================================
+      
       setTheme: (theme) => {
-        console.log('🎨 Setting theme:', theme);
+        logger.info('Theme changed', {
+          oldTheme: get().theme,
+          newTheme: theme,
+        });
+        
         set({ theme });
       },
       
       toggleDarkMode: () => {
         set((state) => {
           const newMode = !state.isDarkMode;
-          console.log('🌓 Toggling dark mode:', newMode);
+          
+          logger.info('Dark mode toggled', {
+            oldMode: state.isDarkMode,
+            newMode,
+          });
+          
           return { isDarkMode: newMode };
         });
       },
       
       setTextSize: (textSize) => {
-        console.log('📏 Setting text size:', textSize);
+        const oldSize = get().textSize;
+        
+        logger.info('Text size changed', {
+          oldSize,
+          newSize: textSize,
+          change: textSize > oldSize ? 'increased' : 'decreased',
+        });
+        
         set({ textSize });
       },
       
+      // ========================================================================
+      // QURAN ACTIONS
+      // ========================================================================
+      
       setReciter: (reciter) => {
-        console.log('🎙️ Setting reciter:', reciter);
+        logger.info('Reciter changed', {
+          oldReciter: get().reciter,
+          newReciter: reciter,
+        });
+        
         set({ reciter });
       },
       
-      setTimeFormat: (timeFormat) => {
-        console.log('🕐 Setting time format:', timeFormat);
-        set({ timeFormat });
-      },
+      // ========================================================================
+      // PRAYER ACTIONS
+      // ========================================================================
       
-      setReminderInterval: (reminderInterval) => {
-        console.log('⏰ Setting reminder interval:', reminderInterval);
-        set({ reminderInterval });
+      setTimeFormat: (timeFormat) => {
+        logger.info('Time format changed', {
+          oldFormat: get().timeFormat,
+          newFormat: timeFormat,
+        });
+        
+        set({ timeFormat });
       },
       
       toggleTimeFormat: () => {
         set((state) => {
           const newFormat = state.timeFormat === '12-hour' ? '24-hour' : '12-hour';
-          console.log('🕐 Toggling time format:', newFormat);
+          
+          logger.info('Time format toggled', {
+            oldFormat: state.timeFormat,
+            newFormat,
+          });
+          
           return { timeFormat: newFormat };
         });
       },
       
+      setReminderInterval: (reminderInterval) => {
+        logger.info('Reminder interval changed', {
+          oldInterval: get().reminderInterval,
+          newInterval: reminderInterval,
+          unit: 'minutes',
+        });
+        
+        set({ reminderInterval });
+      },
+      
       setSelectedAdhan: (selectedAdhan) => {
-        console.log('🔔 Setting adhan:', selectedAdhan);
+        logger.info('Adhan selection changed', {
+          oldAdhan: get().selectedAdhan,
+          newAdhan: selectedAdhan,
+        });
+        
         set({ selectedAdhan });
       },
       
@@ -134,22 +193,55 @@ export const usePreferencesStore = create<PreferencesState>()(
             ? state.mutedNotifications.filter((p) => p !== prayer)
             : [...state.mutedNotifications, prayer];
           
-          console.log(`🔕 ${isMuted ? 'Unmuting' : 'Muting'} ${prayer} notification`);
+          logger.info(`Prayer notification toggled`, {
+            prayer,
+            action: isMuted ? 'unmuted' : 'muted',
+            totalMuted: newMutedNotifications.length,
+            mutedPrayers: newMutedNotifications,
+          });
           
           return { mutedNotifications: newMutedNotifications };
         });
       },
       
+      // ========================================================================
+      // RAMADAN ACTIONS
+      // ========================================================================
+      
       toggleRamadanMode: () => {
         set((state) => {
           const newMode = !state.ramadanMode;
-          console.log('🌙 Toggling Ramadan mode:', newMode);
+          
+          logger.info('Ramadan mode toggled', {
+            oldMode: state.ramadanMode,
+            newMode,
+          });
+          
           return { ramadanMode: newMode };
         });
       },
       
+      // ========================================================================
+      // RESET ACTIONS
+      // ========================================================================
+      
       resetPreferences: () => {
-        console.log('🔄 Resetting preferences to defaults');
+        const currentState = get();
+        
+        logger.info('Preferences reset to defaults', {
+          changedSettings: {
+            theme: currentState.theme !== initialState.theme,
+            darkMode: currentState.isDarkMode !== initialState.isDarkMode,
+            textSize: currentState.textSize !== initialState.textSize,
+            reciter: currentState.reciter !== initialState.reciter,
+            timeFormat: currentState.timeFormat !== initialState.timeFormat,
+            reminderInterval: currentState.reminderInterval !== initialState.reminderInterval,
+            adhan: currentState.selectedAdhan !== initialState.selectedAdhan,
+            mutedCount: currentState.mutedNotifications.length,
+            ramadanMode: currentState.ramadanMode !== initialState.ramadanMode,
+          },
+        });
+        
         set(initialState);
       },
     }),
@@ -167,14 +259,34 @@ export const usePreferencesStore = create<PreferencesState>()(
           defaultStorage.delete(name);
         },
       })),
-      // Optionally, you can add a version for migrations
       version: 1,
-      // Migrate from old structure if needed
+      // Migration logic
       migrate: (persistedState: any, version: number) => {
         if (version === 0) {
+          logger.warn('Migrating preferences from version 0 to 1');
           // Migration logic if needed
         }
         return persistedState as PreferencesState;
+      },
+      // Log store hydration
+      onRehydrateStorage: () => {
+        logger.debug('Hydrating preferences from MMKV');
+        
+        return (state, error) => {
+          if (error) {
+            logger.error('Hydration failed', { error: error });
+          } else if (state) {
+            logger.success('Hydration complete', {
+              theme: state.theme,
+              isDarkMode: state.isDarkMode,
+              textSize: state.textSize,
+              timeFormat: state.timeFormat,
+              adhan: state.selectedAdhan,
+              mutedPrayers: state.mutedNotifications.length,
+              ramadanMode: state.ramadanMode,
+            });
+          }
+        };
       },
     }
   )

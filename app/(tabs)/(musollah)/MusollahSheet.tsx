@@ -15,7 +15,7 @@
 
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
@@ -25,8 +25,7 @@ import firestore from '@react-native-firebase/firestore';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatTimeAgo, getStatusColor } from '../../../utils/musollah';
 import MusollahReportStatusSheet from './MusollahReportStatusSheet';
-import { MusollahLocation } from '../../../utils/types';
-import { useUpdateLocationStatus } from '../../../api/services/musollah';
+import { MusollahLocation, useUpdateLocationStatus } from '../../../api/services/musollah';
 import Toast from 'react-native-toast-message';
 import { enter } from '../../../utils';
 
@@ -435,8 +434,13 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
         backgroundStyle={{ backgroundColor: theme.colors.primary }}
         handleIndicatorStyle={{ backgroundColor: theme.colors.text.secondary }}
         backdropComponent={renderBackdrop}
+        style={{ zIndex: 999 }}  // ✅ Fix: Appear above search bar
       >
-        <BottomSheetView style={styles.contentContainer}>
+        <BottomSheetScrollView  // ✅ Changed from BottomSheetView to enable scrolling
+          style={styles.scrollView}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Close Button */}
           <MotiView
             from={{ opacity: 0, scale: 0.8 }}
@@ -578,7 +582,7 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
               index={1}
             />
           </View>
-        </BottomSheetView>
+        </BottomSheetScrollView>
       </BottomSheet>
 
       {/* Report Status Modal */}
@@ -598,10 +602,13 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
 // ============================================================================
 
 const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
   contentContainer: {
     paddingHorizontal: SPACING.xl,
     paddingTop: SPACING.sm,
-    paddingBottom: SPACING.xxl,
+    paddingBottom: 100,  // ✅ Increased from SPACING.xxl (24) to 100 for better spacing
     flexGrow: 1,
   },
 
@@ -705,7 +712,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     borderRadius: 16,
     overflow: 'hidden',
-    minHeight: 140,
+    height: 160,  // ✅ Fixed height instead of minHeight for consistency
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -727,6 +734,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: SPACING.md,
     lineHeight: 18,
+    height: 36,  // ✅ Fixed height to accommodate 2 lines of text
   },
   amenityStatus: {
     width: 36,

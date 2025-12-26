@@ -1,15 +1,25 @@
 // utils/widgetBridge.ts
 import { Platform } from 'react-native';
 import SharedGroupPreferences from 'react-native-shared-group-preferences';
-import { DailyPrayerTimes } from './types/prayer.types';
+import type { NormalizedPrayerTimes } from '../api/services/prayer/types';
 
 const APP_GROUP_IDENTIFIER = 'group.com.rihlah.prayerTimesWidget';
 
 /**
+ * Daily prayer data with date (for widget)
+ * Extends normalized prayer times with date field
+ */
+export interface DailyPrayerData extends NormalizedPrayerTimes {
+  date: string; // ISO format: "YYYY-MM-DD"
+}
+
+/**
  * Updates iOS widget with prayer times data
  * Widget will automatically reload when shared data changes
+ * 
+ * @param prayerTimesData - Array of daily prayer times in normalized format
  */
-export async function updatePrayerTimesWidget(prayerTimesData: DailyPrayerTimes[]) {
+export async function updatePrayerTimesWidget(prayerTimesData: DailyPrayerData[]) {
   if (Platform.OS !== 'ios') {
     console.log('⏭️ Skipping widget update (not iOS)');
     return;
@@ -23,21 +33,43 @@ export async function updatePrayerTimesWidget(prayerTimesData: DailyPrayerTimes[
   try {
     // Transform to widget format
     const widgetData = prayerTimesData.map(day => {
-      const [year, month, dayNum] = day.date.split('-');
-      const firebaseDate = `${parseInt(dayNum, 10)}/${parseInt(month, 10)}/${year}`;
+      // Handle both ISO (YYYY-MM-DD) and Firebase (D/M/YYYY) formats
+      let firebaseDate: string;
+      
+      if (day.date.includes('-')) {
+        // ISO format: YYYY-MM-DD → D/M/YYYY
+        const [year, month, dayNum] = day.date.split('-');
+        firebaseDate = `${parseInt(dayNum, 10)}/${parseInt(month, 10)}/${year}`;
+      } else if (day.date.includes('/')) {
+        // Already in Firebase format: D/M/YYYY
+        firebaseDate = day.date;
+      } else {
+        // Fallback
+        console.warn('⚠️ Unknown date format:', day.date);
+        firebaseDate = day.date;
+      }
       
       return {
         date: firebaseDate,
         time: {
-          subuh: day.prayers.Subuh,
-          syuruk: day.prayers.Syuruk,
-          zohor: day.prayers.Zohor,
-          asar: day.prayers.Asar,
-          maghrib: day.prayers.Maghrib,
-          isyak: day.prayers.Isyak,
+          // ✅ Use flat structure (new API format)
+          subuh: day.subuh,
+          syuruk: day.syuruk,
+          zohor: day.zohor,
+          asar: day.asar,
+          maghrib: day.maghrib,
+          isyak: day.isyak,
         }
       };
     });
+    
+    // Debug: Log first entry to verify format
+    if (widgetData.length > 0) {
+      console.log('📊 Widget data sample:', {
+        date: widgetData[0].date,
+        subuh: widgetData[0].time.subuh,
+      });
+    }
     
     const jsonString = JSON.stringify(widgetData);
     
@@ -72,7 +104,7 @@ export async function updatePrayerTimesWidget(prayerTimesData: DailyPrayerTimes[
 /**
  * Manually trigger widget update (for debug/testing)
  */
-export async function forceWidgetUpdate(prayerTimesData: DailyPrayerTimes[]) {
+export async function forceWidgetUpdate(prayerTimesData: DailyPrayerData[]) {
   console.log('🔄 Force updating widget...');
   await updatePrayerTimesWidget(prayerTimesData);
 }
