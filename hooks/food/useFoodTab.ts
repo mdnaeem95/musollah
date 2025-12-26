@@ -1,36 +1,22 @@
 /**
- * Food Tab Hook
+ * Food Tab Hook v3.5
  *
- * Business logic for the restaurant locator screen.
- * Handles category selection, filtering, and location-based recommendations.
+ * ✅ SIMPLIFIED: Relies on service layer for coordinate normalization
+ * ✅ CLEAN: No GeoPoint handling - service layer does it all
  *
- * @version 2.1 - Simplified to use normalized service data
+ * @version 3.5 - Clean separation of concerns
+ * @since 2025-12-26
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useLocationStore } from '../../stores/useLocationStore';
-import {
-  useRestaurants,
-  useRestaurantCategories,
-  calculateDistance,
-  Restaurant,
-} from '../../api/services/food';
+import * as Location from 'expo-location';
+import { useRestaurants, useRestaurantCategories, calculateDistance, Restaurant } from '../../api/services/food';
 
-// ============================================================================
-// LOCAL UTILITIES (fallback if not in service layer)
-// ============================================================================
+// ✅ Import structured logging
+import { createLogger } from '../../services/logging/logger';
 
-/**
- * Format distance for display
- * Shows meters if < 1km, otherwise km with 1 decimal
- */
-function formatDistance(distanceKm: number): string {
-  if (!isFinite(distanceKm) || distanceKm < 0) return 'N/A';
-  if (distanceKm < 1) {
-    return `${Math.round(distanceKm * 1000)}m`;
-  }
-  return `${distanceKm.toFixed(1)}km`;
-}
+// ✅ Create category-specific logger
+const logger = createLogger('Food Tab');
 
 // ============================================================================
 // CONSTANTS
@@ -60,47 +46,23 @@ interface Coordinates {
 }
 
 // ============================================================================
-// HELPERS
+// UTILITIES
 // ============================================================================
 
 /**
- * Validate coordinates are valid numbers within bounds
+ * Format distance for display
+ * Shows meters if < 1km, otherwise km with 1 decimal
  */
-function isValidCoordinates(coords: unknown): coords is Coordinates {
-  if (!coords || typeof coords !== 'object') return false;
-  const { latitude, longitude } = coords as Coordinates;
-  return (
-    typeof latitude === 'number' &&
-    typeof longitude === 'number' &&
-    !isNaN(latitude) &&
-    !isNaN(longitude) &&
-    latitude >= -90 &&
-    latitude <= 90 &&
-    longitude >= -180 &&
-    longitude <= 180
-  );
-}
-
-/**
- * Extract coordinates from restaurant - handles both 'coordinates' and 'location' fields
- * This provides backwards compatibility during migration from Firebase GeoPoint
- */
-function getRestaurantCoordinates(restaurant: Restaurant): Coordinates | null {
-  // First try 'coordinates' (normalized format)
-  if (isValidCoordinates(restaurant.coordinates)) {
-    return restaurant.coordinates;
+function formatDistance(distanceKm: number): string {
+  if (!isFinite(distanceKm) || distanceKm < 0) {
+    logger.warn('Invalid distance value', { distanceKm });
+    return 'N/A';
   }
-
-  // Fallback to 'location' (Firebase GeoPoint format)
-  const locationField = (restaurant as any).location;
-  if (isValidCoordinates(locationField)) {
-    return {
-      latitude: locationField.latitude,
-      longitude: locationField.longitude,
-    };
+  
+  if (distanceKm < 1) {
+    return `${Math.round(distanceKm * 1000)}m`;
   }
-
-  return null;
+  return `${distanceKm.toFixed(1)}km`;
 }
 
 // ============================================================================
@@ -108,89 +70,181 @@ function getRestaurantCoordinates(restaurant: Restaurant): Coordinates | null {
 // ============================================================================
 
 export function useFoodTab() {
+  logger.time('food-tab-init');
+  logger.debug('Initializing Food Tab');
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  
+  // ✅ Fresh GPS location state
+  const [userCoords, setUserCoords] = useState<Coordinates>(SINGAPORE_DEFAULT_COORDS);
+  const [isLocationLoading, setIsLocationLoading] = useState(true);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
 
-  // Location state
-  const { userLocation, fetchLocation, isLoading: isLocationLoading } = useLocationStore();
-
-  // Fetch user location on mount
+  // ✅ Fetch FRESH GPS location on mount
   useEffect(() => {
-    if (!userLocation) {
-      fetchLocation();
-    }
-  }, [userLocation, fetchLocation]);
+    let isMounted = true;
 
-  // Restaurant data (already normalized by service layer)
+    const fetchFreshLocation = async () => {
+      try {
+        logger.debug('Fetching fresh GPS location...');
+        
+        // Request permission
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        
+        if (status !== 'granted') {
+          logger.warn('Location permission denied - using Singapore default');
+          if (isMounted) {
+            setUserCoords(SINGAPORE_DEFAULT_COORDS);
+            setIsLocationLoading(false);
+            setHasLocationPermission(false);
+          }
+          return;
+        }
+
+        setHasLocationPermission(true);
+
+        // Get current location
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        const newCoords = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        };
+
+        logger.success('Fresh GPS location obtained', {
+          latitude: newCoords.latitude.toFixed(4),
+          longitude: newCoords.longitude.toFixed(4),
+        });
+
+        if (isMounted) {
+          setUserCoords(newCoords);
+          setIsLocationLoading(false);
+        }
+      } catch (error: any) {
+        logger.error('GPS location fetch failed', {
+          error: error?.message || String(error),
+        });
+        // Fallback to Singapore
+        if (isMounted) {
+          setUserCoords(SINGAPORE_DEFAULT_COORDS);
+          setIsLocationLoading(false);
+        }
+      }
+    };
+
+    fetchFreshLocation();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Run once on mount
+
+  // Restaurant data (✅ Already normalized by service layer with proper coordinates)
   const { data: restaurants = [], isLoading: isRestaurantsLoading } = useRestaurants();
   const { categories = [] } = useRestaurantCategories();
+
+  // Log data availability
+  useEffect(() => {
+    if (restaurants.length > 0 && !isLocationLoading) {
+      logger.info('Restaurants loaded', {
+        count: restaurants.length,
+        categoriesCount: categories.length,
+        userLocation: {
+          latitude: userCoords.latitude.toFixed(4),
+          longitude: userCoords.longitude.toFixed(4),
+        },
+      });
+      logger.timeEnd('food-tab-init');
+    }
+  }, [restaurants.length, categories.length, isLocationLoading, userCoords]);
 
   // Combined loading state
   const isLoading = isRestaurantsLoading || isLocationLoading;
 
-  // User coordinates with Singapore fallback
-  const userCoords = useMemo(() => {
-    if (userLocation?.coords) {
-      return {
-        latitude: userLocation.coords.latitude,
-        longitude: userLocation.coords.longitude,
-      };
-    }
-    return SINGAPORE_DEFAULT_COORDS;
-  }, [userLocation]);
-
-  // Map region - always defined
-  const region = useMemo<Region>(() => ({
-    latitude: userCoords.latitude,
-    longitude: userCoords.longitude,
-    latitudeDelta: 0.02,
-    longitudeDelta: 0.02,
-  }), [userCoords]);
+  // Map region
+  const region = useMemo<Region>(() => {
+    return {
+      latitude: userCoords.latitude,
+      longitude: userCoords.longitude,
+      latitudeDelta: 0.02,
+      longitudeDelta: 0.02,
+    };
+  }, [userCoords]);
 
   // Filtered restaurants by selected categories
   const filteredRestaurants = useMemo(() => {
-    if (selectedCategories.length === 0) return restaurants;
+    if (selectedCategories.length === 0) {
+      return restaurants;
+    }
 
-    return restaurants.filter((restaurant) =>
+    const filtered = restaurants.filter((restaurant) =>
       restaurant.categories?.some((cat) => selectedCategories.includes(cat))
     );
+
+    logger.info('Restaurants filtered by category', {
+      selectedCategories,
+      totalRestaurants: restaurants.length,
+      filteredCount: filtered.length,
+    });
+
+    return filtered;
   }, [restaurants, selectedCategories]);
 
   // Recommended restaurants (closest 5)
   const recommendedRestaurants = useMemo(() => {
-    if (filteredRestaurants.length === 0) return [];
+    if (filteredRestaurants.length === 0) {
+      return [];
+    }
 
+    // ✅ SIMPLIFIED: Service layer guarantees coordinates exist, just use them directly
     const withDistance = filteredRestaurants
       .map((restaurant) => {
-        const coords = getRestaurantCoordinates(restaurant);
-        if (!coords) return null;
-        return {
-          restaurant,
-          distance: calculateDistance(userCoords, coords),
-        };
+        // Service layer already normalized coordinates, so they're guaranteed to exist
+        const distance = calculateDistance(userCoords, restaurant.coordinates);
+        return { restaurant, distance };
       })
-      .filter((item): item is { restaurant: Restaurant; distance: number } => item !== null);
+      .filter((item) => isFinite(item.distance) && item.distance >= 0);
 
-    return withDistance
+    const recommended = withDistance
       .sort((a, b) => a.distance - b.distance)
       .slice(0, RECOMMENDED_COUNT)
       .map(({ restaurant }) => restaurant);
+
+    if (withDistance.length > 0) {
+      logger.success('Recommendations calculated', {
+        recommendedCount: recommended.length,
+        validRestaurants: withDistance.length,
+        closestDistance: withDistance[0]?.distance.toFixed(2) + 'km',
+      });
+    }
+
+    return recommended;
   }, [filteredRestaurants, userCoords]);
 
   // Category selection handler
   const handleCategorySelect = useCallback((category: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category)
+    setSelectedCategories((prev) => {
+      const isRemoving = prev.includes(category);
+      const newCategories = isRemoving
         ? prev.filter((cat) => cat !== category)
-        : [...prev, category]
-    );
+        : [...prev, category];
+      
+      logger.info(isRemoving ? 'Category removed' : 'Category added', {
+        category,
+        selectedCount: newCategories.length,
+      });
+      
+      return newCategories;
+    });
   }, []);
 
   // Calculate formatted distance string for display
   const getRestaurantDistance = useCallback(
     (restaurant: Restaurant): string => {
-      const coords = getRestaurantCoordinates(restaurant);
-      if (!coords) return 'N/A';
-      const distance = calculateDistance(userCoords, coords);
+      // ✅ SIMPLIFIED: Service layer guarantees coordinates exist
+      const distance = calculateDistance(userCoords, restaurant.coordinates);
       return formatDistance(distance);
     },
     [userCoords]
@@ -198,8 +252,13 @@ export function useFoodTab() {
 
   // Clear all category filters
   const clearCategoryFilters = useCallback(() => {
-    setSelectedCategories([]);
-  }, []);
+    if (selectedCategories.length > 0) {
+      logger.info('Clearing category filters', {
+        previousCount: selectedCategories.length,
+      });
+      setSelectedCategories([]);
+    }
+  }, [selectedCategories]);
 
   return {
     // State
@@ -210,7 +269,7 @@ export function useFoodTab() {
     region,
     userCoords,
     isLoading,
-    hasLocationPermission: !!userLocation,
+    hasLocationPermission,
 
     // Actions
     handleCategorySelect,

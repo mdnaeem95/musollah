@@ -332,7 +332,7 @@ const AccountSettings = () => {
 
       {/* Sign In Modal */}
       <SignInModal
-        isVisible={isSignUpModalVisible}
+        visible={isSignUpModalVisible}
         onClose={() => setSignUpModalVisible(false)}
       />
     </View>

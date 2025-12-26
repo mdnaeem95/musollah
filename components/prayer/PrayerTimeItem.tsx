@@ -1,15 +1,9 @@
 /**
- * Prayer Time Item Component (ENHANCED v2.0)
- * 
- * Displays a single prayer time with name, formatted time, and logging checkbox.
- * 
- * ✨ ENHANCED Features:
- * - **MUCH BETTER** dark mode visibility for current prayer
- * - Stronger background opacity (40% vs 25%)
- * - Added prominent border for current prayer
- * - Increased BlurView intensity for better glassmorphism effect
- * - Next prayer countdown display (e.g., "in 2h 45m")
- * - Adapts to user's time format preference
+ * Prayer Time Item Component (HIGH CONTRAST v4.0)
+ *
+ * ✅ FIX: Current prayer always uses contrast-safe text (no more green-on-green)
+ * ✅ FIX: Checkbox also adapts for contrast on current prayer
+ * ✅ IMPROVED: Stronger regular card opacity in dark mode for readability
  */
 
 import React, { useMemo, memo } from 'react';
@@ -25,7 +19,7 @@ import { useTheme } from '../../context/ThemeContext';
 // ============================================================================
 
 const screenWidth = Dimensions.get('window').width;
-const containerWidth = screenWidth * 0.8; // 80% of screen width
+const containerWidth = screenWidth * 0.8;
 
 // ============================================================================
 // TYPES
@@ -44,165 +38,263 @@ interface PrayerTimeItemProps {
 }
 
 // ============================================================================
+// COLOR HELPERS
+// ============================================================================
+
+function hexToRgb(hex: string) {
+  const cleaned = hex.replace('#', '').trim();
+  const full =
+    cleaned.length === 3
+      ? cleaned.split('').map((c) => c + c).join('')
+      : cleaned;
+
+  if (full.length !== 6) return null;
+
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  if ([r, g, b].some((v) => Number.isNaN(v))) return null;
+  return { r, g, b };
+}
+
+function relativeLuminance({ r, g, b }: { r: number; g: number; b: number }) {
+  // sRGB -> linear
+  const srgb = [r, g, b].map((v) => v / 255);
+  const lin = srgb.map((c) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+  );
+  return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+}
+
+// Return a readable text color for a given hex background.
+// You can tweak the threshold if you want it to flip earlier/later.
+function getContrastTextColor(bgHex: string) {
+  const rgb = hexToRgb(bgHex);
+  if (!rgb) return '#FFFFFF';
+  const lum = relativeLuminance(rgb);
+  // If bg is bright, use near-black; otherwise use white
+  return lum > 0.55 ? '#121212' : '#FFFFFF';
+}
+
+// Append alpha to a #RRGGBB color as #RRGGBBAA (RN supports this)
+function withHexAlpha(hex: string, alphaHex: string) {
+  const cleaned = hex.trim();
+  if (!cleaned.startsWith('#')) return cleaned;
+  if (cleaned.length === 7) return `${cleaned}${alphaHex}`;
+  return cleaned; // fallback if already has alpha or odd format
+}
+
+// ============================================================================
 // COMPONENT
 // ============================================================================
 
-const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(({ 
-  name, 
-  time, 
-  style,
-  isLogged = false,
-  onToggle,
-  isLoggable = true,
-  showCheckbox = false,
-  isCurrent = false,
-  countdown,
-}) => {
-  const { theme, isDarkMode } = useTheme();
-  const timeFormat = usePreferencesStore(state => state.timeFormat);
+const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
+  ({
+    name,
+    time,
+    style,
+    isLogged = false,
+    onToggle,
+    isLoggable = true,
+    showCheckbox = false,
+    isCurrent = false,
+    countdown,
+  }) => {
+    const { theme, isDarkMode } = useTheme();
+    const timeFormat = usePreferencesStore((state) => state.timeFormat);
 
-  // ============================================================================
-  // TIME FORMATTING
-  // ============================================================================
+    // Contrast-safe text color for accent background
+    const accentText = useMemo(
+      () => getContrastTextColor(theme.colors.accent),
+      [theme.colors.accent]
+    );
 
-  const formattedTime = useMemo(() => {
-    try {
-      const parsedTime = parse(time, 'HH:mm', new Date());
-      return timeFormat === '12-hour'
-        ? format(parsedTime, 'hh:mm a')
-        : format(parsedTime, 'HH:mm');
-    } catch (error) {
-      console.error('Error formatting time:', error);
-      return time;
-    }
-  }, [time, timeFormat]);
+    // ============================================================================
+    // TIME FORMATTING
+    // ============================================================================
 
-  // ============================================================================
-  // CHECKBOX RENDERING
-  // ============================================================================
+    const formattedTime = useMemo(() => {
+      try {
+        const parsedTime = parse(time, 'HH:mm', new Date());
+        return timeFormat === '12-hour'
+          ? format(parsedTime, 'hh:mm a')
+          : format(parsedTime, 'HH:mm');
+      } catch {
+        return time;
+      }
+    }, [time, timeFormat]);
 
-  const renderCheckbox = () => {
-    if (!showCheckbox) return null;
+    // ============================================================================
+    // GLASS CONFIGURATION
+    // ============================================================================
 
-    const iconName = isLogged ? 'check-circle' : 'circle';
-    const iconColor = isLoggable 
-      ? (isLogged ? '#4CAF50' : theme.colors.text.muted)
-      : 'rgba(0, 0, 0, 0.2)';
+    const glassConfig = useMemo(() => {
+      if (isCurrent) {
+        // Make current prayer background more solid so contrast stays consistent
+        const bg = isDarkMode
+          ? withHexAlpha(theme.colors.accent, 'CC') // 80% in dark mode
+          : withHexAlpha(theme.colors.accent, 'DD'); // 87% in light mode
+
+        return {
+          intensity: 30,
+          tint: 'light' as const,
+          backgroundColor: bg,
+          borderColor: withHexAlpha(accentText, '33'), // subtle contrast border
+          borderWidth: 2,
+          shadowColor: theme.colors.accent,
+          shadowOpacity: 0.35,
+          elevation: 8,
+        };
+      }
+
+      // Regular prayer: keep it readable over any wallpaper
+      return {
+        intensity: isDarkMode ? 25 : 20,
+        tint: 'light' as const,
+        backgroundColor: isDarkMode
+          ? 'rgba(255, 255, 255, 0.92)' // stronger in dark mode
+          : 'rgba(255, 255, 255, 0.75)', // slightly more glass in light mode
+        borderColor: isDarkMode
+          ? 'rgba(0, 0, 0, 0.18)'
+          : 'rgba(0, 0, 0, 0.10)',
+        borderWidth: 1,
+        shadowColor: '#000',
+        shadowOpacity: isDarkMode ? 0.18 : 0.12,
+        elevation: isDarkMode ? 4 : 3,
+      };
+    }, [isCurrent, isDarkMode, theme.colors.accent, accentText]);
+
+    // ============================================================================
+    // TEXT COLORS (ALWAYS READABLE)
+    // ============================================================================
+
+    const mainTextColor = useMemo(() => {
+      if (!isLoggable) return isDarkMode ? '#7A7A7A' : '#9A9A9A';
+      if (isCurrent) return accentText; // ✅ key fix
+      return '#121212'; // always strong readable text on light card bg
+    }, [isLoggable, isDarkMode, isCurrent, accentText]);
+
+    const countdownColor = useMemo(() => {
+      if (!isLoggable) return isDarkMode ? '#7A7A7A' : '#9A9A9A';
+      if (isCurrent) return accentText; // ✅ key fix
+      return isDarkMode ? '#2A2A2A' : '#5A5A5A';
+    }, [isLoggable, isDarkMode, isCurrent, accentText]);
+
+    // ============================================================================
+    // CHECKBOX
+    // ============================================================================
+
+    const checkboxColor = useMemo(() => {
+      if (!isLoggable) return isDarkMode ? '#888888' : '#D0D0D0';
+
+      // On current prayer (accent background) keep it contrast-safe
+      if (isCurrent) {
+        return isLogged ? accentText : withHexAlpha(accentText, 'CC'); // white/black w/ opacity
+      }
+
+      // Non-current
+      if (isLogged) return '#2EAF5D'; // green check
+      return isDarkMode ? '#666666' : '#666666';
+    }, [isLoggable, isDarkMode, isCurrent, isLogged, accentText]);
+
+    const renderCheckbox = () => {
+      if (!showCheckbox) return null;
+
+      const iconName = isLogged ? 'check-circle' : 'circle';
+
+      return (
+        <TouchableOpacity
+          onPress={isLoggable ? onToggle : undefined}
+          disabled={!isLoggable}
+          style={styles.checkButton}
+          accessibilityLabel={`Mark ${name} as ${
+            isLogged ? 'not completed' : 'completed'
+          }`}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: isLogged, disabled: !isLoggable }}
+        >
+          <FontAwesome6
+            name={iconName}
+            size={isCurrent ? 26 : 24}
+            color={checkboxColor}
+          />
+        </TouchableOpacity>
+      );
+    };
+
+    // ============================================================================
+    // RENDER
+    // ============================================================================
 
     return (
-      <TouchableOpacity
-        onPress={isLoggable ? onToggle : undefined}
-        disabled={!isLoggable}
-        style={styles.checkButton}
-        accessibilityLabel={`Mark ${name} as ${isLogged ? 'not completed' : 'completed'}`}
-        accessibilityRole="checkbox"
-        accessibilityState={{ 
-          checked: isLogged,
-          disabled: !isLoggable 
-        }}
+      <BlurView
+        intensity={glassConfig.intensity}
+        tint={glassConfig.tint}
+        style={[
+          styles.container,
+          {
+            backgroundColor: glassConfig.backgroundColor,
+            borderColor: glassConfig.borderColor,
+            borderWidth: glassConfig.borderWidth,
+            shadowColor: glassConfig.shadowColor,
+            shadowOpacity: glassConfig.shadowOpacity,
+            elevation: glassConfig.elevation,
+          },
+          !isLoggable && styles.disabledContainer,
+        ]}
       >
-        <FontAwesome6
-          name={iconName}
-          size={isCurrent ? 26 : 24}
-          color={iconColor}
-        />
-      </TouchableOpacity>
-    );
-  };
-
-  // ============================================================================
-  // RENDER
-  // ============================================================================
-
-  const ContainerComponent = isCurrent ? BlurView : View;
-  const containerProps = isCurrent
-    ? {
-        intensity: 35,  // ✅ INCREASED from 25 to 35 for stronger blur
-        tint: (isDarkMode ? 'dark' : 'light') as 'dark' | 'light',
-      }
-    : {};
-
-  return (
-    <ContainerComponent
-      {...containerProps}
-      style={[
-        styles.container,
-        isCurrent && {
-          backgroundColor: theme.colors.accent + '40',  // ✅ INCREASED from 25% to 40%
-          borderColor: theme.colors.accent,
-          borderWidth: 2,  // ✅ INCREASED from 1.5 to 2 for stronger presence
-          shadowColor: theme.colors.accent,  // ✅ Added accent shadow
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.3,
-          shadowRadius: 4,
-          elevation: 6,  // ✅ Increased elevation
-        },
-        !isLoggable && styles.disabledContainer,
-      ]}
-    >
-      {/* Prayer Name + Countdown */}
-      <View style={styles.nameContainer}>
-        <Text
-          style={[
-            styles.prayerName,
-            style,
-            isCurrent && {
-              fontFamily: 'Outfit_700Bold',
-              fontSize: 19,
-              color: theme.colors.accent,
-              textShadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'transparent',  // ✅ Text shadow for dark mode
-              textShadowOffset: { width: 0, height: 1 },
-              textShadowRadius: 2,
-            },
-            !isLoggable && styles.disabledText,
-          ]}
-        >
-          {name}
-        </Text>
-        
-        {countdown && (
+        {/* Prayer Name + Countdown */}
+        <View style={styles.nameContainer}>
           <Text
             style={[
-              styles.countdownText,
-              { 
-                color: isCurrent 
-                  ? theme.colors.accent  // ✅ Use accent color for current prayer countdown
-                  : theme.colors.text.muted 
-              },
-              isCurrent && {
-                fontFamily: 'Outfit_600SemiBold',  // ✅ Bold countdown for current prayer
+              styles.prayerName,
+              style,
+              {
+                color: mainTextColor,
+                fontFamily: isCurrent ? 'Outfit_700Bold' : 'Outfit_600SemiBold',
+                fontSize: isCurrent ? 19 : 17,
               },
             ]}
           >
-            in {countdown}
+            {name}
           </Text>
-        )}
-      </View>
 
-      {/* Prayer Time */}
-      <Text
-        style={[
-          styles.prayerTime,
-          style,
-          isCurrent && {
-            fontFamily: 'Outfit_700Bold',
-            fontSize: 19,
-            color: theme.colors.accent,
-            textShadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'transparent',  // ✅ Text shadow for dark mode
-            textShadowOffset: { width: 0, height: 1 },
-            textShadowRadius: 2,
-          },
-          !isLoggable && styles.disabledText,
-        ]}
-      >
-        {formattedTime}
-      </Text>
+          {!!countdown && (
+            <Text
+              style={[
+                styles.countdownText,
+                {
+                  color: countdownColor,
+                  fontFamily: isCurrent ? 'Outfit_600SemiBold' : 'Outfit_400Regular',
+                },
+              ]}
+            >
+              in {countdown}
+            </Text>
+          )}
+        </View>
 
-      {/* Checkbox */}
-      {renderCheckbox()}
-    </ContainerComponent>
-  );
-});
+        {/* Prayer Time */}
+        <Text
+          style={[
+            styles.prayerTime,
+            style,
+            {
+              color: mainTextColor,
+              fontFamily: isCurrent ? 'Outfit_700Bold' : 'Outfit_600SemiBold',
+              fontSize: isCurrent ? 19 : 17,
+            },
+          ]}
+        >
+          {formattedTime}
+        </Text>
+
+        {/* Checkbox */}
+        {renderCheckbox()}
+      </BlurView>
+    );
+  }
+);
 
 // ============================================================================
 // STYLES
@@ -213,53 +305,36 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: containerWidth,
     minHeight: Platform.OS === 'android' ? 45 : 54,
-    borderRadius: 15,
-    borderColor: 'rgba(255, 255, 255, 1)', 
-    borderWidth: 1,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingRight: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    shadowColor: '#000',
-    shadowOffset: { 
-      width: 0, 
-      height: Platform.OS === 'android' ? 0 : 4 
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: Platform.OS === 'android' ? 0 : 6,
-    elevation: Platform.OS === 'android' ? 0 : 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
     overflow: 'hidden',
   },
   disabledContainer: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   nameContainer: {
     flexDirection: 'column',
-    gap: 2,
+    gap: 3,
   },
   prayerName: {
-    fontFamily: 'Outfit_500Medium',
-    fontSize: 18,
-    color: '#333333',
     textAlign: 'left',
     marginRight: 12,
+    letterSpacing: 0.2,
   },
   countdownText: {
-    fontFamily: 'Outfit_400Regular',
     fontSize: 11,
     textAlign: 'left',
   },
   prayerTime: {
-    fontFamily: 'Outfit_500Medium',
-    fontSize: 18,
-    color: '#333333',
     textAlign: 'right',
     flex: 1,
     marginRight: 8,
-  },
-  disabledText: {
-    color: '#999999',
+    letterSpacing: 0.3,
   },
   checkButton: {
     padding: 4,

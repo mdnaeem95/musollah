@@ -179,7 +179,6 @@ const Surahs = () => {
       {mode === 'surah' ? (
         <FlashList
           data={filteredSurahs}
-          estimatedItemSize={75}
           renderItem={({ item, index }) => (
             <SurahItem
               index={index}
@@ -195,7 +194,6 @@ const Surahs = () => {
       ) : (
         <FlashList
           data={juzMeta}
-          estimatedItemSize={75}
           renderItem={({ item, index }) => (
             <JuzItem
               number={item.number}

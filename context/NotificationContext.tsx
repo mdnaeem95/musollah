@@ -11,7 +11,7 @@ import React, {
 import * as Notifications from "expo-notifications";
 import Toast from "react-native-toast-message";
 
-import { registerForPushNotificationsAsync } from "../utils/registerForPushNotificationsAsync";
+import { registerForPushNotificationsAsync } from "../services/notifications/registerForPushNotificationsAsync";
 import { useAuth } from "./AuthContext";
 import { Notification as AppNotification } from "../utils/types";
 

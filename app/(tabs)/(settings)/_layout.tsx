@@ -13,7 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../context/ThemeContext';
-import { useThemeTransition } from '../../../hooks/useThemeTransition';
+import { useThemeTransition } from '../../../hooks/settings/useThemeTransition';
 
 const SettingsLayout = () => {
   const { theme } = useTheme();

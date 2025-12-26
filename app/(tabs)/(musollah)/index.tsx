@@ -12,8 +12,8 @@
  * @updated December 2025
  */
 
-import React, { useEffect, useCallback, memo, useMemo, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Text, TextInput, Platform } from 'react-native';
+import React, { useEffect, useCallback, memo, useMemo, useState, useRef } from 'react';
+import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Text, TextInput, Platform, Animated, Easing } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import { FlashList } from '@shopify/flash-list';
 import { FontAwesome6 } from '@expo/vector-icons';
@@ -22,7 +22,6 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 
 import Map from '../../../components/musollah/Map';
-import IslamicPatternOverlay from '../../../components/food/IslamicPatternOverlay';
 import { useLocationStore } from '../../../stores/useLocationStore';
 import { MosqueLocation, LocationUnion } from '../../../api/services/musollah';
 import BidetSheet from './BidetSheet';
@@ -161,41 +160,109 @@ const PremiumSegmentedControl = memo(function PremiumSegmentedControl({
           const icon = LOCATION_ICONS[type];
 
           return (
-            <TouchableOpacity
+            <AnimatedSegmentButton
               key={type}
+              type={type}
+              icon={icon}
+              isSelected={isSelected}
               onPress={() => handlePress(index)}
-              activeOpacity={0.7}
-              style={styles.segmentButton}
-            >
-              <MotiView
-                animate={{
-                  backgroundColor: isSelected ? theme.colors.accent : 'transparent',
-                }}
-                transition={{ type: 'timing', duration: 200 }}
-                style={styles.segmentInner}
-              >
-                <FontAwesome6
-                  name={icon}
-                  size={14}
-                  color={isSelected ? '#fff' : theme.colors.text.secondary}
-                />
-                <Text
-                  style={[
-                    styles.segmentText,
-                    {
-                      color: isSelected ? '#fff' : theme.colors.text.secondary,
-                      fontFamily: isSelected ? 'Outfit_600SemiBold' : 'Outfit_500Medium',
-                    },
-                  ]}
-                >
-                  {type}
-                </Text>
-              </MotiView>
-            </TouchableOpacity>
+              accentColor={theme.colors.accent}
+              textSecondary={theme.colors.text.secondary}
+            />
           );
         })}
       </BlurView>
     </MotiView>
+  );
+});
+
+interface AnimatedSegmentButtonProps {
+  type: string;
+  icon: string;
+  isSelected: boolean;
+  onPress: () => void;
+  accentColor: string;
+  textSecondary: string;
+}
+
+const AnimatedSegmentButton = memo(function AnimatedSegmentButton({
+  type,
+  icon,
+  isSelected,
+  onPress,
+  accentColor,
+  textSecondary,
+}: AnimatedSegmentButtonProps) {
+  // Animated value for background color
+  const animatedBg = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
+  
+  // Animated value for text/icon opacity (for smooth color transition)
+  const animatedColor = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(animatedBg, {
+        toValue: isSelected ? 1 : 0,
+        duration: 200,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: false, // backgroundColor doesn't support native driver
+      }),
+      Animated.timing(animatedColor, {
+        toValue: isSelected ? 1 : 0,
+        duration: 200,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [isSelected, animatedBg, animatedColor]);
+
+  // Interpolate background color
+  const backgroundColor = animatedBg.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['transparent', accentColor],
+  });
+
+  // Interpolate text color
+  const color = animatedColor.interpolate({
+    inputRange: [0, 1],
+    outputRange: [textSecondary, '#FFFFFF'],
+  });
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={styles.segmentButton}
+    >
+      <Animated.View
+        style={[
+          styles.segmentInner,
+          { backgroundColor },
+        ]}
+      >
+        <Animated.Text style={{ color }}>
+          <FontAwesome6
+            name={icon}
+            size={14}
+            color={isSelected ? '#FFFFFF' : textSecondary}
+          />
+        </Animated.Text>
+        <Animated.Text
+          style={[
+            styles.segmentText,
+            {
+              color,
+              fontFamily: isSelected ? 'Outfit_600SemiBold' : 'Outfit_500Medium',
+            },
+            isSelected && styles.segmentTextActive,
+          ]}
+          numberOfLines={1}
+          allowFontScaling={false}
+        >
+          {type}
+        </Animated.Text>
+      </Animated.View>
+    </TouchableOpacity>
   );
 });
 
@@ -462,7 +529,6 @@ const LocationPermissionPrompt = memo(function LocationPermissionPrompt({
 
   return (
     <View style={styles.permissionContainer}>
-      <IslamicPatternOverlay opacity={0.04} />
       <MotiView
         from={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -563,7 +629,6 @@ export default function MusollahScreen() {
   if (locationLoading && !userLocation) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
-        <IslamicPatternOverlay opacity={0.04} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.accent} />
           <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
@@ -586,8 +651,6 @@ export default function MusollahScreen() {
   // Main render
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
-      <IslamicPatternOverlay opacity={0.04} />
-
       <View style={styles.content}>
         {/* Map */}
         <View style={styles.mapContainer}>
@@ -609,7 +672,13 @@ export default function MusollahScreen() {
         </View>
 
         {/* Search Bar Overlay */}
-        <View style={styles.searchOverlay}>
+        <View
+          pointerEvents={isSheetVisible ? 'none' : 'auto'}
+          style={[
+            styles.searchOverlay,
+            isSheetVisible && styles.searchOverlayBehind,
+          ]}
+        >
           <CustomSearchBar
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -757,6 +826,11 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: SPACING.xs,
   },
+  searchOverlayBehind: {
+    zIndex: 0,
+    elevation: 0,   // Android: critical
+    opacity: 0,     // optional: hide it while sheet open
+  },
 
   // Bottom Sheet
   bottomSheet: {
@@ -818,6 +892,11 @@ const styles = StyleSheet.create({
   },
   segmentText: {
     fontSize: 13,
+  },
+  segmentTextActive: {
+    textShadowColor: 'rgba(0, 0, 0, 0.15)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 
   // Stats Header

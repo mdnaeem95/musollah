@@ -1,6 +1,8 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { addDays, subDays, format, isAfter, startOfDay } from 'date-fns';
-import { usePrefetchPrayerTimes } from './usePrayerQuery';
+import { prayerTimeKeys } from '../../api/services/prayer';
+import { useQueryClient } from '@tanstack/react-query';
+import { Coordinates } from '../../api/services/prayer/types/index';
 
 interface UsePrayerDateNavigationReturn {
   selectedDate: Date;
@@ -15,12 +17,13 @@ interface UsePrayerDateNavigationReturn {
 }
 
 export const usePrayerDateNavigation = (
+  location?: Coordinates | null,
   initialDate: Date = new Date()
 ): UsePrayerDateNavigationReturn => {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
-  const { prefetchDate } = usePrefetchPrayerTimes();
 
-  // Calculate boundaries
+  const queryClient = useQueryClient();
+  
   const tomorrow = useMemo(() => {
     const tom = new Date();
     tom.setDate(tom.getDate() + 1);
@@ -44,19 +47,22 @@ export const usePrayerDateNavigation = (
 
   const canGoPrev = useMemo(() => true, []);
 
-  // ✅ NEW: Prefetch adjacent dates when selected date changes
+  // Prefetch adjacent dates
   useEffect(() => {
+    if (!location) return;
+
     const prevDate = format(subDays(selectedDate, 1), 'yyyy-MM-dd');
     const nextDate = format(addDays(selectedDate, 1), 'yyyy-MM-dd');
     
-    // Prefetch previous and next dates silently in background
-    prefetchDate(prevDate).catch(() => {});
-    prefetchDate(nextDate).catch(() => {});
-    
-    console.log(`🔮 Prefetched adjacent dates: ${prevDate}, ${nextDate}`);
-  }, [formattedDate, prefetchDate]);
+    // ✅ Prefetch using query keys
+    queryClient.prefetchQuery({
+      queryKey: prayerTimeKeys.date(location, prevDate),
+    });
+    queryClient.prefetchQuery({
+      queryKey: prayerTimeKeys.date(location, nextDate),
+    });
+  }, [formattedDate, queryClient]);
 
-  // Navigation handlers
   const goToNextDay = useCallback(() => {
     setSelectedDate(current => {
       const next = addDays(current, 1);

@@ -46,7 +46,7 @@ const FoodLayout = () => {
         options={{
           gestureEnabled: false,
           headerShown: true,
-          headerTitle: 'Halal Food',
+          headerTitle: 'Food',
           ...commonHeaderStyles,
         }}
       />

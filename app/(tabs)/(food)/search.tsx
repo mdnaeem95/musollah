@@ -16,7 +16,7 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../context/ThemeContext';
-import useAutoFocus from '../../../hooks/useAutoFocus';
+import useAutoFocus from '../../../hooks/food/useAutoFocus';
 import { useRestaurantSearch } from '../../../hooks/food/useRestaurantSearch';
 import { enter } from '../../../utils';
 

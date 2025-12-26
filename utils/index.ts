@@ -2,16 +2,7 @@ import { ayahList } from './constants';
 import { Animated, Dimensions } from 'react-native';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
-
-export const formatIslamicDate = (hijriDate: string): string => {
-    const [day, month, year] = hijriDate.split('-');
-    const monthNames = [
-        'Muharram', 'Safar', 'Rabiulawal', 'Rabiulakhir', 'Jamadilawal', 'JamadilAkhir',
-        'Rejab', 'Syaaban', 'Ramadan', 'Syawal', 'Zulkaedah', 'Zulhijjah'
-    ];
-    const monthName = monthNames[parseInt(month, 10) - 1];
-    return `${day} ${monthName}, ${year} AH`
-}
+import { Easing } from 'react-native-reanimated';
 
 export const getRandomAyahByMood = (mood: string) => {
     // Filter ayahs based on mood
@@ -27,10 +18,6 @@ export const getRandomAyahByMood = (mood: string) => {
     const randomIndex = Math.floor(Math.random() * filteredAyahs.length);
     return filteredAyahs[randomIndex];
 };
-
-export const generateTracksListId = (trackListName: string, search?: string) => {
-	return `${trackListName}${`-${search}` || ''}`
-}
 
 export const scaleSize = (size: number) => {
     const screenWidth = Dimensions.get('window').width;
@@ -84,10 +71,6 @@ export const maskEmail = (email: string): string => {
   }
   return `${'*'.repeat(5)}${localPart.slice(5)}@${domain}`;
 };
-
-import { Easing } from 'react-native-reanimated';
-import { storage } from './storage';
-import { cacheStorage, userStorage } from '../api/client/storage';
 
 export const enter = (delay = 0) => ({
   type: 'timing' as const,

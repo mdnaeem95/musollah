@@ -74,7 +74,7 @@ export default function AssistantOnboardingScreen() {
       />
 
       <SignInModal
-        isVisible={showAuthModal}
+        visible={showAuthModal}
         onClose={() => {
           setShowAuthModal(false);
           setShouldNavigate(true);

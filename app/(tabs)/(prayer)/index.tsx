@@ -1,39 +1,44 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { View, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { AnimatePresence } from 'moti';
 const ErrorBoundary = require('react-native-error-boundary').default;
 
 // Components
 import PrayerActionsModal from '../../../components/prayer/PrayerActionsModal';
 import { useTheme } from '../../../context/ThemeContext';
-import CurrentPrayerInfo from '../../../components/prayer/CurrentPrayerInfo';
 import PrayerTimesList from '../../../components/prayer/PrayerTimesList';
 import PrayerLocationModal from '../../../components/prayer/PrayerLocationModal';
 import CustomClock from '../../../components/prayer/CustomClock';
 import PrayerTimesSkeleton from '../../../components/prayer/PrayerTimesSkeleton';
-import { OfflineIndicator } from '../../../components/prayer/OfflineIndicator';
 import { PrayerDateSelector } from '../../../components/prayer/PrayerDateSelector';
 import { PrayerErrorFallback } from '../../../components/prayer/PrayerErrorFallback';
+import { LocationDisplay } from '../../../components/prayer/LocationDisplay';
 
-// Hooks
+// Hooks & Services
 import { usePrayerTimesOptimized } from '../../../hooks/prayer/usePrayerTimesOptimized';
 import { usePrayerNotifications } from '../../../hooks/prayer/usePrayerNotifications';
 import { usePrayerDateNavigation } from '../../../hooks/prayer/usePrayerDateNavigation';
 import { usePrayerModals } from '../../../hooks/prayer/usePrayerModals';
 import { usePrayerActions } from '../../../hooks/prayer/usePrayerActions';
-import { usePrayerQuery } from '../../../hooks/prayer/usePrayerQuery';
 import { analyticsService } from '../../../services/analytics/service';
-import { formatIslamicDateResponseSingapore, useTodayIslamicDate } from '../../../api/services/prayer';
-import { LocationDisplay } from '../../../components/prayer/LocationDisplay';
+import { useLocationStore } from '../../../stores/useLocationStore';
+import { useCoordinates } from '../../../stores/useLocationStore';
+
+// API
+import { usePrayerTimesByDate, useTodayIslamicDate, useTodayPrayerTimes, formatIslamicDate } from '../../../api/services/prayer';
 
 const PrayerTab: React.FC = () => {
-  const { theme } = useTheme();  // Keep this as is!
+  const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const { data: islamicDateData } = useTodayIslamicDate();
 
-  // Date navigation hook
-  const dateNavigation = usePrayerDateNavigation();
+  // Get user location (convert undefined to null for API compatibility)
+  const coordinates = useCoordinates(); 
+
+  // Date navigation hook with location for prefetching
+  const dateNavigation = usePrayerDateNavigation(coordinates);
+
+  // Islamic date
+  const { data: islamicDateData } = useTodayIslamicDate();
 
   // Modal management hook
   const modals = usePrayerModals();
@@ -44,33 +49,18 @@ const PrayerTab: React.FC = () => {
     onActionComplete: modals.closeActionsModal,
   });
 
-  const handleSuccess = useCallback((data: any) => {
-    console.log('✅ Prayer data loaded:', dateNavigation.formattedDate);
-  }, [dateNavigation.formattedDate]);
+  // Determine if we're viewing today or a specific date
+  const isToday = dateNavigation.formattedDate === new Date().toISOString().split('T')[0];
 
-  const handleError = useCallback((err: Error) => {
-    console.error('❌ Prayer data error:', err);
-    analyticsService.logError(err, { screen: 'PrayerTab' });
-  }, []); // Empty deps - analyticsService is stable
+  // Fetch prayer times using new API
+  const todayQuery = useTodayPrayerTimes(coordinates);
+  const dateQuery = usePrayerTimesByDate(coordinates, dateNavigation.selectedDate);
 
-  // Data fetching with React Query
-  const {
-    data: prayerData,
-    isLoading,
-    error,
-    refetch,
-    isOffline,
-    usingStaleData,
-  } = usePrayerQuery({
-    date: dateNavigation.formattedDate,
-    onSuccess: handleSuccess,
-    onError: handleError,  
-  });
+  // Use the appropriate query based on date selection
+  const { data: prayerData, isLoading, error, refetch } = isToday ? todayQuery : dateQuery;
 
-  // Calculate prayer times
-  const { currentPrayer, nextPrayerInfo, backgroundImage } = usePrayerTimesOptimized(
-    prayerData?.prayers || null
-  );
+  // Calculate prayer times with new structure
+  const { currentPrayer, nextPrayerInfo, backgroundImage } = usePrayerTimesOptimized(prayerData || null);
 
   // Initialize notifications
   usePrayerNotifications(prayerData || null);
@@ -79,29 +69,41 @@ const PrayerTab: React.FC = () => {
   useEffect(() => {
     analyticsService.trackScreenView('PrayerTab', {
       date: dateNavigation.formattedDate,
-      isOnline: !isOffline,
     });
   }, [dateNavigation.formattedDate]);
 
   // Handle location modal close with refetch
-  const { closeLocationModal } = modals;
-
   const handleLocationModalClose = useCallback(() => {
-    closeLocationModal();
+    modals.closeLocationModal();
     refetch();
-  }, [closeLocationModal, refetch]);
+  }, [modals.closeLocationModal, refetch]);
 
+  // Render prayer times content
   const renderContent = () => {
     // Show data if available
     if (prayerData) {
       console.log('✅ Rendering prayer data for:', dateNavigation.formattedDate);
+      
+      // Convert flat structure to Record for PrayerTimesList
+      const prayerTimesRecord = {
+        Subuh: prayerData.subuh,
+        Syuruk: prayerData.syuruk,
+        Zohor: prayerData.zohor,
+        Asar: prayerData.asar,
+        Maghrib: prayerData.maghrib,
+        Isyak: prayerData.isyak,
+      };
+      
       return (
         <View key={dateNavigation.formattedDate} style={styles.contentContainer}>
           <PrayerTimesList
-            prayerTimes={prayerData.prayers}
+            prayerTimes={prayerTimesRecord}
             selectedDate={dateNavigation.selectedDate}
             currentPrayer={currentPrayer}
-            nextPrayerInfo={nextPrayerInfo}
+            nextPrayerInfo={nextPrayerInfo ? {
+              nextPrayer: nextPrayerInfo.prayer,
+              timeUntilNextPrayer: nextPrayerInfo.timeUntil,
+            } : null}
           />
         </View>
       );
@@ -121,7 +123,7 @@ const PrayerTab: React.FC = () => {
           <PrayerErrorFallback
             error={error}
             resetError={refetch}
-            isOffline={isOffline}
+            isOffline={false}
           />
         </View>
       );
@@ -132,24 +134,13 @@ const PrayerTab: React.FC = () => {
     return <PrayerTimesSkeleton key="skeleton-fallback" />;
   };
 
-  // Debug logging for data flow
-  useEffect(() => {
-    console.log('📊 Prayer UI State:', {
-      date: dateNavigation.formattedDate,
-      isLoading,
-      hasData: !!prayerData,
-      hasPrayers: !!prayerData?.prayers,
-      prayerCount: prayerData?.prayers ? Object.keys(prayerData.prayers).length : 0,
-    });
-  }, [dateNavigation.formattedDate, isLoading, prayerData]);
-
   return (
     <ErrorBoundary
       FallbackComponent={({ error, resetErrorBoundary }: any) => (
         <PrayerErrorFallback
           error={error}
           resetError={resetErrorBoundary}
-          isOffline={isOffline}
+          isOffline={false}
         />
       )}
       onError={(error: Error, stackTrace: string) => {
@@ -167,18 +158,17 @@ const PrayerTab: React.FC = () => {
               onNext={dateNavigation.goToNextDay}
               canGoNext={dateNavigation.canGoNext}
               canGoPrev={dateNavigation.canGoPrev}
-              hijriDate={islamicDateData ? formatIslamicDateResponseSingapore(islamicDateData) : undefined}
+              hijriDate={islamicDateData?.hijri ? formatIslamicDate({
+                day: islamicDateData.hijri.day,
+                month: islamicDateData.hijri.month,
+                year: islamicDateData.hijri.year,
+              }) : undefined}
             />
 
             <CustomClock />
             <LocationDisplay />
           </View>
-
-          {/* Offline indicator */}
-          {(isOffline || usingStaleData) && (
-            <OfflineIndicator usingStaleData={usingStaleData} />
-          )}
-
+          
           {/* Prayer times content */}
           {renderContent()}
         </View>
@@ -218,23 +208,23 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   mainContainer: {
     flex: 1,
-    justifyContent: 'flex-start', // ✅ Changed from 'center'
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingTop: 60, // ✅ Add top padding for status bar
+    paddingTop: 60,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 20, // ✅ Add spacing below header section
-    gap: 12, // ✅ Add gap between header items (Date, Clock, Location)
+    marginBottom: 20,
+    gap: 12,
   },
   contentContainer: {
     width: '100%',
     alignItems: 'center',
-    paddingTop: 8, // ✅ Small padding above prayer list
+    paddingTop: 8,
   },
   fab: {
     position: 'absolute',
-    bottom: 20, // ✅ Moved up to avoid tab bar overlap
+    bottom: 20,
     right: 20,
     backgroundColor: theme.colors.fab.background,
     width: 52,

@@ -1,179 +1,190 @@
 /**
- * Location Store
+ * Location Store v2.0 (WITH MMKV PERSISTENCE)
  * 
- * Manages user location state with caching and permission handling.
- * Uses Zustand for client-side state management with MMKV persistence.
+ * Persists location preference and coordinates
+ * - useCustomLocation: Boolean flag (use GPS vs. Singapore)
+ * - lastKnownLocation: Cached coordinates
+ * - Auto-loads on app startup
+ * 
+ * @version 2.0
  */
 
-import React, { useEffect } from 'react';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import * as Location from 'expo-location';
-import { LocationObject } from 'expo-location';
 import { defaultStorage } from '../api/client/storage';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-// Default location in central Singapore (Marina Bay Sands)
-const DEFAULT_LOCATION: LocationObject = {
-  coords: {
-    latitude: 1.2831,
-    longitude: 103.8603,
-    altitude: null,
-    accuracy: null,
-    heading: null,
-    speed: null,
-    altitudeAccuracy: null,
-  },
-  timestamp: new Date().getTime(),
-};
-
 interface LocationState {
-  // State
-  userLocation: LocationObject | null;
+  // Current location
+  userLocation: Location.LocationObject | null;
+  
+  // Persistence flags
+  useCustomLocation: boolean;  // ✅ NEW: Use GPS instead of Singapore
+  lastKnownCoords: {           // ✅ NEW: Cached coordinates
+    latitude: number;
+    longitude: number;
+  } | null;
+  
+  // UI states
   isLoading: boolean;
   error: string | null;
   hasPermission: boolean;
-  
-  // Actions
+}
+
+interface LocationActions {
+  // Fetch current location
   fetchLocation: () => Promise<void>;
-  setLocation: (location: LocationObject) => void;
+  
+  // Set location manually
+  setLocation: (location: Location.LocationObject) => void;
+  
+  // Enable/disable custom location
+  enableCustomLocation: (coords: { latitude: number; longitude: number }) => void;  // ✅ NEW
+  resetToSingapore: () => void;  // ✅ NEW
+  
+  // Utility
   clearError: () => void;
   reset: () => void;
 }
+
+type LocationStore = LocationState & LocationActions;
+
+// ============================================================================
+// DEFAULT VALUES
+// ============================================================================
+
+const SINGAPORE_COORDS = {
+  latitude: 1.3521,
+  longitude: 103.8198,
+};
 
 // ============================================================================
 // STORE
 // ============================================================================
 
-export const useLocationStore = create<LocationState>()(
+export const useLocationStore = create<LocationStore>()(
   persist(
     (set, get) => ({
-      // Initial state
+      // State
       userLocation: null,
+      useCustomLocation: false,
+      lastKnownCoords: null,
       isLoading: false,
       error: null,
       hasPermission: false,
-      
+
       // Actions
       fetchLocation: async () => {
-        set({ isLoading: true, error: null });
-        
         try {
-          console.log('📍 Requesting location permission...');
-          
+          set({ isLoading: true, error: null });
+
           // Request permission
           const { status } = await Location.requestForegroundPermissionsAsync();
           
           if (status !== 'granted') {
-            console.warn('⚠️ Location permission denied');
-            
-            // Use cached location if available
-            const cachedLocation = get().userLocation;
-            if (cachedLocation) {
-              console.log('✅ Using cached location');
-              set({
-                isLoading: false,
-                hasPermission: false,
-                error: 'Permission denied - using cached location',
-              });
-              return;
-            }
-            
-            // Fall back to default location
-            console.log('📍 Using default Singapore location');
-            set({
-              userLocation: DEFAULT_LOCATION,
-              isLoading: false,
+            set({ 
               hasPermission: false,
-              error: 'Permission denied - using default location',
+              isLoading: false,
+              error: 'Location permission denied'
             });
             return;
           }
-          
-          console.log('✅ Location permission granted');
-          
-          // Fetch current location
+
+          set({ hasPermission: true });
+
+          // Get location
           const location = await Location.getCurrentPositionAsync({
             accuracy: Location.Accuracy.Balanced,
           });
-          
-          if (!location) {
-            throw new Error('Failed to get location');
-          }
-          
-          console.log('✅ Location fetched:', {
-            lat: location.coords.latitude,
-            lon: location.coords.longitude,
-          });
-          
-          set({
+
+          const coords = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          };
+
+          set({ 
             userLocation: location,
+            lastKnownCoords: coords,  // ✅ Cache coordinates
+            useCustomLocation: true,   // ✅ Enable custom location
             isLoading: false,
-            hasPermission: true,
-            error: null,
+            error: null
           });
-          
-        } catch (error: any) {
-          console.error('❌ Failed to fetch location:', error);
-          
-          // Use cached location if available
-          const cachedLocation = get().userLocation;
-          if (cachedLocation) {
-            console.log('✅ Using cached location after error');
-            set({
-              isLoading: false,
-              error: error.message || 'Failed to fetch location',
-            });
-            return;
-          }
-          
-          // Fall back to default location
-          set({
-            userLocation: DEFAULT_LOCATION,
+
+        } catch (error) {
+          console.error('Error fetching location:', error);
+          set({ 
             isLoading: false,
-            error: error.message || 'Failed to fetch location',
+            error: error instanceof Error ? error.message : 'Failed to fetch location'
           });
         }
       },
-      
+
       setLocation: (location) => {
-        console.log('📍 Setting location manually:', {
-          lat: location.coords.latitude,
-          lon: location.coords.longitude,
+        const coords = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        };
+        
+        set({ 
+          userLocation: location,
+          lastKnownCoords: coords,
+          useCustomLocation: true,
+          error: null
         });
-        set({ userLocation: location, error: null });
       },
-      
-      clearError: () => {
-        set({ error: null });
+
+      // ✅ NEW: Enable custom location with specific coordinates
+      enableCustomLocation: (coords) => {
+        set({
+          lastKnownCoords: coords,
+          useCustomLocation: true,
+        });
       },
-      
-      reset: () => {
-        console.log('🔄 Resetting location state');
+
+      // ✅ NEW: Reset to Singapore default
+      resetToSingapore: () => {
         set({
           userLocation: null,
-          isLoading: false,
+          useCustomLocation: false,
+          lastKnownCoords: null,
           error: null,
-          hasPermission: false,
         });
       },
+
+      clearError: () => set({ error: null }),
+
+      reset: () => set({
+        userLocation: null,
+        useCustomLocation: false,
+        lastKnownCoords: null,
+        isLoading: false,
+        error: null,
+        hasPermission: false,
+      }),
     }),
     {
-      name: 'location',
+      name: 'location-store',  // ✅ MMKV key
       storage: createJSONStorage(() => ({
-        getItem: (name) => defaultStorage.getString(name) ?? null,
-        setItem: (name, value) => defaultStorage.setString(name, value),
-        removeItem: (name) => defaultStorage.delete(name),
+        getItem: (name) => {
+          const value = defaultStorage.getString(name);
+          return value ? value : null;
+        },
+        setItem: (name, value) => {
+          defaultStorage.set(name, value);
+        },
+        removeItem: (name) => {
+          defaultStorage.delete(name);
+        },
       })),
-      // Only persist location, not loading/error states
+      // ✅ Only persist these fields
       partialize: (state) => ({
-        userLocation: state.userLocation,
-        hasPermission: state.hasPermission,
+        useCustomLocation: state.useCustomLocation,
+        lastKnownCoords: state.lastKnownCoords,
       }),
-      version: 1,
     }
   )
 );
@@ -182,65 +193,15 @@ export const useLocationStore = create<LocationState>()(
 // SELECTORS
 // ============================================================================
 
-export const useUserLocation = () => 
-  useLocationStore((state) => state.userLocation);
-
-export const useLocationLoading = () => 
-  useLocationStore((state) => state.isLoading);
-
-export const useLocationError = () => 
-  useLocationStore((state) => state.error);
-
-export const useHasLocationPermission = () => 
-  useLocationStore((state) => state.hasPermission);
-
-// ============================================================================
-// UTILITY HOOKS
-// ============================================================================
-
-/**
- * Get current coordinates (simplified)
- */
 export const useCoordinates = () => {
-  const location = useUserLocation();
+  const { useCustomLocation, lastKnownCoords } = useLocationStore();
   
-  if (!location) return null;
-  
-  return {
-    latitude: location.coords.latitude,
-    longitude: location.coords.longitude,
-  };
+  // ✅ Return cached coords if custom location enabled, otherwise Singapore
+  return useCustomLocation && lastKnownCoords 
+    ? lastKnownCoords 
+    : SINGAPORE_COORDS;
 };
 
-/**
- * Check if using default Singapore location
- */
-export const useIsDefaultLocation = () => {
-  const location = useUserLocation();
-  
-  if (!location) return false;
-  
-  return (
-    location.coords.latitude === DEFAULT_LOCATION.coords.latitude &&
-    location.coords.longitude === DEFAULT_LOCATION.coords.longitude
-  );
-};
-
-/**
- * Get location with automatic fetch on mount
- */
-export const useLocationWithFetch = () => {
-  const location = useUserLocation();
-  const isLoading = useLocationLoading();
-  const error = useLocationError();
-  const fetchLocation = useLocationStore((state) => state.fetchLocation);
-  
-  // Auto-fetch if no location
-  React.useEffect(() => {
-    if (!location && !isLoading) {
-      fetchLocation();
-    }
-  }, [location, isLoading, fetchLocation]);
-  
-  return { location, isLoading, error };
+export const useIsUsingCustomLocation = () => {
+  return useLocationStore(state => state.useCustomLocation);
 };

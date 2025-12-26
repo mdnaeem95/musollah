@@ -1,12 +1,19 @@
 /**
- * Musollah Service (v5 - Fixed Distance Calculation)
- *
- * Key Fix: Separates data fetching from distance calculation
- * - Query fetches raw data (no distances)
- * - Distance is computed via useMemo when userLocation changes
- * - This ensures distances update reactively without re-fetching
- *
- * Collections: Bidets, Musollahs, Mosques (capitalized)
+ * Musollah Service - Structured Logging Version
+ * 
+ * Manages prayer facility locations across Singapore:
+ * - Bidets (public restrooms with water facilities)
+ * - Musollahs (prayer rooms with amenities)
+ * - Mosques (full-service mosques)
+ * 
+ * Features:
+ * - Multi-layer caching (MMKV)
+ * - Distance calculation (Haversine formula)
+ * - Real-time location updates
+ * - Community status reporting
+ * - Flexible coordinate extraction
+ * 
+ * @version 6.0 - Structured logging migration
  */
 
 import { useMemo } from 'react';
@@ -14,16 +21,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LocationObject } from 'expo-location';
 import { db } from '../../client/firebase';
 import { cache, TTL, cacheStorage } from '../../client/storage';
-
-import {
-  addDoc,
-  collection,
-  doc,
-  getDocs,
-  limit,
-  query as fsQuery,
-  updateDoc,
-} from '@react-native-firebase/firestore';
+import { logger } from '../../../services/logging/logger';
+import { addDoc, collection, doc, getDocs, limit, query as fsQuery, updateDoc } from '@react-native-firebase/firestore';
 
 // ============================================================================
 // TYPES
@@ -144,6 +143,20 @@ const CACHE_KEYS = {
 // DISTANCE CALCULATION (Haversine Formula)
 // ============================================================================
 
+/**
+ * Calculates distance between two coordinates using Haversine formula
+ * 
+ * @function calculateDistance
+ * @param {Coordinates} from - Starting coordinates
+ * @param {Coordinates} to - Destination coordinates
+ * @returns {number} Distance in kilometers
+ * 
+ * @example
+ * const distance = calculateDistance(
+ *   { latitude: 1.3521, longitude: 103.8198 },
+ *   { latitude: 1.3000, longitude: 103.8000 }
+ * );
+ */
 export function calculateDistance(from: Coordinates, to: Coordinates): number {
   if (
     !from ||
@@ -151,10 +164,15 @@ export function calculateDistance(from: Coordinates, to: Coordinates): number {
     !isValidCoordinate(from.latitude, from.longitude) ||
     !isValidCoordinate(to.latitude, to.longitude)
   ) {
+    logger.debug('Invalid coordinates for distance calculation', {
+      from,
+      to,
+      result: 0,
+    });
     return 0;
   }
 
-  const R = 6371; // km
+  const R = 6371; // Earth's radius in km
   const dLat = toRadians(to.latitude - from.latitude);
   const dLon = toRadians(to.longitude - from.longitude);
 
@@ -166,15 +184,31 @@ export function calculateDistance(from: Coordinates, to: Coordinates): number {
       Math.sin(dLon / 2);
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  const distance = R * c;
+
+  logger.debug('Distance calculated', {
+    from: `${from.latitude.toFixed(4)}, ${from.longitude.toFixed(4)}`,
+    to: `${to.latitude.toFixed(4)}, ${to.longitude.toFixed(4)}`,
+    distance: `${distance.toFixed(2)}km`,
+  });
+
+  return distance;
 }
 
 function toRadians(degrees: number): number {
   return degrees * (Math.PI / 180);
 }
 
+/**
+ * Validates coordinate values
+ * 
+ * @function isValidCoordinate
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @returns {boolean} True if valid coordinates
+ */
 function isValidCoordinate(lat: number, lng: number): boolean {
-  return (
+  const valid =
     typeof lat === 'number' &&
     typeof lng === 'number' &&
     !isNaN(lat) &&
@@ -184,28 +218,83 @@ function isValidCoordinate(lat: number, lng: number): boolean {
     lat >= -90 &&
     lat <= 90 &&
     lng >= -180 &&
-    lng <= 180
-  );
+    lng <= 180;
+
+  if (!valid) {
+    logger.debug('Invalid coordinate validation', {
+      lat,
+      lng,
+      checks: {
+        isNumber: typeof lat === 'number' && typeof lng === 'number',
+        notNaN: !isNaN(lat) && !isNaN(lng),
+        notZero: lat !== 0 && lng !== 0,
+        latRange: lat >= -90 && lat <= 90,
+        lngRange: lng >= -180 && lng <= 180,
+      },
+    });
+  }
+
+  return valid;
 }
 
+/**
+ * Adds distances to locations and sorts by proximity
+ * 
+ * @function addDistancesAndSort
+ * @param {T[]} locations - Array of locations
+ * @param {Coordinates | null} userCoords - User's coordinates
+ * @returns {(T & { distance: number })[]} Locations with distances, sorted
+ */
 function addDistancesAndSort<T extends { coordinates: Coordinates }>(
   locations: T[],
   userCoords: Coordinates | null
 ): (T & { distance: number })[] {
-  if (!locations || locations.length === 0) return [];
+  if (!locations || locations.length === 0) {
+    logger.debug('No locations to add distances', { count: 0 });
+    return [];
+  }
+
+  logger.debug('Adding distances and sorting', {
+    locationCount: locations.length,
+    hasUserCoords: !!userCoords,
+    userCoords: userCoords
+      ? `${userCoords.latitude.toFixed(4)}, ${userCoords.longitude.toFixed(4)}`
+      : null,
+  });
 
   const withDistance = locations.map((loc) => ({
     ...loc,
     distance: userCoords ? calculateDistance(userCoords, loc.coordinates) : 0,
   }));
 
-  return withDistance.sort((a, b) => a.distance - b.distance);
+  const sorted = withDistance.sort((a, b) => a.distance - b.distance);
+
+  logger.debug('Locations sorted by distance', {
+    count: sorted.length,
+    nearestDistance: sorted[0]?.distance.toFixed(2) + 'km',
+    farthestDistance: sorted[sorted.length - 1]?.distance.toFixed(2) + 'km',
+  });
+
+  return sorted;
 }
 
 // ============================================================================
 // COORDINATE EXTRACTION UTILITIES
 // ============================================================================
 
+/**
+ * Extracts coordinates from various Firestore document formats
+ * 
+ * Supports multiple field naming conventions:
+ * - coordinates, Coordinates (GeoPoint)
+ * - latitude/longitude, Latitude/Longitude
+ * - lat/lng
+ * - location, Location (GeoPoint)
+ * 
+ * @function extractCoordinates
+ * @param {any} data - Firestore document data
+ * @returns {Coordinates} Extracted coordinates or {0, 0} if failed
+ */
 function extractCoordinates(data: any): Coordinates {
   const extractFromGeoPoint = (geoPoint: any): Coordinates | null => {
     if (!geoPoint) return null;
@@ -219,44 +308,58 @@ function extractCoordinates(data: any): Coordinates {
     return null;
   };
 
-  if (data.Coordinates) {
-    const coords = extractFromGeoPoint(data.Coordinates);
-    if (coords) return coords;
+  // Try all possible field names
+  const attempts = [
+    { field: 'Coordinates', value: extractFromGeoPoint(data.Coordinates) },
+    { field: 'coordinates', value: extractFromGeoPoint(data.coordinates) },
+    {
+      field: 'latitude/longitude',
+      value:
+        data.latitude !== undefined && data.longitude !== undefined
+          ? { latitude: Number(data.latitude), longitude: Number(data.longitude) }
+          : null,
+    },
+    {
+      field: 'Latitude/Longitude',
+      value:
+        data.Latitude !== undefined && data.Longitude !== undefined
+          ? { latitude: Number(data.Latitude), longitude: Number(data.Longitude) }
+          : null,
+    },
+    {
+      field: 'lat/lng',
+      value:
+        data.lat !== undefined && data.lng !== undefined
+          ? { latitude: Number(data.lat), longitude: Number(data.lng) }
+          : null,
+    },
+    { field: 'location', value: extractFromGeoPoint(data.location) },
+    { field: 'Location', value: extractFromGeoPoint(data.Location) },
+  ];
+
+  for (const attempt of attempts) {
+    if (attempt.value) {
+      logger.debug('Coordinates extracted successfully', {
+        field: attempt.field,
+        coordinates: attempt.value,
+      });
+      return attempt.value;
+    }
   }
 
-  if (data.coordinates) {
-    const coords = extractFromGeoPoint(data.coordinates);
-    if (coords) return coords;
-  }
+  logger.warn('Could not extract coordinates - using default', {
+    availableFields: Object.keys(data),
+    attemptedFields: attempts.map((a) => a.field),
+  });
 
-  if (data.latitude !== undefined && data.longitude !== undefined) {
-    return { latitude: Number(data.latitude), longitude: Number(data.longitude) };
-  }
-
-  if (data.Latitude !== undefined && data.Longitude !== undefined) {
-    return { latitude: Number(data.Latitude), longitude: Number(data.Longitude) };
-  }
-
-  if (data.lat !== undefined && data.lng !== undefined) {
-    return { latitude: Number(data.lat), longitude: Number(data.lng) };
-  }
-
-  if (data.location) {
-    const coords = extractFromGeoPoint(data.location);
-    if (coords) return coords;
-  }
-
-  if (data.Location) {
-    const coords = extractFromGeoPoint(data.Location);
-    if (coords) return coords;
-  }
-
-  console.warn('⚠️ Could not extract coordinates from:', Object.keys(data));
   return { latitude: 0, longitude: 0 };
 }
 
+/**
+ * Extracts building name from Firestore document
+ */
 function extractBuilding(data: any): string {
-  return (
+  const value =
     data.building ||
     data.Building ||
     data.name ||
@@ -265,28 +368,54 @@ function extractBuilding(data: any): string {
     data.Title ||
     data.locationName ||
     data.placeName ||
-    'Unknown'
-  );
+    'Unknown';
+
+  logger.debug('Building name extracted', {
+    value,
+    source: Object.keys(data).find((k) =>
+      ['building', 'Building', 'name', 'Name'].includes(k)
+    ),
+  });
+
+  return value;
 }
 
+/**
+ * Extracts address from Firestore document
+ */
 function extractAddress(data: any): string {
-  return (
+  const value =
     data.address ||
     data.Address ||
     data.location ||
     data.Location ||
     data.street ||
     data.fullAddress ||
-    ''
-  );
+    '';
+
+  logger.debug('Address extracted', {
+    value,
+    hasValue: !!value,
+  });
+
+  return value;
 }
 
 // ============================================================================
 // CACHE UTILITIES
 // ============================================================================
 
+/**
+ * Clears all musollah-related caches
+ * 
+ * @function clearAllMusollahCache
+ * @returns {void}
+ */
 export function clearAllMusollahCache(): void {
-  console.log('🧹 Clearing all musollah cache...');
+  const startTime = performance.now();
+
+  logger.info('Clearing all musollah caches');
+
   cache.clear(CACHE_KEYS.allBidets);
   cache.clear(CACHE_KEYS.allMosques);
   cache.clear(CACHE_KEYS.allMusollahs);
@@ -295,9 +424,21 @@ export function clearAllMusollahCache(): void {
     const allKeys = cacheStorage.getAllKeys();
     const musollahKeys = allKeys.filter((key) => key.includes('musollah'));
     musollahKeys.forEach((key) => cacheStorage.remove(key));
-    console.log(`✅ Cleared ${musollahKeys.length} cache entries`);
-  } catch (error) {
-    console.error('Error clearing cache:', error);
+
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.success('Musollah caches cleared', {
+      clearedKeys: musollahKeys.length,
+      totalKeys: allKeys.length,
+      duration: `${duration}ms`,
+    });
+  } catch (error: any) {
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.error('Failed to clear musollah caches', {
+      error: error.message,
+      duration: `${duration}ms`,
+    });
   }
 }
 
@@ -305,23 +446,42 @@ export function clearAllMusollahCache(): void {
 // FETCH FUNCTIONS (Raw Data - No Distances) - MODULAR
 // ============================================================================
 
+/**
+ * Fetches all bidet locations from Firestore
+ * 
+ * @async
+ * @function fetchAllBidets
+ * @returns {Promise<BidetLocation[]>} Array of bidet locations
+ * @throws {Error} If Firestore query fails
+ */
 async function fetchAllBidets(): Promise<BidetLocation[]> {
-  console.log(`🚽 Fetching from "${COLLECTIONS.bidets}"...`);
+  const startTime = performance.now();
+
+  logger.debug('Fetching bidets from Firestore', {
+    collection: COLLECTIONS.bidets,
+  });
 
   try {
     const colRef = collection(db, COLLECTIONS.bidets);
     const snapshot = await getDocs(colRef);
-    console.log(`📦 Got ${snapshot.size} bidet documents`);
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.debug('Bidet documents retrieved', {
+      count: snapshot.size,
+      isEmpty: snapshot.empty,
+      duration: `${duration}ms`,
+    });
 
     if (snapshot.empty) return [];
 
+    // Log first document structure in dev mode
     if (__DEV__ && snapshot.size > 0) {
       const firstDoc = snapshot.docs[0].data();
-      console.log('📋 First bidet doc fields:', Object.keys(firstDoc));
-      console.log(
-        '📋 Coordinates field:',
-        (firstDoc as any).Coordinates || (firstDoc as any).coordinates || 'NOT FOUND'
-      );
+      logger.debug('First bidet document structure', {
+        fields: Object.keys(firstDoc),
+        coordinatesField:
+          (firstDoc as any).Coordinates || (firstDoc as any).coordinates || 'NOT FOUND',
+      });
     }
 
     const locations = snapshot.docs.map((d: any) => {
@@ -342,39 +502,78 @@ async function fetchAllBidets(): Promise<BidetLocation[]> {
       } as BidetLocation;
     });
 
+    // Log first location in dev mode
     if (__DEV__ && locations.length > 0) {
       const first = locations[0];
-      console.log(
-        '✅ First bidet:',
-        first.building,
-        `coords: (${first.coordinates.latitude}, ${first.coordinates.longitude})`
-      );
+      logger.debug('First bidet location parsed', {
+        building: first.building,
+        coordinates: `${first.coordinates.latitude}, ${first.coordinates.longitude}`,
+        hasValidCoords: isValidCoordinate(
+          first.coordinates.latitude,
+          first.coordinates.longitude
+        ),
+      });
     }
 
+    const finalDuration = Math.round(performance.now() - startTime);
+
+    logger.success('Bidets fetched successfully', {
+      count: locations.length,
+      duration: `${finalDuration}ms`,
+      source: 'Firestore',
+      collection: COLLECTIONS.bidets,
+    });
+
     return locations;
-  } catch (error) {
-    console.error('❌ Error fetching bidets:', error);
+  } catch (error: any) {
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.error('Failed to fetch bidets', {
+      error: error.message,
+      duration: `${duration}ms`,
+      collection: COLLECTIONS.bidets,
+    });
+
     throw error;
   }
 }
 
+/**
+ * Fetches all mosque locations from Firestore
+ * 
+ * @async
+ * @function fetchAllMosques
+ * @returns {Promise<MosqueLocation[]>} Array of mosque locations
+ * @throws {Error} If Firestore query fails
+ */
 async function fetchAllMosques(): Promise<MosqueLocation[]> {
-  console.log(`🕌 Fetching from "${COLLECTIONS.mosques}"...`);
+  const startTime = performance.now();
+
+  logger.debug('Fetching mosques from Firestore', {
+    collection: COLLECTIONS.mosques,
+  });
 
   try {
     const colRef = collection(db, COLLECTIONS.mosques);
     const snapshot = await getDocs(colRef);
-    console.log(`📦 Got ${snapshot.size} mosque documents`);
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.debug('Mosque documents retrieved', {
+      count: snapshot.size,
+      isEmpty: snapshot.empty,
+      duration: `${duration}ms`,
+    });
 
     if (snapshot.empty) return [];
 
+    // Log first document structure in dev mode
     if (__DEV__ && snapshot.size > 0) {
       const firstDoc = snapshot.docs[0].data();
-      console.log('📋 First mosque doc fields:', Object.keys(firstDoc));
-      console.log(
-        '📋 Coordinates field:',
-        (firstDoc as any).Coordinates || (firstDoc as any).coordinates || 'NOT FOUND'
-      );
+      logger.debug('First mosque document structure', {
+        fields: Object.keys(firstDoc),
+        coordinatesField:
+          (firstDoc as any).Coordinates || (firstDoc as any).coordinates || 'NOT FOUND',
+      });
     }
 
     const locations = snapshot.docs.map((d: any) => {
@@ -390,39 +589,78 @@ async function fetchAllMosques(): Promise<MosqueLocation[]> {
       } as MosqueLocation;
     });
 
+    // Log first location in dev mode
     if (__DEV__ && locations.length > 0) {
       const first = locations[0];
-      console.log(
-        '✅ First mosque:',
-        first.building,
-        `coords: (${first.coordinates.latitude}, ${first.coordinates.longitude})`
-      );
+      logger.debug('First mosque location parsed', {
+        building: first.building,
+        coordinates: `${first.coordinates.latitude}, ${first.coordinates.longitude}`,
+        hasValidCoords: isValidCoordinate(
+          first.coordinates.latitude,
+          first.coordinates.longitude
+        ),
+      });
     }
 
+    const finalDuration = Math.round(performance.now() - startTime);
+
+    logger.success('Mosques fetched successfully', {
+      count: locations.length,
+      duration: `${finalDuration}ms`,
+      source: 'Firestore',
+      collection: COLLECTIONS.mosques,
+    });
+
     return locations;
-  } catch (error) {
-    console.error('❌ Error fetching mosques:', error);
+  } catch (error: any) {
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.error('Failed to fetch mosques', {
+      error: error.message,
+      duration: `${duration}ms`,
+      collection: COLLECTIONS.mosques,
+    });
+
     throw error;
   }
 }
 
+/**
+ * Fetches all musollah locations from Firestore
+ * 
+ * @async
+ * @function fetchAllMusollahs
+ * @returns {Promise<MusollahLocation[]>} Array of musollah locations
+ * @throws {Error} If Firestore query fails
+ */
 async function fetchAllMusollahs(): Promise<MusollahLocation[]> {
-  console.log(`🛐 Fetching from "${COLLECTIONS.musollahs}"...`);
+  const startTime = performance.now();
+
+  logger.debug('Fetching musollahs from Firestore', {
+    collection: COLLECTIONS.musollahs,
+  });
 
   try {
     const colRef = collection(db, COLLECTIONS.musollahs);
     const snapshot = await getDocs(colRef);
-    console.log(`📦 Got ${snapshot.size} musollah documents`);
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.debug('Musollah documents retrieved', {
+      count: snapshot.size,
+      isEmpty: snapshot.empty,
+      duration: `${duration}ms`,
+    });
 
     if (snapshot.empty) return [];
 
+    // Log first document structure in dev mode
     if (__DEV__ && snapshot.size > 0) {
       const firstDoc = snapshot.docs[0].data();
-      console.log('📋 First musollah doc fields:', Object.keys(firstDoc));
-      console.log(
-        '📋 Coordinates field:',
-        (firstDoc as any).Coordinates || (firstDoc as any).coordinates || 'NOT FOUND'
-      );
+      logger.debug('First musollah document structure', {
+        fields: Object.keys(firstDoc),
+        coordinatesField:
+          (firstDoc as any).Coordinates || (firstDoc as any).coordinates || 'NOT FOUND',
+      });
     }
 
     const locations = snapshot.docs.map((d: any) => {
@@ -446,36 +684,105 @@ async function fetchAllMusollahs(): Promise<MusollahLocation[]> {
       } as MusollahLocation;
     });
 
+    // Log first location in dev mode
     if (__DEV__ && locations.length > 0) {
       const first = locations[0];
-      console.log(
-        '✅ First musollah:',
-        first.building,
-        `coords: (${first.coordinates.latitude}, ${first.coordinates.longitude})`
-      );
+      logger.debug('First musollah location parsed', {
+        building: first.building,
+        coordinates: `${first.coordinates.latitude}, ${first.coordinates.longitude}`,
+        hasValidCoords: isValidCoordinate(
+          first.coordinates.latitude,
+          first.coordinates.longitude
+        ),
+        amenities: {
+          segregated: first.segregated,
+          airConditioned: first.airConditioned,
+          ablutionArea: first.ablutionArea,
+        },
+      });
     }
 
+    const finalDuration = Math.round(performance.now() - startTime);
+
+    logger.success('Musollahs fetched successfully', {
+      count: locations.length,
+      duration: `${finalDuration}ms`,
+      source: 'Firestore',
+      collection: COLLECTIONS.musollahs,
+    });
+
     return locations;
-  } catch (error) {
-    console.error('❌ Error fetching musollahs:', error);
+  } catch (error: any) {
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.error('Failed to fetch musollahs', {
+      error: error.message,
+      duration: `${duration}ms`,
+      collection: COLLECTIONS.musollahs,
+    });
+
     throw error;
   }
 }
 
+/**
+ * Updates location status (bidet or musollah)
+ * 
+ * @async
+ * @function updateLocationStatus
+ * @param {'bidet' | 'musollah'} type - Location type
+ * @param {string} id - Location document ID
+ * @param {string} status - New status
+ * @returns {Promise<void>}
+ */
 async function updateLocationStatus(
   type: 'bidet' | 'musollah',
   id: string,
   status: 'Available' | 'Unavailable' | 'Unknown'
 ): Promise<void> {
+  const startTime = performance.now();
   const collectionName = type === 'bidet' ? COLLECTIONS.bidets : COLLECTIONS.musollahs;
+  const cacheKey = type === 'bidet' ? CACHE_KEYS.allBidets : CACHE_KEYS.allMusollahs;
 
-  const ref = doc(db, collectionName, id);
-  await updateDoc(ref, {
+  logger.debug('Updating location status', {
+    type,
+    id,
     status,
-    lastUpdated: Date.now(),
+    collection: collectionName,
   });
 
-  cache.clear(type === 'bidet' ? CACHE_KEYS.allBidets : CACHE_KEYS.allMusollahs);
+  try {
+    const ref = doc(db, collectionName, id);
+    await updateDoc(ref, {
+      status,
+      lastUpdated: Date.now(),
+    });
+
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.success('Location status updated', {
+      type,
+      id,
+      status,
+      duration: `${duration}ms`,
+    });
+
+    // Clear cache
+    cache.clear(cacheKey);
+    logger.debug('Cache cleared after status update', { cacheKey });
+  } catch (error: any) {
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.error('Failed to update location status', {
+      error: error.message,
+      type,
+      id,
+      status,
+      duration: `${duration}ms`,
+    });
+
+    throw error;
+  }
 }
 
 // ============================================================================
@@ -494,6 +801,23 @@ export const MUSOLLAH_QUERY_KEYS = {
 // MAIN HOOK - reacts to location changes
 // ============================================================================
 
+/**
+ * Hook to fetch all musollah data with distance calculation
+ * 
+ * @function useMusollahData
+ * @param {LocationObject | null} userLocation - User's current location
+ * @returns {UseQueryResult<MusollahData>} Query result with all location types
+ * 
+ * Features:
+ * - Multi-layer caching (MMKV)
+ * - Parallel fetching (all 3 types)
+ * - Reactive distance calculation (useMemo)
+ * - Distance sorting (nearest first)
+ * 
+ * @example
+ * const { data, isLoading } = useMusollahData(userLocation);
+ * const { bidetLocations, mosqueLocations, musollahLocations } = data || {};
+ */
 export function useMusollahData(userLocation: LocationObject | null) {
   const userCoords: Coordinates | null = useMemo(() => {
     if (!userLocation?.coords) return null;
@@ -506,7 +830,9 @@ export function useMusollahData(userLocation: LocationObject | null) {
   const query = useQuery({
     queryKey: MUSOLLAH_QUERY_KEYS.allLocations,
     queryFn: async (): Promise<RawMusollahData> => {
-      console.log('🌐 Fetching musollah data...');
+      const startTime = performance.now();
+
+      logger.debug('Fetching musollah data (all types)');
 
       const cachedBidets = cache.get<BidetLocation[]>(CACHE_KEYS.allBidets);
       const cachedMosques = cache.get<MosqueLocation[]>(CACHE_KEYS.allMosques);
@@ -522,7 +848,15 @@ export function useMusollahData(userLocation: LocationObject | null) {
         cachedMusollahs.length > 0;
 
       if (hasValidCache) {
-        console.log('⚡ Using cached data');
+        const duration = Math.round(performance.now() - startTime);
+        logger.debug('Using cached musollah data', {
+          bidets: cachedBidets!.length,
+          mosques: cachedMosques!.length,
+          musollahs: cachedMusollahs!.length,
+          source: 'MMKV',
+          duration: `${duration}ms`,
+        });
+
         return {
           bidets: cachedBidets!,
           mosques: cachedMosques!,
@@ -530,7 +864,7 @@ export function useMusollahData(userLocation: LocationObject | null) {
         };
       }
 
-      console.log('📡 Fetching fresh data from Firebase...');
+      logger.debug('Cache miss - fetching fresh data from Firebase');
 
       const [bidets, mosques, musollahs] = await Promise.all([
         fetchAllBidets(),
@@ -538,12 +872,17 @@ export function useMusollahData(userLocation: LocationObject | null) {
         fetchAllMusollahs(),
       ]);
 
+      // Cache each type if valid
       if (
         bidets.length > 0 &&
         isValidCoordinate(bidets[0].coordinates?.latitude, bidets[0].coordinates?.longitude)
       ) {
         cache.set(CACHE_KEYS.allBidets, bidets, TTL.ONE_HOUR);
-        console.log(`💾 Cached ${bidets.length} bidets`);
+        logger.debug('Bidets cached', {
+          count: bidets.length,
+          cacheKey: CACHE_KEYS.allBidets,
+          ttl: '1 hour',
+        });
       }
 
       if (
@@ -551,7 +890,11 @@ export function useMusollahData(userLocation: LocationObject | null) {
         isValidCoordinate(mosques[0].coordinates?.latitude, mosques[0].coordinates?.longitude)
       ) {
         cache.set(CACHE_KEYS.allMosques, mosques, TTL.ONE_HOUR);
-        console.log(`💾 Cached ${mosques.length} mosques`);
+        logger.debug('Mosques cached', {
+          count: mosques.length,
+          cacheKey: CACHE_KEYS.allMosques,
+          ttl: '1 hour',
+        });
       }
 
       if (
@@ -559,8 +902,20 @@ export function useMusollahData(userLocation: LocationObject | null) {
         isValidCoordinate(musollahs[0].coordinates?.latitude, musollahs[0].coordinates?.longitude)
       ) {
         cache.set(CACHE_KEYS.allMusollahs, musollahs, TTL.ONE_HOUR);
-        console.log(`💾 Cached ${musollahs.length} musollahs`);
+        logger.debug('Musollahs cached', {
+          count: musollahs.length,
+          cacheKey: CACHE_KEYS.allMusollahs,
+          ttl: '1 hour',
+        });
       }
+
+      const duration = Math.round(performance.now() - startTime);
+      logger.success('Musollah data fetched and cached', {
+        bidets: bidets.length,
+        mosques: mosques.length,
+        musollahs: musollahs.length,
+        duration: `${duration}ms`,
+      });
 
       return { bidets, mosques, musollahs };
     },
@@ -574,18 +929,14 @@ export function useMusollahData(userLocation: LocationObject | null) {
 
     const { bidets, mosques, musollahs } = query.data;
 
-    console.log(
-      '📏 Computing distances for',
-      bidets.length,
-      'bidets,',
-      mosques.length,
-      'mosques,',
-      musollahs.length,
-      'musollahs',
-      userCoords
-        ? `from (${userCoords.latitude.toFixed(4)}, ${userCoords.longitude.toFixed(4)})`
-        : '(no location)'
-    );
+    logger.debug('Computing distances for all locations', {
+      bidets: bidets.length,
+      mosques: mosques.length,
+      musollahs: musollahs.length,
+      userLocation: userCoords
+        ? `${userCoords.latitude.toFixed(4)}, ${userCoords.longitude.toFixed(4)}`
+        : 'no location',
+    });
 
     return {
       bidetLocations: addDistancesAndSort(bidets, userCoords),
@@ -604,7 +955,24 @@ export function useMusollahData(userLocation: LocationObject | null) {
 // SUBMIT LOCATION REQUEST - MODULAR
 // ============================================================================
 
+/**
+ * Submits new location request to Firestore
+ * 
+ * @async
+ * @function submitLocationRequest
+ * @param {Omit<LocationRequest, 'status'>} data - Request data
+ * @returns {Promise<void>}
+ * @throws {Error} If submission fails
+ */
 async function submitLocationRequest(data: Omit<LocationRequest, 'status'>): Promise<void> {
+  const startTime = performance.now();
+
+  logger.debug('Submitting location request', {
+    type: data.type,
+    building: data.buildingName,
+    address: data.address,
+  });
+
   try {
     const requestData: LocationRequest = {
       ...data,
@@ -614,9 +982,23 @@ async function submitLocationRequest(data: Omit<LocationRequest, 'status'>): Pro
     const colRef = collection(db, 'locationRequests');
     await addDoc(colRef, requestData);
 
-    console.log('✅ Location request submitted successfully');
-  } catch (error) {
-    console.error('❌ Error submitting location request:', error);
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.success('Location request submitted', {
+      type: data.type,
+      building: data.buildingName,
+      duration: `${duration}ms`,
+    });
+  } catch (error: any) {
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.error('Failed to submit location request', {
+      error: error.message,
+      type: data.type,
+      building: data.buildingName,
+      duration: `${duration}ms`,
+    });
+
     throw new Error('Failed to submit location request');
   }
 }
@@ -625,6 +1007,13 @@ async function submitLocationRequest(data: Omit<LocationRequest, 'status'>): Pro
 // INDIVIDUAL LOCATION HOOKS
 // ============================================================================
 
+/**
+ * Hook to fetch bidet locations with distance calculation
+ * 
+ * @function useBidetLocations
+ * @param {LocationObject | null} userLocation - User's current location
+ * @returns {UseQueryResult<BidetLocation[]>} Query result with bidets sorted by distance
+ */
 export function useBidetLocations(userLocation: LocationObject | null) {
   const userCoords: Coordinates | null = useMemo(() => {
     if (!userLocation?.coords) return null;
@@ -643,6 +1032,7 @@ export function useBidetLocations(userLocation: LocationObject | null) {
         cached.length > 0 &&
         isValidCoordinate(cached[0].coordinates?.latitude, cached[0].coordinates?.longitude)
       ) {
+        logger.debug('Using cached bidets', { count: cached.length, source: 'MMKV' });
         return cached;
       }
       const bidets = await fetchAllBidets();
@@ -665,6 +1055,13 @@ export function useBidetLocations(userLocation: LocationObject | null) {
   return { ...query, data: dataWithDistances };
 }
 
+/**
+ * Hook to fetch mosque locations with distance calculation
+ * 
+ * @function useMosqueLocations
+ * @param {LocationObject | null} userLocation - User's current location
+ * @returns {UseQueryResult<MosqueLocation[]>} Query result with mosques sorted by distance
+ */
 export function useMosqueLocations(userLocation: LocationObject | null) {
   const userCoords: Coordinates | null = useMemo(() => {
     if (!userLocation?.coords) return null;
@@ -683,6 +1080,7 @@ export function useMosqueLocations(userLocation: LocationObject | null) {
         cached.length > 0 &&
         isValidCoordinate(cached[0].coordinates?.latitude, cached[0].coordinates?.longitude)
       ) {
+        logger.debug('Using cached mosques', { count: cached.length, source: 'MMKV' });
         return cached;
       }
       const mosques = await fetchAllMosques();
@@ -705,6 +1103,13 @@ export function useMosqueLocations(userLocation: LocationObject | null) {
   return { ...query, data: dataWithDistances };
 }
 
+/**
+ * Hook to fetch musollah locations with distance calculation
+ * 
+ * @function useMusollahLocations
+ * @param {LocationObject | null} userLocation - User's current location
+ * @returns {UseQueryResult<MusollahLocation[]>} Query result with musollahs sorted by distance
+ */
 export function useMusollahLocations(userLocation: LocationObject | null) {
   const userCoords: Coordinates | null = useMemo(() => {
     if (!userLocation?.coords) return null;
@@ -723,6 +1128,7 @@ export function useMusollahLocations(userLocation: LocationObject | null) {
         cached.length > 0 &&
         isValidCoordinate(cached[0].coordinates?.latitude, cached[0].coordinates?.longitude)
       ) {
+        logger.debug('Using cached musollahs', { count: cached.length, source: 'MMKV' });
         return cached;
       }
       const musollahs = await fetchAllMusollahs();
@@ -749,15 +1155,16 @@ export function useMusollahLocations(userLocation: LocationObject | null) {
 // BIDET / MUSOLLAH UPDATE HELPERS
 // ============================================================================
 
-type GenderStatus = 'Yes' | 'No' | 'Unknown';
+// UPDATED: Changed from literal types to string to support location details like "Level 4R"
+// GenderStatus can now be: "Yes", "No", "Unknown", OR location text like "Level 4R, near Food Court"
 type AmenityStatus = 'Yes' | 'No' | 'Unknown';
 
 export interface UpdateBidetStatusPayload {
   id: string;
   status: 'Available' | 'Unavailable' | 'Unknown';
-  male?: GenderStatus;
-  female?: GenderStatus;
-  handicap?: GenderStatus;
+  male?: string;      // Can be "Yes", "No", "Unknown", or location text
+  female?: string;    // Can be "Yes", "No", "Unknown", or location text
+  handicap?: string;  // Can be "Yes", "No", "Unknown", or location text
 }
 
 export interface UpdateMusollahStatusPayload {
@@ -771,6 +1178,14 @@ export interface UpdateMusollahStatusPayload {
   telekung?: AmenityStatus;
 }
 
+/**
+ * Updates bidet status and amenities
+ * 
+ * @async
+ * @function updateBidetStatus
+ * @param {UpdateBidetStatusPayload} payload - Update payload
+ * @returns {Promise<void>}
+ */
 export async function updateBidetStatus({
   id,
   status,
@@ -778,6 +1193,8 @@ export async function updateBidetStatus({
   female,
   handicap,
 }: UpdateBidetStatusPayload): Promise<void> {
+  const startTime = performance.now();
+
   const updates: Record<string, any> = {
     status,
     lastUpdated: Date.now(),
@@ -787,12 +1204,49 @@ export async function updateBidetStatus({
   if (female !== undefined) updates.Female = female;
   if (handicap !== undefined) updates.Handicap = handicap;
 
-  const ref = doc(db, COLLECTIONS.bidets, id);
-  await updateDoc(ref, updates);
+  logger.debug('Updating bidet status', {
+    id,
+    status,
+    updates: Object.keys(updates),
+  });
 
-  cache.clear(CACHE_KEYS.allBidets);
+  try {
+    const ref = doc(db, COLLECTIONS.bidets, id);
+    await updateDoc(ref, updates);
+
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.success('Bidet status updated', {
+      id,
+      status,
+      fieldsUpdated: Object.keys(updates).length,
+      duration: `${duration}ms`,
+    });
+
+    cache.clear(CACHE_KEYS.allBidets);
+    logger.debug('Bidet cache cleared after update');
+  } catch (error: any) {
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.error('Failed to update bidet status', {
+      error: error.message,
+      id,
+      status,
+      duration: `${duration}ms`,
+    });
+
+    throw error;
+  }
 }
 
+/**
+ * Updates musollah status and amenities
+ * 
+ * @async
+ * @function updateMusollahStatus
+ * @param {UpdateMusollahStatusPayload} payload - Update payload
+ * @returns {Promise<void>}
+ */
 export async function updateMusollahStatus({
   id,
   status,
@@ -803,6 +1257,8 @@ export async function updateMusollahStatus({
   prayerMats,
   telekung,
 }: UpdateMusollahStatusPayload): Promise<void> {
+  const startTime = performance.now();
+
   const updates: Record<string, any> = {
     status,
     lastUpdated: Date.now(),
@@ -815,16 +1271,51 @@ export async function updateMusollahStatus({
   if (prayerMats !== undefined) updates.PrayerMats = prayerMats;
   if (telekung !== undefined) updates.Telekung = telekung;
 
-  const ref = doc(db, COLLECTIONS.musollahs, id);
-  await updateDoc(ref, updates);
+  logger.debug('Updating musollah status', {
+    id,
+    status,
+    updates: Object.keys(updates),
+  });
 
-  cache.clear(CACHE_KEYS.allMusollahs);
+  try {
+    const ref = doc(db, COLLECTIONS.musollahs, id);
+    await updateDoc(ref, updates);
+
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.success('Musollah status updated', {
+      id,
+      status,
+      fieldsUpdated: Object.keys(updates).length,
+      duration: `${duration}ms`,
+    });
+
+    cache.clear(CACHE_KEYS.allMusollahs);
+    logger.debug('Musollah cache cleared after update');
+  } catch (error: any) {
+    const duration = Math.round(performance.now() - startTime);
+
+    logger.error('Failed to update musollah status', {
+      error: error.message,
+      id,
+      status,
+      duration: `${duration}ms`,
+    });
+
+    throw error;
+  }
 }
 
 // ============================================================================
 // MUTATION HOOKS
 // ============================================================================
 
+/**
+ * Hook to update location status (bidet or musollah)
+ * 
+ * @function useUpdateLocationStatus
+ * @returns {UseMutationResult} Mutation result
+ */
 export function useUpdateLocationStatus() {
   const queryClient = useQueryClient();
 
@@ -838,55 +1329,122 @@ export function useUpdateLocationStatus() {
       id: string;
       status: 'Available' | 'Unavailable' | 'Unknown';
     }) => updateLocationStatus(type, id, status),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      logger.success('Location status mutation successful', {
+        type: variables.type,
+        id: variables.id,
+        status: variables.status,
+      });
       queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.all });
+    },
+    onError: (error: any, variables) => {
+      logger.error('Location status mutation failed', {
+        error: error.message,
+        type: variables.type,
+        id: variables.id,
+        status: variables.status,
+      });
     },
   });
 }
 
+/**
+ * Hook to refresh all musollah data
+ * 
+ * @function useRefreshMusollahData
+ * @returns {Function} Refresh function
+ */
 export function useRefreshMusollahData() {
   const queryClient = useQueryClient();
 
   return () => {
+    logger.info('Refreshing all musollah data');
     clearAllMusollahCache();
     queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.all });
   };
 }
 
+/**
+ * Hook to update bidet status
+ * 
+ * @function useUpdateBidetStatus
+ * @returns {UseMutationResult} Mutation result
+ */
 export function useUpdateBidetStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (payload: UpdateBidetStatusPayload) => updateBidetStatus(payload),
-    onSuccess: () => {
+    onSuccess: (_, payload) => {
+      logger.success('Bidet status mutation successful', {
+        id: payload.id,
+        status: payload.status,
+      });
       queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.bidets });
       queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.allLocations });
       queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.all });
     },
+    onError: (error: any, payload) => {
+      logger.error('Bidet status mutation failed', {
+        error: error.message,
+        id: payload.id,
+        status: payload.status,
+      });
+    },
   });
 }
 
+/**
+ * Hook to update musollah status
+ * 
+ * @function useUpdateMusollahStatus
+ * @returns {UseMutationResult} Mutation result
+ */
 export function useUpdateMusollahStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (payload: UpdateMusollahStatusPayload) => updateMusollahStatus(payload),
-    onSuccess: () => {
+    onSuccess: (_, payload) => {
+      logger.success('Musollah status mutation successful', {
+        id: payload.id,
+        status: payload.status,
+      });
       queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.musollahs });
       queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.allLocations });
       queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.all });
     },
+    onError: (error: any, payload) => {
+      logger.error('Musollah status mutation failed', {
+        error: error.message,
+        id: payload.id,
+        status: payload.status,
+      });
+    },
   });
 }
 
+/**
+ * Hook to submit location request
+ * 
+ * @function useSubmitLocationRequest
+ * @returns {UseMutationResult} Mutation result
+ */
 export function useSubmitLocationRequest() {
   return useMutation({
     mutationFn: submitLocationRequest,
-    onSuccess: () => {
-      console.log('✅ Location request mutation successful');
+    onSuccess: (_, data) => {
+      logger.success('Location request mutation successful', {
+        type: data.type,
+        building: data.buildingName,
+      });
     },
-    onError: (error) => {
-      console.error('❌ Location request mutation failed:', error);
+    onError: (error: any, data) => {
+      logger.error('Location request mutation failed', {
+        error: error.message,
+        type: data.type,
+        building: data.buildingName,
+      });
     },
   });
 }
@@ -895,27 +1453,56 @@ export function useSubmitLocationRequest() {
 // DEBUG UTILITIES (MODULAR)
 // ============================================================================
 
+/**
+ * Debug utility to inspect Firestore collection structures
+ * 
+ * @async
+ * @function debugFirestoreCollections
+ * @returns {Promise<void>}
+ */
 export async function debugFirestoreCollections(): Promise<void> {
-  console.log('\n🔍 Debugging Firestore collections...\n');
+  logger.info('Starting Firestore collections debug');
 
   for (const collectionName of Object.values(COLLECTIONS)) {
+    const startTime = performance.now();
+
     try {
       const colRef = collection(db, collectionName);
       const q = fsQuery(colRef, limit(1));
       const snapshot = await getDocs(q);
+      const duration = Math.round(performance.now() - startTime);
 
-      console.log(`📁 ${collectionName}: ${snapshot.size} doc(s)`);
-
-      if (!snapshot.empty) {
+      if (snapshot.empty) {
+        logger.debug('Collection empty', {
+          collection: collectionName,
+          documentCount: 0,
+          duration: `${duration}ms`,
+        });
+      } else {
         const first = snapshot.docs[0];
         const data = first.data();
-        console.log(`   Fields: ${Object.keys(data as any).join(', ')}`);
-        console.log(`   Coordinates:`, extractCoordinates(data));
+        const coords = extractCoordinates(data);
+
+        logger.debug('Collection inspected', {
+          collection: collectionName,
+          documentCount: snapshot.size,
+          fields: Object.keys(data as any),
+          coordinates: coords,
+          duration: `${duration}ms`,
+        });
       }
-    } catch (error) {
-      console.error(`❌ ${collectionName}:`, error);
+    } catch (error: any) {
+      const duration = Math.round(performance.now() - startTime);
+
+      logger.error('Failed to inspect collection', {
+        error: error.message,
+        collection: collectionName,
+        duration: `${duration}ms`,
+      });
     }
   }
+
+  logger.success('Firestore collections debug complete');
 }
 
 // Legacy alias for backwards compatibility

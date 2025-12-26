@@ -2,7 +2,7 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { Animated } from 'react-native'; // ✅ correct import
 import { usePreferencesStore } from '../stores/userPreferencesStore';
 import { greenTheme, blueTheme, purpleTheme } from '../theme/theme';
-import { useThemeTransition } from '../hooks/useThemeTransition';
+import { useThemeTransition } from '../hooks/settings/useThemeTransition';
 
 // Theme object mapping
 const themes = {

@@ -1,12 +1,13 @@
 import React, { memo } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { MotiView } from 'moti';
 import { enter, scaleSize } from '../../utils';
 import { useTheme } from '../../context/ThemeContext';
 import { PrayerName } from '../../utils/types/prayer.types';
+import { LocalPrayerName } from '../../api/services/prayer/types/index';
 
 interface CurrentPrayerInfoProps {
-  currentPrayer: PrayerName | null;
+  currentPrayer: LocalPrayerName | null;
   nextPrayerInfo: {
     nextPrayer: PrayerName;
     timeUntilNextPrayer: string;

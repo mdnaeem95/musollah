@@ -1,40 +1,56 @@
 /**
  * Surah Detail Page Hook
- * 
+ *
+ * ✅ UPDATED: Added structured logging
+ * ✅ IMPROVED: Action tracking and navigation monitoring
+ *
  * Business logic for the Surah text screen.
  * Handles data fetching, bookmarks, read tracking, and navigation.
+ *
+ * @version 2.0
+ * @since 2025-12-24
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ComponentRef, RefObject } from 'react';
 import { useRouter } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import Toast from 'react-native-toast-message';
+
 import { useSurahWithTranslation } from '../../api/services/quran';
 import { useQuranStore } from '../../stores/useQuranStore';
 import { useQuranAudioPlayer } from './useQuranAudioPlayer';
 import { useTrackPlayerSetup } from './useTrackPlayerSetup';
 
+import { createLogger } from '../../services/logging/logger';
+
+const logger = createLogger('Surah Detail');
+
 // ============================================================================
 // TYPES
 // ============================================================================
 
+type FlashListRefType = ComponentRef<typeof FlashList>;
+
 interface UseSurahDetailPageParams {
   surahNumber: number;
-  initialAyahIndex?: number;
+  initialAyahIndex?: number; // 1-based (e.g. 1 means first ayah)
   reciter: string;
 }
 
+type SurahParsed = {
+  number: number;
+  name: string;
+  englishName: string;
+  arabicAyahs: string[];
+  englishTranslations: string[];
+  audioLinks: string[];
+  numberOfAyahs: number;
+};
+
 interface UseSurahDetailPageReturn {
   // Data
-  surah: {
-    number: number;
-    name: string;
-    englishName: string;
-    arabicAyahs: string[];
-    englishTranslations: string[];
-    audioLinks: string[];
-    numberOfAyahs: number;
-  } | null;
+  surah: SurahParsed | null;
   isLoading: boolean;
   error: Error | null;
 
@@ -53,7 +69,7 @@ interface UseSurahDetailPageReturn {
   togglePickerVisibility: () => void;
 
   // Refs
-  listRef: React.RefObject<FlashList<string>>;
+  listRef: RefObject<FlashListRefType | null>;
 }
 
 // ============================================================================
@@ -67,7 +83,12 @@ export function useSurahDetailPage({
 }: UseSurahDetailPageParams): UseSurahDetailPageReturn {
   const { isSetup: isPlayerSetup } = useTrackPlayerSetup();
   const router = useRouter();
-  const listRef = useRef<FlashList<string>>(null);
+
+  // ✅ FlashList ref typing (fixes TS2749)
+  const listRef = useRef<ComponentRef<typeof FlashList>>(null);
+
+  // Track whether we've already performed the initial scroll
+  const didInitialScrollRef = useRef(false);
 
   // State
   const [isPickerVisible, setPickerVisible] = useState(false);
@@ -78,7 +99,6 @@ export function useSurahDetailPage({
 
   // Zustand store
   const {
-    bookmarks,
     addBookmark,
     removeBookmark,
     isBookmarked: checkIsBookmarked,
@@ -88,21 +108,68 @@ export function useSurahDetailPage({
     getReadCountForSurah,
   } = useQuranStore();
 
+  // ✅ Log hook mount/unmount
+  useEffect(() => {
+    logger.info('Surah detail page mounted', {
+      surahNumber,
+      initialAyahIndex,
+      reciter,
+      hasPlayerSetup: isPlayerSetup,
+    });
+
+    return () => {
+      logger.debug('Surah detail page unmounted', { surahNumber });
+    };
+    // Intentionally mount-only: we want a single mount/unmount log
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ✅ Log data fetch lifecycle
+  useEffect(() => {
+    if (isLoading) {
+      logger.debug('Loading surah data...', { surahNumber });
+      return;
+    }
+
+    if (error) {
+      logger.error('Failed to load surah data', error as Error, { surahNumber });
+      return;
+    }
+
+    if (data) {
+      logger.success('Surah data loaded', {
+        surahNumber,
+        arabicName: data.arabic.name,
+        englishName: data.arabic.englishName,
+        ayahCount: data.arabic.numberOfAyahs,
+        hasTranslation: !!data.translation,
+      });
+    }
+  }, [data, isLoading, error, surahNumber]);
+
   // Parse surah data
-  const surah = useMemo(() => {
+  const surah: SurahParsed | null = useMemo(() => {
     if (!data) return null;
 
     const { arabic, translation } = data;
 
-    return {
+    const parsed: SurahParsed = {
       number: arabic.number,
       name: arabic.name,
       englishName: arabic.englishName,
       arabicAyahs: arabic.ayahs.map((ayah) => ayah.text),
-      englishTranslations: translation.ayahs.map((ayah) => ayah.text),
+      englishTranslations: translation?.ayahs?.map((ayah) => ayah.text) ?? [],
       audioLinks: arabic.ayahs.map((ayah) => ayah.audio || ''),
       numberOfAyahs: arabic.numberOfAyahs,
     };
+
+    logger.debug('Surah data parsed', {
+      surahNumber: parsed.number,
+      ayahCount: parsed.numberOfAyahs,
+      audioLinksPresent: parsed.audioLinks.filter((link) => !!link).length,
+    });
+
+    return parsed;
   }, [data]);
 
   // Audio player
@@ -112,130 +179,199 @@ export function useSurahDetailPage({
     audioLinks: surah?.audioLinks || [],
     reciter,
     enabled: !!surah,
-    isPlayerSetup
+    isPlayerSetup,
   });
 
   // Read ayahs count for this surah
   const readAyahsCount = getReadCountForSurah(surahNumber);
 
-  /**
-   * Toggle bookmark for an ayah
-   */
+  // ✅ Log read progress
+  useEffect(() => {
+    if (!surah) return;
+
+    const total = surah.numberOfAyahs || 0;
+    const pct =
+      total > 0 ? `${((readAyahsCount / total) * 100).toFixed(1)}%` : '0%';
+
+    logger.debug('Read progress', {
+      surahNumber,
+      readCount: readAyahsCount,
+      totalCount: total,
+      percentComplete: pct,
+    });
+  }, [readAyahsCount, surah, surahNumber]);
+
+  // --------------------------------------------------------------------------
+  // Actions
+  // --------------------------------------------------------------------------
+
   const toggleBookmark = useCallback(
     (ayahNumber: number) => {
-      const isCurrentlyBookmarked = checkIsBookmarked(surahNumber, ayahNumber);
+      const currentlyBookmarked = checkIsBookmarked(surahNumber, ayahNumber);
 
-      if (isCurrentlyBookmarked) {
+      if (currentlyBookmarked) {
+        logger.info('Removing bookmark', { surahNumber, ayahNumber });
         removeBookmark(surahNumber, ayahNumber);
+
         Toast.show({
           type: 'removed',
           text1: 'Ayah removed from bookmarks',
           visibilityTime: 2000,
         });
-      } else {
-        addBookmark({
-          surahNumber,
-          ayahNumber,
-          surahName: surah?.englishName || 'Unknown',
-        });
-        Toast.show({
-          type: 'success',
-          text1: 'Ayah added to bookmarks',
-          visibilityTime: 2000,
-        });
+        return;
       }
+
+      logger.info('Adding bookmark', {
+        surahNumber,
+        ayahNumber,
+        surahName: surah?.englishName,
+      });
+
+      addBookmark({
+        surahNumber,
+        ayahNumber,
+        surahName: surah?.englishName || 'Unknown',
+      });
+
+      Toast.show({
+        type: 'success',
+        text1: 'Ayah added to bookmarks',
+        visibilityTime: 2000,
+      });
     },
-    [surahNumber, surah, checkIsBookmarked, addBookmark, removeBookmark]
+    [surahNumber, surah?.englishName, checkIsBookmarked, addBookmark, removeBookmark]
   );
 
-  /**
-   * Toggle read status for an ayah
-   */
   const toggleReadAyah = useCallback(
     (ayahNumber: number) => {
-      const isCurrentlyRead = isAyahRead(surahNumber, ayahNumber);
+      const currentlyRead = isAyahRead(surahNumber, ayahNumber);
 
-      if (isCurrentlyRead) {
+      if (currentlyRead) {
+        logger.debug('Marking ayah as unread', { surahNumber, ayahNumber });
         unmarkAyahAsRead(surahNumber, ayahNumber);
       } else {
+        logger.debug('Marking ayah as read', { surahNumber, ayahNumber });
         markAyahAsRead(surahNumber, ayahNumber);
       }
     },
     [surahNumber, isAyahRead, markAyahAsRead, unmarkAyahAsRead]
   );
 
-  /**
-   * Check if ayah is bookmarked
-   */
   const isBookmarked = useCallback(
     (ayahNumber: number) => checkIsBookmarked(surahNumber, ayahNumber),
     [surahNumber, checkIsBookmarked]
   );
 
-  /**
-   * Check if ayah is read
-   */
   const isRead = useCallback(
     (ayahNumber: number) => isAyahRead(surahNumber, ayahNumber),
     [surahNumber, isAyahRead]
   );
 
-  /**
-   * Navigate to different surah
-   */
   const handleSurahChange = useCallback(
     (newSurahNumber: number) => {
-      if (newSurahNumber !== surahNumber) {
-        setSelectedSurah(newSurahNumber);
-        setPickerVisible(false);
-        router.replace(`/surahs/${newSurahNumber}`);
+      if (newSurahNumber === surahNumber) {
+        logger.debug('Attempted to change to same surah', { surahNumber });
+        return;
       }
+
+      logger.info('Changing surah', { from: surahNumber, to: newSurahNumber });
+
+      // Reset local UI states
+      setSelectedSurah(newSurahNumber);
+      setPickerVisible(false);
+      didInitialScrollRef.current = false;
+
+      router.replace(`/surahs/${newSurahNumber}`);
+
+      logger.debug('Surah change navigation triggered');
     },
     [surahNumber, router]
   );
 
-  /**
-   * Toggle surah picker visibility
-   */
   const togglePickerVisibility = useCallback(() => {
-    setPickerVisible((prev) => !prev);
-  }, []);
+    setPickerVisible((prev) => {
+      const next = !prev;
+      logger.debug('Surah picker visibility toggled', {
+        visible: next,
+        currentSurah: surahNumber,
+      });
+      return next;
+    });
+  }, [surahNumber]);
 
-  /**
-   * Auto-scroll to ayah when audio changes
-   */
+  // --------------------------------------------------------------------------
+  // Auto-scroll behaviors
+  // --------------------------------------------------------------------------
+
+  // Auto-scroll to ayah when audio changes
   useEffect(() => {
-    if (currentAyahIndex !== null && listRef.current) {
+    if (!listRef.current) return;
+    if (currentAyahIndex == null) return;
+    if (currentAyahIndex < 0) return;
+
+    logger.debug('Auto-scrolling to current ayah', {
+      ayahIndex: currentAyahIndex,
+      ayahNumber: currentAyahIndex + 1,
+      surahNumber,
+    });
+
+    try {
       listRef.current.scrollToIndex({
         index: currentAyahIndex,
         animated: true,
         viewPosition: 0.5,
       });
+    } catch (e) {
+      logger.warn('Auto-scroll failed (likely index not rendered yet)', {
+        ayahIndex: currentAyahIndex,
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
-  }, [currentAyahIndex]);
+  }, [currentAyahIndex, surahNumber]);
 
-  /**
-   * Auto-scroll to initial ayah (from bookmark/deep link)
-   */
+  // Auto-scroll to initial ayah (from bookmark/deep link) - run once per surah load
   useEffect(() => {
-    if (initialAyahIndex && surah && listRef.current) {
-      const timeoutId = setTimeout(() => {
+    if (didInitialScrollRef.current) return;
+    if (!surah) return;
+    if (!listRef.current) return;
+    if (initialAyahIndex == null) return;
+
+    // initialAyahIndex is 1-based; FlashList uses 0-based
+    const targetIndex = Math.max(0, initialAyahIndex - 1);
+
+    logger.info('Scrolling to initial ayah', {
+      ayahIndex: targetIndex,
+      ayahNumber: initialAyahIndex,
+      surahNumber,
+      fromBookmark: true,
+    });
+
+    didInitialScrollRef.current = true;
+
+    const timeoutId = setTimeout(() => {
+      try {
         listRef.current?.scrollToIndex({
-          index: initialAyahIndex - 1, // 0-based index
+          index: targetIndex,
           animated: true,
           viewPosition: 0.5,
         });
-      }, 300);
+        logger.debug('Initial scroll completed');
+      } catch (e) {
+        logger.warn('Initial scroll failed (likely index not rendered yet)', {
+          targetIndex,
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }, 300);
 
-      return () => clearTimeout(timeoutId);
-    }
-  }, [initialAyahIndex, surah]);
+    return () => clearTimeout(timeoutId);
+  }, [initialAyahIndex, surah, surahNumber]);
 
   return {
     // Data
     surah,
     isLoading,
-    error,
+    error: (error as Error) ?? null,
 
     // State
     currentAyahIndex,

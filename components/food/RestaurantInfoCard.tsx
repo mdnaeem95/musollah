@@ -10,7 +10,7 @@ import { MotiView } from 'moti';
 import { AirbnbRating } from 'react-native-ratings';
 
 import { useTheme } from '../../context/ThemeContext';
-import FavoriteButton from '../FavouriteButton';
+import FavoriteButton from './FavouriteButton';
 import { enter } from '../../utils';
 
 interface RestaurantInfoCardProps {
