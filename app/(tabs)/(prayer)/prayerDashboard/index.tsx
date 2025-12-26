@@ -41,6 +41,44 @@ import { enter, shakeButton } from '../../../../utils';
 import { getCurrentDayIndex, isSameDate } from '../../../../utils/prayers/dates';
 
 // ============================================================================
+// HELPER: Check if prayer can be logged
+// ============================================================================
+
+/**
+ * ✅ IMPROVED: Determine if a prayer can be logged
+ * 
+ * Rules:
+ * 1. For PAST dates: All prayers are loggable (day is complete)
+ * 2. For TODAY: Prayer time must have passed
+ * 3. For FUTURE dates: No prayers are loggable
+ */
+function isPrayerLoggable(
+  prayerTime: string,
+  selectedDate: Date
+): boolean {
+  const today = new Date();
+  const todayStr = format(today, 'yyyy-MM-dd');
+  const selectedStr = format(selectedDate, 'yyyy-MM-dd');
+
+  // Past date: all prayers are loggable
+  if (selectedStr < todayStr) {
+    return true;
+  }
+
+  // Future date: no prayers are loggable
+  if (selectedStr > todayStr) {
+    return false;
+  }
+
+  // Today: check if prayer time has passed
+  const [hours, minutes] = prayerTime.split(':').map(Number);
+  const prayerDateTime = new Date();
+  prayerDateTime.setHours(hours, minutes, 0, 0);
+
+  return new Date() >= prayerDateTime;
+}
+
+// ============================================================================
 // CONSTANTS
 // ============================================================================
 
@@ -113,13 +151,16 @@ const PrayersDashboard: React.FC = () => {
 
   // Prayer availability checker
   const toggablePrayers = useMemo(() => {
-    if (!isToday || !todayPrayerData) return undefined;
+    if (!todayPrayerData) return undefined;
     
-    return LOGGABLE_PRAYERS.map(prayer => ({
-      prayer,
-      isAvailable: canLogPrayer(todayPrayerData[prayer.toLowerCase() as keyof typeof todayPrayerData]),
-    }));
-  }, [isToday, todayPrayerData]);
+    return LOGGABLE_PRAYERS.map(prayer => {
+      const prayerTime = todayPrayerData[prayer.toLowerCase() as keyof typeof todayPrayerData];
+      return {
+        prayer,
+        isAvailable: isPrayerLoggable(prayerTime, selectedDate),
+      };
+    });
+  }, [todayPrayerData, selectedDate]);
 
   // Weekly calendar
   const currentDayIndex = getCurrentDayIndex();
@@ -151,9 +192,8 @@ const PrayersDashboard: React.FC = () => {
       }
 
       // Check if prayer time has passed (only for today)
-      const isAvailable =
-        !isToday ||
-        toggablePrayers?.find((p) => p.prayer === prayer)?.isAvailable;
+      const prayerAvailability = toggablePrayers?.find((p) => p.prayer === prayer);
+      const isAvailable = prayerAvailability?.isAvailable ?? false;
 
       if (!isAvailable) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -161,7 +201,7 @@ const PrayersDashboard: React.FC = () => {
         Toast.show({
           type: 'error',
           text1: `Can't log ${prayer}`,
-          text2: "It's not time yet.",
+          text2: isToday ? "It's not time yet." : "Cannot log future prayers",
           position: 'bottom',
         });
         return;

@@ -1,7 +1,7 @@
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback, useState, useMemo } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { MotiView } from 'moti';
-import { format } from 'date-fns';
+import { format, isPast, isFuture, startOfDay, parse } from 'date-fns';
 import Toast from 'react-native-toast-message';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../context/ThemeContext';
@@ -10,7 +10,7 @@ import { useTodayPrayerLog, usePrayerLog, useSavePrayerLog } from '../../api/ser
 import { type PrayerLog, LocalPrayerName } from '../../api/services/prayer/types/index';
 import { LOGGABLE_PRAYERS, PRAYER_ORDER } from '../../api/services/prayer/types/constants';
 import PrayerTimeItem from './PrayerTimeItem';
-import SignInModal from '../SignInModal'; // ✅ Add this import
+import SignInModal from '../SignInModal';
 
 interface PrayerTimesListProps {
   prayerTimes: Record<LocalPrayerName, string> | null;
@@ -40,16 +40,43 @@ const EMPTY_PRAYERS: PrayersPayload = {
 };
 
 /**
- * Check if prayer time has passed (can be logged)
- * @param prayerTime - Prayer time string (HH:MM)
- * @returns True if current time is past prayer time
+ * ✅ IMPROVED: Check if a specific prayer can be logged
+ * 
+ * Rules:
+ * 1. Syuruk is never loggable (it's sunrise, not a prayer)
+ * 2. For TODAY: Prayer time must have passed
+ * 3. For PAST dates: All prayers are loggable
+ * 4. For FUTURE dates: No prayers are loggable
  */
-function canLogPrayer(prayerTime: string): boolean {
+function isPrayerLoggable(
+  prayerName: LocalPrayerName,
+  prayerTime: string,
+  selectedDate: Date
+): boolean {
+  // 1. Syuruk is never loggable
+  if (!LOGGABLE_PRAYERS.includes(prayerName as any)) {
+    return false;
+  }
+
+  const today = startOfDay(new Date());
+  const selected = startOfDay(selectedDate);
+
+  // 2. Future dates: nothing is loggable
+  if (isFuture(selected)) {
+    return false;
+  }
+
+  // 3. Past dates: everything is loggable
+  if (isPast(selected) && selected < today) {
+    return true;
+  }
+
+  // 4. Today: check if prayer time has passed
   const [hours, minutes] = prayerTime.split(':').map(Number);
-  const prayerDate = new Date();
-  prayerDate.setHours(hours, minutes, 0, 0);
-  
-  return new Date() >= prayerDate;
+  const prayerDateTime = new Date();
+  prayerDateTime.setHours(hours, minutes, 0, 0);
+
+  return new Date() >= prayerDateTime;
 }
 
 /**
@@ -60,6 +87,7 @@ function canLogPrayer(prayerTime: string): boolean {
  * - Next prayer shows countdown
  * - Uses TanStack Query for prayer logs
  * - Optimistic updates
+ * - ✅ Proper validation: only past prayers can be logged
  * - ✅ Always shows checkboxes (prompts sign-in if needed)
  */
 const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({ 
@@ -72,7 +100,6 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
   const styles = createStyles(theme);
   const { userId } = useAuth();
   
-  // ✅ NEW: Sign-in modal state
   const [showSignInModal, setShowSignInModal] = useState(false);
   
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
@@ -87,31 +114,39 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
   const { mutate: savePrayerLog } = useSavePrayerLog();
   const queryClient = useQueryClient();
 
+  // ✅ NEW: Pre-calculate which prayers are loggable
+  const loggableStatus = useMemo<Record<LocalPrayerName, boolean>>(() => {
+    if (!prayerTimes) return {} as Record<LocalPrayerName, boolean>;
+    
+    return PRAYER_ORDER.reduce((acc, prayerName) => {
+      const prayerTime = prayerTimes[prayerName];
+      acc[prayerName] = isPrayerLoggable(prayerName, prayerTime, selectedDate);
+      return acc;
+    }, {} as Record<LocalPrayerName, boolean>);
+  }, [prayerTimes, selectedDate]);
+
   // Handle prayer toggle
   const handlePrayerToggle = useCallback((prayerName: LocalPrayerName) => {
-    // ✅ IMPROVED: Show modal instead of toast
+    // Check authentication
     if (!userId) {
       setShowSignInModal(true);
       return;
     }
 
-    // Skip Syuruk (sunrise)
-    if (prayerName === 'Syuruk') return;
+    // Skip Syuruk (sunrise) - should never happen due to isLoggable, but defensive
+    if (prayerName === 'Syuruk') {
+      return;
+    }
 
-    // Check if prayer time has passed (only for today)
-    if (isToday && prayerTimes) {
-      const prayerTime = prayerTimes[prayerName];
-      const isAvailable = canLogPrayer(prayerTime); 
-      
-      if (!isAvailable) {
-        Toast.show({
-          type: 'error',
-          text1: 'Prayer time not reached',
-          text2: `You can log ${prayerName} after its prayer time`,
-          position: 'bottom',
-        });
-        return;
-      }
+    // ✅ IMPROVED: Double-check loggability (defensive programming)
+    if (!loggableStatus[prayerName]) {
+      Toast.show({
+        type: 'error',
+        text1: 'Prayer time not reached',
+        text2: `You can log ${prayerName} after its prayer time`,
+        position: 'bottom',
+      });
+      return;
     }
 
     const queryKey = ['prayerLogs', userId, dateStr];
@@ -130,7 +165,7 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
       date: dateStr,
       prayers: updatedPrayers,
     });
-  }, [userId, dateStr, isToday, queryClient, prayerTimes, savePrayerLog]);
+  }, [userId, dateStr, queryClient, loggableStatus, savePrayerLog]);
 
   // Empty state
   if (!prayerTimes) {
@@ -145,7 +180,9 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
     <>
       <View style={styles.container}>
         {PRAYER_ORDER.map((prayerName, index) => {
-          const isLoggable = LOGGABLE_PRAYERS.includes(prayerName as any);
+          // ✅ FIXED: Use pre-calculated loggable status
+          const isLoggable = loggableStatus[prayerName] ?? false;
+          
           const loggedMap = prayerLog?.prayers as PrayersPayload | undefined;
           const isLogged = isLoggable ? (loggedMap?.[prayerName as keyof PrayersPayload] ?? false) : false;
           
@@ -167,7 +204,7 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
                 isLogged={isLogged}
                 onToggle={() => handlePrayerToggle(prayerName)}
                 isLoggable={isLoggable}
-                showCheckbox={true} 
+                showCheckbox={true}
                 isCurrent={isCurrent}
                 countdown={countdown}
               />
@@ -176,7 +213,6 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
         })}
       </View>
 
-      {/* ✅ NEW: Sign-in modal */}
       <SignInModal 
         visible={showSignInModal}
         onClose={() => setShowSignInModal(false)}
