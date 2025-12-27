@@ -1,9 +1,12 @@
 /**
- * Prayer Dashboard - Modern Design
+ * Prayer Dashboard - Modern Design (FIXED)
  * 
  * Track daily prayers, view weekly progress, and monitor streaks
  * 
- * @version 3.0 - Updated for new API architecture
+ * @version 3.1 - Fixed query key mismatch
+ * 
+ * ✅ FIXED: Using prayerQueryKeys.logs.daily() for cache consistency
+ * ✅ FIXED: Added cancelQueries before reading cache
  */
 
 import React, { useCallback, useRef, useMemo } from 'react';
@@ -23,6 +26,7 @@ import { useAuth } from '../../../../stores/useAuthStore';
 import { useLocationStore } from '../../../../stores/useLocationStore';
 import { LOGGABLE_PRAYERS, useTodayPrayerTimes } from '../../../../api/services/prayer';
 import { usePrayerLog, useWeeklyPrayerLogs, useSavePrayerLog } from '../../../../api/services/prayer/queries/prayer-logs';
+import { prayerQueryKeys } from '../../../../api/services/prayer/queries/query-keys'; // ✅ ADDED
 import { usePrayerStreakManager } from '../../../../hooks/prayer/usePrayerStreakManager';
 import { usePrayerDateNavigation } from '../../../../hooks/prayer/usePrayerDateNavigation';
 
@@ -91,7 +95,7 @@ const PRAYER_CONFIG = {
 } as const;
 
 // ============================================================================
-// HELPER: Check if prayer time has passed
+// HELPER: Check if prayer time has passed (DEPRECATED - use isPrayerLoggable)
 // ============================================================================
 
 function canLogPrayer(prayerTime: string): boolean {
@@ -175,9 +179,9 @@ const PrayersDashboard: React.FC = () => {
     [weekStart, weeklyLogs]
   );
 
-  // Handle prayer toggle
+  // ✅ FIXED: Handle prayer toggle with proper query keys
   const handleTogglePrayer = useCallback(
-    (prayer: LocalPrayerName) => {
+    async (prayer: LocalPrayerName) => {
       if (!userId) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         Alert.alert(
@@ -207,8 +211,13 @@ const PrayersDashboard: React.FC = () => {
         return;
       }
 
-      // ✅ Read CURRENT data from React Query cache
-      const queryKey = ['prayerLogs', userId, dateStr];
+      // ✅ CRITICAL FIX: Use the SAME query key as the mutation
+      const queryKey = prayerQueryKeys.logs.daily(userId, dateStr);
+      
+      // ✅ Cancel any pending mutations
+      await queryClient.cancelQueries({ queryKey });
+      
+      // ✅ Read FRESH data from React Query cache
       const currentLog = queryClient.getQueryData<PrayerLog>(queryKey);
       
       const currentPrayers = currentLog?.prayers || {
@@ -227,6 +236,7 @@ const PrayersDashboard: React.FC = () => {
       };
 
       console.log(`🔄 Dashboard toggle ${prayer} on ${dateStr}:`, {
+        queryKey, // ✅ Log the actual key being used
         before: isCurrentlyLogged,
         after: !isCurrentlyLogged,
         allPrayers: updatedPrayers,
@@ -291,13 +301,8 @@ const PrayersDashboard: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        {/* Header Stats */}
-        <MotiView
-          from={{ opacity: 0, translateY: -20 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={enter(0)}
-          style={styles.headerSection}
-        >
+        {/* Stats Card */}
+        <MotiView {...enter(0)}>
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
@@ -306,97 +311,87 @@ const PrayersDashboard: React.FC = () => {
             {/* Today's Progress */}
             <View style={styles.statRow}>
               <View style={[styles.statIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                <FontAwesome6 name="check-circle" size={20} color={theme.colors.accent} />
+                <FontAwesome6 name="calendar-check" size={20} color={theme.colors.accent} />
               </View>
               <View style={styles.statContent}>
-                <Text style={[styles.statLabel, { color: theme.colors.text.muted }]}>
-                  Today's Progress
-                </Text>
+                <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>Today</Text>
                 <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>
                   {completionStats.completed}/{completionStats.total} Prayers
                 </Text>
               </View>
-              <View
-                style={[
-                  styles.percentageBadge,
-                  { backgroundColor: theme.colors.accent + '15' },
-                ]}
-              >
-                <Text style={[styles.percentageText, { color: theme.colors.accent }]}>
+              <View style={[styles.percentageBadge, { backgroundColor: theme.colors.accent }]}>
+                <Text style={[styles.percentageText, { color: '#fff' }]}>
                   {completionStats.percentage}%
                 </Text>
               </View>
             </View>
 
-            {/* Divider */}
-            <View style={[styles.divider, { backgroundColor: theme.colors.text.muted + '20' }]} />
+            <View style={[styles.divider, { backgroundColor: theme.colors.text.muted + '15' }]} />
 
-            {/* Current Streak */}
+            {/* Streak Info */}
             <View style={styles.statRow}>
               <View style={[styles.statIcon, { backgroundColor: '#FF6B6B15' }]}>
-                <FontAwesome6 name="fire" size={20} color="#FF6B6B" />
+                <FontAwesome6 name="fire-flame-curved" size={20} color="#FF6B6B" />
               </View>
               <View style={styles.statContent}>
-                <Text style={[styles.statLabel, { color: theme.colors.text.muted }]}>
-                  Current Streak
-                </Text>
+                <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>Current Streak</Text>
                 <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>
                   {streakInfo.current} {streakInfo.current === 1 ? 'Day' : 'Days'}
                 </Text>
               </View>
-              {streakInfo.longest > 0 && (
-                <View style={[styles.longestBadge, { backgroundColor: '#FFD70015' }]}>
-                  <FontAwesome6 name="trophy" size={12} color="#FFD700" />
-                  <Text style={[styles.longestText, { color: '#FFD700' }]}>
-                    Best: {streakInfo.longest}
-                  </Text>
-                </View>
-              )}
+              <View style={[styles.longestBadge, { backgroundColor: isDarkMode ? '#333' : '#f5f5f5' }]}>
+                <FontAwesome6 name="trophy" size={12} color={theme.colors.accent} />
+                <Text style={[styles.longestText, { color: theme.colors.text.secondary }]}>
+                  {streakInfo.longest}
+                </Text>
+              </View>
             </View>
           </BlurView>
         </MotiView>
 
         {/* Date Navigation */}
-        <MotiView
-          from={{ opacity: 0, translateY: 20 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={enter(100)}
-        >
+        <MotiView {...enter(1)} style={styles.headerSection}>
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
             style={[styles.dateCard, { backgroundColor: theme.colors.secondary }]}
           >
             <TouchableOpacity
-              style={[styles.navButton, { backgroundColor: theme.colors.accent + '15' }]}
               onPress={goToPrevDay}
-              activeOpacity={0.7}
+              style={[styles.navButton, { backgroundColor: isDarkMode ? '#333' : '#f5f5f5' }]}
             >
-              <FontAwesome6 name="chevron-left" size={16} color={theme.colors.accent} />
+              <FontAwesome6 name="chevron-left" size={18} color={theme.colors.text.primary} />
             </TouchableOpacity>
 
             <View style={styles.dateContent}>
               <Text style={[styles.dateText, { color: theme.colors.text.primary }]}>
-                {format(selectedDate, 'EEEE, d MMMM yyyy')}
+                {format(selectedDate, 'MMMM d, yyyy')}
               </Text>
               <Text style={[styles.dayText, { color: theme.colors.text.secondary }]}>
-                {isToday ? 'Today' : format(selectedDate, 'EEEE')}
+                {format(selectedDate, 'EEEE')}
               </Text>
             </View>
 
             <TouchableOpacity
-              style={[
-                styles.navButton,
-                { backgroundColor: canGoNext ? theme.colors.accent + '15' : theme.colors.text.muted + '15' },
-              ]}
               onPress={goToNextDay}
               disabled={!canGoNext}
-              activeOpacity={0.7}
+              style={[
+                styles.navButton,
+                {
+                  backgroundColor: canGoNext
+                    ? isDarkMode
+                      ? '#333'
+                      : '#f5f5f5'
+                    : isDarkMode
+                    ? '#222'
+                    : '#e5e5e5',
+                },
+              ]}
             >
               <FontAwesome6
                 name="chevron-right"
-                size={16}
-                color={canGoNext ? theme.colors.accent : theme.colors.text.muted}
+                size={18}
+                color={canGoNext ? theme.colors.text.primary : theme.colors.text.muted}
               />
             </TouchableOpacity>
           </BlurView>
@@ -406,16 +401,11 @@ const PrayersDashboard: React.FC = () => {
         <View style={styles.prayersSection}>
           {LOGGABLE_PRAYERS.map((prayer, index) => {
             const config = PRAYER_CONFIG[prayer];
-            const isLogged = prayerLog?.prayers?.[prayer] ?? false;
-            const isLocked = isToday && !toggablePrayers?.find((p) => p.prayer === prayer)?.isAvailable;
+            const isAvailable = toggablePrayers?.find((p) => p.prayer === prayer)?.isAvailable ?? false;
+            const isCompleted = prayerLog?.prayers?.[prayer as keyof PrayerLog['prayers']] ?? false;
 
             return (
-              <MotiView
-                key={prayer}
-                from={{ opacity: 0, translateY: 20 }}
-                animate={{ opacity: 1, translateY: 0 }}
-                transition={enter(200 + index * 50)}
-              >
+              <MotiView key={prayer} {...enter(index + 2)}>
                 <BlurView
                   intensity={20}
                   tint={isDarkMode ? 'dark' : 'light'}
@@ -425,34 +415,29 @@ const PrayersDashboard: React.FC = () => {
                     <FontAwesome6 name={config.icon} size={20} color={config.color} />
                   </View>
 
-                  <Text style={[styles.prayerName, { color: theme.colors.text.primary }]}>
-                    {prayer}
-                  </Text>
+                  <Text style={[styles.prayerName, { color: theme.colors.text.primary }]}>{prayer}</Text>
 
-                  {isLocked ? (
-                    <View style={[styles.lockedBadge, { backgroundColor: theme.colors.text.muted + '15' }]}>
+                  {!isAvailable ? (
+                    <View
+                      style={[styles.lockedBadge, { backgroundColor: isDarkMode ? '#333' : '#f5f5f5' }]}
+                    >
                       <FontAwesome6 name="lock" size={10} color={theme.colors.text.muted} />
-                      <Text style={[styles.lockedText, { color: theme.colors.text.muted }]}>
-                        Not yet
-                      </Text>
+                      <Text style={[styles.lockedText, { color: theme.colors.text.muted }]}>Locked</Text>
                     </View>
                   ) : (
                     <TouchableOpacity
+                      onPress={() => handleTogglePrayer(prayer)}
                       style={[
                         styles.toggleButton,
                         {
-                          backgroundColor: isLogged
-                            ? theme.colors.accent
-                            : theme.colors.text.muted + '15',
+                          backgroundColor: isCompleted ? config.color + '15' : isDarkMode ? '#333' : '#f5f5f5',
                         },
                       ]}
-                      onPress={() => handleTogglePrayer(prayer)}
-                      activeOpacity={0.7}
                     >
                       <FontAwesome6
-                        name={isLogged ? 'check' : 'circle'}
-                        size={18}
-                        color={isLogged ? '#fff' : theme.colors.text.muted}
+                        name={isCompleted ? 'check-circle' : 'circle'}
+                        size={22}
+                        color={isCompleted ? config.color : theme.colors.text.muted}
                       />
                     </TouchableOpacity>
                   )}
@@ -463,24 +448,20 @@ const PrayersDashboard: React.FC = () => {
         </View>
 
         {/* Weekly Calendar */}
-        <MotiView
-          from={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={enter(500)}
-        >
+        <MotiView {...enter(7)}>
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
             style={[styles.calendarCard, { backgroundColor: theme.colors.secondary }]}
           >
             <View style={styles.calendarHeader}>
-              <FontAwesome6 name="calendar-days" size={16} color={theme.colors.accent} />
+              <FontAwesome6 name="calendar-week" size={16} color={theme.colors.accent} />
               <Text style={[styles.calendarTitle, { color: theme.colors.text.primary }]}>
-                This Week
+                Weekly Calendar
               </Text>
             </View>
 
-            {/* Days Header */}
+            {/* Days of week header */}
             <View style={styles.calendarRow}>
               <View style={styles.calendarLabelCell} />
               {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
@@ -488,7 +469,9 @@ const PrayersDashboard: React.FC = () => {
                   key={i}
                   style={[
                     styles.calendarDayCell,
-                    i === currentDayIndex && { backgroundColor: theme.colors.accent + '15' },
+                    {
+                      backgroundColor: i === currentDayIndex ? theme.colors.accent + '15' : 'transparent',
+                    },
                   ]}
                 >
                   <Text
@@ -505,65 +488,64 @@ const PrayersDashboard: React.FC = () => {
               ))}
             </View>
 
-            {/* Prayer Rows */}
+            {/* Prayer rows */}
             {LOGGABLE_PRAYERS.map((session) => (
               <View key={session} style={styles.calendarRow}>
                 <View style={styles.calendarLabelCell}>
-                  <Text style={[styles.calendarSessionText, { color: theme.colors.text.secondary }]}>
-                    {session.slice(0, 3)}
+                  <Text
+                    style={[
+                      styles.calendarSessionText,
+                      { color: theme.colors.text.secondary, fontSize: 11 },
+                    ]}
+                  >
+                    {session}
                   </Text>
                 </View>
-                {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => (
-                  <View key={dayIndex} style={styles.calendarDotCell}>
-                    <View
-                      style={[
-                        styles.calendarDot,
-                        {
-                          backgroundColor: isLogged(dayIndex, session)
-                            ? theme.colors.accent
-                            : theme.colors.text.muted + '20',
-                        },
-                      ]}
-                    />
-                  </View>
-                ))}
+                {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => {
+                  const logged = isLogged(dayIndex, session);
+                  const isActive = logged;
+
+                  return (
+                    <View key={dayIndex} style={styles.calendarDotCell}>
+                      <FontAwesome6
+                        name={isActive ? 'circle-check' : 'circle'}
+                        size={20}
+                        color={isActive ? '#FF6B6B' : theme.colors.text.muted}
+                      />
+                    </View>
+                  );
+                })}
               </View>
             ))}
           </BlurView>
         </MotiView>
 
         {/* Streak Visualization */}
-        <MotiView
-          from={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={enter(600)}
-        >
+        <MotiView {...enter(8)}>
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
             style={[styles.streakCard, { backgroundColor: theme.colors.secondary }]}
           >
             <View style={styles.streakHeader}>
-              <FontAwesome6 name="fire" size={16} color="#FF6B6B" />
-              <Text style={[styles.streakTitle, { color: theme.colors.text.primary }]}>
-                Prayer Streak
-              </Text>
+              <FontAwesome6 name="fire-flame-curved" size={16} color="#FF6B6B" />
+              <Text style={[styles.streakTitle, { color: theme.colors.text.primary }]}>Prayer Streak</Text>
             </View>
 
-            {/* Flame Visualization */}
+            {/* 5 Flames */}
             <View style={styles.flamesContainer}>
-              {[...Array(7)].map((_, i) => {
+              {[...Array(5)].map((_, i) => {
                 const isActive = i < streakInfo.current;
                 return (
                   <View
                     key={i}
                     style={[
                       styles.flameWrapper,
-                      { backgroundColor: isActive ? '#FF6B6B15' : theme.colors.text.muted + '10' },
+                      { backgroundColor: isActive ? '#FF6B6B15' : isDarkMode ? '#333' : '#f5f5f5' },
                     ]}
                   >
                     <FontAwesome6
-                      name="fire"
+                      name="fire-flame-curved"
                       size={20}
                       color={isActive ? '#FF6B6B' : theme.colors.text.muted}
                     />

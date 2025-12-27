@@ -169,33 +169,41 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
     // ============================================================================
 
     const mainTextColor = useMemo(() => {
-      if (!isLoggable) return isDarkMode ? '#7A7A7A' : '#9A9A9A';
-      if (isCurrent) return accentText; // ✅ key fix
-      return '#121212'; // always strong readable text on light card bg
-    }, [isLoggable, isDarkMode, isCurrent, accentText]);
+      // Only gray out Syuruk text
+      if (name === 'Syuruk') return isDarkMode ? '#7A7A7A' : '#9A9A9A';
+      if (isCurrent) return accentText;
+      return '#121212';
+    }, [name, isDarkMode, isCurrent, accentText]);
 
     const countdownColor = useMemo(() => {
-      if (!isLoggable) return isDarkMode ? '#7A7A7A' : '#9A9A9A';
-      if (isCurrent) return accentText; // ✅ key fix
+      // Only gray out Syuruk countdown
+      if (name === 'Syuruk') return isDarkMode ? '#7A7A7A' : '#9A9A9A';
+      if (isCurrent) return accentText;
       return isDarkMode ? '#2A2A2A' : '#5A5A5A';
-    }, [isLoggable, isDarkMode, isCurrent, accentText]);
+    }, [name, isDarkMode, isCurrent, accentText]);
 
     // ============================================================================
     // CHECKBOX
     // ============================================================================
 
     const checkboxColor = useMemo(() => {
+      // Syuruk gets gray checkbox
+      if (name === 'Syuruk') return isDarkMode ? '#888888' : '#D0D0D0';
+
+      // Future prayers (not loggable yet) get gray checkbox
       if (!isLoggable) return isDarkMode ? '#888888' : '#D0D0D0';
 
-      // On current prayer (accent background) keep it contrast-safe
+      // Current prayer
       if (isCurrent) {
-        return isLogged ? accentText : withHexAlpha(accentText, 'CC'); // white/black w/ opacity
+        return isLogged ? accentText : withHexAlpha(accentText, 'CC');
       }
 
-      // Non-current
-      if (isLogged) return '#2EAF5D'; // green check
+      // Logged prayer gets green
+      if (isLogged) return '#2EAF5D';
+      
+      // Default state
       return isDarkMode ? '#666666' : '#666666';
-    }, [isLoggable, isDarkMode, isCurrent, isLogged, accentText]);
+    }, [name, isLoggable, isDarkMode, isCurrent, isLogged, accentText]);
 
     const renderCheckbox = () => {
       if (!showCheckbox) return null;
@@ -240,7 +248,7 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
             shadowOpacity: glassConfig.shadowOpacity,
             elevation: glassConfig.elevation,
           },
-          !isLoggable && styles.disabledContainer,
+          name === 'Syuruk' && styles.disabledContainer,
         ]}
       >
         {/* Prayer Name + Countdown */}

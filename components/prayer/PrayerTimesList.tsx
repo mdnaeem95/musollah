@@ -11,6 +11,7 @@ import { type PrayerLog, LocalPrayerName } from '../../api/services/prayer/types
 import { LOGGABLE_PRAYERS, PRAYER_ORDER } from '../../api/services/prayer/types/constants';
 import PrayerTimeItem from './PrayerTimeItem';
 import SignInModal from '../SignInModal';
+import { prayerQueryKeys } from '../../api/services/prayer/queries/query-keys';
 
 interface PrayerTimesListProps {
   prayerTimes: Record<LocalPrayerName, string> | null;
@@ -126,19 +127,19 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
   }, [prayerTimes, selectedDate]);
 
   // Handle prayer toggle
-  const handlePrayerToggle = useCallback((prayerName: LocalPrayerName) => {
+  const handlePrayerToggle = useCallback(async (prayerName: LocalPrayerName) => {
     // Check authentication
     if (!userId) {
       setShowSignInModal(true);
       return;
     }
 
-    // Skip Syuruk (sunrise) - should never happen due to isLoggable, but defensive
+    // Skip Syuruk (sunrise)
     if (prayerName === 'Syuruk') {
       return;
     }
 
-    // ✅ IMPROVED: Double-check loggability (defensive programming)
+    // Check if prayer is loggable
     if (!loggableStatus[prayerName]) {
       Toast.show({
         type: 'error',
@@ -149,9 +150,14 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
       return;
     }
 
-    const queryKey = ['prayerLogs', userId, dateStr];
+    // ✅ CRITICAL FIX: Use the SAME query key as the mutation
+    const queryKey = prayerQueryKeys.logs.daily(userId, dateStr);
+    
+    // Cancel any pending mutations
+    await queryClient.cancelQueries({ queryKey });
+    
+    // Read FRESH state from cache
     const currentLog = queryClient.getQueryData<PrayerLog>(queryKey);
-
     const currentPrayers: PrayersPayload = currentLog?.prayers ?? EMPTY_PRAYERS;
 
     const key = prayerName as keyof PrayersPayload;
@@ -160,6 +166,16 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
       [key]: !currentPrayers[key],
     };
 
+    console.log('🔄 Toggle prayer:', {
+      prayer: prayerName,
+      dateStr,
+      queryKey, // ✅ Log the actual key being used
+      before: currentPrayers,
+      after: updatedPrayers,
+      toggling: key,
+    });
+
+    // Call mutation with COMPLETE prayer state
     savePrayerLog({
       userId,
       date: dateStr,
