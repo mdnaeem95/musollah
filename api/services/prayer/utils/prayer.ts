@@ -22,25 +22,33 @@ import { LOGGABLE_PRAYERS, logger, PRAYER_ORDER } from '../types/constants';
  * 
  * Logic:
  * - Between Subuh-Syuruk: Subuh period
- * - Between Syuruk-Zohor: After Subuh (no prayer)
+ * - Between Syuruk-Zohor: Between prayers (returns null)
  * - Between Zohor-Asar: Zohor period
  * - Between Asar-Maghrib: Asar period
  * - Between Maghrib-Isyak: Maghrib period
- * - Between Isyak-Subuh (next day): Isyak period
+ * - Between Isyak-Midnight: Isyak period
+ * - Between Midnight-Subuh: Isyak period (from previous day)
  * 
  * @param prayerTimes - Normalized prayer times
- * @returns Current prayer name or null
+ * @returns Current prayer name or null if between prayers
  * 
  * @example
  * ```ts
  * const times = {
  *   subuh: '05:30',
+ *   syuruk: '07:00',
  *   zohor: '13:15',
  *   // ...
  * };
  * 
  * // If current time is 14:00
  * getCurrentPrayer(times) // 'Zohor'
+ * 
+ * // If current time is 10:00 (between Syuruk and Zohor)
+ * getCurrentPrayer(times) // null
+ * 
+ * // If current time is 02:00 (after midnight, before Subuh)
+ * getCurrentPrayer(times) // 'Isyak'
  * ```
  */
 export function getCurrentPrayer(
@@ -68,10 +76,13 @@ export function getCurrentPrayer(
   if (now >= zohorTime && now < asarTime) return 'Zohor';
   if (now >= asarTime && now < maghribTime) return 'Asar';
   if (now >= maghribTime && now < isakTime) return 'Maghrib';
-  if (now >= isakTime) return 'Isyak';
+  if (now >= isakTime) return 'Isyak'; // After Isyak until midnight
+  
+  // ✅ NEW: After midnight, before Subuh - still Isyak period from yesterday
+  if (now < subuhTime) return 'Isyak';
 
-  // Before Subuh (late night) - still Isyak period
-  return 'Isyak';
+  // ✅ NEW: Between Syuruk and Zohor - no current prayer
+  return null;
 }
 
 // ============================================================================

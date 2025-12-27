@@ -53,14 +53,43 @@ export const usePrayerTimesOptimized = (
 
     // Get background with fallback chain
     let backgroundImage;
+    
     if (currentPrayer && PRAYER_BACKGROUNDS[currentPrayer]) {
+      // Active prayer: use its background
       backgroundImage = PRAYER_BACKGROUNDS[currentPrayer][themeColor] || PRAYER_BACKGROUNDS[currentPrayer].green;
       logger.info('Background selected:', {
         prayer: currentPrayer,
         theme: themeColor,
         hasThemeBackground: !!PRAYER_BACKGROUNDS[currentPrayer][themeColor],
       });
+    } else if (!currentPrayer) {
+      // Between prayers: find most recent prayer (skip Syuruk)
+      const now = new Date();
+      const prayerOrder: LocalPrayerName[] = ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
+      
+      // Parse prayer times and find which have passed
+      const passedPrayers = prayerOrder.filter(prayer => {
+        const prayerTimeStr = prayers[prayer.toLowerCase() as keyof NormalizedPrayerTimes];
+        const [hours, minutes] = prayerTimeStr.split(':').map(Number);
+        const prayerTime = new Date();
+        prayerTime.setHours(hours, minutes, 0, 0);
+        return now >= prayerTime;
+      });
+      
+      // Use the most recent prayer's background, or Isyak if before Subuh
+      const mostRecentPrayer = passedPrayers.length > 0 
+        ? passedPrayers[passedPrayers.length - 1]
+        : 'Isyak'; // Before Subuh = still Isyak period
+      
+      backgroundImage = PRAYER_BACKGROUNDS[mostRecentPrayer][themeColor] || PRAYER_BACKGROUNDS[mostRecentPrayer].green;
+      
+      logger.info('Between prayers - using most recent prayer background:', {
+        mostRecentPrayer,
+        theme: themeColor,
+        currentTime: now.toLocaleTimeString('en-SG'),
+      });
     } else {
+      // Fallback (shouldn't happen)
       backgroundImage = PRAYER_BACKGROUNDS.Subuh.green;
       logger.warn('Using fallback background', {
         currentPrayer,
