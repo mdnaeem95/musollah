@@ -47,10 +47,18 @@ export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null)
       return;
     }
 
+    // ✅ FIX: Set ref IMMEDIATELY to prevent race condition
+    // This prevents duplicate calls if hook runs twice before async completes
+    lastScheduledRef.current = scheduleKey;
+    console.log('🔒 Locked scheduling with key:', scheduleKey);
+
     let mounted = true;
 
     const scheduleNotifications = async () => {
-      if (!mounted) return;
+      if (!mounted) {
+        console.log('⏭️ Component unmounted, skipping schedule');
+        return;
+      }
 
       try {
         console.log('🗑️ Cancelling existing notifications...');
@@ -62,33 +70,22 @@ export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null)
             ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'].includes(name)
         );
         
-        // ✅ Transform NormalizedPrayerTimes to format notification service expects
-        const prayerTimesForNotification = {
-          date: prayerData.date,
-          hijriDate: undefined,
-          prayers: {
-            Subuh: prayerData.subuh,
-            Syuruk: prayerData.syuruk,
-            Zohor: prayerData.zohor,
-            Asar: prayerData.asar,
-            Maghrib: prayerData.maghrib,
-            Isyak: prayerData.isyak,
-          }
-        };
-        
         console.log('📅 Scheduling notifications for next 5 days');
+        // ✅ prayerData is already in NormalizedPrayerTimes format (lowercase keys)
         await prayerNotificationService.schedulePrayerNotifications(
-          prayerTimesForNotification as any, // ✅ Cast to avoid type conflict
+          prayerData, // ✅ Pass directly - already has lowercase keys (subuh, zohor, etc.)
           reminderInterval,
           validMutedPrayers as any,
           selectedAdhan
         );
 
         if (mounted) {
-          lastScheduledRef.current = scheduleKey;
-          console.log('✅ Notifications scheduled');
+          console.log('✅ Notifications scheduled successfully');
         }
       } catch (error) {
+        // ✅ Reset ref on error so retry is possible
+        lastScheduledRef.current = null;
+        
         if (mounted) {
           console.error('❌ Failed to schedule notifications:', error);
         }

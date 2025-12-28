@@ -20,6 +20,7 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../context/ThemeContext';
+import { enter } from '../../utils';
 
 interface CategoryPillProps {
   category: string;
@@ -48,11 +49,7 @@ const CategoryPill: React.FC<CategoryPillProps> = ({
     <MotiView
       from={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{
-        type: 'spring',
-        delay: index * 40,
-        damping: 15,
-      }}
+      transition={enter(0)}
     >
       <TouchableOpacity
         onPress={handlePress}
