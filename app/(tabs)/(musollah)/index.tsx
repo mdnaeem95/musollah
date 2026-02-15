@@ -628,29 +628,6 @@ export default function MusollahScreen() {
   // Key extractor
   const keyExtractor = useCallback((item: LocationUnion) => item.id, []);
 
-  // Show loading if fetching location
-  if (locationLoading && !userLocation) {
-    return (
-      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.accent} />
-          <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
-            Getting your location...
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
-  // Show permission prompt if no location
-  if (!userLocation && !locationLoading) {
-    return (
-      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
-        <LocationPermissionPrompt onRequestPermission={fetchLocation} theme={theme} />
-      </View>
-    );
-  }
-
   // Main render
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
@@ -713,6 +690,20 @@ export default function MusollahScreen() {
                 isDarkMode={isDarkMode}
               />
             </View>
+
+            {/* Location Banner - shown when using default Singapore location */}
+            {!userLocation && !locationLoading && (
+              <TouchableOpacity
+                style={[styles.locationBanner, { backgroundColor: theme.colors.accent }]}
+                onPress={fetchLocation}
+                activeOpacity={0.8}
+              >
+                <FontAwesome6 name="location-crosshairs" size={14} color="#fff" />
+                <Text style={styles.locationBannerText}>
+                  Showing central Singapore. Tap to enable location.
+                </Text>
+              </TouchableOpacity>
+            )}
 
             {/* Stats */}
             <StatsHeader
@@ -790,6 +781,24 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     flex: 1,
+  },
+
+  // Location Banner
+  locationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginHorizontal: SPACING.xl,
+    marginBottom: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: 10,
+  },
+  locationBannerText: {
+    flex: 1,
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 12,
+    color: '#fff',
   },
 
   // Search Overlay
