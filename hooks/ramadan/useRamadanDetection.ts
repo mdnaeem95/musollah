@@ -9,7 +9,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { format, addDays } from 'date-fns';
+import { format, addDays, differenceInDays, parseISO, isWithinInterval } from 'date-fns';
 import { convertToIslamicDate } from '../../api/services/prayer/api/aladhan';
 import { DATE_FORMATS } from '../../api/services/prayer/types/constants';
 import { ramadanDetectionKeys } from '../../api/services/ramadan/queries/query-keys';
@@ -19,6 +19,7 @@ import {
   APPROACHING_THRESHOLD_DAYS,
   RAMADAN_STALE_TIME,
   RAMADAN_CACHE_TTL,
+  MUIS_RAMADAN_DATES,
 } from '../../api/services/ramadan/types/constants';
 import type { RamadanDetectionResult } from '../../api/services/ramadan/types';
 import { useRamadanMode, usePreferencesStore } from '../../stores/userPreferencesStore';
@@ -34,53 +35,74 @@ async function detectRamadan(): Promise<RamadanDetectionResult> {
   const startTime = performance.now();
 
   try {
-    const today = format(new Date(), DATE_FORMATS.API);
+    const now = new Date();
+    const today = format(now, DATE_FORMATS.API);
     logger.debug('Detecting Ramadan status', { gregorianDate: today });
 
     const result = await convertToIslamicDate(today);
 
-    // Parse Hijri month from the formatted string
-    const hijriParts = result.hijri.formatted.split(' ');
     const hijriDay = parseInt(result.hijri.day, 10);
     const hijriMonthName = result.hijri.month;
     const hijriYear = parseInt(result.hijri.year, 10);
-
-    // Determine Hijri month number from name
     const hijriMonthNumber = getHijriMonthNumber(hijriMonthName);
 
-    const isRamadan = hijriMonthNumber === RAMADAN_HIJRI_MONTH;
-    const isShaban = hijriMonthNumber === SHABAN_HIJRI_MONTH;
-    const isApproaching =
-      isShaban && hijriDay >= (30 - APPROACHING_THRESHOLD_DAYS);
+    // Check for MUIS override dates (Aladhan can be off by 1 day vs MUIS)
+    // Look at current and adjacent Hijri years to handle edge cases
+    const muisOverride = MUIS_RAMADAN_DATES[hijriYear] ?? MUIS_RAMADAN_DATES[hijriYear + 1];
 
-    // Calculate days until Ramadan
-    let daysUntilRamadan = -1;
-    if (isRamadan) {
-      daysUntilRamadan = 0;
-    } else if (isApproaching) {
-      daysUntilRamadan = 30 - hijriDay; // approximate
+    let isRamadan: boolean;
+    let isApproaching: boolean;
+    let currentDay: number;
+    let daysUntilRamadan: number;
+    let startDate: string;
+    let endDate: string;
+    let effectiveMonthName = hijriMonthName;
+
+    if (muisOverride) {
+      // Use MUIS official dates instead of Aladhan calculation
+      const muisStart = parseISO(muisOverride.start);
+      const muisEnd = parseISO(muisOverride.end);
+
+      isRamadan = isWithinInterval(now, { start: muisStart, end: muisEnd });
+      currentDay = isRamadan ? differenceInDays(now, muisStart) + 1 : 0;
+      startDate = isRamadan ? muisOverride.start : '';
+      endDate = isRamadan ? muisOverride.end : '';
+
+      // Check approaching: within threshold days before MUIS start
+      const daysToStart = differenceInDays(muisStart, now);
+      isApproaching = !isRamadan && daysToStart > 0 && daysToStart <= APPROACHING_THRESHOLD_DAYS;
+      daysUntilRamadan = isRamadan ? 0 : (daysToStart > 0 ? daysToStart : -1);
+
+      if (isRamadan) effectiveMonthName = 'Ramadan';
+
+      logger.info('Using MUIS override dates for Ramadan detection', {
+        muisStart: muisOverride.start,
+        muisEnd: muisOverride.end,
+        isRamadan,
+        currentDay,
+        aladhanSays: hijriMonthName,
+      });
+    } else {
+      // Fallback to Aladhan API result
+      isRamadan = hijriMonthNumber === RAMADAN_HIJRI_MONTH;
+      const isShaban = hijriMonthNumber === SHABAN_HIJRI_MONTH;
+      isApproaching = isShaban && hijriDay >= (30 - APPROACHING_THRESHOLD_DAYS);
+      currentDay = isRamadan ? hijriDay : 0;
+      daysUntilRamadan = isRamadan ? 0 : (isApproaching ? 30 - hijriDay : -1);
+      startDate = isRamadan ? estimateRamadanStart(hijriDay) : '';
+      endDate = isRamadan ? estimateRamadanEnd(hijriDay) : '';
     }
-
-    // Estimate Ramadan start/end dates
-    // For the current or upcoming Ramadan
-    const ramadanYear = isRamadan ? hijriYear : hijriYear;
-    const startDate = isRamadan
-      ? estimateRamadanStart(hijriDay)
-      : '';
-    const endDate = isRamadan
-      ? estimateRamadanEnd(hijriDay)
-      : '';
 
     const detection: RamadanDetectionResult = {
       isRamadan,
       isApproaching,
-      currentDay: isRamadan ? hijriDay : 0,
+      currentDay,
       daysUntilRamadan,
-      ramadanYear,
+      ramadanYear: hijriYear,
       startDate,
       endDate,
-      hijriMonth: hijriMonthNumber,
-      hijriMonthName,
+      hijriMonth: isRamadan ? RAMADAN_HIJRI_MONTH : hijriMonthNumber,
+      hijriMonthName: effectiveMonthName,
     };
 
     const duration = performance.now() - startTime;
@@ -88,8 +110,9 @@ async function detectRamadan(): Promise<RamadanDetectionResult> {
       isRamadan,
       isApproaching,
       currentDay: detection.currentDay,
-      hijriMonth: hijriMonthName,
+      hijriMonth: effectiveMonthName,
       hijriYear,
+      usedMuisOverride: !!muisOverride,
       duration: `${duration.toFixed(0)}ms`,
     });
 
