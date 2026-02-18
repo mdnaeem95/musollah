@@ -19,6 +19,20 @@ export const RAMADAN_HIJRI_MONTH = 9;
 /** Hijri month number for Sha'ban (month before Ramadan) */
 export const SHABAN_HIJRI_MONTH = 8;
 
+/**
+ * MUIS Singapore official Ramadan dates override.
+ *
+ * The Aladhan API uses astronomical calculation (Umm al-Qura calendar) which
+ * can differ by 1 day from MUIS's official determination based on moon sighting.
+ * For Singapore users we follow MUIS. Update this table each year when MUIS
+ * announces the dates.
+ *
+ * Key: Hijri year. Values: Gregorian start/end dates (yyyy-MM-dd).
+ */
+export const MUIS_RAMADAN_DATES: Record<number, { start: string; end: string }> = {
+  1447: { start: '2026-02-19', end: '2026-03-20' },
+};
+
 /** Days before Ramadan to show approaching prompt */
 export const APPROACHING_THRESHOLD_DAYS = 3;
 
