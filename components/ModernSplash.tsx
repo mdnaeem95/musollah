@@ -10,6 +10,9 @@ import { BlurView } from 'expo-blur';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, withSequence, Easing, interpolate, Extrapolation, runOnJS } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import LOGO from '../assets/rihlahLogo.png';
+import { createLogger } from '../services/logging/logger';
+
+const logger = createLogger('Splash');
 
 interface ModernSplashProps {
   progress: number;
@@ -38,7 +41,7 @@ export const ModernSplash: React.FC<ModernSplashProps> = ({
 
   // Entrance animation
   useEffect(() => {
-    console.log('🎨 Starting entrance animation');
+    logger.debug('Starting entrance animation');
     logoScale.value = withTiming(1, {
       duration: 800,
       easing: Easing.out(Easing.cubic),
@@ -64,7 +67,7 @@ export const ModernSplash: React.FC<ModernSplashProps> = ({
   // Exit animation (triggers when progress reaches 100)
   useEffect(() => {
     if (progress >= 100) {
-      console.log('🚀 Progress 100% - Starting exit animation');
+      logger.info('Progress 100% - Starting exit animation');
       
       slideY.value = withTiming(
         -1000,
@@ -73,16 +76,9 @@ export const ModernSplash: React.FC<ModernSplashProps> = ({
           easing: Easing.in(Easing.cubic),
         },
         (finished) => {
-          console.log('✨ Exit animation finished:', { finished, hasCallback: !!onAnimationComplete });
-          
-          if (finished && onAnimationComplete) {
+          // Note: logger cannot be used inside worklet callbacks (UI thread)
+          if (onAnimationComplete) {
             runOnJS(onAnimationComplete)();
-          } else if (!finished) {
-            console.warn('⚠️ Animation did not finish naturally');
-            // Call callback anyway to prevent hanging
-            if (onAnimationComplete) {
-              runOnJS(onAnimationComplete)();
-            }
           }
         }
       );

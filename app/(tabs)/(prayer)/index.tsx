@@ -14,6 +14,9 @@ import { PrayerDateSelector } from '../../../components/prayer/PrayerDateSelecto
 import { PrayerErrorFallback } from '../../../components/prayer/PrayerErrorFallback';
 import { LocationDisplay } from '../../../components/prayer/LocationDisplay';
 
+// Ramadan
+import RamadanPromptBanner from '../../../components/ramadan/RamadanPromptBanner';
+
 // Hooks & Services
 import { usePrayerTimesOptimized } from '../../../hooks/prayer/usePrayerTimesOptimized';
 import { usePrayerNotifications } from '../../../hooks/prayer/usePrayerNotifications';
@@ -21,11 +24,14 @@ import { usePrayerDateNavigation } from '../../../hooks/prayer/usePrayerDateNavi
 import { usePrayerModals } from '../../../hooks/prayer/usePrayerModals';
 import { usePrayerActions } from '../../../hooks/prayer/usePrayerActions';
 import { analyticsService } from '../../../services/analytics/service';
+import { createLogger } from '../../../services/logging/logger';
 import { useLocationStore } from '../../../stores/useLocationStore';
 import { useCoordinates } from '../../../stores/useLocationStore';
 
 // API
 import { usePrayerTimesByDate, useTodayIslamicDate, useTodayPrayerTimes, formatIslamicDate } from '../../../api/services/prayer';
+
+const logger = createLogger('Prayer Tab');
 
 const PrayerTab: React.FC = () => {
   const { theme } = useTheme();
@@ -82,7 +88,7 @@ const PrayerTab: React.FC = () => {
   const renderContent = () => {
     // Show data if available
     if (prayerData) {
-      console.log('✅ Rendering prayer data for:', dateNavigation.formattedDate);
+      logger.info('Rendering prayer data for:', dateNavigation.formattedDate);
       
       // Convert flat structure to Record for PrayerTimesList
       const prayerTimesRecord = {
@@ -111,13 +117,13 @@ const PrayerTab: React.FC = () => {
 
     // Show skeleton if loading
     if (isLoading) {
-      console.log('🔄 Loading initial data...');
+      logger.debug('Loading initial data...');
       return <PrayerTimesSkeleton key="skeleton" />;
     }
 
     // Show error if we have error AND no data
     if (error) {
-      console.log('❌ Error with no cached data');
+      logger.error('Error with no cached data');
       return (
         <View style={styles.contentContainer}>
           <PrayerErrorFallback
@@ -130,7 +136,7 @@ const PrayerTab: React.FC = () => {
     }
 
     // Fallback
-    console.warn('⚠️ No data, no loading, no error - unexpected state');
+    logger.warn('No data, no loading, no error - unexpected state');
     return <PrayerTimesSkeleton key="skeleton-fallback" />;
   };
 
@@ -144,7 +150,7 @@ const PrayerTab: React.FC = () => {
         />
       )}
       onError={(error: Error, stackTrace: string) => {
-        console.error('Prayer Tab Error:', error, stackTrace);
+        logger.error('Prayer Tab Error:', error);
         analyticsService.logError(error, { screen: 'PrayerTab' });
       }}
     >
@@ -168,7 +174,10 @@ const PrayerTab: React.FC = () => {
             <CustomClock />
             <LocationDisplay />
           </View>
-          
+
+          {/* Ramadan approaching banner */}
+          <RamadanPromptBanner />
+
           {/* Prayer times content */}
           {renderContent()}
         </View>

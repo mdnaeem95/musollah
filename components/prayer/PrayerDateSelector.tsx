@@ -4,6 +4,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { MotiView } from 'moti';
 import { enter, scaleSize } from '../../utils';
+import { useTheme } from '../../context/ThemeContext';
 
 interface PrayerDateSelectorProps {
   selectedDate: Date;
@@ -26,6 +27,9 @@ export const PrayerDateSelector: React.FC<PrayerDateSelectorProps> = memo(({
   canGoPrev,
   hijriDate,
 }) => {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <MotiView
       from={{ opacity: 0, scale: 0.95 }}
@@ -43,10 +47,10 @@ export const PrayerDateSelector: React.FC<PrayerDateSelectorProps> = memo(({
           accessibilityLabel="Previous day"
           accessibilityRole="button"
         >
-          <FontAwesome6 
-            name="chevron-left" 
-            size={16} 
-            color={canGoPrev ? 'black' : '#ccc'} 
+          <FontAwesome6
+            name="chevron-left"
+            size={16}
+            color={canGoPrev ? theme.colors.text.primary : theme.colors.text.muted}
           />
         </TouchableOpacity>
 
@@ -62,10 +66,10 @@ export const PrayerDateSelector: React.FC<PrayerDateSelectorProps> = memo(({
           accessibilityLabel="Next day"
           accessibilityRole="button"
         >
-          <FontAwesome6 
-            name="chevron-right" 
-            size={16} 
-            color={canGoNext ? 'black' : '#ccc'} 
+          <FontAwesome6
+            name="chevron-right"
+            size={16}
+            color={canGoNext ? theme.colors.text.primary : theme.colors.text.muted}
           />
         </TouchableOpacity>
       </View>
@@ -82,7 +86,7 @@ export const PrayerDateSelector: React.FC<PrayerDateSelectorProps> = memo(({
 
 PrayerDateSelector.displayName = 'PrayerDateSelector';
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     alignItems: 'center',
     marginBottom: Platform.OS === 'android' ? 5 : 20,
@@ -99,14 +103,14 @@ const styles = StyleSheet.create({
   dateText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: scaleSize(18),
-    color: 'black',
+    color: theme.colors.text.primary,
     textAlign: 'center',
-    minWidth: 180, // Prevent layout shift
+    minWidth: 180,
   },
   hijriDateText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: scaleSize(14),
-    color: 'black',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginTop: Platform.OS === 'android' ? 5 : -10,
   },

@@ -22,6 +22,7 @@ import * as Location from 'expo-location';
 import Toast from 'react-native-toast-message';
 
 import { useTheme } from '../../context/ThemeContext';
+import { createLogger } from '../../services/logging/logger';
 import { useLocationStore } from '../../stores/useLocationStore';
 import { useInvalidatePrayerTimes } from '../../api/services/prayer';
 
@@ -46,7 +47,9 @@ type Step = {
 // COMPONENT
 // ============================================================================
 
-const PrayerLocationModal: React.FC<PrayerLocationModalProps> = ({ 
+const logger = createLogger('Location');
+
+const PrayerLocationModal: React.FC<PrayerLocationModalProps> = ({
   isVisible, 
   onClose 
 }) => {
@@ -178,7 +181,7 @@ const PrayerLocationModal: React.FC<PrayerLocationModalProps> = ({
       onClose();
       
     } catch (error) {
-      console.error('Location fetch error:', error);
+      logger.error('Location fetch error:', error as Error);
       
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       

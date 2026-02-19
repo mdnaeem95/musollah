@@ -12,6 +12,9 @@ import * as Progress from 'react-native-progress';
 import { useQuranStore } from '../../stores/useQuranStore';
 import { defaultStorage } from '../../api/client/storage';
 import { useTheme } from '../../context/ThemeContext';
+import { createLogger } from '../../services/logging/logger';
+
+const logger = createLogger('Recitation Progress');
 
 // ============================================================================
 // CONSTANTS
@@ -53,7 +56,7 @@ const RecitationProgress: React.FC = () => {
             setOverallSurahsRead(0);
           }
         } catch (error) {
-          console.error('Error loading surah progress:', error);
+          logger.error('Error loading surah progress', error as Error);
           setOverallSurahsRead(0);
         }
       };

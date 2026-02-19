@@ -2,6 +2,9 @@
 import { Platform } from 'react-native';
 import SharedGroupPreferences from 'react-native-shared-group-preferences';
 import type { NormalizedPrayerTimes } from '../api/services/prayer/types';
+import { createLogger } from '../services/logging/logger';
+
+const logger = createLogger('Widget');
 
 const APP_GROUP_IDENTIFIER = 'group.com.rihlah.prayerTimesWidget';
 
@@ -21,12 +24,12 @@ export interface DailyPrayerData extends NormalizedPrayerTimes {
  */
 export async function updatePrayerTimesWidget(prayerTimesData: DailyPrayerData[]) {
   if (Platform.OS !== 'ios') {
-    console.log('⏭️ Skipping widget update (not iOS)');
+    logger.debug('Skipping widget update (not iOS)');
     return;
   }
   
   if (!prayerTimesData || prayerTimesData.length === 0) {
-    console.log('⏭️ Skipping widget update (no data)');
+    logger.debug('Skipping widget update (no data)');
     return;
   }
   
@@ -45,7 +48,7 @@ export async function updatePrayerTimesWidget(prayerTimesData: DailyPrayerData[]
         firebaseDate = day.date;
       } else {
         // Fallback
-        console.warn('⚠️ Unknown date format:', day.date);
+        logger.warn('Unknown date format', { date: day.date });
         firebaseDate = day.date;
       }
       
@@ -65,7 +68,7 @@ export async function updatePrayerTimesWidget(prayerTimesData: DailyPrayerData[]
     
     // Debug: Log first entry to verify format
     if (widgetData.length > 0) {
-      console.log('📊 Widget data sample:', {
+      logger.debug('Widget data sample', {
         date: widgetData[0].date,
         subuh: widgetData[0].time.subuh,
       });
@@ -87,7 +90,7 @@ export async function updatePrayerTimesWidget(prayerTimesData: DailyPrayerData[]
       APP_GROUP_IDENTIFIER
     );
     
-    console.log('✅ Widget data updated:', {
+    logger.info('Widget data updated', {
       count: widgetData.length,
       firstDate: widgetData[0]?.date,
       lastDate: widgetData[widgetData.length - 1]?.date,
@@ -96,7 +99,7 @@ export async function updatePrayerTimesWidget(prayerTimesData: DailyPrayerData[]
     // Note: Widget will auto-reload based on its timeline configuration
     
   } catch (error) {
-    console.error('❌ Failed to update widget:', error);
+    logger.error('Failed to update widget', error as Error);
     // Don't throw - widget failure shouldn't crash app
   }
 }
@@ -105,7 +108,7 @@ export async function updatePrayerTimesWidget(prayerTimesData: DailyPrayerData[]
  * Manually trigger widget update (for debug/testing)
  */
 export async function forceWidgetUpdate(prayerTimesData: DailyPrayerData[]) {
-  console.log('🔄 Force updating widget...');
+  logger.info('Force updating widget...');
   await updatePrayerTimesWidget(prayerTimesData);
 }
 
@@ -134,7 +137,7 @@ export async function getWidgetStatus() {
       lastUpdated: timestamp,
     };
   } catch (error) {
-    console.warn('⚠️ Failed to get widget status:', error);
+    logger.warn('Failed to get widget status', { error: (error as Error)?.message });
     return { hasData: false, lastUpdated: null };
   }
 }

@@ -17,6 +17,9 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../../context/ThemeContext';
 import ThemedButton from '../../../../components/ThemedButton';
 import { enter } from '../../../../utils';
+import { createLogger } from '../../../../services/logging/logger';
+
+const logger = createLogger('Support');
 
 // ============================================================================
 // MAIN COMPONENT
@@ -81,7 +84,7 @@ const SupportPage = () => {
       }, 2000);
 
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+      logger.error('Error submitting feedback', error as Error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'There was an issue submitting your feedback. Please try again.');
     } finally {

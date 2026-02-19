@@ -19,6 +19,9 @@ import {
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import { Restaurant } from '../../api/services/food';
+import { createLogger } from '../../services/logging/logger';
+
+const logger = createLogger('Restaurant Map');
 
 // ============================================================================
 // CONSTANTS
@@ -132,9 +135,7 @@ const RestaurantMap: React.FC<Props> = ({
       .filter((r): r is Restaurant & { _resolvedCoords: Coordinates } => r !== null);
 
     if (__DEV__ && valid.length !== restaurants.length) {
-      console.log(
-        `📍 RestaurantMap: ${valid.length}/${restaurants.length} restaurants have valid coordinates`
-      );
+      logger.debug('Restaurants with valid coordinates', { valid: valid.length, total: restaurants.length });
     }
 
     return valid;

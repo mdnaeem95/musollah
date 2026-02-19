@@ -1,6 +1,9 @@
 import React, { useRef } from 'react';
 import { View, Platform, StyleSheet } from 'react-native';
 import { BannerAd, BannerAdSize, TestIds, useForeground } from 'react-native-google-mobile-ads';
+import { createLogger } from '../services/logging/logger';
+
+const logger = createLogger('Ads');
 
 const adUnitId = __DEV__ ? TestIds.BANNER : 'ca-app-pub-3113906121142395/6121333051';
 
@@ -11,7 +14,7 @@ const BannerAdComponent = () => {
   useForeground(() => {
     if (Platform.OS === 'ios') {
       bannerRef.current?.load();
-      console.log('Ad reloaded on foreground');
+      logger.debug('Ad reloaded on foreground');
     }
   });
 
@@ -24,8 +27,8 @@ const BannerAdComponent = () => {
         requestOptions={{
           requestNonPersonalizedAdsOnly: true, // GDPR-compliant ads
         }}
-        onAdLoaded={() => console.log('Ad Loaded')}
-        onAdFailedToLoad={(error) => console.error('Ad Failed to Load', error)}
+        onAdLoaded={() => logger.info('Ad loaded')}
+        onAdFailedToLoad={(error) => logger.error('Ad failed to load', error)}
       />
     </View>
   );

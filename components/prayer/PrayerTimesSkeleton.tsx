@@ -1,11 +1,14 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions, Platform } from 'react-native';
 import { MotiView } from 'moti';
+import { useTheme } from '../../context/ThemeContext';
 
 const screenWidth = Dimensions.get('window').width;
 const containerWidth = screenWidth * 0.75;
 
 const PrayerTimesSkeleton = () => {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const skeletons = Array.from({ length: 6 }); // 6 prayer slots
 
   return (
@@ -28,7 +31,7 @@ const PrayerTimesSkeleton = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     marginTop: 20,
     gap: 15,
@@ -38,7 +41,7 @@ const styles = StyleSheet.create({
     width: containerWidth,
     minHeight: Platform.OS === 'android' ? 45 : 54,
     borderRadius: 15,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: theme.colors.muted,
   },
 });
 

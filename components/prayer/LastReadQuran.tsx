@@ -3,7 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
+import { createLogger } from '../../services/logging/logger';
 import { scaleSize } from '../../utils';
+
+const logger = createLogger('Last Read Quran');
 
 const LastReadQuran = () => {
   const { theme } = useTheme();
@@ -20,7 +23,7 @@ const LastReadQuran = () => {
           setLastReadAyah(JSON.parse(lastRead));
         }
       } catch (error) {
-        console.error('Error fetching last read Quran progress:', error);
+        logger.error('Error fetching last read Quran progress:', error as Error);
       }
     };
     

@@ -4,6 +4,9 @@ import { format } from 'date-fns';
 import { usePreferencesStore } from '../../stores/userPreferencesStore';
 import { NormalizedPrayerTimes, LoggablePrayerName } from '../../api/services/prayer/types/index';
 import { prayerNotificationService } from '../../services/notifications/prayerNotificationService';
+import { createLogger } from '../../services/logging/logger';
+
+const logger = createLogger('Prayer Notifications');
 
 /**
  * Hook for scheduling prayer notifications
@@ -18,7 +21,7 @@ export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null)
 
   useEffect(() => {
     if (!prayerData) {
-      console.log('⏭️ No prayer data, skipping notifications');
+      logger.debug('No prayer data, skipping notifications');
       return;
     }
 
@@ -27,15 +30,15 @@ export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null)
     const selectedDate = prayerData.date;
     
     if (selectedDate < today) {
-      console.log(`⏭️ Skipping notification for past date: ${selectedDate}`);
+      logger.debug(`Skipping notification for past date: ${selectedDate}`);
       return;
     }
 
-    console.log(`📅 Scheduling notifications for ${selectedDate}`);
+    logger.info(`Scheduling notifications for ${selectedDate}`);
 
     // Skip if all muted
     if (mutedNotifications.length === 5) {
-      console.log('🔇 All notifications muted');
+      logger.debug('All notifications muted');
       return;
     }
 
@@ -43,25 +46,25 @@ export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null)
     const scheduleKey = `${prayerData.date}_${reminderInterval}_${selectedAdhan}_${mutedNotifications.sort().join(',')}`;
     
     if (lastScheduledRef.current === scheduleKey) {
-      console.log('✅ Notifications already scheduled');
+      logger.debug('Notifications already scheduled');
       return;
     }
 
     // ✅ FIX: Set ref IMMEDIATELY to prevent race condition
     // This prevents duplicate calls if hook runs twice before async completes
     lastScheduledRef.current = scheduleKey;
-    console.log('🔒 Locked scheduling with key:', scheduleKey);
+    logger.debug('Locked scheduling with key', { scheduleKey });
 
     let mounted = true;
 
     const scheduleNotifications = async () => {
       if (!mounted) {
-        console.log('⏭️ Component unmounted, skipping schedule');
+        logger.debug('Component unmounted, skipping schedule');
         return;
       }
 
       try {
-        console.log('🗑️ Cancelling existing notifications...');
+        logger.debug('Cancelling existing notifications...');
         await prayerNotificationService.cancelAllNotifications();
         
         // Validate muted prayers
@@ -70,7 +73,7 @@ export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null)
             ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'].includes(name)
         );
         
-        console.log('📅 Scheduling notifications for next 5 days');
+        logger.info('Scheduling notifications for next 5 days');
         // ✅ prayerData is already in NormalizedPrayerTimes format (lowercase keys)
         await prayerNotificationService.schedulePrayerNotifications(
           prayerData, // ✅ Pass directly - already has lowercase keys (subuh, zohor, etc.)
@@ -80,14 +83,14 @@ export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null)
         );
 
         if (mounted) {
-          console.log('✅ Notifications scheduled successfully');
+          logger.success('Notifications scheduled successfully');
         }
       } catch (error) {
         // ✅ Reset ref on error so retry is possible
         lastScheduledRef.current = null;
         
         if (mounted) {
-          console.error('❌ Failed to schedule notifications:', error);
+          logger.error('Failed to schedule notifications', error as Error);
         }
       }
     };
@@ -99,7 +102,7 @@ export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null)
       if (mounted && nextAppState === 'active') {
         const currentToday = format(new Date(), 'yyyy-MM-dd');
         if (prayerData.date >= currentToday) {
-          console.log('📱 App resumed, re-scheduling');
+          logger.info('App resumed, re-scheduling');
           scheduleNotifications();
         }
       }

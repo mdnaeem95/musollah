@@ -42,7 +42,6 @@ const UNIT_OPTIONS = [
 export default function UnitScreen() {
   const { theme, isDarkMode } = useTheme();
   const router = useRouter();
-  //@ts-ignore
   const { setPlan } = usePlan();
 
   const handleSelect = (planType: 'ayahs' | 'surahs' | 'juz') => {

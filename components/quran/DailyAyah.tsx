@@ -18,6 +18,9 @@ import { useSurahWithTranslation } from '../../api/services/quran';
 import { defaultStorage } from '../../api/client/storage';
 import { getRandomAyahByMood } from '../../utils';
 import { useTheme } from '../../context/ThemeContext';
+import { createLogger } from '../../services/logging/logger';
+
+const logger = createLogger('Daily Ayah');
 
 // ============================================================================
 // CONSTANTS
@@ -74,7 +77,7 @@ const setStoredMood = (mood: Mood) => {
   try {
     defaultStorage.setString(MOOD_KEY, mood);
   } catch (error) {
-    console.error('Error storing mood:', error);
+    logger.error('Error storing mood', error as Error);
   }
 };
 
@@ -95,7 +98,7 @@ const getCachedAyahSelection = (mood: Mood): CachedAyahSelection | null => {
     
     return null;
   } catch (error) {
-    console.error('Error reading cached ayah selection:', error);
+    logger.error('Error reading cached ayah selection', error as Error);
     return null;
   }
 };
@@ -110,7 +113,7 @@ const setCachedAyahSelection = (mood: Mood, surahNumber: number, ayahIndex: numb
     };
     defaultStorage.setString(cacheKey, JSON.stringify(selection));
   } catch (error) {
-    console.error('Error caching ayah selection:', error);
+    logger.error('Error caching ayah selection', error as Error);
   }
 };
 
@@ -141,7 +144,7 @@ const DailyAyah: React.FC = () => {
       const cached = getCachedAyahSelection(mood);
       
       if (cached) {
-        console.log('📖 Using cached ayah selection:', cached);
+        logger.debug('Using cached ayah selection', cached);
         setSelectedAyah({
           surahNumber: cached.surahNumber,
           ayahIndex: cached.ayahIndex,
@@ -150,7 +153,7 @@ const DailyAyah: React.FC = () => {
       }
 
       // Generate new random ayah
-      console.log('🎲 Generating new random ayah for mood:', mood);
+      logger.debug('Generating new random ayah for mood', { mood });
       const randomAyah = getRandomAyahByMood(mood);
       
       // Convert to 0-based index for API
@@ -190,7 +193,7 @@ const DailyAyah: React.FC = () => {
 
     // Validate index
     if (ayahIndex < 0 || ayahIndex >= arabic.ayahs.length) {
-      console.error('Invalid ayah index:', ayahIndex);
+      logger.error('Invalid ayah index', new Error(`Invalid ayah index: ${ayahIndex}`));
       return null;
     }
 

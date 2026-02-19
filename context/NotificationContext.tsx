@@ -14,6 +14,9 @@ import Toast from "react-native-toast-message";
 import { registerForPushNotificationsAsync } from "../services/notifications/registerForPushNotificationsAsync";
 import { useAuth } from "./AuthContext";
 import { Notification as AppNotification } from "../utils/types";
+import { createLogger } from '../services/logging/logger';
+
+const logger = createLogger('Notifications');
 
 // ✅ Modular Firestore (RN Firebase v22+ style)
 import {
@@ -91,13 +94,13 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notif) => {
-        console.log("📥 Notification received (foreground):", notif);
+        logger.info("Notification received (foreground)");
         setNotification(notif);
       });
 
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log("📨 Notification response received:", response);
+        logger.info("Notification response received");
       });
 
     return () => {
@@ -114,9 +117,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       try {
         const userRef = doc(db, "users", user.uid);
         await updateDoc(userRef, { expoPushToken });
-        console.log("✅ Saved push token to Firestore");
+        logger.info("Saved push token to Firestore");
       } catch (err) {
-        console.error("❌ Failed to save push token:", err);
+        logger.error("Failed to save push token", err as Error);
       }
     };
 
@@ -157,7 +160,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         }
       },
       (err) => {
-        console.error("❌ Notifications snapshot error:", err);
+        logger.error("Notifications snapshot error", err as Error);
       }
     );
 

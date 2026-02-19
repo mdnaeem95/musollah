@@ -26,7 +26,6 @@ const TIMELINE_OPTIONS = [
 
 export default function TimelineScreen() {
   const { theme, isDarkMode } = useTheme();
-  //@ts-ignore
   const { setPlan } = usePlan();
   const router = useRouter();
 
