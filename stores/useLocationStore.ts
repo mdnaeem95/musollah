@@ -13,6 +13,9 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import * as Location from 'expo-location';
 import { defaultStorage } from '../api/client/storage';
+import { createLogger } from '../services/logging/logger';
+
+const logger = createLogger('Location');
 
 // ============================================================================
 // TYPES
@@ -115,7 +118,7 @@ export const useLocationStore = create<LocationStore>()(
           });
 
         } catch (error) {
-          console.error('Error fetching location:', error);
+          logger.error('Error fetching location', error as Error);
           set({ 
             isLoading: false,
             error: error instanceof Error ? error.message : 'Failed to fetch location'

@@ -1,6 +1,9 @@
 import { useCallback, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 import { VIBRATION_COOLDOWN } from '../../constants/compass.constants';
+import { createLogger } from '../../services/logging/logger';
+
+const logger = createLogger('Haptics');
 
 interface UseHapticFeedbackOptions {
   enabled?: boolean;
@@ -31,7 +34,7 @@ export const useHapticFeedback = ({ enabled = true }: UseHapticFeedbackOptions =
         Haptics.NotificationFeedbackType.Success
       );
     } catch (error) {
-      console.warn('Haptic feedback not available:', error);
+      logger.warn('Haptic feedback not available:', { error });
     }
   }, [enabled]);
 
@@ -44,7 +47,7 @@ export const useHapticFeedback = ({ enabled = true }: UseHapticFeedbackOptions =
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (error) {
-      console.warn('Haptic feedback not available:', error);
+      logger.warn('Haptic feedback not available:', { error });
     }
   }, [enabled]);
 
@@ -57,7 +60,7 @@ export const useHapticFeedback = ({ enabled = true }: UseHapticFeedbackOptions =
     try {
       await Haptics.selectionAsync();
     } catch (error) {
-      console.warn('Haptic feedback not available:', error);
+      logger.warn('Haptic feedback not available:', { error });
     }
   }, [enabled]);
 

@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { AccessibilityInfo, Platform } from 'react-native';
+import { createLogger } from '../../services/logging/logger';
+
+const logger = createLogger('Accessibility');
 
 /**
  * Custom hook for accessibility features
@@ -17,7 +20,7 @@ export const useAccessibility = () => {
           const reduceMotion = await AccessibilityInfo.isReduceMotionEnabled();
           setIsReduceMotionEnabled(reduceMotion);
         } catch (error) {
-          console.warn('Error checking reduce motion:', error);
+          logger.warn('Error checking reduce motion:', { error });
         }
       }
     };
@@ -28,7 +31,7 @@ export const useAccessibility = () => {
         const screenReader = await AccessibilityInfo.isScreenReaderEnabled();
         setIsScreenReaderEnabled(screenReader);
       } catch (error) {
-        console.warn('Error checking screen reader:', error);
+        logger.warn('Error checking screen reader:', { error });
       }
     };
 

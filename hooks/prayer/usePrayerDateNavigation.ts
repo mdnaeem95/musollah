@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { addDays, subDays, format, isAfter, startOfDay } from 'date-fns';
+import { createLogger } from '../../services/logging/logger';
 import { prayerTimeKeys } from '../../api/services/prayer';
 import { useQueryClient } from '@tanstack/react-query';
 import { Coordinates } from '../../api/services/prayer/types/index';
@@ -15,6 +16,8 @@ interface UsePrayerDateNavigationReturn {
   goToToday: () => void;
   setDate: (date: Date) => void;
 }
+
+const logger = createLogger('Prayer Navigation');
 
 export const usePrayerDateNavigation = (
   location?: Coordinates | null,
@@ -80,7 +83,7 @@ export const usePrayerDateNavigation = (
 
   const setDate = useCallback((date: Date) => {
     if (isAfter(date, tomorrow)) {
-      console.warn('Cannot set date beyond tomorrow');
+      logger.warn('Cannot set date beyond tomorrow');
       return;
     }
     setSelectedDate(date);

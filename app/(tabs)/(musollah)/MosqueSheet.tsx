@@ -33,6 +33,7 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../context/ThemeContext';
+import { createLogger } from '../../../services/logging/logger';
 import { MosqueLocation } from '../../../api/services/musollah';
 import { enter } from '../../../utils';
 
@@ -205,6 +206,8 @@ const ActionButton = React.memo(
 // MAIN COMPONENT
 // ===================================================================
 
+const logger = createLogger('Mosque Sheet');
+
 export default function MosqueSheet({
   location,
   onClose,
@@ -260,7 +263,7 @@ export default function MosqueSheet({
         title: location.building,
       });
     } catch (error) {
-      console.error('Error sharing:', error);
+      logger.error('Error sharing:', error as Error);
     }
   }, [location]);
 

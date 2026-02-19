@@ -19,6 +19,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { MotiView } from 'moti';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
+import { createLogger } from '../../services/logging/logger';
+
+const logger = createLogger('Social Icons');
 
 // ============================================================================
 // TYPES
@@ -137,7 +140,7 @@ const SocialIcons: React.FC<Props> = ({ socials }) => {
         await Linking.openURL(webLink);
       }
     } catch (error) {
-      console.error('Failed to open social link:', error);
+      logger.error('Failed to open social link', error as Error);
       Alert.alert(
         'Cannot Open Link',
         `Unable to open ${platform.label}. Please try again later.`

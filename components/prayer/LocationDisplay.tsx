@@ -15,7 +15,10 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import * as Location from 'expo-location';
 import { useTheme } from '../../context/ThemeContext';
+import { createLogger } from '../../services/logging/logger';
 import { useLocationStore } from '../../stores/useLocationStore';
+
+const logger = createLogger('Location');
 
 export const LocationDisplay: React.FC = () => {
   const { theme, isDarkMode } = useTheme();
@@ -52,7 +55,7 @@ export const LocationDisplay: React.FC = () => {
           setLocationText('Unknown Location');
         }
       } catch (error) {
-        console.error('Error reverse geocoding:', error);
+        logger.error('Error reverse geocoding:', error as Error);
         setLocationText('Location Detected');
       } finally {
         setIsLoading(false);

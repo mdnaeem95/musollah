@@ -3,6 +3,9 @@ import { Animated, Dimensions } from 'react-native';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { Easing } from 'react-native-reanimated';
+import { createLogger } from '../services/logging/logger';
+
+const logger = createLogger('Utils');
 
 export const getRandomAyahByMood = (mood: string) => {
     // Filter ayahs based on mood
@@ -10,7 +13,7 @@ export const getRandomAyahByMood = (mood: string) => {
 
     // If no ayahs match the mood, return a fallback random ayah
     if (filteredAyahs.length === 0) {
-        console.warn(`No ayahs found for mood: ${mood}. Returning a random ayah.`);
+        logger.warn(`No ayahs found for mood: ${mood}. Returning a random ayah.`);
         return ayahList[Math.floor(Math.random() * ayahList.length)];
     }
 

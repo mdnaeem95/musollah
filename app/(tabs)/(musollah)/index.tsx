@@ -22,6 +22,7 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 
 import Map from '../../../components/musollah/Map';
+import { createLogger } from '../../../services/logging/logger';
 import { useLocationStore } from '../../../stores/useLocationStore';
 import { MosqueLocation, LocationUnion } from '../../../api/services/musollah';
 import BidetSheet from './BidetSheet';
@@ -560,6 +561,8 @@ const LocationPermissionPrompt = memo(function LocationPermissionPrompt({
 // MAIN COMPONENT
 // ============================================================================
 
+const logger = createLogger('Musollah');
+
 export default function MusollahScreen() {
   const { theme, isDarkMode } = useTheme();
   const { userLocation, fetchLocation, isLoading: locationLoading } = useLocationStore();
@@ -598,7 +601,7 @@ export default function MusollahScreen() {
   // Fetch user location on mount
   useEffect(() => {
     if (!userLocation && !locationLoading) {
-      console.log('📍 Requesting user location...');
+      logger.info('Requesting user location...');
       fetchLocation();
     }
   }, [userLocation, locationLoading, fetchLocation]);

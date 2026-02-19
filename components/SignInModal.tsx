@@ -24,6 +24,9 @@ import * as Haptics from 'expo-haptics';
 
 import { useAuthStore } from '../stores/useAuthStore';
 import { useTheme } from '../context/ThemeContext';
+import { createLogger } from '../services/logging/logger';
+
+const logger = createLogger('Auth');
 
 // ============================================================================
 // TYPES
@@ -87,7 +90,7 @@ const SignInModal: React.FC<SignInModalProps> = ({
       router.replace('/(tabs)');
     } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      console.error('Sign up error:', err);
+      logger.error('Sign up error:', err);
     }
   };
 
@@ -100,7 +103,7 @@ const SignInModal: React.FC<SignInModalProps> = ({
       router.replace('/(tabs)');
     } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      console.error('Sign in error:', err);
+      logger.error('Sign in error:', err);
     }
   };
 

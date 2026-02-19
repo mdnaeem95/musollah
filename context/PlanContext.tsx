@@ -28,4 +28,10 @@ export const PlanProvider = ({ children }: { children: React.ReactNode }) => {
     );
 };
 
-export const usePlan = () => useContext(PlanContext);
+export const usePlan = () => {
+    const context = useContext(PlanContext);
+    if (!context) {
+        throw new Error('usePlan must be used within a PlanProvider');
+    }
+    return context;
+};

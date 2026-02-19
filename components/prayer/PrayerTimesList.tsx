@@ -5,6 +5,7 @@ import { format, isPast, isFuture, startOfDay, parse } from 'date-fns';
 import Toast from 'react-native-toast-message';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../context/ThemeContext';
+import { createLogger } from '../../services/logging/logger';
 import { useAuth } from '../../stores/useAuthStore';
 import { useTodayPrayerLog, usePrayerLog, useSavePrayerLog } from '../../api/services/prayer/queries/prayer-logs';
 import { type PrayerLog, LocalPrayerName } from '../../api/services/prayer/types/index';
@@ -22,6 +23,8 @@ interface PrayerTimesListProps {
     timeUntilNextPrayer: string;
   } | null;
 }
+
+const logger = createLogger('Prayer Times');
 
 /** Fixed-shape expected by savePrayerLog */
 type PrayersPayload = {
@@ -166,10 +169,10 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
       [key]: !currentPrayers[key],
     };
 
-    console.log('🔄 Toggle prayer:', {
+    logger.debug('Toggle prayer:', {
       prayer: prayerName,
       dateStr,
-      queryKey, // ✅ Log the actual key being used
+      queryKey,
       before: currentPrayers,
       after: updatedPrayers,
       toggling: key,

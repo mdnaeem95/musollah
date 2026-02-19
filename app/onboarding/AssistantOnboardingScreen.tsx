@@ -4,8 +4,11 @@ import { Image } from 'react-native';
 import Onboarding from 'react-native-onboarding-swiper';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
+import { createLogger } from '../../services/logging/logger';
 import { defaultStorage } from '../../api/client/storage';
 import SignInModal from '../../components/SignInModal';
+
+const logger = createLogger('Onboarding');
 
 export default function AssistantOnboardingScreen() {
   const router = useRouter();
@@ -14,7 +17,7 @@ export default function AssistantOnboardingScreen() {
   const [shouldNavigate, setShouldNavigate] = useState(false);
 
   const handleDone = () => {
-    console.log('✅ Onboarding completed - setting flag');
+    logger.info('Onboarding completed - setting flag');
     defaultStorage.setBoolean('hasSeenOnboarding', true);
     setShowAuthModal(true);
   };

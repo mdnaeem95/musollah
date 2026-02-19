@@ -114,7 +114,7 @@ const createStyles = (theme: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.colors.background || theme.colors.primary,
+      backgroundColor: theme.colors.primary,
       padding: 10,
       width: '100%',
     },
@@ -124,8 +124,8 @@ const createStyles = (theme: any) =>
       paddingVertical: 10,
       paddingHorizontal: 4,
       borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border || '#ddd',
-      backgroundColor: theme.colors.background || theme.colors.primary,
+      borderBottomColor: theme.colors.muted,
+      backgroundColor: theme.colors.primary,
     },
     tableText: {
       fontSize: 14,
@@ -142,7 +142,7 @@ const createStyles = (theme: any) =>
       flex: 1,
     },
     todayRow: {
-      backgroundColor: theme.colors.accent || '#CDEFFA',
+      backgroundColor: theme.colors.accent + '20',
     },
     todayText: {
       fontFamily: 'Outfit_600SemiBold',

@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
 import { useTheme } from '../../context/ThemeContext';
+import { createLogger } from '../../services/logging/logger';
+
+const logger = createLogger('Location');
 
 const LocationInfo = () => {
   const { theme } = useTheme();
@@ -16,7 +19,7 @@ const LocationInfo = () => {
         let { status } = await Location.requestForegroundPermissionsAsync();
         
         if (status !== 'granted') {
-          console.warn('Location permission denied. Defaulting to Singapore.');
+          logger.warn('Location permission denied. Defaulting to Singapore.');
           setLocation('Singapore');
           setLoading(false);
           return;
@@ -32,7 +35,7 @@ const LocationInfo = () => {
           setLocation('Unknown Location');
         }
       } catch (error) {
-        console.error('Error fetching location:', error);
+        logger.error('Error fetching location:', error as Error);
         setLocation('Singapore'); // Default location
       } finally {
         setLoading(false);

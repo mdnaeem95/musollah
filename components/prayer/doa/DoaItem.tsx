@@ -72,37 +72,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepNumber: {
-    fontSize: 16,
-    fontFamily: 'Outfit_700Bold',
-    color: '#fff',
-  },
-  repetitionBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  repetitionText: {
-    fontSize: 12,
-    fontFamily: 'Outfit_600SemiBold',
-  },
-
   // Arabic Section
   arabicSection: {
     paddingVertical: 8,
@@ -152,18 +121,6 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
 
-  // Source Section
-  sourceSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingTop: 4,
-  },
-  sourceText: {
-    fontSize: 11,
-    fontFamily: 'Outfit_400Regular',
-    fontStyle: 'italic',
-  },
 });
 
 export default DoaItem;

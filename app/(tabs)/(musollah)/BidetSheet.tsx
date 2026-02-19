@@ -22,6 +22,7 @@ import * as Haptics from 'expo-haptics';
 import firestore from '@react-native-firebase/firestore';
 
 import { useTheme } from '../../../context/ThemeContext';
+import { createLogger } from '../../../services/logging/logger';
 import { formatTimeAgo, getStatusColor } from '../../../utils/musollah';
 import BidetReportStatusSheet from './BidetReportStatusSheet';
 import { BidetLocation, useUpdateBidetStatus, useUpdateLocationStatus } from '../../../api/services/musollah';
@@ -317,8 +318,10 @@ const ActionButton = ({
 // MAIN COMPONENT
 // ============================================================================
 
+const logger = createLogger('Bidet Sheet');
+
 export default function BidetSheet({ onClose, visible, locationId }: BidetSheetProps) {
-  console.log('[BidetSheet] locationId:', locationId);
+  logger.debug('locationId:', { locationId });
   const { theme, isDarkMode } = useTheme();
   const sheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['55%', '85%'], []);
@@ -356,7 +359,7 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
             setShowReportSheet(false);
           },
           onError: (error) => {
-            console.error('Failed to update status:', error);
+            logger.error('Failed to update status:', error);
             Toast.show({
               type: 'error',
               text1: 'Update Failed',
@@ -366,7 +369,7 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
         }
       );
     } catch (error) {
-      console.error('Error updating status:', error);
+      logger.error('Error updating status:', error as Error);
     }
   };
 
@@ -562,7 +565,7 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 Linking.openURL('https://www.instagram.com/toiletswithbidetssg/').catch((err) =>
-                  console.error('Error opening Instagram:', err)
+                  logger.error('Error opening Instagram:', err)
                 );
               }}
               activeOpacity={0.7}

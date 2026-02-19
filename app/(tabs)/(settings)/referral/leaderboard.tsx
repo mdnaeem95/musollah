@@ -16,6 +16,9 @@ import { MotiView } from 'moti';
 
 import { useTheme } from '../../../../context/ThemeContext';
 import { enter, maskEmail } from '../../../../utils';
+import { createLogger } from '../../../../services/logging/logger';
+
+const logger = createLogger('Referral');
 
 // Medal colors for top 3
 const MEDAL_COLORS = {
@@ -60,7 +63,7 @@ const LeaderboardScreen = () => {
 
                 setLeaderboard(leaderboardData);
             } catch (error) {
-                console.error('Error fetching leaderboard:', error);
+                logger.error('Error fetching leaderboard', error as Error);
             } finally {
                 setLoading(false);
             }

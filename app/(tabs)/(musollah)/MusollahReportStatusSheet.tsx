@@ -22,6 +22,7 @@ import { MotiView } from 'moti';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../context/ThemeContext';
+import { createLogger } from '../../../services/logging/logger';
 import { enter } from '../../../utils';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -193,6 +194,8 @@ const SectionHeader = React.memo(
   )
 );
 
+const logger = createLogger('Musollah Report');
+
 const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
   visible,
   onClose,
@@ -268,7 +271,7 @@ const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onClose();
     } catch (error) {
-      console.error('Failed to update musollah status:', error);
+      logger.error('Failed to update musollah status:', error as Error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsPending(false);

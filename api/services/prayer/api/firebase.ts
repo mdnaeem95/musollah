@@ -125,7 +125,23 @@ export async function fetchDailyPrayerTimeFromFirebase(
     }
 
     const data = matchingDoc.data();
+
+    logger.debug('Raw Firestore data', { data });
+    logger.debug('Direct time access', {
+      timeObject: data.time,
+      zohor_direct: data.time.zohor,
+      zohor_optional: data.time?.zohor,
+      typeof_zohor: typeof data.time?.zohor,
+    });
+
     const prayerCount = Object.keys(data.time || {}).length;
+
+    logger.debug('Raw Firebase data', {
+      date: data.date,
+      times: data.time,
+      zohor: data.time?.zohor,
+      typeof_zohor: typeof data.time?.zohor
+    });
 
     const totalDuration = performance.now() - startTime;
 

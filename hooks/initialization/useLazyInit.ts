@@ -1,8 +1,8 @@
 /**
  * Lazy Initialization Hook
  * 
- * ✅ REFACTORED: Using structured logging system
- * ✅ FIXED: Graceful handling of simulator push notification errors
+ * REFACTORED: Using structured logging system
+ * FIXED: Graceful handling of simulator push notification errors
  * 
  * Runs AFTER app is ready - handles non-critical background tasks:
  * - Auth state monitoring
@@ -32,11 +32,11 @@ import { QURAN_QUERY_KEYS } from '../../api/services/quran';
 import { updatePrayerTimesWidget } from '../../utils/widgetBridge';
 import { CACHE_KEYS } from '../../constants/prayer.constants';
 import { fetchMonthlyPrayerTimesFromFirebase } from '../../api/services/prayer';
+import { useRamadanStore } from '../../stores/useRamadanStore';
 
-// ✅ Import structured logging
 import { createLogger } from '../../services/logging/logger';
 
-// ✅ Create category-specific logger
+// Category-specific logger
 const logger = createLogger('Lazy Init');
 
 // Track if lazy init has run (singleton pattern)
@@ -70,7 +70,7 @@ export const useLazyInit = (isReady: boolean) => {
     initStartedRef.current = true;
     hasInitialized = true;
 
-    logger.info('🔧 Starting lazy initialization (500ms delay for UI priority)');
+    logger.info('Starting lazy initialization (500ms delay for UI priority)');
 
     // Small delay to prioritize UI rendering
     const timeoutId = setTimeout(() => {
@@ -98,9 +98,10 @@ export const useLazyInit = (isReady: boolean) => {
         initPushNotifications(),
         preloadQuranData(),
         updateIOSWidget(),
+        initRamadanDetection(),
       ]);
 
-      // ✅ Log summary of results
+      // Log summary of results
       const summary = {
         total: results.length,
         fulfilled: results.filter(r => r.status === 'fulfilled').length,
@@ -110,7 +111,7 @@ export const useLazyInit = (isReady: boolean) => {
       if (summary.rejected > 0) {
         logger.warn('Some lazy init tasks failed (non-critical)', summary);
       } else {
-        logger.success('✅ All lazy initialization tasks completed', summary);
+        logger.success('All lazy initialization tasks completed', summary);
       }
 
       logger.timeEnd('lazy-init-total');
@@ -182,7 +183,7 @@ export const useLazyInit = (isReady: boolean) => {
 
   // ==========================================================================
   // Task 3: Push Notifications
-  // ✅ FIXED: Gracefully handles null return from registerForPushNotificationsAsync
+  // FIXED: Gracefully handles null return from registerForPushNotificationsAsync
   // ==========================================================================
   const initPushNotifications = async () => {
     logger.time('push-notifications-init');
@@ -190,8 +191,8 @@ export const useLazyInit = (isReady: boolean) => {
     try {
       logger.info('Registering for push notifications...');
       
-      // ✅ registerForPushNotificationsAsync now returns null on simulators/errors
-      // instead of throwing - this is the correct behavior for a non-critical feature
+      // registerForPushNotificationsAsync returns null on simulators/errors
+      // instead of throwing - correct behavior for a non-critical feature
       const token = await registerForPushNotificationsAsync();
       
       if (token) {
@@ -208,7 +209,7 @@ export const useLazyInit = (isReady: boolean) => {
       
       logger.timeEnd('push-notifications-init');
     } catch (err) {
-      // ✅ This should rarely happen now since registerForPushNotificationsAsync
+      // Rarely happens since registerForPushNotificationsAsync
       // catches its own errors, but keep as safety net
       logger.error('Push notification registration failed (non-critical)', err, {
         willContinue: 'yes',
@@ -358,6 +359,81 @@ export const useLazyInit = (isReady: boolean) => {
         platform: 'iOS',
       });
       logger.timeEnd('ios-widget-update');
+    }
+  };
+
+  // ==========================================================================
+  // Task 6: Ramadan Detection & Notification Init
+  // ==========================================================================
+  const initRamadanDetection = async () => {
+    logger.time('ramadan-detection-init');
+
+    try {
+      logger.info('Checking Ramadan status...');
+
+      const { convertToIslamicDate } = await import('../../api/services/prayer/api/aladhan');
+      const { format: formatDate } = await import('date-fns');
+      const { ramadanNotificationService } = await import(
+        '../../services/notifications/ramadanNotificationService'
+      );
+
+      const todayAPI = formatDate(new Date(), 'dd-MM-yyyy');
+      const hijriResult = await convertToIslamicDate(todayAPI);
+      const monthName = hijriResult.hijri.month.toLowerCase();
+
+      // Check if it's Ramadan
+      const isRamadan = monthName.includes('ramad') || monthName.includes('رمض');
+
+      if (isRamadan) {
+        logger.success('Ramadan detected! Auto-enabling Ramadan mode', {
+          hijriMonth: hijriResult.hijri.month,
+          hijriDay: hijriResult.hijri.day,
+        });
+
+        // Auto-enable Ramadan mode so the tab appears
+        const { usePreferencesStore } = await import('../../stores/userPreferencesStore');
+        if (!usePreferencesStore.getState().ramadanMode) {
+          usePreferencesStore.getState().toggleRamadanMode();
+        }
+
+        // Auto-initialize the tracker
+        const currentDay = parseInt(hijriResult.hijri.day, 10);
+        const hijriYear = parseInt(hijriResult.hijri.year, 10);
+        const today = new Date();
+        const startDate = new Date(today);
+        startDate.setDate(startDate.getDate() - (currentDay - 1));
+        const endDate = new Date(today);
+        endDate.setDate(endDate.getDate() + (30 - currentDay));
+
+        useRamadanStore.getState().initializeRamadan(
+          hijriYear,
+          formatDate(startDate, 'yyyy-MM-dd'),
+          formatDate(endDate, 'yyyy-MM-dd'),
+          30
+        );
+
+        const tracker = useRamadanStore.getState().tracker;
+        const prefs = useRamadanStore.getState().notificationPrefs;
+
+        if (tracker) {
+          await ramadanNotificationService.scheduleNotifications(
+            prefs,
+            currentDay,
+            tracker.totalDays
+          );
+        }
+      } else {
+        logger.debug('Not Ramadan currently', {
+          hijriMonth: hijriResult.hijri.month,
+        });
+      }
+
+      logger.timeEnd('ramadan-detection-init');
+    } catch (err) {
+      logger.error('Ramadan detection failed (non-critical)', err, {
+        willContinue: 'yes',
+      });
+      logger.timeEnd('ramadan-detection-init');
     }
   };
 };

@@ -13,6 +13,9 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Dimensions, TextInput } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { createLogger } from '../../../services/logging/logger';
+
+const logger = createLogger('Bidet Report');
 import { MotiView } from 'moti';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
@@ -298,7 +301,7 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onClose();
     } catch (error) {
-      console.error('Failed to update status:', error);
+      logger.error('Failed to update status', error as Error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsPending(false);

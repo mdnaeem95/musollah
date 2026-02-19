@@ -9,6 +9,9 @@
  */
 
 import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
+import { createLogger } from '../../../services/logging/logger';
+
+const logger = createLogger('Firestore');
 
 // ============================================================================
 // TYPE GUARDS
@@ -64,7 +67,7 @@ const sanitizeDocumentData = <T = any>(data: any): T => {
     // Firebase FieldValue has a special _methodName property
     const dataAny = data as any;
     if (dataAny._methodName || dataAny._delegate?._methodName) {
-      console.log('🔥 Preserving Firebase FieldValue');
+      logger.debug('Preserving Firebase FieldValue');
       return data as T;
     }
   }
@@ -85,7 +88,7 @@ const sanitizeDocumentData = <T = any>(data: any): T => {
       if (typeof value === 'object' && value !== null) {
         const valueAny = value as any;
         if (valueAny._methodName || valueAny._delegate?._methodName) {
-          console.log(`🔥 Preserving Firebase FieldValue for key: ${key}`);
+          logger.debug(`Preserving Firebase FieldValue for key: ${key}`);
           sanitized[key] = value; // Don't sanitize FieldValues!
           continue;
         }
@@ -111,7 +114,7 @@ const sanitizeDocumentData = <T = any>(data: any): T => {
 
       sanitized[key] = value;
     } catch (err) {
-      console.warn(`⚠️ Failed to sanitize field "${key}":`, err);
+      logger.warn(`Failed to sanitize field "${key}"`, { error: (err as Error)?.message });
       sanitized[key] = null;
     }
   }
@@ -156,7 +159,7 @@ export const safeFirestoreGet = async <T = any>(
         const data = doc.data();
 
         if (!data || typeof data !== "object") {
-          console.warn(`⚠️ Skipping malformed document: ${doc.id}`);
+          logger.warn(`Skipping malformed document: ${doc.id}`);
           return;
         }
 
@@ -168,13 +171,13 @@ export const safeFirestoreGet = async <T = any>(
 
         results.push(sanitized);
       } catch (err) {
-        console.error(`❌ Failed to process document ${doc.id}:`, err);
+        logger.error(`Failed to process document ${doc.id}`, err as Error);
       }
     });
 
     return results;
   } catch (error) {
-    console.error("❌ Firestore query failed:", error);
+    logger.error("Firestore query failed", error as Error);
     return [];
   }
 };
@@ -204,12 +207,12 @@ export const safeFirestoreListener = <T = any>(
             const data = snapshot.data();
             onSuccess([sanitizeDocumentData<T>(data)]);
           } catch (err) {
-            console.error("❌ Snapshot processing failed (doc):", err);
+            logger.error("Snapshot processing failed (doc)", err as Error);
             onError?.(err as Error);
           }
         },
         (err: any) => {
-          console.error("❌ Firestore listener error (doc):", err);
+          logger.error("Firestore listener error (doc)", err as Error);
           onError?.(err as Error);
         }
       );
@@ -233,7 +236,7 @@ export const safeFirestoreListener = <T = any>(
                 const data = doc.data();
 
                 if (!data || typeof data !== "object") {
-                  console.warn(`⚠️ Skipping malformed document: ${doc.id}`);
+                  logger.warn(`Skipping malformed document: ${doc.id}`);
                   return;
                 }
 
@@ -244,18 +247,18 @@ export const safeFirestoreListener = <T = any>(
                   })
                 );
               } catch (err) {
-                console.error(`❌ Failed to process document ${doc.id}:`, err);
+                logger.error(`Failed to process document ${doc.id}`, err as Error);
               }
             });
 
             onSuccess(results);
           } catch (err) {
-            console.error("❌ Snapshot processing failed (query):", err);
+            logger.error("Snapshot processing failed (query)", err as Error);
             onError?.(err as Error);
           }
         },
         (err: any) => {
-          console.error("❌ Firestore listener error (query):", err);
+          logger.error("Firestore listener error (query)", err as Error);
           onError?.(err as Error);
         }
       );
@@ -264,10 +267,10 @@ export const safeFirestoreListener = <T = any>(
     }
 
     // Fallback (shouldn’t happen)
-    console.error("❌ Unknown Firestore target passed to safeFirestoreListener");
+    logger.error("Unknown Firestore target passed to safeFirestoreListener");
     return () => {};
   } catch (error) {
-    console.error("❌ Failed to create Firestore listener:", error);
+    logger.error("Failed to create Firestore listener", error as Error);
     return () => {};
   }
 };
@@ -287,7 +290,7 @@ export const safeFirestoreWrite = async (
     else await ref.set(sanitized);
     return true;
   } catch (error) {
-    console.error("❌ Firestore write failed:", error);
+    logger.error("Firestore write failed", error as Error);
     return false;
   }
 };
@@ -301,7 +304,7 @@ export const safeFirestoreUpdate = async (
     await ref.update(sanitized);
     return true;
   } catch (error) {
-    console.error("❌ Firestore update failed:", error);
+    logger.error("Firestore update failed", error as Error);
     return false;
   }
 };
@@ -313,7 +316,7 @@ export const safeFirestoreDelete = async (
     await ref.delete();
     return true;
   } catch (error) {
-    console.error("❌ Firestore delete failed:", error);
+    logger.error("Firestore delete failed", error as Error);
     return false;
   }
 };
@@ -328,18 +331,18 @@ export const validateFirestoreQuery = (
 ): boolean => {
   try {
     if (!isValidString(collection)) {
-      console.error("❌ Invalid collection name");
+      logger.error("Invalid collection name");
       return false;
     }
 
     if (!isValidArray(requiredFields)) {
-      console.error("❌ Invalid required fields array");
+      logger.error("Invalid required fields array");
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error("❌ Query validation failed:", error);
+    logger.error("Query validation failed", error as Error);
     return false;
   }
 };

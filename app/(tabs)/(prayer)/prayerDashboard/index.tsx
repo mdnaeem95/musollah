@@ -43,6 +43,9 @@ import SignInModal from '../../../../components/SignInModal';
 // Utils
 import { enter, shakeButton } from '../../../../utils';
 import { getCurrentDayIndex, isSameDate } from '../../../../utils/prayers/dates';
+import { createLogger } from '../../../../services/logging/logger';
+
+const logger = createLogger('Prayer Dashboard');
 
 // ============================================================================
 // HELPER: Check if prayer can be logged
@@ -235,12 +238,7 @@ const PrayersDashboard: React.FC = () => {
         [prayer]: !isCurrentlyLogged,
       };
 
-      console.log(`🔄 Dashboard toggle ${prayer} on ${dateStr}:`, {
-        queryKey, // ✅ Log the actual key being used
-        before: isCurrentlyLogged,
-        after: !isCurrentlyLogged,
-        allPrayers: updatedPrayers,
-      });
+      logger.debug('Dashboard toggle', { prayer, dateStr, before: isCurrentlyLogged, after: !isCurrentlyLogged });
 
       // Haptic feedback
       if (!isCurrentlyLogged) {
@@ -258,7 +256,7 @@ const PrayersDashboard: React.FC = () => {
         {
           onError: (error) => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            console.error('Error saving prayer log:', error);
+            logger.error('Error saving prayer log', error as Error);
             Toast.show({
               type: 'error',
               text1: `Couldn't save log for ${prayer}`,

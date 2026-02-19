@@ -6,6 +6,9 @@
  */
 
 import { defaultStorage } from '../../api/client/storage';
+import { createLogger } from '../../services/logging/logger';
+
+const logger = createLogger('Quran Storage');
 
 // ============================================================================
 // TYPES
@@ -39,7 +42,7 @@ export function getLastReadAyah(): AyahPosition | null {
     const data = defaultStorage.get<AyahPosition>(STORAGE_KEYS.LAST_READ);
     return data || null;
   } catch (error) {
-    console.error('Failed to get last read ayah:', error);
+    logger.error('Failed to get last read ayah', error as Error);
     return null;
   }
 }
@@ -48,7 +51,7 @@ export function setLastReadAyah(position: AyahPosition): void {
   try {
     defaultStorage.set(STORAGE_KEYS.LAST_READ, position);
   } catch (error) {
-    console.error('Failed to set last read ayah:', error);
+    logger.error('Failed to set last read ayah', error as Error);
   }
 }
 
@@ -56,7 +59,7 @@ export function clearLastReadAyah(): void {
   try {
     defaultStorage.delete(STORAGE_KEYS.LAST_READ);
   } catch (error) {
-    console.error('Failed to clear last read ayah:', error);
+    logger.error('Failed to clear last read ayah', error as Error);
   }
 }
 
@@ -69,7 +72,7 @@ export function getLastListenedAyah(): AyahListenPosition | null {
     const data = defaultStorage.get<AyahListenPosition>(STORAGE_KEYS.LAST_LISTENED);
     return data || null;
   } catch (error) {
-    console.error('Failed to get last listened ayah:', error);
+    logger.error('Failed to get last listened ayah', error as Error);
     return null;
   }
 }
@@ -78,7 +81,7 @@ export function setLastListenedAyah(position: AyahListenPosition): void {
   try {
     defaultStorage.set(STORAGE_KEYS.LAST_LISTENED, position);
   } catch (error) {
-    console.error('Failed to set last listened ayah:', error);
+    logger.error('Failed to set last listened ayah', error as Error);
   }
 }
 
@@ -86,7 +89,7 @@ export function clearLastListenedAyah(): void {
   try {
     defaultStorage.delete(STORAGE_KEYS.LAST_LISTENED);
   } catch (error) {
-    console.error('Failed to clear last listened ayah:', error);
+    logger.error('Failed to clear last listened ayah', error as Error);
   }
 }
 

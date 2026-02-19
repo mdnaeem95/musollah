@@ -202,7 +202,7 @@ const Surahs = () => {
               end={item.end}
               readCount={juzProgressMap[item.number]?.read || 0}
               totalAyahs={juzProgressMap[item.number]?.total || calculateTotalAyahs(item)}
-              onPress={() => console.log('Tapped Juz', item.number)}
+              onPress={() => router.push(`/surahs/${item.start.surah}`)}
             />
           )}          
           keyExtractor={(item) => `juz-${item.number}`}

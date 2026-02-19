@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../context/ThemeContext';
 import { calculateContrastColor, enter } from '../../../utils';
+import { useRamadanMode, usePreferencesStore } from '../../../stores/userPreferencesStore';
 
 // ============================================================================
 // SETTINGS ITEMS DATA
@@ -41,6 +42,8 @@ const FEATURE_CARDS = [
 const SettingsTab = () => {
   const router = useRouter();
   const { theme, isDarkMode } = useTheme();
+  const isRamadanMode = useRamadanMode();
+  const toggleRamadanMode = usePreferencesStore((s) => s.toggleRamadanMode);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
@@ -105,6 +108,46 @@ const SettingsTab = () => {
               />
             ))}
           </View>
+        </MotiView>
+
+        {/* Ramadan Mode Toggle */}
+        <MotiView
+          from={{ opacity: 0, translateY: -20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={enter(0)}
+        >
+          <SectionHeader icon="moon" label="Ramadan" theme={theme} />
+
+          <BlurView
+            intensity={20}
+            tint={isDarkMode ? 'dark' : 'light'}
+            style={[styles.settingsCard, { backgroundColor: theme.colors.secondary }]}
+          >
+            <View style={styles.settingsItem}>
+              <View style={[styles.itemIcon, { backgroundColor: '#FFD70020' }]}>
+                <FontAwesome6 name="moon" size={18} color="#FFD700" solid />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.itemLabel, { color: theme.colors.text.primary }]}>
+                  Ramadan Mode
+                </Text>
+                <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 12, color: theme.colors.text.muted }}>
+                  {isRamadanMode
+                    ? 'Fasting tracker, Tarawih, Quran Khatam'
+                    : 'Enable to show Ramadan tab'}
+                </Text>
+              </View>
+              <Switch
+                value={isRamadanMode}
+                onValueChange={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  toggleRamadanMode();
+                }}
+                trackColor={{ false: theme.colors.muted, true: '#FFD700' }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+          </BlurView>
         </MotiView>
 
         {/* App Info */}

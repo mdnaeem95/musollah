@@ -1226,7 +1226,7 @@ export function useUserFavorites(userId: string | null) {
     queryFn: async () => {
       if (!userId) return [];
 
-      console.log('🔍 DEBUG Fetching user favorites', { userId });
+      logger.debug('Fetching user favorites', { userId });
       const startTime = Date.now();
 
       try {
@@ -1234,22 +1234,22 @@ export function useUserFavorites(userId: string | null) {
         const userSnap = await getDoc(userRef); // ✅ Use new modular API
 
         if (!userSnap.exists()) {
-          console.log('⚠️ WARN User document not found', { userId });
+          logger.warn('User document not found', { userId });
           return [];
         }
 
         const data = userSnap.data();
         const favorites = data?.favouriteRestaurants || [];
 
-        console.log('✅ SUCCESS User favorites fetched', { 
-          userId, 
+        logger.info('User favorites fetched', {
+          userId,
           count: favorites.length,
           duration: `${Date.now() - startTime}ms`
         });
 
         return favorites as string[];
       } catch (error) {
-        console.error('❌ ERROR Fetching favorites failed', error);
+        logger.error('Fetching favorites failed', error as Error);
         throw error;
       }
     },
@@ -1275,7 +1275,7 @@ export function useToggleFavorite() {
 
   return useMutation({
     mutationFn: async ({ userId, restaurantId, isFavorited }: ToggleFavoriteParams) => {
-      console.log('🔍 DEBUG Toggle favorite mutation started', { userId, restaurantId, isFavorited });
+      logger.debug('Toggle favorite mutation started', { userId, restaurantId, isFavorited });
 
       const userRef = doc(db, 'users', userId);
 
@@ -1284,20 +1284,20 @@ export function useToggleFavorite() {
         await updateDoc(userRef, {
           favouriteRestaurants: arrayUnion(restaurantId)
         });
-        console.log('✅ SUCCESS Restaurant added to favorites', { userId, restaurantId });
+        logger.info('Restaurant added to favorites', { userId, restaurantId });
       } else {
         // Removing from favorites
         await updateDoc(userRef, {
           favouriteRestaurants: arrayRemove(restaurantId)
         });
-        console.log('✅ SUCCESS Restaurant removed from favorites', { userId, restaurantId });
+        logger.info('Restaurant removed from favorites', { userId, restaurantId });
       }
 
       return { userId, restaurantId, isFavorited };
     },
 
     onMutate: async ({ userId, restaurantId, isFavorited }) => {
-      console.log('🔍 DEBUG Optimistic update starting', { userId, restaurantId, isFavorited });
+      logger.debug('Optimistic update starting', { userId, restaurantId, isFavorited });
 
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['user-favorites', userId] });
@@ -1316,7 +1316,7 @@ export function useToggleFavorite() {
         }
       });
 
-      console.log('✅ SUCCESS Optimistic update applied', { 
+      logger.debug('Optimistic update applied', {
         previousCount: previousFavorites?.length ?? 0,
         action: isFavorited ? 'added' : 'removed'
       });
@@ -1326,7 +1326,7 @@ export function useToggleFavorite() {
     },
 
     onError: (err, variables, context) => {
-      console.error('❌ ERROR Toggle favorite failed', err);
+      logger.error('Toggle favorite failed', err as Error);
       
       // Rollback on error
       if (context?.previousFavorites) {
@@ -1334,13 +1334,13 @@ export function useToggleFavorite() {
           ['user-favorites', variables.userId],
           context.previousFavorites
         );
-        console.log('🔄 Rolled back optimistic update');
+        logger.warn('Rolled back optimistic update');
       }
     },
 
     onSuccess: (data) => {
-      console.log('✅ SUCCESS Favorite toggled successfully', { 
-        userId: data.userId, 
+      logger.info('Favorite toggled successfully', {
+        userId: data.userId,
         restaurantId: data.restaurantId,
         action: data.isFavorited ? 'added' : 'removed'
       });
@@ -1351,7 +1351,7 @@ export function useToggleFavorite() {
       queryClient.invalidateQueries({ 
         queryKey: ['user-favorites', variables.userId] 
       });
-      console.log('🔄 Invalidated favorites cache', { userId: variables.userId });
+      logger.debug('Invalidated favorites cache', { userId: variables.userId });
     },
   });
 }

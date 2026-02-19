@@ -5,6 +5,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { useTypewriterParagraphs } from '../../hooks/prayer/khutbah/useTypewriterParagraphs';
 import * as Clipboard from 'expo-clipboard';
 import { Khutbah } from '../../api/services/khutbah';
+import { createLogger } from '../../services/logging/logger';
+
+const logger = createLogger('Khutbah');
 
 interface Props {
   khutbah: Khutbah;
@@ -19,7 +22,7 @@ const KhutbahCard = ({ khutbah }: Props) => {
   const [paragraphs, isTyping] = useTypewriterParagraphs(showSummary ? khutbah.summary || '' : '');
 
   const handleDownload = (url: string) => {
-    Linking.openURL(url).catch((err) => console.error('Error opening link', err));
+    Linking.openURL(url).catch((err) => logger.error('Error opening link', err as Error));
   };
 
   const handleCopySummary = async () => {

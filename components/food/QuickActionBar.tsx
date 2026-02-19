@@ -12,6 +12,9 @@ import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../context/ThemeContext';
 import { enter } from '../../utils';
+import { createLogger } from '../../services/logging/logger';
+
+const logger = createLogger('Quick Actions');
 
 interface QuickActionBarProps {
   restaurantId: string;
@@ -53,7 +56,7 @@ const QuickActionBar: React.FC<QuickActionBarProps> = ({
         title: restaurantName,
       });
     } catch (error) {
-      console.error('Share error:', error);
+      logger.error('Share error', error as Error);
     }
   };
   

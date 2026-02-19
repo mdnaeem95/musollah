@@ -25,6 +25,9 @@ import ThemedButton from '../../../../components/ThemedButton';
 import BannerAdComponent from '../../../../components/BannerAd';
 import { enter, generateReferralCode } from '../../../../utils';
 import { calculateContrastColor } from '../../../../utils';
+import { createLogger } from '../../../../services/logging/logger';
+
+const logger = createLogger('Referral');
 
 // ============================================================================
 // MAIN COMPONENT
@@ -67,7 +70,7 @@ const ReferralScreen = () => {
                         }
                     }
                 } catch (error) {
-                    console.error('Error fetching referral code:', error);
+                    logger.error('Error fetching referral code', error as Error);
                 }
             } else {
                 setUserLoggedIn(false);
@@ -97,7 +100,7 @@ const ReferralScreen = () => {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
         } catch (error) {
-            console.error('Error generating referral code:', error);
+            logger.error('Error generating referral code', error as Error);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         }
     };
@@ -118,7 +121,7 @@ const ReferralScreen = () => {
                     message: `Join me on Musollah! Use my referral code: ${referralCode}`,
                 });
             } catch (error) {
-                console.error('Error sharing:', error);
+                logger.error('Error sharing', error as Error);
             }
         }
     };
@@ -192,7 +195,7 @@ const ReferralScreen = () => {
                 Alert.alert('Error', 'Invalid referral code. Please try again.');
             }
         } catch (error) {
-            console.error('Error handling referral code:', error);
+            logger.error('Error handling referral code', error as Error);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             Alert.alert('Error', 'An error occurred while processing the referral code.');
         }

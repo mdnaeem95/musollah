@@ -1,6 +1,9 @@
 import { FontAwesome6 } from "@expo/vector-icons";
 import { StyleSheet, TouchableOpacity } from "react-native";
 import TrackPlayer from "react-native-track-player";
+import { createLogger } from '../../services/logging/logger';
+
+const logger = createLogger('Track Player');
 
 type SkipNextButtonProps = {
     iconSize?: number;
@@ -12,7 +15,7 @@ export const SkipNextButton = ({ iconSize = 20, color }: SkipNextButtonProps) =>
         try {
             await TrackPlayer.skipToNext(); // Skip to the next track
         } catch (error) {
-            console.error("Error skipping to next track:", error);
+            logger.error('Error skipping to next track', error as Error);
         }
     };
 
