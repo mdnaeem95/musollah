@@ -12,7 +12,6 @@
  * - Time format (12/24 hour)
  * - Adhan selection
  * - Prayer notifications
- * - Ramadan mode
  * - MMKV persistence
  * 
  * @version 2.0
@@ -48,8 +47,7 @@ interface PreferencesState {
   reminderInterval: number;
   selectedAdhan: AdhanSelection;
   mutedNotifications: string[];
-  ramadanMode: boolean;
-  
+
   // Actions
   setTheme: (theme: Theme) => void;
   toggleDarkMode: () => void;
@@ -60,7 +58,6 @@ interface PreferencesState {
   toggleTimeFormat: () => void;
   setSelectedAdhan: (adhan: AdhanSelection) => void;
   toggleNotificationForPrayer: (prayer: string) => void;
-  toggleRamadanMode: () => void;
   resetPreferences: () => void;
 }
 
@@ -77,7 +74,6 @@ const initialState = {
   reminderInterval: 0,
   selectedAdhan: 'None' as AdhanSelection,
   mutedNotifications: [],
-  ramadanMode: false,
 };
 
 // ============================================================================
@@ -205,23 +201,6 @@ export const usePreferencesStore = create<PreferencesState>()(
       },
       
       // ========================================================================
-      // RAMADAN ACTIONS
-      // ========================================================================
-      
-      toggleRamadanMode: () => {
-        set((state) => {
-          const newMode = !state.ramadanMode;
-          
-          logger.info('Ramadan mode toggled', {
-            oldMode: state.ramadanMode,
-            newMode,
-          });
-          
-          return { ramadanMode: newMode };
-        });
-      },
-      
-      // ========================================================================
       // RESET ACTIONS
       // ========================================================================
       
@@ -238,7 +217,6 @@ export const usePreferencesStore = create<PreferencesState>()(
             reminderInterval: currentState.reminderInterval !== initialState.reminderInterval,
             adhan: currentState.selectedAdhan !== initialState.selectedAdhan,
             mutedCount: currentState.mutedNotifications.length,
-            ramadanMode: currentState.ramadanMode !== initialState.ramadanMode,
           },
         });
         
@@ -283,7 +261,6 @@ export const usePreferencesStore = create<PreferencesState>()(
               timeFormat: state.timeFormat,
               adhan: state.selectedAdhan,
               mutedPrayers: state.mutedNotifications.length,
-              ramadanMode: state.ramadanMode,
             });
           }
         };
@@ -315,11 +292,6 @@ export const useTextSize = () => usePreferencesStore((state) => state.textSize);
  * Select only time format - component only re-renders when time format changes
  */
 export const useTimeFormat = () => usePreferencesStore((state) => state.timeFormat);
-
-/**
- * Select only Ramadan mode - component only re-renders when Ramadan mode changes
- */
-export const useRamadanMode = () => usePreferencesStore((state) => state.ramadanMode);
 
 // ============================================================================
 // UTILITY HOOKS

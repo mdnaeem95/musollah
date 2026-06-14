@@ -88,7 +88,11 @@ const StatusBadge = ({ status, lastUpdated, theme, isDarkMode }: StatusBadgeProp
       <BlurView
         intensity={15}
         tint={isDarkMode ? 'dark' : 'light'}
-        style={[styles.statusCard, { backgroundColor: theme.colors.secondary }]}
+        style={[styles.statusCard, {
+          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+          borderWidth: 1,
+          borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+        }]}
       >
         <View style={[styles.statusBadge, { backgroundColor: statusInfo.color + '15' }]}>
           <FontAwesome6 name={statusInfo.icon} size={16} color={statusInfo.color} />
@@ -123,7 +127,11 @@ const AmenityCard = React.memo(
         <BlurView
           intensity={20}
           tint={isDarkMode ? 'dark' : 'light'}
-          style={[styles.amenityCard, { backgroundColor: theme.colors.secondary }]}
+          style={[styles.amenityCard, {
+            backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+            borderWidth: 1,
+            borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+          }]}
         >
           {/* Icon Circle - Larger like BidetSheet */}
           <View
@@ -176,7 +184,11 @@ const DirectionsSection = React.memo(
         <BlurView
           intensity={20}
           tint={isDarkMode ? 'dark' : 'light'}
-          style={[styles.directionsCard, { backgroundColor: theme.colors.secondary }]}
+          style={[styles.directionsCard, {
+            backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+            borderWidth: 1,
+            borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+          }]}
         >
           <TouchableOpacity onPress={handleToggle} activeOpacity={0.7}>
             <View style={styles.directionsHeader}>
@@ -269,21 +281,21 @@ const ActionButton = ({
         activeOpacity={0.8}
         style={[
           styles.actionButton,
-          {
-            backgroundColor: isPrimary ? theme.colors.accent : theme.colors.secondary,
-          },
+          isPrimary
+            ? { backgroundColor: theme.colors.accent }
+            : { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: theme.colors.accent },
         ]}
       >
         <FontAwesome6
           name={icon}
           size={18}
-          color={isPrimary ? '#fff' : theme.colors.text.primary}
+          color={isPrimary ? '#fff' : theme.colors.accent}
         />
         <Text
           style={[
             styles.actionButtonText,
             {
-              color: isPrimary ? '#fff' : theme.colors.text.primary,
+              color: isPrimary ? '#fff' : theme.colors.accent,
               fontFamily: isPrimary ? 'Outfit_600SemiBold' : 'Outfit_500Medium',
             },
           ]}
@@ -434,8 +446,8 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
         snapPoints={snapPoints}
         enablePanDownToClose
         onClose={handleClose}
-        backgroundStyle={{ backgroundColor: theme.colors.primary }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.text.secondary }}
+        backgroundStyle={{ backgroundColor: isDarkMode ? '#080F1E' : '#E8EFFF' }}
+        handleIndicatorStyle={{ backgroundColor: isDarkMode ? 'rgba(255,255,255,0.30)' : 'rgba(0,0,0,0.20)' }}
         backdropComponent={renderBackdrop}
         style={{ zIndex: 999 }}  // ✅ Fix: Appear above search bar
       >
@@ -452,7 +464,7 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
           >
             <TouchableOpacity
               onPress={handleClose}
-              style={[styles.closeButton, { backgroundColor: theme.colors.secondary }]}
+              style={[styles.closeButton, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}
               activeOpacity={0.7}
             >
               <FontAwesome6 name="xmark" size={18} color={theme.colors.text.primary} />

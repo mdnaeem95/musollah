@@ -1,14 +1,13 @@
 /**
  * DoaItem - Modern Design
- * 
+ *
  * Individual dua card with Arabic text, romanization, and translation
- * 
- * @version 2.0
+ *
+ * @version 3.0 - Redesigned with glass card, number badge, clean dividers
  */
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { FontAwesome6 } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 
 import { useTheme } from '../../../context/ThemeContext';
@@ -24,32 +23,55 @@ const DoaItem: React.FC<DoaItemProps> = ({ item, index }) => {
 
   return (
     <BlurView
-      intensity={20}
+      intensity={22}
       tint={isDarkMode ? 'dark' : 'light'}
-      style={[styles.container, { backgroundColor: theme.colors.secondary }]}
+      style={[
+        styles.container,
+        {
+          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.9)',
+          borderColor: 'rgba(255,255,255,0.12)',
+        },
+      ]}
     >
+      {/* Number badge */}
+      <View style={[styles.numberBadge, { backgroundColor: theme.colors.accent + '20' }]}>
+        <Text style={[styles.numberText, { color: theme.colors.accent }]}>{index + 1}</Text>
+      </View>
+
       {/* Arabic Text */}
       <View style={styles.arabicSection}>
-        <Text style={[styles.arabicText, { color: theme.colors.text.primary }]}>
+        <Text
+          style={[
+            styles.arabicText,
+            {
+              color: theme.colors.text.primary,
+              textShadowColor: 'rgba(0,0,0,0.1)',
+              textShadowOffset: { width: 0, height: 1 },
+              textShadowRadius: 2,
+            },
+          ]}
+        >
           {item.arabicText}
         </Text>
       </View>
 
+      {/* Divider */}
+      <View style={[styles.divider, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]} />
+
       {/* Romanization */}
-      <View style={[styles.romanizationSection, { backgroundColor: theme.colors.primary }]}>
-        <View style={[styles.sectionIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-          <FontAwesome6 name="language" size={12} color={theme.colors.accent} />
-        </View>
+      <View style={styles.romanizationSection}>
+        <Text style={[styles.romanizationLabel, { color: theme.colors.text.muted }]}>Romanization</Text>
         <Text style={[styles.romanizationText, { color: theme.colors.text.secondary }]}>
           {item.romanized}
         </Text>
       </View>
 
+      {/* Divider */}
+      <View style={[styles.divider, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]} />
+
       {/* Translation */}
-      <View style={[styles.translationSection, { backgroundColor: theme.colors.accent + '08' }]}>
-        <View style={[styles.sectionIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-          <FontAwesome6 name="quote-left" size={10} color={theme.colors.accent} />
-        </View>
+      <View style={styles.translationSection}>
+        <Text style={[styles.translationLabel, { color: theme.colors.text.muted }]}>Translation</Text>
         <Text style={[styles.translationText, { color: theme.colors.text.primary }]}>
           {item.englishTranslation}
         </Text>
@@ -60,10 +82,11 @@ const DoaItem: React.FC<DoaItemProps> = ({ item, index }) => {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 16,
+    borderRadius: 18,
+    borderWidth: 1,
     padding: 20,
     marginBottom: 16,
-    gap: 16,
+    gap: 12,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -72,55 +95,69 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
+  // Number badge
+  numberBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+  },
+  numberText: {
+    fontSize: 12,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+
+  // Divider
+  divider: {
+    height: 1,
+    marginVertical: 4,
+  },
+
   // Arabic Section
   arabicSection: {
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   arabicText: {
-    fontSize: 24,
+    fontSize: 26,
     fontFamily: 'Amiri_400Regular',
-    lineHeight: 42,
+    lineHeight: 44,
     textAlign: 'right',
   },
 
   // Romanization Section
   romanizationSection: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    padding: 12,
-    borderRadius: 12,
+    gap: 4,
   },
-  sectionIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 2,
+  romanizationLabel: {
+    fontSize: 11,
+    fontFamily: 'Outfit_500Medium',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   romanizationText: {
-    flex: 1,
     fontSize: 14,
-    fontFamily: 'Outfit_500Medium',
+    fontFamily: 'Outfit_400Regular',
     lineHeight: 22,
   },
 
   // Translation Section
   translationSection: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    padding: 12,
-    borderRadius: 12,
+    gap: 4,
+  },
+  translationLabel: {
+    fontSize: 11,
+    fontFamily: 'Outfit_500Medium',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   translationText: {
-    flex: 1,
     fontSize: 15,
     fontFamily: 'Outfit_400Regular',
     lineHeight: 23,
+    fontStyle: 'italic',
   },
-
 });
 
 export default DoaItem;

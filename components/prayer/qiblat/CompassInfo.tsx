@@ -29,48 +29,44 @@ const CompassInfo: React.FC<CompassInfoProps> = ({
 }) => {
   return (
     <>
-      {/* Header Information */}
+      {/* Distance hero + headings */}
       <View style={styles.infoContainer}>
-        <Text
-          style={[styles.headingText, { color: textColor }]}
-          accessibilityRole="text"
-        >
-          Your heading: {Math.round(userHeading)}°
-        </Text>
-        <Text
-          style={[styles.headingText, { color: textColor }]}
-          accessibilityRole="text"
-        >
-          Qibla heading: {Math.round(qiblaHeading)}°
-        </Text>
-        
-        {/* Distance Display */}
         {distance && (
           <View style={styles.distanceContainer}>
-            <Text style={[styles.distanceLabel, { color: textColor }]}>
-              Distance to Mecca
-            </Text>
             <Text style={[styles.distanceValue, { color: accentColor }]}>
-              {distance.km.toLocaleString()} km ({distance.miles.toLocaleString()} mi)
+              {distance.km.toLocaleString()} km
+            </Text>
+            <Text style={[styles.distanceLabel, { color: mutedColor }]}>
+              from Mecca
             </Text>
           </View>
         )}
 
-        <Text
-          style={[styles.instructionText, { color: mutedColor }]}
-          accessibilityRole="text"
-        >
-          When the arrow points to the Kaabah, you're facing Qiblah.
+        <View style={styles.headingsRow}>
+          <View style={styles.headingItem}>
+            <Text style={[styles.headingValue, { color: textColor }]}>
+              {Math.round(userHeading)}°
+            </Text>
+            <Text style={[styles.headingLabel, { color: mutedColor }]}>Heading</Text>
+          </View>
+          <View style={[styles.headingDivider, { backgroundColor: mutedColor + '30' }]} />
+          <View style={styles.headingItem}>
+            <Text style={[styles.headingValue, { color: accentColor }]}>
+              {Math.round(qiblaHeading)}°
+            </Text>
+            <Text style={[styles.headingLabel, { color: mutedColor }]}>Qibla</Text>
+          </View>
+        </View>
+
+        <Text style={[styles.instructionText, { color: mutedColor }]} accessibilityRole="text">
+          {isNearQibla ? 'You are facing the Qibla ✓' : 'Align the arrow with the Kaabah'}
         </Text>
       </View>
 
-      {/* Footer Information */}
+      {/* Accuracy footer */}
       <View style={styles.footerContainer}>
-        <Text
-          style={[styles.accuracyText, { color: mutedColor }]}
-          accessibilityRole="text"
-        >
-          Accuracy: {accuracyPercentage}%
+        <Text style={[styles.accuracyText, { color: mutedColor }]} accessibilityRole="text">
+          Accuracy {accuracyPercentage}%
         </Text>
       </View>
     </>
@@ -80,53 +76,67 @@ const CompassInfo: React.FC<CompassInfoProps> = ({
 const styles = StyleSheet.create({
   infoContainer: {
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-  },
-  headingText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 16,
-    textAlign: 'center',
+    gap: 16,
+    paddingHorizontal: 20,
   },
   distanceContainer: {
     alignItems: 'center',
-    marginVertical: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    gap: 2,
+  },
+  distanceValue: {
+    fontFamily: 'Outfit_300Light',
+    fontSize: 44,
+    letterSpacing: -1,
+    textAlign: 'center',
   },
   distanceLabel: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
     textAlign: 'center',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
-  distanceValue: {
+  headingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 24,
+  },
+  headingItem: {
+    alignItems: 'center',
+    gap: 3,
+  },
+  headingValue: {
     fontFamily: 'Outfit_600SemiBold',
-    fontSize: 18,
+    fontSize: 20,
     textAlign: 'center',
-    marginTop: 4,
+  },
+  headingLabel: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 12,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  headingDivider: {
+    width: 1,
+    height: 32,
+    borderRadius: 1,
   },
   instructionText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
     textAlign: 'center',
-    marginTop: 8,
-  },
-  foundText: {
-    fontFamily: 'Outfit_600SemiBold',
-    fontSize: 18,
-    textAlign: 'center',
-    marginTop: 8,
   },
   footerContainer: {
     alignItems: 'center',
     paddingHorizontal: 16,
   },
   accuracyText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Outfit_400Regular',
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });
 

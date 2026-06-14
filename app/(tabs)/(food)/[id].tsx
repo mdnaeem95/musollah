@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../../context/ThemeContext';
 import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedStyle, interpolate } from 'react-native-reanimated';
@@ -29,7 +30,7 @@ import { useRestaurantDetails } from '../../../hooks/food/useRestaurantDetails';
 const HERO_IMAGE_HEIGHT = 280;
 
 const RestaurantDetails = () => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
@@ -78,21 +79,21 @@ const RestaurantDetails = () => {
     
     return {
       opacity,
-      backgroundColor: theme.colors.secondary,
+      backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
     };
   });
 
   if (isLoading) {
     return (
-      <View style={[styles.centered, { backgroundColor: theme.colors.primary }]}>
+      <LinearGradient colors={isDarkMode ? ['#060B18', '#0C1428', '#080F1E'] : ['#EEF2FF', '#F0F4FF', '#E8EFFF']} style={styles.centered}>
         <ActivityIndicator size="large" color={theme.colors.accent} />
-      </View>
+      </LinearGradient>
     );
   }
 
   if (error || !restaurant) {
     return (
-      <View style={[styles.centered, { backgroundColor: theme.colors.primary }]}>
+      <LinearGradient colors={isDarkMode ? ['#060B18', '#0C1428', '#080F1E'] : ['#EEF2FF', '#F0F4FF', '#E8EFFF']} style={styles.centered}>
         <Text style={{ color: theme.colors.text.primary, marginBottom: 16, fontSize: 16 }}>
           Failed to load restaurant details.
         </Text>
@@ -102,12 +103,12 @@ const RestaurantDetails = () => {
         >
           <Text style={styles.errorButtonText}>Go Back</Text>
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+    <LinearGradient colors={isDarkMode ? ['#060B18', '#0C1428', '#080F1E'] : ['#EEF2FF', '#F0F4FF', '#E8EFFF']} style={styles.container}>
       {/* Fixed Header with Animated Background */}
       <View
         style={[
@@ -156,7 +157,7 @@ const RestaurantDetails = () => {
         </View>
 
         {/* Content Container */}
-        <View style={[styles.contentContainer, { backgroundColor: theme.colors.primary }]}>
+        <View style={[styles.contentContainer, { backgroundColor: isDarkMode ? '#080F1E' : '#E8EFFF' }]}>
           {/* Restaurant Info Card */}
           <RestaurantInfoCard
             name={restaurant.name}
@@ -247,7 +248,7 @@ const RestaurantDetails = () => {
 
       {/* Sign In Modal */}
       <SignInModal visible={isAuthModalVisible} onClose={closeAuthModal} />
-    </View>
+    </LinearGradient>
   );
 };
 

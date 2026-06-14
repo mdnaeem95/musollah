@@ -11,6 +11,7 @@ import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'rea
 import { FlashList } from '@shopify/flash-list';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { MotiView } from 'moti';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTheme } from '../../../../context/ThemeContext';
 import { useKhutbahs } from '../../../../api/services/khutbah';
@@ -31,7 +32,11 @@ import { enter } from '../../../../utils';
  * - TanStack Query caching
  */
 const KhutbahScreen: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
+
+  const gradientColors = isDarkMode
+    ? (['#060B18', '#0C1428', '#080F1E'] as const)
+    : (['#EEF2FF', '#F0F4FF', '#E8EFFF'] as const);
 
   // Fetch khutbahs with TanStack Query
   const { data: khutbahs, isLoading, isError, error, refetch } = useKhutbahs();
@@ -39,7 +44,8 @@ const KhutbahScreen: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+      <View style={styles.container}>
+        <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
         <LoadingState />
       </View>
     );
@@ -48,7 +54,8 @@ const KhutbahScreen: React.FC = () => {
   // Error state
   if (isError) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+      <View style={styles.container}>
+        <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
         <ErrorState error={error} onRetry={refetch} />
       </View>
     );
@@ -57,7 +64,8 @@ const KhutbahScreen: React.FC = () => {
   // Empty state
   if (!khutbahs || khutbahs.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+      <View style={styles.container}>
+        <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
         <EmptyState />
       </View>
     );
@@ -65,7 +73,8 @@ const KhutbahScreen: React.FC = () => {
 
   // Success state
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>  
+    <View style={styles.container}>
+      <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
       <FlashList
         data={khutbahs}
         keyExtractor={(item) => item.id}
@@ -236,6 +245,7 @@ const EmptyState: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   listContent: {
     padding: 20,

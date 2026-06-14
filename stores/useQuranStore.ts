@@ -47,7 +47,11 @@ interface QuranState {
   readAyahs: string[]; // Overall reading progress: "surahNumber:ayahNumber"
   readAyahsToday: string[]; // Daily progress (reset at midnight)
   lastListenedAyah: { surahNumber: number; ayahNumber: number } | null;
-  
+  // Streak tracking
+  currentStreak: number;
+  longestStreak: number;
+  lastReadDate: string | null; // 'YYYY-MM-DD'
+
   // Bookmark Actions
   addBookmark: (bookmark: Omit<QuranBookmark, 'timestamp'>) => void;
   removeBookmark: (surahNumber: number, ayahNumber: number) => void;
@@ -73,6 +77,19 @@ interface QuranState {
 }
 
 // ============================================================================
+// HELPERS
+// ============================================================================
+
+function todayDateStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+function yesterdayDateStr(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+// ============================================================================
 // STORE
 // ============================================================================
 
@@ -85,7 +102,10 @@ export const useQuranStore = create<QuranState>()(
       readAyahs: [],
       readAyahsToday: [],
       lastListenedAyah: null,
-      
+      currentStreak: 0,
+      longestStreak: 0,
+      lastReadDate: null,
+
       // ========================================================================
       // BOOKMARK ACTIONS
       // ========================================================================
@@ -247,11 +267,11 @@ export const useQuranStore = create<QuranState>()(
       
       markAyahAsRead: (surahNumber, ayahNumber) => {
         const ayahKey = `${surahNumber}:${ayahNumber}`;
-        
+
         set((state) => {
           const alreadyRead = state.readAyahs.includes(ayahKey);
           const alreadyReadToday = state.readAyahsToday.includes(ayahKey);
-          
+
           if (alreadyRead && alreadyReadToday) {
             logger.debug('Ayah already marked as read', {
               ayahKey,
@@ -259,18 +279,39 @@ export const useQuranStore = create<QuranState>()(
             });
             return state;
           }
-          
+
+          const today = todayDateStr();
+          const yesterday = yesterdayDateStr();
+
+          let newStreak = state.currentStreak;
+          let newLongest = state.longestStreak;
+          let newLastReadDate = state.lastReadDate;
+
+          if (state.lastReadDate !== today) {
+            if (state.lastReadDate === yesterday) {
+              newStreak = state.currentStreak + 1;
+            } else {
+              newStreak = 1;
+            }
+            newLastReadDate = today;
+            newLongest = Math.max(newStreak, state.longestStreak);
+          }
+
           logger.info('Ayah marked as read', {
             ayahKey,
             newRead: !alreadyRead,
             newReadToday: !alreadyReadToday,
             totalRead: alreadyRead ? state.readAyahs.length : state.readAyahs.length + 1,
             totalReadToday: alreadyReadToday ? state.readAyahsToday.length : state.readAyahsToday.length + 1,
+            currentStreak: newStreak,
           });
-          
+
           return {
             readAyahs: alreadyRead ? state.readAyahs : [...state.readAyahs, ayahKey],
             readAyahsToday: alreadyReadToday ? state.readAyahsToday : [...state.readAyahsToday, ayahKey],
+            currentStreak: newStreak,
+            longestStreak: newLongest,
+            lastReadDate: newLastReadDate,
           };
         });
       },
@@ -423,6 +464,17 @@ export const useIsAyahRead = (surahNumber: number, ayahNumber: number) =>
  */
 export const useReadCountForSurah = (surahNumber: number) =>
   useQuranStore((state) => state.getReadCountForSurah(surahNumber));
+
+/**
+ * Reading streak and daily stats
+ */
+export const useReadingStreak = () => {
+  const currentStreak = useQuranStore((s) => s.currentStreak);
+  const longestStreak = useQuranStore((s) => s.longestStreak);
+  const todayCount = useQuranStore((s) => s.readAyahsToday.length);
+  const totalCount = useQuranStore((s) => s.readAyahs.length);
+  return { currentStreak, longestStreak, todayCount, totalCount };
+};
 
 // ============================================================================
 // UTILITY FUNCTIONS

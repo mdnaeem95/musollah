@@ -9,6 +9,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 
@@ -82,7 +83,11 @@ const FolderHeader = React.memo<FolderHeaderProps>(({
         <BlurView
           intensity={20}
           tint={isDarkMode ? 'dark' : 'light'}
-          style={[styles.folderHeader, { backgroundColor: theme.colors.secondary }]}
+          style={[styles.folderHeader, {
+            backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+            borderWidth: 1,
+            borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+          }]}
         >
           {/* Left Side: Icon + Title */}
           <View style={styles.folderLeft}>
@@ -148,7 +153,11 @@ const QuranBookmarkItem = React.memo<QuranBookmarkItemProps>(({
         <BlurView
           intensity={20}
           tint={isDarkMode ? 'dark' : 'light'}
-          style={[styles.bookmarkItem, { backgroundColor: theme.colors.secondary }]}
+          style={[styles.bookmarkItem, {
+            backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+            borderWidth: 1,
+            borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+          }]}
         >
           {/* Left Side: Book Icon + Info */}
           <View style={styles.bookmarkLeft}>
@@ -219,7 +228,11 @@ const DoaBookmarkItem = React.memo<DoaBookmarkItemProps>(({
         <BlurView
           intensity={20}
           tint={isDarkMode ? 'dark' : 'light'}
-          style={[styles.bookmarkItem, { backgroundColor: theme.colors.secondary }]}
+          style={[styles.bookmarkItem, {
+            backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+            borderWidth: 1,
+            borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+          }]}
         >
           {/* Left Side: Hands Icon + Title */}
           <View style={styles.bookmarkLeft}>
@@ -267,7 +280,11 @@ const EmptyState = React.memo<{
       <BlurView
         intensity={20}
         tint={isDarkMode ? 'dark' : 'light'}
-        style={[styles.emptyState, { backgroundColor: theme.colors.secondary }]}
+        style={[styles.emptyState, {
+          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+          borderWidth: 1,
+          borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+        }]}
       >
         <View style={[styles.emptyIcon, { backgroundColor: theme.colors.accent + '15' }]}>
           <FontAwesome6
@@ -308,7 +325,11 @@ const OverallEmptyState = React.memo<{
         <BlurView
           intensity={20}
           tint={isDarkMode ? 'dark' : 'light'}
-          style={[styles.overallEmptyCard, { backgroundColor: theme.colors.secondary }]}
+          style={[styles.overallEmptyCard, {
+            backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+            borderWidth: 1,
+            borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+          }]}
         >
           <View style={[styles.overallEmptyIcon, { backgroundColor: theme.colors.accent + '15' }]}>
             <FontAwesome6
@@ -384,7 +405,10 @@ const BookmarkPage: React.FC = () => {
   // ============================================================================
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
+    <LinearGradient
+      colors={isDarkMode ? ['#060B18', '#0C1428', '#080F1E'] as const : ['#EEF2FF', '#F0F4FF', '#E8EFFF'] as const}
+      style={styles.mainContainer}
+    >
       {hasNoBookmarks ? (
         // Overall Empty State - Centered in full screen
         <OverallEmptyState theme={theme} isDarkMode={isDarkMode} />
@@ -459,7 +483,7 @@ const BookmarkPage: React.FC = () => {
           </View>
         </ScrollView>
       )}
-    </View>
+    </LinearGradient>
   );
 };
 
@@ -470,7 +494,7 @@ const BookmarkPage: React.FC = () => {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-  },
+  }, // backgroundColor removed — provided by LinearGradient
   scrollContent: {
     padding: 16,
     paddingBottom: 40,

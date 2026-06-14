@@ -12,7 +12,7 @@ import { useTheme } from '../../../../context/ThemeContext';
 import { PlanProvider } from '../../../../context/PlanContext';
 
 export default function RecitationPlanLayout() {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const router = useRouter();
 
   const handleBack = () => {
@@ -27,7 +27,7 @@ export default function RecitationPlanLayout() {
           headerShown: true,
           animation: 'slide_from_right',
           headerStyle: {
-            backgroundColor: theme.colors.primary,
+            backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
           },
           headerTitleStyle: {
             color: theme.colors.text.primary,
@@ -38,14 +38,14 @@ export default function RecitationPlanLayout() {
           headerTitle: '',
           headerShadowVisible: false,
           headerLeft: () => (
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={handleBack}
-              style={{ paddingHorizontal: 16 }}
+              style={{ marginLeft: 8, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)' }}
               activeOpacity={0.7}
             >
               <FontAwesome6
                 name="arrow-left"
-                size={22}
+                size={20}
                 color={theme.colors.text.primary}
               />
             </TouchableOpacity>

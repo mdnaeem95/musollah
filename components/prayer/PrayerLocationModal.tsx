@@ -256,22 +256,30 @@ const PrayerLocationModal: React.FC<PrayerLocationModalProps> = ({
           style={styles.modalWrapper}
         >
           <BlurView
-            intensity={20}
+            intensity={35}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.modalContent, { backgroundColor: theme.colors.secondary }]}
+            style={[styles.modalContent, {
+              backgroundColor: isDarkMode ? 'rgba(8,14,32,0.95)' : 'rgba(245,248,255,0.97)',
+              borderWidth: 1,
+              borderColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
+            }]}
           >
             <ScrollView 
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.scrollContent}
             >
               {/* Close Button */}
-              <TouchableOpacity 
-                style={[styles.closeButton, { backgroundColor: theme.colors.accent }]} 
+              <TouchableOpacity
+                style={[styles.closeButton, {
+                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)',
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)',
+                }]}
                 onPress={handleClose}
                 disabled={isProcessing}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
-                <FontAwesome6 name="xmark" size={20} color="#fff" />
+                <FontAwesome6 name="xmark" size={16} color={isDarkMode ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)'} />
               </TouchableOpacity>
 
               {/* Icon */}

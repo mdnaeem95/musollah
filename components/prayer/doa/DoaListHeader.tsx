@@ -31,9 +31,13 @@ const DoaListHeader: React.FC<DoaListHeaderProps> = ({ onInfoPress }) => {
     >
       {/* Header Card */}
       <BlurView
-        intensity={20}
+        intensity={25}
         tint={isDarkMode ? 'dark' : 'light'}
-        style={[styles.headerCard, { backgroundColor: theme.colors.secondary }]}
+        style={[styles.headerCard, {
+          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.85)',
+          borderWidth: 1,
+          borderColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
+        }]}
       >
         {/* Icon Badge */}
         <View style={[styles.iconBadge, { backgroundColor: theme.colors.accent + '15' }]}>
@@ -53,7 +57,9 @@ const DoaListHeader: React.FC<DoaListHeaderProps> = ({ onInfoPress }) => {
         {/* Info Button */}
         <TouchableOpacity
           onPress={onInfoPress}
-          style={[styles.infoButton, { backgroundColor: theme.colors.primary }]}
+          style={[styles.infoButton, {
+            backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+          }]}
           activeOpacity={0.7}
         >
           <FontAwesome6 name="circle-info" size={18} color={theme.colors.accent} />
@@ -62,9 +68,13 @@ const DoaListHeader: React.FC<DoaListHeaderProps> = ({ onInfoPress }) => {
 
       {/* Stats Card */}
       <BlurView
-        intensity={20}
+        intensity={25}
         tint={isDarkMode ? 'dark' : 'light'}
-        style={[styles.statsCard, { backgroundColor: theme.colors.secondary }]}
+        style={[styles.statsCard, {
+          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.85)',
+          borderWidth: 1,
+          borderColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
+        }]}
       >
         <View style={styles.statItem}>
           <View style={[styles.statIcon, { backgroundColor: theme.colors.accent + '15' }]}>

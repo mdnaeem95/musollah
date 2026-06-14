@@ -9,6 +9,20 @@ const logger = createLogger('Widget');
 const APP_GROUP_IDENTIFIER = 'group.com.rihlah.prayerTimesWidget';
 
 /**
+ * Shared-storage key for the widget's prayer-times payload.
+ *
+ * This is a year-agnostic app-group key (NOT a Firestore collection). The
+ * payload itself already contains every day's date, so the key must not encode
+ * a year. `LEGACY_WIDGET_KEY` is the old hardcoded name kept for backward
+ * compatibility: we keep writing it so an older native widget build (which may
+ * still read it after a JS-only OTA update) keeps working. Readers prefer the
+ * new key and fall back to the legacy one. The legacy write can be removed once
+ * every shipped native build reads `WIDGET_PRAYER_TIMES_KEY`.
+ */
+const WIDGET_PRAYER_TIMES_KEY = 'prayerTimesData';
+const LEGACY_WIDGET_KEY = 'prayerTimes2025';
+
+/**
  * Daily prayer data with date (for widget)
  * Extends normalized prayer times with date field
  */
@@ -76,9 +90,15 @@ export async function updatePrayerTimesWidget(prayerTimesData: DailyPrayerData[]
     
     const jsonString = JSON.stringify(widgetData);
     
-    // Write prayer times data
+    // Write prayer times data under the year-agnostic key, plus the legacy key
+    // so an older native widget build keeps working after a JS-only OTA update.
     await SharedGroupPreferences.setItem(
-      'prayerTimes2025',
+      WIDGET_PRAYER_TIMES_KEY,
+      jsonString,
+      APP_GROUP_IDENTIFIER
+    );
+    await SharedGroupPreferences.setItem(
+      LEGACY_WIDGET_KEY,
       jsonString,
       APP_GROUP_IDENTIFIER
     );
@@ -121,10 +141,9 @@ export async function getWidgetStatus() {
   }
   
   try {
-    const data = await SharedGroupPreferences.getItem(
-      'prayerTimes2025',
-      APP_GROUP_IDENTIFIER
-    );
+    const data =
+      (await SharedGroupPreferences.getItem(WIDGET_PRAYER_TIMES_KEY, APP_GROUP_IDENTIFIER)) ??
+      (await SharedGroupPreferences.getItem(LEGACY_WIDGET_KEY, APP_GROUP_IDENTIFIER));
     
     const timestamp = await SharedGroupPreferences.getItem(
       'lastUpdated',

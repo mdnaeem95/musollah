@@ -4,7 +4,6 @@ import { MotiView } from 'moti';
 import { useTheme } from '../../context/ThemeContext';
 
 const screenWidth = Dimensions.get('window').width;
-const containerWidth = screenWidth * 0.75;
 
 const PrayerTimesSkeleton = () => {
   const { theme } = useTheme();
@@ -33,15 +32,18 @@ const PrayerTimesSkeleton = () => {
 
 const createStyles = (theme: any) => StyleSheet.create({
   container: {
-    marginTop: 20,
-    gap: 15,
-    alignItems: 'center',
+    marginTop: 8,
+    gap: 10,
+    paddingHorizontal: 16,
+    width: '100%',
   },
   skeletonBox: {
-    width: containerWidth,
-    minHeight: Platform.OS === 'android' ? 45 : 54,
-    borderRadius: 15,
-    backgroundColor: theme.colors.muted,
+    width: screenWidth - 32,
+    minHeight: Platform.OS === 'android' ? 52 : 58,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
 });
 

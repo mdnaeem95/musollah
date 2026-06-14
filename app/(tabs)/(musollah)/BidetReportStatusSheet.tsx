@@ -100,7 +100,7 @@ const StatusOption = React.memo(({
             {
               backgroundColor: isSelected
                 ? `${color}20`
-                : theme.colors.secondary,
+                : isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
               borderColor: isSelected ? color : 'transparent',
               borderWidth: isSelected ? 2 : 0,
             },
@@ -182,7 +182,11 @@ const LocationInput = React.memo(({
     <BlurView
       intensity={15}
       tint={isDarkMode ? 'dark' : 'light'}
-      style={[styles.locationInputWrapper, { backgroundColor: theme.colors.secondary }]}
+      style={[styles.locationInputWrapper, {
+        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+        borderWidth: 1,
+        borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+      }]}
     >
       <View style={[styles.locationIconContainer, { backgroundColor: `${theme.colors.accent}15` }]}>
         <FontAwesome6 name="location-dot" size={14} color={theme.colors.accent} />
@@ -325,7 +329,7 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
       onRequestClose={handleClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalContainer, { backgroundColor: theme.colors.primary }]}>
+        <View style={[styles.modalContainer, { backgroundColor: isDarkMode ? '#080F1E' : '#E8EFFF' }]}>
           {/* Handle Bar */}
           <MotiView
             from={{ scaleX: 0 }}

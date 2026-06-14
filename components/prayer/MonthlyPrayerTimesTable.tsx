@@ -26,9 +26,9 @@ interface MonthlyPrayerTimesTableProps {
 
 /**
  * Monthly Prayer Times Table
- * 
+ *
  * Displays prayer times for the entire month in a scrollable table.
- * 
+ *
  * Improvements over original:
  * - Uses theme context for consistent styling
  * - Memoized today's date calculation
@@ -39,15 +39,15 @@ interface MonthlyPrayerTimesTableProps {
 const MonthlyPrayerTimesTable: React.FC<MonthlyPrayerTimesTableProps> = ({
   monthlyPrayerTimes,
 }) => {
-  const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const { theme, isDarkMode } = useTheme();
+  const styles = createStyles(theme, isDarkMode);
 
   // Get today's date (memoized)
   const todayDate = useMemo(() => new Date().getDate().toString(), []);
 
   // Table header component
   const TableHeader = () => (
-    <View style={styles.tableRow}>
+    <View style={styles.tableHeaderRow}>
       <Text style={styles.tableHeaderText}>Date</Text>
       <Text style={styles.tableHeaderText}>Subuh</Text>
       <Text style={styles.tableHeaderText}>Syuruk</Text>
@@ -110,43 +110,53 @@ const MonthlyPrayerTimesTable: React.FC<MonthlyPrayerTimesTableProps> = ({
 // STYLES
 // ============================================================================
 
-const createStyles = (theme: any) =>
+const createStyles = (theme: any, isDarkMode: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.colors.primary,
+      backgroundColor: 'transparent',
       padding: 10,
       width: '100%',
     },
-    tableRow: {
+    tableHeaderRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      paddingVertical: 10,
+      paddingVertical: 12,
       paddingHorizontal: 4,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.muted,
-      backgroundColor: theme.colors.primary,
-    },
-    tableText: {
-      fontSize: 14,
-      fontFamily: 'Outfit_400Regular',
-      color: theme.colors.text.primary,
-      textAlign: 'center',
-      flex: 1,
+      backgroundColor: isDarkMode ? theme.colors.accent + 'CC' : theme.colors.accent,
+      borderRadius: 10,
+      marginBottom: 2,
     },
     tableHeaderText: {
       fontSize: 12,
       fontFamily: 'Outfit_600SemiBold',
-      color: theme.colors.text.primary,
+      color: '#FFFFFF',
+      textAlign: 'center',
+      flex: 1,
+    },
+    tableRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+      paddingHorizontal: 4,
+      borderBottomWidth: 1,
+      borderBottomColor: isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
+    },
+    tableText: {
+      fontSize: 13,
+      fontFamily: 'Outfit_400Regular',
+      color: isDarkMode ? 'rgba(255,255,255,0.75)' : theme.colors.text.primary,
       textAlign: 'center',
       flex: 1,
     },
     todayRow: {
-      backgroundColor: theme.colors.accent + '20',
+      backgroundColor: isDarkMode ? theme.colors.accent + '25' : theme.colors.accent + '18',
+      borderLeftWidth: 3,
+      borderLeftColor: theme.colors.accent,
     },
     todayText: {
       fontFamily: 'Outfit_600SemiBold',
-      color: theme.colors.text.primary,
+      color: isDarkMode ? 'rgba(255,255,255,0.92)' : theme.colors.text.primary,
     },
   });
 

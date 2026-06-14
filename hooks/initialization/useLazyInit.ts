@@ -32,8 +32,6 @@ import { QURAN_QUERY_KEYS } from '../../api/services/quran';
 import { updatePrayerTimesWidget } from '../../utils/widgetBridge';
 import { CACHE_KEYS } from '../../constants/prayer.constants';
 import { fetchMonthlyPrayerTimesFromFirebase } from '../../api/services/prayer';
-import { useRamadanStore } from '../../stores/useRamadanStore';
-
 import { createLogger } from '../../services/logging/logger';
 
 // Category-specific logger
@@ -98,7 +96,6 @@ export const useLazyInit = (isReady: boolean) => {
         initPushNotifications(),
         preloadQuranData(),
         updateIOSWidget(),
-        initRamadanDetection(),
       ]);
 
       // Log summary of results
@@ -362,104 +359,4 @@ export const useLazyInit = (isReady: boolean) => {
     }
   };
 
-  // ==========================================================================
-  // Task 6: Ramadan Detection & Notification Init
-  // ==========================================================================
-  const initRamadanDetection = async () => {
-    logger.time('ramadan-detection-init');
-
-    try {
-      logger.info('Checking Ramadan status...');
-
-      const { convertToIslamicDate } = await import('../../api/services/prayer/api/aladhan');
-      const { format: formatDate, parseISO, differenceInDays, isWithinInterval } = await import('date-fns');
-      const { ramadanNotificationService } = await import(
-        '../../services/notifications/ramadanNotificationService'
-      );
-      const { MUIS_RAMADAN_DATES } = await import(
-        '../../api/services/ramadan/types/constants'
-      );
-
-      const now = new Date();
-      const todayAPI = formatDate(now, 'dd-MM-yyyy');
-      const hijriResult = await convertToIslamicDate(todayAPI);
-      const monthName = hijriResult.hijri.month.toLowerCase();
-      const hijriYear = parseInt(hijriResult.hijri.year, 10);
-
-      // Check MUIS override first (Aladhan can be off by 1 day vs MUIS)
-      const muisOverride = MUIS_RAMADAN_DATES[hijriYear] ?? MUIS_RAMADAN_DATES[hijriYear + 1];
-      let isRamadan: boolean;
-      let currentDay: number;
-      let startDate: Date;
-      let endDate: Date;
-
-      if (muisOverride) {
-        const muisStart = parseISO(muisOverride.start);
-        const muisEnd = parseISO(muisOverride.end);
-        isRamadan = isWithinInterval(now, { start: muisStart, end: muisEnd });
-        currentDay = isRamadan ? differenceInDays(now, muisStart) + 1 : 0;
-        startDate = muisStart;
-        endDate = muisEnd;
-
-        logger.info('Using MUIS override for Ramadan detection', {
-          muisStart: muisOverride.start,
-          muisEnd: muisOverride.end,
-          isRamadan,
-          aladhanSays: hijriResult.hijri.month,
-        });
-      } else {
-        // Fallback to Aladhan API
-        isRamadan = monthName.includes('ramad') || monthName.includes('رمض');
-        currentDay = parseInt(hijriResult.hijri.day, 10);
-        startDate = new Date(now);
-        startDate.setDate(startDate.getDate() - (currentDay - 1));
-        endDate = new Date(now);
-        endDate.setDate(endDate.getDate() + (30 - currentDay));
-      }
-
-      if (isRamadan) {
-        logger.success('Ramadan detected! Auto-enabling Ramadan mode', {
-          hijriMonth: hijriResult.hijri.month,
-          currentDay,
-          usedMuisOverride: !!muisOverride,
-        });
-
-        // Auto-enable Ramadan mode so the tab appears
-        const { usePreferencesStore } = await import('../../stores/userPreferencesStore');
-        if (!usePreferencesStore.getState().ramadanMode) {
-          usePreferencesStore.getState().toggleRamadanMode();
-        }
-
-        useRamadanStore.getState().initializeRamadan(
-          hijriYear,
-          formatDate(startDate, 'yyyy-MM-dd'),
-          formatDate(endDate, 'yyyy-MM-dd'),
-          30
-        );
-
-        const tracker = useRamadanStore.getState().tracker;
-        const prefs = useRamadanStore.getState().notificationPrefs;
-
-        if (tracker) {
-          await ramadanNotificationService.scheduleNotifications(
-            prefs,
-            currentDay,
-            tracker.totalDays
-          );
-        }
-      } else {
-        logger.debug('Not Ramadan currently', {
-          hijriMonth: hijriResult.hijri.month,
-          usedMuisOverride: !!muisOverride,
-        });
-      }
-
-      logger.timeEnd('ramadan-detection-init');
-    } catch (err) {
-      logger.error('Ramadan detection failed (non-critical)', err, {
-        willContinue: 'yes',
-      });
-      logger.timeEnd('ramadan-detection-init');
-    }
-  };
 };

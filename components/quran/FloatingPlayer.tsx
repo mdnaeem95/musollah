@@ -11,12 +11,13 @@ import { StyleSheet, Text, TouchableOpacity, View, ViewProps } from 'react-nativ
 import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
-import { useActiveTrack } from 'react-native-track-player';
+import TrackPlayer, { RepeatMode, useActiveTrack } from 'react-native-track-player';
 import { useLastActiveTrack } from '../../hooks/quran/useLastActiveTrack';
 import { PlayPauseButton } from './AyahPlayPauseButton';
 import { MovingText } from './MovingText';
 import { SkipNextButton } from './SkipNextButton';
 import { SkipPreviousButton } from './SkipPreviousButton';
+import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { enter } from '../../utils';
 
@@ -26,6 +27,7 @@ export const FloatingPlayer = ({ style }: ViewProps) => {
   const lastActiveTrack = useLastActiveTrack();
   const [displayedTrack, setDisplayedTrack] = useState(activeTrack ?? lastActiveTrack);
   const [isVisible, setIsVisible] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
 
   useEffect(() => {
     const track = activeTrack ?? lastActiveTrack;
@@ -33,11 +35,18 @@ export const FloatingPlayer = ({ style }: ViewProps) => {
     setIsVisible(!!track);
   }, [activeTrack, lastActiveTrack]);
 
+  const handleToggleLoop = async () => {
+    const next = !isLooping;
+    setIsLooping(next);
+    await TrackPlayer.setRepeatMode(next ? RepeatMode.Track : RepeatMode.Off);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   if (!displayedTrack || !isVisible) return null;
 
-  const iconColor = theme.colors.text.primary;
-  const titleColor = theme.colors.text.primary;
-  const reciterColor = theme.colors.text.secondary;
+  const iconColor = isDarkMode ? 'rgba(255,255,255,0.88)' : theme.colors.text.primary;
+  const titleColor = isDarkMode ? 'rgba(255,255,255,0.88)' : theme.colors.text.primary;
+  const reciterColor = isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary;
 
   return (
     <MotiView
@@ -52,7 +61,11 @@ export const FloatingPlayer = ({ style }: ViewProps) => {
         tint={isDarkMode ? 'dark' : 'light'}
         style={[
           styles.container,
-          { backgroundColor: theme.colors.secondary },
+          {
+            backgroundColor: isDarkMode ? 'rgba(6,11,24,0.92)' : 'rgba(238,242,255,0.92)',
+            borderTopWidth: 1,
+            borderTopColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+          },
           style,
         ]}
       >
@@ -75,6 +88,17 @@ export const FloatingPlayer = ({ style }: ViewProps) => {
 
           {/* Controls */}
           <View style={styles.controls}>
+            <TouchableOpacity
+              onPress={handleToggleLoop}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <FontAwesome6
+                name="rotate"
+                size={18}
+                color={isLooping ? theme.colors.accent : iconColor}
+                solid={isLooping}
+              />
+            </TouchableOpacity>
             <SkipPreviousButton iconSize={22} color={iconColor} />
             <View style={[styles.playButton, { backgroundColor: theme.colors.accent }]}>
               <PlayPauseButton

@@ -118,6 +118,29 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
   const { mutate: savePrayerLog } = useSavePrayerLog();
   const queryClient = useQueryClient();
 
+  // Pre-calculate which prayer times have already passed (for visual dimming)
+  const pastStatus = useMemo<Record<LocalPrayerName, boolean>>(() => {
+    if (!prayerTimes) return {} as Record<LocalPrayerName, boolean>;
+    const today = format(new Date(), 'yyyy-MM-dd') === dateStr;
+
+    return PRAYER_ORDER.reduce((acc, prayerName) => {
+      if (!today) {
+        // Past date = all dimmed; future date = none dimmed
+        acc[prayerName] = isPast(startOfDay(selectedDate)) && !isFuture(startOfDay(selectedDate));
+      } else {
+        const [h, m] = prayerTimes[prayerName].split(':').map(Number);
+        const prayerMins = h * 60 + m;
+        const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+        // Past = time has gone AND it's not the current or next prayer
+        acc[prayerName] =
+          prayerMins < nowMins &&
+          currentPrayer !== prayerName &&
+          nextPrayerInfo?.nextPrayer !== prayerName;
+      }
+      return acc;
+    }, {} as Record<LocalPrayerName, boolean>);
+  }, [prayerTimes, dateStr, selectedDate, currentPrayer, nextPrayerInfo]);
+
   // ✅ NEW: Pre-calculate which prayers are loggable
   const loggableStatus = useMemo<Record<LocalPrayerName, boolean>>(() => {
     if (!prayerTimes) return {} as Record<LocalPrayerName, boolean>;
@@ -225,6 +248,7 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
                 isLoggable={isLoggable}
                 showCheckbox={true}
                 isCurrent={isCurrent}
+                isPast={pastStatus[prayerName] ?? false}
                 countdown={countdown}
               />
             </MotiView>
@@ -242,7 +266,7 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
 
 const createStyles = (theme: any) => StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     width: '100%',
   },
   emptyContainer: {
@@ -255,9 +279,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: theme.colors.text.muted,
   },
   itemContainer: {
-    marginBottom: 12,
-    justifyContent: 'center',
-    alignItems: 'center'
+    marginBottom: 10,
   },
 });
 

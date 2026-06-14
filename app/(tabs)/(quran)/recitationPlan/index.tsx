@@ -11,6 +11,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MotiView } from 'moti';
 import * as Progress from 'react-native-progress';
 import * as Haptics from 'expo-haptics';
@@ -72,7 +73,10 @@ export default function RecitationPlanIndex() {
     const progressPercentage = Math.round(progress.progressRatio * 100);
 
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+      <LinearGradient
+        colors={isDarkMode ? ['#060B18', '#0C1428', '#080F1E'] as const : ['#EEF2FF', '#F0F4FF', '#E8EFFF'] as const}
+        style={styles.container}
+      >
         <View style={styles.content}>
           {/* Header */}
           <MotiView
@@ -102,7 +106,11 @@ export default function RecitationPlanIndex() {
             <BlurView
               intensity={20}
               tint={isDarkMode ? 'dark' : 'light'}
-              style={[styles.planCard, { backgroundColor: theme.colors.secondary }]}
+              style={[styles.planCard, {
+                backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+                borderWidth: 1,
+                borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+              }]}
             >
               {/* Plan Info */}
               <View style={styles.planInfo}>
@@ -192,7 +200,7 @@ export default function RecitationPlanIndex() {
           >
             <TouchableOpacity
               onPress={handleStartNew}
-              style={[styles.secondaryButton, { backgroundColor: theme.colors.secondary }]}
+              style={[styles.secondaryButton, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}
               activeOpacity={0.7}
             >
               <FontAwesome6
@@ -206,7 +214,7 @@ export default function RecitationPlanIndex() {
             </TouchableOpacity>
           </MotiView>
         </View>
-      </View>
+      </LinearGradient>
     );
   }
 
@@ -215,7 +223,10 @@ export default function RecitationPlanIndex() {
   // ============================================================================
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+    <LinearGradient
+      colors={isDarkMode ? ['#060B18', '#0C1428', '#080F1E'] as const : ['#EEF2FF', '#F0F4FF', '#E8EFFF'] as const}
+      style={styles.container}
+    >
       <View style={styles.content}>
         {/* Empty State Card */}
         <MotiView
@@ -226,7 +237,11 @@ export default function RecitationPlanIndex() {
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.emptyCard, { backgroundColor: theme.colors.secondary }]}
+            style={[styles.emptyCard, {
+              backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+              borderWidth: 1,
+              borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+            }]}
           >
             <View style={[styles.emptyIcon, { backgroundColor: theme.colors.accent + '15' }]}>
               <FontAwesome6
@@ -290,7 +305,7 @@ export default function RecitationPlanIndex() {
           </BlurView>
         </MotiView>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 

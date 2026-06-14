@@ -12,18 +12,23 @@
 // ============================================================================
 
 /**
- * Firebase collection names
- * Update year as needed - consider using dynamic year
+ * Firebase collection names.
+ *
+ * Prayer times are NOT here — they live in per-year collections
+ * (`prayerTimes{year}`). Always resolve them via {@link getPrayerTimesCollection}
+ * so the year is never hardcoded.
  */
 export const FIREBASE_COLLECTIONS = {
-  PRAYER_TIMES: 'prayerTimes2025', // TODO: Make dynamic based on year
   USERS: 'users',
   KHUTBAHS: 'khutbahs',
   DUAS: 'duas',
 } as const;
 
 /**
- * Get prayer times collection for a specific year
+ * Get the prayer-times collection name for a specific year.
+ * Defaults to the current year.
+ *
+ * @example getPrayerTimesCollection(2026) // 'prayerTimes2026'
  */
 export function getPrayerTimesCollection(year: number = new Date().getFullYear()): string {
   return `prayerTimes${year}`;

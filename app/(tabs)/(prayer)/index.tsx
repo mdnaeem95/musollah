@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { View, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 const ErrorBoundary = require('react-native-error-boundary').default;
 
 // Components
+import SkyBackground from '../../../components/prayer/SkyBackground';
 import PrayerActionsModal from '../../../components/prayer/PrayerActionsModal';
 import { useTheme } from '../../../context/ThemeContext';
 import PrayerTimesList from '../../../components/prayer/PrayerTimesList';
@@ -14,8 +15,7 @@ import { PrayerDateSelector } from '../../../components/prayer/PrayerDateSelecto
 import { PrayerErrorFallback } from '../../../components/prayer/PrayerErrorFallback';
 import { LocationDisplay } from '../../../components/prayer/LocationDisplay';
 
-// Ramadan
-import RamadanPromptBanner from '../../../components/ramadan/RamadanPromptBanner';
+import { NextPrayerBanner } from '../../../components/prayer/NextPrayerBanner';
 
 // Hooks & Services
 import { usePrayerTimesOptimized } from '../../../hooks/prayer/usePrayerTimesOptimized';
@@ -66,7 +66,7 @@ const PrayerTab: React.FC = () => {
   const { data: prayerData, isLoading, error, refetch } = isToday ? todayQuery : dateQuery;
 
   // Calculate prayer times with new structure
-  const { currentPrayer, nextPrayerInfo, backgroundImage } = usePrayerTimesOptimized(prayerData || null);
+  const { currentPrayer, nextPrayerInfo } = usePrayerTimesOptimized(prayerData || null);
 
   // Initialize notifications
   usePrayerNotifications(prayerData || null);
@@ -154,7 +154,7 @@ const PrayerTab: React.FC = () => {
         analyticsService.logError(error, { screen: 'PrayerTab' });
       }}
     >
-      <ImageBackground source={backgroundImage} style={styles.backgroundImage}>
+      <SkyBackground prayerTimes={prayerData ?? null}>
         <View style={styles.mainContainer}>
           {/* Date selector */}
           <View style={styles.header}>
@@ -175,8 +175,13 @@ const PrayerTab: React.FC = () => {
             <LocationDisplay />
           </View>
 
-          {/* Ramadan approaching banner */}
-          <RamadanPromptBanner />
+          {/* Next prayer pill */}
+          {isToday && nextPrayerInfo && (
+            <NextPrayerBanner
+              nextPrayer={nextPrayerInfo.prayer}
+              timeUntil={nextPrayerInfo.timeUntil}
+            />
+          )}
 
           {/* Prayer times content */}
           {renderContent()}
@@ -205,26 +210,25 @@ const PrayerTab: React.FC = () => {
           onClose={modals.closeActionsModal}
           actions={actions}
         />
-      </ImageBackground>
+      </SkyBackground>
     </ErrorBoundary>
   );
 };
 
 const createStyles = (theme: any) => StyleSheet.create({
-  backgroundImage: {
+  container: {
     flex: 1,
-    resizeMode: 'cover',
   },
   mainContainer: {
     flex: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingTop: 60,
+    paddingTop: 52,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 20,
-    gap: 12,
+    marginBottom: 8,
+    gap: 6,
   },
   contentContainer: {
     width: '100%',

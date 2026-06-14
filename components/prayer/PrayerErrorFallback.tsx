@@ -42,10 +42,10 @@ export const PrayerErrorFallback: React.FC<PrayerErrorFallbackProps> = ({
       style={styles.container}
     >
       <View style={styles.iconContainer}>
-        <FontAwesome6 
-          name={icon} 
-          size={48} 
-          color={theme.colors.text.error} 
+        <FontAwesome6
+          name={icon}
+          size={32}
+          color="rgba(255, 255, 255, 0.8)"
         />
       </View>
 
@@ -58,7 +58,7 @@ export const PrayerErrorFallback: React.FC<PrayerErrorFallbackProps> = ({
         onPress={resetError}
         activeOpacity={0.7}
       >
-        <FontAwesome6 name="rotate" size={16} color={theme.colors.text.primary} />
+        <FontAwesome6 name="rotate" size={16} color="rgba(255, 255, 255, 0.9)" />
         <Text style={styles.retryButtonText}>Try Again</Text>
       </TouchableOpacity>
 
@@ -79,42 +79,55 @@ const createStyles = (theme: any) => StyleSheet.create({
     padding: 32,
   },
   iconContainer: {
-    marginBottom: 24,
+    marginBottom: 20,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: 20,
     fontFamily: 'Outfit_600SemiBold',
-    color: theme.colors.text.primary,
-    marginBottom: 12,
+    color: 'rgba(255, 255, 255, 0.95)',
+    marginBottom: 10,
     textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   message: {
     fontSize: 14,
     fontFamily: 'Outfit_400Regular',
-    color: theme.colors.text.secondary,
+    color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 28,
     lineHeight: 20,
   },
   retryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: theme.colors.secondary,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   retryButtonText: {
-    fontSize: 16,
-    fontFamily: 'Outfit_500Medium',
-    color: theme.colors.text.primary,
+    fontSize: 15,
+    fontFamily: 'Outfit_600SemiBold',
+    color: 'rgba(255, 255, 255, 0.92)',
   },
   hint: {
     fontSize: 12,
     fontFamily: 'Outfit_400Regular',
-    color: theme.colors.text.muted,
+    color: 'rgba(255, 255, 255, 0.4)',
     textAlign: 'center',
-    marginTop: 16,
+    marginTop: 20,
   },
 });

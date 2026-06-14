@@ -44,14 +44,14 @@ const MusollahLayout = () => {
                 tint={isDarkMode ? 'dark' : 'light'}
                 style={{
                   flex: 1,
-                  backgroundColor: theme.colors.primary + (isDarkMode ? 'DD' : 'F5'),
+                  backgroundColor: isDarkMode ? '#060B18DD' : '#EEF2FFF5',
                 }}
               />
             ) : null,
           
           // Header Style (Android)
           headerStyle: {
-            backgroundColor: Platform.OS === 'ios' ? 'transparent' : theme.colors.primary,
+            backgroundColor: Platform.OS === 'ios' ? 'transparent' : (isDarkMode ? '#060B18' : '#EEF2FF'),
           },
           
           // Header Text
@@ -69,7 +69,7 @@ const MusollahLayout = () => {
                 padding: 12,
                 marginLeft: 4,
                 borderRadius: 12,
-                backgroundColor: theme.colors.secondary + '80',
+                backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
               }}
               onPress={handleBackPress}
               activeOpacity={0.7}

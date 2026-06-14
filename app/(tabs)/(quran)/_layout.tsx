@@ -21,7 +21,7 @@ import { useTheme } from '../../../context/ThemeContext';
 
 const QuranLayout = () => {
   const router = useRouter();
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
 
   // Custom back button with haptics
   const BackButton = () => (
@@ -30,7 +30,7 @@ const QuranLayout = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.back();
       }}
-      style={styles.backButton}
+      style={[styles.backButton, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)' }]}
     >
       <FontAwesome6
         name="arrow-left"
@@ -61,12 +61,12 @@ const QuranLayout = () => {
             color: theme.colors.text.primary,
           },
           headerStyle: {
-            backgroundColor: theme.colors.primary,
+            backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
           },
           headerShadowVisible: false,
           // Add subtle gradient background (optional)
           headerBackground: () => (
-            <View style={{ flex: 1, backgroundColor: theme.colors.primary }} />
+            <View style={{ flex: 1, backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF' }} />
           ),
         }}
       />
@@ -83,7 +83,7 @@ const QuranLayout = () => {
             color: theme.colors.text.primary,
           },
           headerStyle: {
-            backgroundColor: theme.colors.primary,
+            backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
           },
           headerShadowVisible: false,
           headerLeft: () => <BackButton />,
@@ -102,7 +102,7 @@ const QuranLayout = () => {
             color: theme.colors.text.primary,
           },
           headerStyle: {
-            backgroundColor: theme.colors.primary,
+            backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
           },
           headerShadowVisible: false,
           headerLeft: () => <BackButton />,
@@ -120,7 +120,7 @@ const QuranLayout = () => {
             color: theme.colors.text.primary,
           },
           headerStyle: {
-            backgroundColor: theme.colors.primary,
+            backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
           },
           headerShadowVisible: false,
           headerLeft: () => <BackButton />,
@@ -139,7 +139,26 @@ const QuranLayout = () => {
             color: theme.colors.text.primary,
           },
           headerStyle: {
-            backgroundColor: theme.colors.primary,
+            backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
+          },
+          headerShadowVisible: false,
+          headerLeft: () => <BackButton />,
+        }}
+      />
+
+      {/* Search Screen */}
+      <Stack.Screen
+        name="search/index"
+        options={{
+          headerShown: true,
+          headerTitle: 'Search Quran',
+          headerTitleStyle: {
+            fontFamily: 'Outfit_700Bold',
+            fontSize: 20,
+            color: theme.colors.text.primary,
+          },
+          headerStyle: {
+            backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
           },
           headerShadowVisible: false,
           headerLeft: () => <BackButton />,
@@ -158,7 +177,7 @@ const QuranLayout = () => {
             color: theme.colors.text.primary,
           },
           headerStyle: {
-            backgroundColor: theme.colors.primary,
+            backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
           },
           headerShadowVisible: false,
           headerLeft: () => <BackButton />,
@@ -170,8 +189,12 @@ const QuranLayout = () => {
 
 const styles = StyleSheet.create({
   backButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    marginLeft: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

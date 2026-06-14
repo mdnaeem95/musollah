@@ -5,33 +5,38 @@ import { StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
 
 export const CircleButton = ({ onPress }: any) => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={[styles.circleButton, { backgroundColor: theme.colors.secondary }]}
+      style={[styles.circleButton, {
+        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+      }]}
     >
       <FontAwesome6
         name="arrow-left"
-        size={24}
-        color={theme.colors.text.primary}
+        size={18}
+        color={isDarkMode ? 'rgba(255,255,255,0.80)' : theme.colors.text.primary}
       />
     </TouchableOpacity>
   );
 };
 
 const FoodLayout = () => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const router = useRouter();
+
+  const gradientHeaderBg = isDarkMode ? '#060B18' : '#EEF2FF';
+  const headerTextColor = isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary;
 
   const commonHeaderStyles = {
     headerTitleStyle: {
       fontFamily: 'Outfit_700Bold',
       fontSize: 20,
-      color: theme.colors.text.primary,
+      color: headerTextColor,
     },
     headerStyle: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: gradientHeaderBg,
     },
   };
 

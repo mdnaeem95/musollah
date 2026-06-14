@@ -27,10 +27,87 @@ import DailyAyah from '../../../components/quran/DailyAyah';
 import RecitationProgress from '../../../components/quran/RecitationProgress';
 import { useTheme } from '../../../context/ThemeContext';
 import { getLastReadAyah, getLastListenedAyah } from '../../../utils/quran/storage';
-import { useQuranStore } from '../../../stores/useQuranStore';
+import { useQuranStore, useReadingStreak } from '../../../stores/useQuranStore';
+import { useSurahs } from '../../../api/services/quran';
 import { enter } from '../../../utils';
 
 const { width } = Dimensions.get('window');
+
+const StreakCard = () => {
+  const { theme, isDarkMode } = useTheme();
+  const { currentStreak, longestStreak, todayCount, totalCount } = useReadingStreak();
+
+  const stats = [
+    { label: 'Day Streak', value: currentStreak, icon: 'fire' },
+    { label: 'Today', value: todayCount, icon: 'sun' },
+    { label: 'Total Read', value: totalCount, icon: 'check-double' },
+  ];
+
+  return (
+    <BlurView
+      intensity={20}
+      tint={isDarkMode ? 'dark' : 'light'}
+      style={[
+        streakStyles.card,
+        {
+          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+          borderWidth: 1,
+          borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+        },
+      ]}
+    >
+      {stats.map((stat, i) => (
+        <React.Fragment key={stat.label}>
+          {i > 0 && (
+            <View style={[streakStyles.divider, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]} />
+          )}
+          <View style={streakStyles.statItem}>
+            <FontAwesome6
+              name={stat.icon}
+              size={14}
+              color={theme.colors.accent}
+              solid
+            />
+            <Text style={[streakStyles.statValue, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
+              {stat.value}
+            </Text>
+            <Text style={[streakStyles.statLabel, { color: isDarkMode ? 'rgba(255,255,255,0.45)' : theme.colors.text.secondary }]}>
+              {stat.label}
+            </Text>
+          </View>
+        </React.Fragment>
+      ))}
+    </BlurView>
+  );
+};
+
+const streakStyles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  statValue: {
+    fontSize: 22,
+    fontFamily: 'Outfit_700Bold',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontFamily: 'Outfit_500Medium',
+    textAlign: 'center',
+  },
+  divider: {
+    width: 1,
+    marginVertical: 4,
+  },
+});
 
 const QuranDashboard = () => {
   const { theme, isDarkMode } = useTheme();
@@ -41,6 +118,13 @@ const QuranDashboard = () => {
   
   // Get bookmarks count from store
   const bookmarks = useQuranStore((state) => state.bookmarks);
+
+  // Surah list for name lookup
+  const { data: surahs = [] } = useSurahs();
+  const getSurahName = useCallback((number: number) => {
+    const s = surahs.find((s: any) => s.number === number);
+    return s ? s.englishName : `Surah ${number}`;
+  }, [surahs]);
 
   // Load last read/listened on focus
   useFocusEffect(
@@ -94,7 +178,7 @@ const QuranDashboard = () => {
     {
       label: 'Listen',
       icon: 'headphones',
-      route: '/surahs',
+      route: '/surahs?mode=listen',
       description: 'Audio recitation',
     },
     {
@@ -118,7 +202,7 @@ const QuranDashboard = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+    <LinearGradient colors={isDarkMode ? ['#060B18', '#0C1428', '#080F1E'] as const : ['#EEF2FF', '#F0F4FF', '#E8EFFF'] as const} style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -145,6 +229,44 @@ const QuranDashboard = () => {
           </LinearGradient>
         </MotiView>
 
+        {/* Search Entry */}
+        <MotiView
+          from={{ opacity: 0, translateY: 10 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={enter(0)}
+          style={{ marginBottom: 20 }}
+        >
+          <TouchableOpacity
+            onPress={() => handleNavigate('/search')}
+            activeOpacity={0.8}
+          >
+            <BlurView
+              intensity={20}
+              tint={isDarkMode ? 'dark' : 'light'}
+              style={[
+                styles.searchEntry,
+                {
+                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+                },
+              ]}
+            >
+              <FontAwesome6
+                name="magnifying-glass"
+                size={15}
+                color={isDarkMode ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.30)'}
+              />
+              <Text style={[styles.searchEntryText, { color: isDarkMode ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.30)' }]}>
+                Search 6,236 ayahs...
+              </Text>
+              <View style={[styles.searchEntryBadge, { backgroundColor: theme.colors.accent + '18' }]}>
+                <FontAwesome6 name="book-quran" size={11} color={theme.colors.accent} />
+              </View>
+            </BlurView>
+          </TouchableOpacity>
+        </MotiView>
+
         {/* Main Actions Grid (2x2) */}
         <View style={styles.mainActionsContainer}>
           {mainActions.map((action, index) => (
@@ -164,7 +286,11 @@ const QuranDashboard = () => {
                   tint={isDarkMode ? 'dark' : 'light'}
                   style={[
                     styles.mainActionCard,
-                    { backgroundColor: theme.colors.secondary },
+                    {
+                      backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+                      borderWidth: 1,
+                      borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+                    },
                   ]}
                 >
                   <View
@@ -180,10 +306,10 @@ const QuranDashboard = () => {
                       solid
                     />
                   </View>
-                  <Text style={[styles.mainActionLabel, { color: theme.colors.text.primary }]}>
+                  <Text style={[styles.mainActionLabel, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
                     {action.label}
                   </Text>
-                  <Text style={[styles.mainActionDescription, { color: theme.colors.text.secondary }]}>
+                  <Text style={[styles.mainActionDescription, { color: isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary }]}>
                     {action.description}
                   </Text>
                 </BlurView>
@@ -204,7 +330,7 @@ const QuranDashboard = () => {
               size={16}
               color={theme.colors.accent}
             />
-            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+            <Text style={[styles.sectionTitle, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
               Daily Ayah
             </Text>
           </View>
@@ -223,10 +349,14 @@ const QuranDashboard = () => {
               size={16}
               color={theme.colors.accent}
             />
-            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+            <Text style={[styles.sectionTitle, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
               Your Progress
             </Text>
           </View>
+
+          {/* Streak + Daily Stats Row */}
+          <StreakCard />
+
           <RecitationProgress />
         </MotiView>
 
@@ -252,7 +382,11 @@ const QuranDashboard = () => {
                 tint={isDarkMode ? 'dark' : 'light'}
                 style={[
                   styles.continueCard,
-                  { backgroundColor: theme.colors.secondary },
+                  {
+                    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+                    borderWidth: 1,
+                    borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+                  },
                 ]}
               >
                 <View style={styles.continueCardHeader}>
@@ -269,11 +403,11 @@ const QuranDashboard = () => {
                     />
                   </View>
                   <View style={styles.continueTextContainer}>
-                    <Text style={[styles.continueLabel, { color: theme.colors.text.secondary }]}>
+                    <Text style={[styles.continueLabel, { color: isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary }]}>
                       Continue Listening
                     </Text>
-                    <Text style={[styles.continueText, { color: theme.colors.text.primary }]}>
-                      Surah {lastListenedAyah.surahNumber}, Ayah {lastListenedAyah.ayahIndex}
+                    <Text style={[styles.continueText, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
+                      {getSurahName(lastListenedAyah.surahNumber)} · Ayah {lastListenedAyah.ayahIndex}
                     </Text>
                   </View>
                   <FontAwesome6
@@ -309,7 +443,11 @@ const QuranDashboard = () => {
                 tint={isDarkMode ? 'dark' : 'light'}
                 style={[
                   styles.continueCard,
-                  { backgroundColor: theme.colors.secondary },
+                  {
+                    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+                    borderWidth: 1,
+                    borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+                  },
                 ]}
               >
                 <View style={styles.continueCardHeader}>
@@ -326,11 +464,11 @@ const QuranDashboard = () => {
                     />
                   </View>
                   <View style={styles.continueTextContainer}>
-                    <Text style={[styles.continueLabel, { color: theme.colors.text.secondary }]}>
+                    <Text style={[styles.continueLabel, { color: isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary }]}>
                       Continue Reading
                     </Text>
-                    <Text style={[styles.continueText, { color: theme.colors.text.primary }]}>
-                      Surah {lastReadAyah.surahNumber}, Ayah {lastReadAyah.ayahNumber}
+                    <Text style={[styles.continueText, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
+                      {getSurahName(lastReadAyah.surahNumber)} · Ayah {lastReadAyah.ayahNumber}
                     </Text>
                   </View>
                   <FontAwesome6
@@ -359,7 +497,11 @@ const QuranDashboard = () => {
               tint={isDarkMode ? 'dark' : 'light'}
               style={[
                 styles.recitationPlanCard,
-                { backgroundColor: theme.colors.secondary },
+                {
+                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+                },
               ]}
             >
               <View style={styles.recitationPlanContent}>
@@ -376,10 +518,10 @@ const QuranDashboard = () => {
                   />
                 </View>
                 <View style={styles.recitationPlanText}>
-                  <Text style={[styles.recitationPlanTitle, { color: theme.colors.text.primary }]}>
+                  <Text style={[styles.recitationPlanTitle, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
                     Recitation Plan
                   </Text>
-                  <Text style={[styles.recitationPlanSubtitle, { color: theme.colors.text.secondary }]}>
+                  <Text style={[styles.recitationPlanSubtitle, { color: isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary }]}>
                     Set your Quran completion goal
                   </Text>
                 </View>
@@ -396,7 +538,7 @@ const QuranDashboard = () => {
         {/* Bottom Padding */}
         <View style={{ height: 32 }} />
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 };
 
@@ -439,6 +581,29 @@ const styles = StyleSheet.create({
     color: '#fff',
     opacity: 0.85,
     lineHeight: 19,
+  },
+
+  // Search Entry
+  searchEntry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    overflow: 'hidden',
+  },
+  searchEntryText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Outfit_400Regular',
+  },
+  searchEntryBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   // Main Actions Grid

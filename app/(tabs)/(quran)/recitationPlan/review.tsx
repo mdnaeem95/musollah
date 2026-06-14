@@ -59,7 +59,7 @@ export default function ReviewScreen() {
   const accentText = calculateContrastColor(accentBg);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+    <View style={[styles.container, { backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF' }]}>
       <View style={styles.content}>
         {/* Header */}
         <MotiView
@@ -89,7 +89,7 @@ export default function ReviewScreen() {
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.summaryCard, { backgroundColor: theme.colors.secondary }]}
+            style={[styles.summaryCard, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)', borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)' }]}
           >
             {/* Duration */}
             <View style={styles.summaryItem}>
@@ -165,7 +165,7 @@ export default function ReviewScreen() {
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.infoCard, { backgroundColor: theme.colors.secondary }]}
+            style={[styles.infoCard, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)', borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)' }]}
           >
             <View style={[styles.infoIcon, { backgroundColor: theme.colors.text.muted + '15' }]}>
               <FontAwesome6

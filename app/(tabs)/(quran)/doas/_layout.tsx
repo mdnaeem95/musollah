@@ -57,15 +57,14 @@ const DoaLayout = () => {
               color: theme.colors.text.primary,
             },
             headerStyle: {
-              backgroundColor: theme.colors.primary,
+              backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
             },
             headerLeft: () => (
-              <TouchableOpacity onPress={() => router.back()}>
+              <TouchableOpacity onPress={() => router.back()} style={{ marginLeft: 8, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)' }}>
                 <FontAwesome6
                   name="arrow-left"
-                  size={24}
+                  size={20}
                   color={theme.colors.text.primary}
-                  style={{ padding: 10 }}
                 />
               </TouchableOpacity>
             ),
@@ -77,7 +76,7 @@ const DoaLayout = () => {
             headerShown: true,
             headerTitle: 'Duas',
             headerStyle: {
-              backgroundColor: theme.colors.primary,
+              backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
             },
             headerTintColor: theme.colors.text.primary,
             headerTitleStyle: {
@@ -86,12 +85,11 @@ const DoaLayout = () => {
               color: theme.colors.text.primary,
             },
             headerLeft: () => (
-              <TouchableOpacity onPress={() => router.back()}>
+              <TouchableOpacity onPress={() => router.back()} style={{ marginLeft: 8, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)' }}>
                 <FontAwesome6
                   name="arrow-left"
-                  size={24}
+                  size={20}
                   color={theme.colors.text.primary}
-                  style={{ padding: 10 }}
                 />
               </TouchableOpacity>
             ),

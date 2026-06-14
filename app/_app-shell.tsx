@@ -4,12 +4,12 @@ import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
 import * as SplashScreen from 'expo-splash-screen';
-
 import { toastConfig } from '../utils/toastConfig';
 import { useAppInit } from '../hooks/initialization/useAppInitialization';
 import { useLazyInit } from '../hooks/initialization/useLazyInit';
 import { ModernSplash } from '../components/ModernSplash';
 
+// Hold the native splash until ModernSplash mounts and calls hideAsync itself.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function AppShell() {
@@ -18,9 +18,10 @@ export default function AppShell() {
 
   useLazyInit(isReady);
 
+  // SplashScreen.hideAsync() is called inside ModernSplash at mount time so the
+  // native → JS transition is seamless (same background colour).
   const handleSplashComplete = useCallback(() => {
     setSplashAnimationComplete(true);
-    SplashScreen.hideAsync().catch(() => {});
   }, []);
 
   const showSplash = !isReady || !splashAnimationComplete;

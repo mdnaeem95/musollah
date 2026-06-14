@@ -88,7 +88,11 @@ const CustomSearchBar = memo(function CustomSearchBar({
       <BlurView
         intensity={20}
         tint={isDarkMode ? 'dark' : 'light'}
-        style={[styles.searchContainer, { backgroundColor: theme.colors.secondary }]}
+        style={[styles.searchContainer, {
+          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.90)',
+          borderWidth: 1,
+          borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+        }]}
       >
         {/* Search Icon */}
         <View style={[styles.searchIconContainer, { backgroundColor: theme.colors.accent }]}>
@@ -154,7 +158,11 @@ const PremiumSegmentedControl = memo(function PremiumSegmentedControl({
       <BlurView
         intensity={15}
         tint={isDarkMode ? 'dark' : 'light'}
-        style={[styles.segmentedContainer, { backgroundColor: theme.colors.secondary }]}
+        style={[styles.segmentedContainer, {
+          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.85)',
+          borderWidth: 1,
+          borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+        }]}
       >
         {LOCATION_TYPES.map((type, index) => {
           const isSelected = index === selectedIndex;
@@ -316,7 +324,11 @@ const LocationItem = memo(function LocationItem({
         <BlurView
           intensity={20}
           tint={isDarkMode ? 'dark' : 'light'}
-          style={[styles.locationCard, { backgroundColor: theme.colors.secondary }]}
+          style={[styles.locationCard, {
+            backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+            borderWidth: 1,
+            borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+          }]}
         >
           <View style={styles.locationCardContent}>
             {/* Left: Info */}
@@ -401,7 +413,11 @@ const StatsHeader = memo(function StatsHeader({
       <BlurView
         intensity={15}
         tint={isDarkMode ? 'dark' : 'light'}
-        style={[styles.statCard, { backgroundColor: theme.colors.secondary }]}
+        style={[styles.statCard, {
+          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+          borderWidth: 1,
+          borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+        }]}
       >
         <FontAwesome6 name="location-dot" size={16} color={theme.colors.accent} />
         <View>
@@ -418,7 +434,11 @@ const StatsHeader = memo(function StatsHeader({
         <BlurView
           intensity={15}
           tint={isDarkMode ? 'dark' : 'light'}
-          style={[styles.statCard, { backgroundColor: theme.colors.secondary }]}
+          style={[styles.statCard, {
+            backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+            borderWidth: 1,
+            borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+          }]}
         >
           <FontAwesome6 name="bullseye" size={16} color={theme.colors.accent} />
           <View>
@@ -630,7 +650,7 @@ export default function MusollahScreen() {
 
   // Main render
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+    <View style={[styles.container, { backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF' }]}>
       <View style={styles.content}>
         {/* Map */}
         <View style={styles.mapContainer}>
@@ -674,7 +694,9 @@ export default function MusollahScreen() {
           <BlurView
             intensity={40}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.bottomSheetInner, { backgroundColor: theme.colors.primary }]}
+            style={[styles.bottomSheetInner, {
+              backgroundColor: isDarkMode ? 'rgba(6,11,24,0.94)' : 'rgba(238,242,255,0.94)',
+            }]}
           >
             {/* Handle Bar */}
             <View style={styles.handleContainer}>

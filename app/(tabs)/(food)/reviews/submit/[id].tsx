@@ -14,6 +14,7 @@ import { AirbnbRating } from '@rn-vui/ratings';
 import { MotiView } from 'moti';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../../../context/ThemeContext';
@@ -75,9 +76,13 @@ const SubmitReview = () => {
   };
 
   return (
+    <LinearGradient
+      colors={isDarkMode ? ['#060B18', '#0C1428', '#080F1E'] : ['#EEF2FF', '#F0F4FF', '#E8EFFF']}
+      style={{ flex: 1 }}
+    >
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <ScrollView
-        style={[styles.container, { backgroundColor: theme.colors.primary }]}
+        style={styles.container}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -92,10 +97,10 @@ const SubmitReview = () => {
             <View style={[styles.headerIcon, { backgroundColor: theme.colors.accent + '15' }]}>
               <FontAwesome6 name="pen-to-square" size={24} color={theme.colors.accent} />
             </View>
-            <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
+            <Text style={[styles.headerTitle, { color: isDarkMode ? 'rgba(255,255,255,0.92)' : theme.colors.text.primary }]}>
               Share Your Experience
             </Text>
-            <Text style={[styles.headerSubtitle, { color: theme.colors.text.secondary }]}>
+            <Text style={[styles.headerSubtitle, { color: isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary }]}>
               Help others discover great halal food
             </Text>
           </View>
@@ -110,11 +115,11 @@ const SubmitReview = () => {
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.section, { backgroundColor: theme.colors.secondary }]}
+            style={[styles.section, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)', borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)' }]}
           >
             <View style={styles.sectionHeader}>
               <FontAwesome6 name="star" size={16} color={theme.colors.accent} solid />
-              <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+              <Text style={[styles.sectionTitle, { color: isDarkMode ? 'rgba(255,255,255,0.88)' : theme.colors.text.primary }]}>
                 Rating
               </Text>
             </View>
@@ -160,11 +165,11 @@ const SubmitReview = () => {
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.section, { backgroundColor: theme.colors.secondary }]}
+            style={[styles.section, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)', borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)' }]}
           >
             <View style={styles.sectionHeader}>
               <FontAwesome6 name="message" size={16} color={theme.colors.accent} />
-              <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+              <Text style={[styles.sectionTitle, { color: isDarkMode ? 'rgba(255,255,255,0.88)' : theme.colors.text.primary }]}>
                 Your Review
               </Text>
             </View>
@@ -173,9 +178,9 @@ const SubmitReview = () => {
               style={[
                 styles.textArea,
                 {
-                  backgroundColor: theme.colors.primary,
-                  color: theme.colors.text.primary,
-                  borderColor: reviewText.length > 0 ? theme.colors.accent : theme.colors.text.muted + '30',
+                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.85)',
+                  color: isDarkMode ? 'rgba(255,255,255,0.88)' : theme.colors.text.primary,
+                  borderColor: reviewText.length > 0 ? theme.colors.accent : isDarkMode ? 'rgba(255,255,255,0.12)' : theme.colors.text.muted + '30',
                 },
               ]}
               multiline
@@ -188,7 +193,7 @@ const SubmitReview = () => {
             />
 
             <View style={styles.textAreaFooter}>
-              <Text style={[styles.characterHint, { color: theme.colors.text.muted }]}>
+              <Text style={[styles.characterHint, { color: isDarkMode ? 'rgba(255,255,255,0.35)' : theme.colors.text.muted }]}>
                 Minimum 10 characters
               </Text>
               <Text
@@ -198,7 +203,7 @@ const SubmitReview = () => {
                     color:
                       reviewText.length > MAX_REVIEW_LENGTH * 0.9
                         ? '#ff6b6b'
-                        : theme.colors.text.secondary,
+                        : isDarkMode ? 'rgba(255,255,255,0.35)' : theme.colors.text.secondary,
                   },
                 ]}
               >
@@ -217,11 +222,11 @@ const SubmitReview = () => {
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.section, { backgroundColor: theme.colors.secondary }]}
+            style={[styles.section, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)', borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)' }]}
           >
             <View style={styles.sectionHeader}>
               <FontAwesome6 name="images" size={16} color={theme.colors.accent} />
-              <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+              <Text style={[styles.sectionTitle, { color: isDarkMode ? 'rgba(255,255,255,0.88)' : theme.colors.text.primary }]}>
                 Photos
               </Text>
               <Text style={[styles.sectionSubtitle, { color: theme.colors.text.muted }]}>
@@ -255,7 +260,7 @@ const SubmitReview = () => {
                 <TouchableOpacity
                   style={[
                     styles.addImageButton,
-                    { backgroundColor: theme.colors.primary, borderColor: theme.colors.accent + '30' },
+                    { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.85)', borderColor: theme.colors.accent + '30' },
                   ]}
                   onPress={handleImagePicker}
                   activeOpacity={0.7}
@@ -269,8 +274,8 @@ const SubmitReview = () => {
             </View>
 
             {selectedImages.length > 0 && (
-              <Text style={[styles.imageHint, { color: theme.colors.text.muted }]}>
-                <FontAwesome6 name="circle-info" size={12} color={theme.colors.text.muted} />{' '}
+              <Text style={[styles.imageHint, { color: isDarkMode ? 'rgba(255,255,255,0.35)' : theme.colors.text.muted }]}>
+                <FontAwesome6 name="circle-info" size={12} color={isDarkMode ? 'rgba(255,255,255,0.35)' : theme.colors.text.muted} />{' '}
                 Tap X to remove a photo
               </Text>
             )}
@@ -304,7 +309,7 @@ const SubmitReview = () => {
           </TouchableOpacity>
 
           {!canSubmit && !isSubmitting && (
-            <Text style={[styles.submitHint, { color: theme.colors.text.muted }]}>
+            <Text style={[styles.submitHint, { color: isDarkMode ? 'rgba(255,255,255,0.35)' : theme.colors.text.muted }]}>
               Please add a rating and write at least 10 characters
             </Text>
           )}
@@ -317,6 +322,7 @@ const SubmitReview = () => {
         <SignInModal visible={authModalVisible} onClose={() => setAuthModalVisible(false)} />
       </ScrollView>
     </TouchableWithoutFeedback>
+    </LinearGradient>
   );
 };
 

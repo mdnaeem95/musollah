@@ -73,14 +73,16 @@ type LocationType = 'Bidet' | 'Musollah';
 /**
  * Type Toggle Component (Bidet/Musollah)
  */
-const TypeToggle = React.memo(({ 
-  selectedType, 
-  onTypeChange, 
-  theme 
-}: { 
+const TypeToggle = React.memo(({
+  selectedType,
+  onTypeChange,
+  theme,
+  isDarkMode,
+}: {
   selectedType: LocationType;
   onTypeChange: (type: LocationType) => void;
   theme: any;
+  isDarkMode: boolean;
 }) => {
   const handlePress = (type: LocationType) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -96,7 +98,7 @@ const TypeToggle = React.memo(({
             backgroundColor:
               selectedType === 'Bidet'
                 ? theme.colors.accent
-                : theme.colors.secondary,
+                : isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
           },
         ]}
         onPress={() => handlePress('Bidet')}
@@ -124,7 +126,7 @@ const TypeToggle = React.memo(({
             backgroundColor:
               selectedType === 'Musollah'
                 ? theme.colors.accent
-                : theme.colors.secondary,
+                : isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
           },
         ]}
         onPress={() => handlePress('Musollah')}
@@ -153,16 +155,18 @@ TypeToggle.displayName = 'TypeToggle';
 /**
  * Checkbox Field Component
  */
-const CheckboxField = React.memo(({ 
-  label, 
-  checked, 
-  onToggle, 
-  theme 
-}: { 
+const CheckboxField = React.memo(({
+  label,
+  checked,
+  onToggle,
+  theme,
+  isDarkMode,
+}: {
   label: string;
   checked: boolean;
   onToggle: () => void;
   theme: any;
+  isDarkMode: boolean;
 }) => {
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -174,8 +178,8 @@ const CheckboxField = React.memo(({
       style={[
         styles.checkboxCard,
         {
-          backgroundColor: theme.colors.secondary,
-          borderColor: checked ? theme.colors.accent : 'transparent',
+          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+          borderColor: checked ? theme.colors.accent : isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
         },
       ]}
       onPress={handlePress}
@@ -183,8 +187,8 @@ const CheckboxField = React.memo(({
     >
       <BlurView
         intensity={20}
-        tint={theme.isDarkMode ? 'dark' : 'light'}
-        style={[styles.checkboxBlur, { backgroundColor: theme.colors.secondary }]}
+        tint={isDarkMode ? 'dark' : 'light'}
+        style={[styles.checkboxBlur, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)' }]}
       >
         <View
           style={[
@@ -368,14 +372,14 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
       presentationStyle="fullScreen"
       onRequestClose={handleClose}
     >
-      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+      <View style={[styles.container, { backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF' }]}>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-        
+
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
+        <View style={[styles.header, { backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF' }]}>
           <View style={styles.headerContent}>
             <TouchableOpacity
-              style={[styles.backButton, { backgroundColor: theme.colors.secondary }]}
+              style={[styles.backButton, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)' }]}
               onPress={handleClose}
               activeOpacity={0.7}
             >
@@ -416,6 +420,7 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
                 selectedType={locationType}
                 onTypeChange={setLocationType}
                 theme={theme}
+                isDarkMode={isDarkMode}
               />
             </MotiView>
 
@@ -432,9 +437,9 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
                 style={[
                   styles.input,
                   {
-                    backgroundColor: theme.colors.secondary,
+                    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
                     color: theme.colors.text.primary,
-                    borderColor: theme.colors.secondary,
+                    borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
                   },
                 ]}
                 placeholder="e.g., Tampines Mall"
@@ -458,9 +463,9 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
                 style={[
                   styles.input,
                   {
-                    backgroundColor: theme.colors.secondary,
+                    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
                     color: theme.colors.text.primary,
-                    borderColor: theme.colors.secondary,
+                    borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
                   },
                 ]}
                 placeholder="e.g., 4 Tampines Central 5"
@@ -484,9 +489,9 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
                 style={[
                   styles.input,
                   {
-                    backgroundColor: theme.colors.secondary,
+                    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
                     color: theme.colors.text.primary,
-                    borderColor: theme.colors.secondary,
+                    borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
                   },
                 ]}
                 placeholder="e.g., 529510"
@@ -515,18 +520,21 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
                     checked={maleFacility}
                     onToggle={() => setMaleFacility(!maleFacility)}
                     theme={theme}
+                    isDarkMode={isDarkMode}
                   />
                   <CheckboxField
                     label="Female Facility"
                     checked={femaleFacility}
                     onToggle={() => setFemaleFacility(!femaleFacility)}
                     theme={theme}
+                    isDarkMode={isDarkMode}
                   />
                   <CheckboxField
                     label="Accessible/Handicap Facility"
                     checked={accessibleFacility}
                     onToggle={() => setAccessibleFacility(!accessibleFacility)}
                     theme={theme}
+                    isDarkMode={isDarkMode}
                   />
                 </>
               ) : (
@@ -538,6 +546,7 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
                         checked={segregated}
                         onToggle={() => setSegregated(!segregated)}
                         theme={theme}
+                        isDarkMode={isDarkMode}
                       />
                     </View>
                     <View style={styles.checkboxHalf}>
@@ -546,6 +555,7 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
                         checked={airConditioned}
                         onToggle={() => setAirConditioned(!airConditioned)}
                         theme={theme}
+                        isDarkMode={isDarkMode}
                       />
                     </View>
                   </View>
@@ -557,6 +567,7 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
                         checked={ablutionArea}
                         onToggle={() => setAblutionArea(!ablutionArea)}
                         theme={theme}
+                        isDarkMode={isDarkMode}
                       />
                     </View>
                     <View style={styles.checkboxHalf}>
@@ -565,6 +576,7 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
                         checked={slippers}
                         onToggle={() => setSlippers(!slippers)}
                         theme={theme}
+                        isDarkMode={isDarkMode}
                       />
                     </View>
                   </View>
@@ -576,6 +588,7 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
                         checked={prayerMats}
                         onToggle={() => setPrayerMats(!prayerMats)}
                         theme={theme}
+                        isDarkMode={isDarkMode}
                       />
                     </View>
                     <View style={styles.checkboxHalf}>
@@ -584,6 +597,7 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
                         checked={telekung}
                         onToggle={() => setTelekung(!telekung)}
                         theme={theme}
+                        isDarkMode={isDarkMode}
                       />
                     </View>
                   </View>
@@ -600,9 +614,9 @@ const AddLocationSheet: React.FC<AddLocationSheetProps> = ({ visible, onClose })
                     style={[
                       styles.textArea,
                       {
-                        backgroundColor: theme.colors.secondary,
+                        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
                         color: theme.colors.text.primary,
-                        borderColor: theme.colors.secondary,
+                        borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
                       },
                     ]}
                     placeholder="e.g., Level 3, near Food Court, turn left..."

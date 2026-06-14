@@ -50,7 +50,7 @@ export const PrayerDateSelector: React.FC<PrayerDateSelectorProps> = memo(({
           <FontAwesome6
             name="chevron-left"
             size={16}
-            color={canGoPrev ? theme.colors.text.primary : theme.colors.text.muted}
+            color={canGoPrev ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)'}
           />
         </TouchableOpacity>
 
@@ -69,7 +69,7 @@ export const PrayerDateSelector: React.FC<PrayerDateSelectorProps> = memo(({
           <FontAwesome6
             name="chevron-right"
             size={16}
-            color={canGoNext ? theme.colors.text.primary : theme.colors.text.muted}
+            color={canGoNext ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)'}
           />
         </TouchableOpacity>
       </View>
@@ -89,7 +89,7 @@ PrayerDateSelector.displayName = 'PrayerDateSelector';
 const createStyles = (theme: any) => StyleSheet.create({
   container: {
     alignItems: 'center',
-    marginBottom: Platform.OS === 'android' ? 5 : 20,
+    marginBottom: Platform.OS === 'android' ? 5 : 4,
   },
   dateRow: {
     flexDirection: 'row',
@@ -103,14 +103,17 @@ const createStyles = (theme: any) => StyleSheet.create({
   dateText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: scaleSize(18),
-    color: theme.colors.text.primary,
+    color: 'rgba(255, 255, 255, 0.95)',
     textAlign: 'center',
     minWidth: 180,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   hijriDateText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: scaleSize(14),
-    color: theme.colors.text.secondary,
+    color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
     marginTop: Platform.OS === 'android' ? 5 : -10,
   },

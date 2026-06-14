@@ -115,7 +115,7 @@ const StatusOption = React.memo(
               {
                 backgroundColor: isSelected
                   ? `${color}20`
-                  : theme.colors.secondary,
+                  : isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
                 borderColor: isSelected ? color : 'transparent',
                 borderWidth: isSelected ? 2 : 0,
               },
@@ -308,7 +308,7 @@ const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
         <View
           style={[
             styles.modalContainer,
-            { backgroundColor: theme.colors.primary },
+            { backgroundColor: isDarkMode ? '#080F1E' : '#E8EFFF' },
           ]}
         >
           {/* Handle bar */}

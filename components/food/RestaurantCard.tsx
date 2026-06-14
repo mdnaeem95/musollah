@@ -1,20 +1,15 @@
 /**
- * Restaurant Card Component v5.0 (GRAB LIST STYLE)
- * 
- * Full-width, compact list design inspired by Grab:
- * - Full screen width (not horizontal scroll)
- * - Image on LEFT (80x80 square)
- * - Content on RIGHT
- * - Short, compact layout (~100px height)
- * - All info visible at a glance
- * 
- * @version 5.0 - Full-width list card
+ * Restaurant Card — glassmorphism redesign
+ * Full-width list card with BlurView glass surface.
+ *
+ * @version 6.0
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Platform } from 'react-native';
 import { MotiView } from 'moti';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 
@@ -31,8 +26,8 @@ interface RestaurantCardProps {
   index?: number;
 }
 
-const RestaurantCard: React.FC<RestaurantCardProps> = ({ 
-  restaurant, 
+const RestaurantCard: React.FC<RestaurantCardProps> = ({
+  restaurant,
   distance,
   isFavorited = false,
   onToggleFavorite,
@@ -41,145 +36,123 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
 }) => {
   const { theme, isDarkMode } = useTheme();
   const router = useRouter();
-  
+
   const handleCardPress = () => {
-    if (Platform.OS === 'ios') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
+    if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/${restaurant.id}`);
   };
-  
+
   const handleFavorite = (e: any) => {
     e.stopPropagation();
-    if (Platform.OS === 'ios') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
+    if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onToggleFavorite?.();
   };
-  
+
+  const textPrimary   = isDarkMode ? 'rgba(255,255,255,0.92)' : theme.colors.text.primary;
+  const textSecondary = isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary;
+  const textMuted     = isDarkMode ? 'rgba(255,255,255,0.35)' : theme.colors.text.muted;
+
+  const ratingValue = (() => {
+    const r = typeof restaurant.averageRating === 'string'
+      ? parseFloat(restaurant.averageRating)
+      : restaurant.averageRating;
+    return typeof r === 'number' && !isNaN(r) && r > 0 ? r.toFixed(1) : 'New';
+  })();
+
   return (
     <MotiView
-      from={{ opacity: 0, translateY: 10 }}
+      from={{ opacity: 0, translateY: 12 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{
-        type: 'timing',
-        duration: 300,
-        delay: index * 30,
-      }}
+      transition={{ type: 'timing', duration: 320, delay: index * 30 }}
     >
       <Pressable
         onPress={handleCardPress}
-        style={({ pressed }) => [
-          styles.card,
-          {
-            backgroundColor: isDarkMode ? theme.colors.secondary : '#FFFFFF',
-            opacity: pressed ? 0.7 : 1,
-          },
-        ]}
+        style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]}
       >
-        {/* Left: Image */}
-        <View style={styles.imageContainer}>
-          <ProgressiveImage
-            uri={restaurant.image}
-            style={styles.image}
-            fallbackIcon="utensils"
-          />
-          
-          {/* MUIS badge (if applicable) */}
-          {restaurant.halal && (
-            <View style={styles.muisBadge}>
-              <FontAwesome6 name="certificate" size={8} color="#FFFFFF" />
-            </View>
-          )}
-        </View>
-        
-        {/* Right: Content */}
-        <View style={styles.content}>
-          {/* Top row: Name + Favorite */}
-          <View style={styles.topRow}>
-            <Text 
-              style={[styles.name, { color: theme.colors.text.primary }]}
-              numberOfLines={1}
-            >
-              {restaurant.name}
-            </Text>
-            
-            {/* Favorite button */}
-            <TouchableOpacity
-              onPress={handleFavorite}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={styles.favoriteButton}
-            >
-              <FontAwesome6 
-                name="heart" 
-                size={16} 
-                color={isFavorited ? '#FF6B6B' : theme.colors.text.muted}
-                solid={isFavorited}
-              />
-            </TouchableOpacity>
-          </View>
-          
-          {/* Categories */}
-          <Text 
-            style={[styles.categories, { color: theme.colors.text.secondary }]}
-            numberOfLines={1}
-          >
-            {Array.isArray(restaurant.categories) 
-              ? restaurant.categories.slice(0, 3).join(' • ') 
-              : 'Restaurant'}
-          </Text>
-          
-          {/* Bottom row: Rating, Status, Distance */}
-          <View style={styles.bottomRow}>
-            {/* Rating */}
-            <View style={styles.ratingContainer}>
-              <FontAwesome6 name="star" size={12} color="#FFA500" solid />
-              <Text style={[styles.rating, { color: theme.colors.text.primary }]}>
-                {(() => {
-                  const rating = typeof restaurant.averageRating === 'string' 
-                    ? parseFloat(restaurant.averageRating) 
-                    : restaurant.averageRating;
-                  
-                  if (typeof rating === 'number' && !isNaN(rating) && rating > 0) {
-                    return rating.toFixed(1);
-                  }
-                  
-                  return 'New';
-                })()}
-              </Text>
-            </View>
-            
-            {/* Divider */}
-            <Text style={[styles.divider, { color: theme.colors.text.muted }]}>•</Text>
-            
-            {/* Status */}
-            {isOpenNow !== undefined && (
-              <>
-                <View style={styles.statusContainer}>
-                  <View style={[
-                    styles.statusDot,
-                    { backgroundColor: isOpenNow ? '#4CAF50' : '#FF6B6B' }
-                  ]} />
-                  <Text style={[
-                    styles.statusText,
-                    { color: isOpenNow ? '#4CAF50' : '#FF6B6B' }
-                  ]}>
-                    {isOpenNow ? 'Open' : 'Closed'}
-                  </Text>
-                </View>
-                <Text style={[styles.divider, { color: theme.colors.text.muted }]}>•</Text>
-              </>
+        <BlurView
+          intensity={isDarkMode ? 18 : 22}
+          tint={isDarkMode ? 'dark' : 'light'}
+          style={[
+            styles.card,
+            {
+              backgroundColor: isDarkMode
+                ? 'rgba(255,255,255,0.06)'
+                : 'rgba(255,255,255,0.88)',
+              borderColor: isDarkMode
+                ? 'rgba(255,255,255,0.09)'
+                : 'rgba(0,0,0,0.06)',
+            },
+          ]}
+        >
+          {/* Left: Image */}
+          <View style={styles.imageWrap}>
+            <ProgressiveImage
+              uri={restaurant.image}
+              style={styles.image}
+              fallbackIcon="utensils"
+            />
+            {restaurant.halal && (
+              <View style={styles.muisBadge}>
+                <FontAwesome6 name="certificate" size={7} color="#fff" />
+              </View>
             )}
-            
-            {/* Distance */}
-            <View style={styles.distanceContainer}>
-              <FontAwesome6 name="location-dot" size={10} color={theme.colors.text.muted} />
-              <Text style={[styles.distance, { color: theme.colors.text.secondary }]}>
-                {distance}
+          </View>
+
+          {/* Right: Content */}
+          <View style={styles.content}>
+            {/* Name + heart */}
+            <View style={styles.topRow}>
+              <Text style={[styles.name, { color: textPrimary }]} numberOfLines={1}>
+                {restaurant.name}
               </Text>
+              <TouchableOpacity
+                onPress={handleFavorite}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <FontAwesome6
+                  name="heart"
+                  size={15}
+                  color={isFavorited ? '#FF6B6B' : textMuted}
+                  solid={isFavorited}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Categories */}
+            <Text style={[styles.categories, { color: textSecondary }]} numberOfLines={1}>
+              {Array.isArray(restaurant.categories)
+                ? restaurant.categories.slice(0, 3).join(' · ')
+                : 'Restaurant'}
+            </Text>
+
+            {/* Bottom row */}
+            <View style={styles.bottomRow}>
+              <View style={styles.ratingRow}>
+                <FontAwesome6 name="star" size={11} color="#FFA500" solid />
+                <Text style={[styles.ratingText, { color: textPrimary }]}>{ratingValue}</Text>
+              </View>
+
+              <Text style={[styles.dot, { color: textMuted }]}>·</Text>
+
+              {isOpenNow !== undefined && (
+                <>
+                  <View style={styles.statusRow}>
+                    <View style={[styles.statusDot, { backgroundColor: isOpenNow ? '#4CAF50' : '#FF6B6B' }]} />
+                    <Text style={[styles.statusText, { color: isOpenNow ? '#4CAF50' : '#FF6B6B' }]}>
+                      {isOpenNow ? 'Open' : 'Closed'}
+                    </Text>
+                  </View>
+                  <Text style={[styles.dot, { color: textMuted }]}>·</Text>
+                </>
+              )}
+
+              <View style={styles.distRow}>
+                <FontAwesome6 name="location-dot" size={10} color={textMuted} />
+                <Text style={[styles.distText, { color: textSecondary }]}>{distance}</Text>
+              </View>
             </View>
           </View>
-        </View>
+        </BlurView>
       </Pressable>
     </MotiView>
   );
@@ -189,24 +162,24 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     padding: 12,
-    marginBottom: 8,
-    borderRadius: 12,
-    // Subtle shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  
-  // === LEFT: IMAGE ===
-  imageContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
+    marginBottom: 10,
+    borderRadius: 16,
+    borderWidth: 1,
     overflow: 'hidden',
-    backgroundColor: '#F5F5F5',
-    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+
+  // Image
+  imageWrap: {
+    width: 84,
+    height: 84,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   image: {
     width: '100%',
@@ -214,67 +187,58 @@ const styles = StyleSheet.create({
   },
   muisBadge: {
     position: 'absolute',
-    top: 4,
-    left: 4,
-    backgroundColor: '#4CAF50',
+    top: 5,
+    left: 5,
+    backgroundColor: '#22C55E',
     width: 16,
     height: 16,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
-  // === RIGHT: CONTENT ===
+
+  // Content
   content: {
     flex: 1,
     marginLeft: 12,
     justifyContent: 'space-between',
   },
-  
-  // Top row
   topRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   name: {
     flex: 1,
     fontSize: 15,
     fontFamily: 'Outfit_700Bold',
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
     marginRight: 8,
   },
-  favoriteButton: {
-    padding: 4,
-  },
-  
-  // Categories
   categories: {
     fontSize: 13,
     fontFamily: 'Outfit_400Regular',
     marginBottom: 6,
   },
-  
-  // Bottom row
   bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
   },
-  ratingContainer: {
+  ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
   },
-  rating: {
-    fontSize: 13,
+  ratingText: {
+    fontSize: 12,
     fontFamily: 'Outfit_600SemiBold',
   },
-  divider: {
+  dot: {
     fontSize: 12,
   },
-  statusContainer: {
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
@@ -285,15 +249,15 @@ const styles = StyleSheet.create({
     borderRadius: 2.5,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Outfit_600SemiBold',
   },
-  distanceContainer: {
+  distRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
   },
-  distance: {
+  distText: {
     fontSize: 12,
     fontFamily: 'Outfit_500Medium',
   },

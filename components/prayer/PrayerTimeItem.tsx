@@ -19,7 +19,6 @@ import { useTheme } from '../../context/ThemeContext';
 // ============================================================================
 
 const screenWidth = Dimensions.get('window').width;
-const containerWidth = screenWidth * 0.8;
 
 // ============================================================================
 // TYPES
@@ -34,6 +33,7 @@ interface PrayerTimeItemProps {
   isLoggable?: boolean;
   showCheckbox?: boolean;
   isCurrent?: boolean;
+  isPast?: boolean;
   countdown?: string;
 }
 
@@ -98,8 +98,11 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
     isLoggable = true,
     showCheckbox = false,
     isCurrent = false,
+    isPast = false,
     countdown,
   }) => {
+    // next prayer = has countdown but is not current
+    const isNext = !!countdown && !isCurrent;
     const { theme, isDarkMode } = useTheme();
     const timeFormat = usePreferencesStore((state) => state.timeFormat);
 
@@ -130,80 +133,87 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
 
     const glassConfig = useMemo(() => {
       if (isCurrent) {
-        // Make current prayer background more solid so contrast stays consistent
-        const bg = isDarkMode
-          ? withHexAlpha(theme.colors.accent, 'CC') // 80% in dark mode
-          : withHexAlpha(theme.colors.accent, 'DD'); // 87% in light mode
-
         return {
-          intensity: 30,
-          tint: 'light' as const,
-          backgroundColor: bg,
-          borderColor: withHexAlpha(accentText, '33'), // subtle contrast border
-          borderWidth: 2,
+          intensity: 45,
+          tint: 'dark' as const,
+          backgroundColor: withHexAlpha(theme.colors.accent, 'D9'), // ~85%
+          borderColor: 'rgba(255, 255, 255, 0.4)',
+          borderWidth: 1.5,
           shadowColor: theme.colors.accent,
-          shadowOpacity: 0.35,
-          elevation: 8,
+          shadowOpacity: 0.55,
+          elevation: 14,
+          shadowRadius: 20,
         };
       }
-
-      // Regular prayer: keep it readable over any wallpaper
+      if (isPast) {
+        return {
+          intensity: 15,
+          tint: 'dark' as const,
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          borderColor: 'rgba(255, 255, 255, 0.07)',
+          borderWidth: 0.5,
+          shadowColor: '#000',
+          shadowOpacity: 0.05,
+          elevation: 1,
+          shadowRadius: 2,
+        };
+      }
+      if (isNext) {
+        return {
+          intensity: 50,
+          tint: 'dark' as const,
+          backgroundColor: 'rgba(255, 255, 255, 0.16)',
+          borderColor: 'rgba(255, 255, 255, 0.28)',
+          borderWidth: 1,
+          shadowColor: '#000',
+          shadowOpacity: 0.18,
+          elevation: 5,
+          shadowRadius: 8,
+        };
+      }
+      // Future / standard
       return {
-        intensity: isDarkMode ? 25 : 20,
-        tint: 'light' as const,
-        backgroundColor: isDarkMode
-          ? 'rgba(255, 255, 255, 0.92)' // stronger in dark mode
-          : 'rgba(255, 255, 255, 0.75)', // slightly more glass in light mode
-        borderColor: isDarkMode
-          ? 'rgba(0, 0, 0, 0.18)'
-          : 'rgba(0, 0, 0, 0.10)',
+        intensity: 50,
+        tint: 'dark' as const,
+        backgroundColor: 'rgba(255, 255, 255, 0.10)',
+        borderColor: 'rgba(255, 255, 255, 0.18)',
         borderWidth: 1,
         shadowColor: '#000',
-        shadowOpacity: isDarkMode ? 0.18 : 0.12,
-        elevation: isDarkMode ? 4 : 3,
+        shadowOpacity: 0.12,
+        elevation: 3,
+        shadowRadius: 6,
       };
-    }, [isCurrent, isDarkMode, theme.colors.accent, accentText]);
+    }, [isCurrent, isPast, isNext, theme.colors.accent]);
 
     // ============================================================================
     // TEXT COLORS (ALWAYS READABLE)
     // ============================================================================
 
     const mainTextColor = useMemo(() => {
-      // Only gray out Syuruk text
-      if (name === 'Syuruk') return isDarkMode ? '#7A7A7A' : '#9A9A9A';
+      if (name === 'Syuruk') return 'rgba(255, 255, 255, 0.35)';
       if (isCurrent) return accentText;
-      return '#121212';
-    }, [name, isDarkMode, isCurrent, accentText]);
+      if (isPast)    return 'rgba(255, 255, 255, 0.45)';
+      return 'rgba(255, 255, 255, 0.92)';
+    }, [name, isCurrent, isPast, accentText]);
 
     const countdownColor = useMemo(() => {
-      // Only gray out Syuruk countdown
-      if (name === 'Syuruk') return isDarkMode ? '#7A7A7A' : '#9A9A9A';
+      if (name === 'Syuruk') return 'rgba(255, 255, 255, 0.25)';
       if (isCurrent) return accentText;
-      return isDarkMode ? '#2A2A2A' : '#5A5A5A';
-    }, [name, isDarkMode, isCurrent, accentText]);
+      if (isNext)    return theme.colors.accent;
+      return 'rgba(255, 255, 255, 0.55)';
+    }, [name, isCurrent, isNext, accentText, theme.colors.accent]);
 
     // ============================================================================
     // CHECKBOX
     // ============================================================================
 
     const checkboxColor = useMemo(() => {
-      // Syuruk gets gray checkbox
-      if (name === 'Syuruk') return isDarkMode ? '#888888' : '#D0D0D0';
-
-      // Future prayers (not loggable yet) get gray checkbox
-      if (!isLoggable) return isDarkMode ? '#888888' : '#D0D0D0';
-
-      // Current prayer
-      if (isCurrent) {
-        return isLogged ? accentText : withHexAlpha(accentText, 'CC');
-      }
-
-      // Logged prayer gets green
-      if (isLogged) return '#2EAF5D';
-      
-      // Default state
-      return isDarkMode ? '#666666' : '#666666';
-    }, [name, isLoggable, isDarkMode, isCurrent, isLogged, accentText]);
+      if (name === 'Syuruk') return 'rgba(255, 255, 255, 0.25)';
+      if (!isLoggable) return 'rgba(255, 255, 255, 0.25)';
+      if (isCurrent) return isLogged ? accentText : withHexAlpha(accentText, 'CC');
+      if (isLogged) return '#4ADE80'; // bright green visible on any sky
+      return 'rgba(255, 255, 255, 0.5)';
+    }, [name, isLoggable, isCurrent, isLogged, accentText]);
 
     const renderCheckbox = () => {
       if (!showCheckbox) return null;
@@ -234,6 +244,9 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
     // RENDER
     // ============================================================================
 
+    const fontSize   = isCurrent ? 20 : isPast ? 15 : 17;
+    const fontFamily = isCurrent ? 'Outfit_700Bold' : isPast ? 'Outfit_400Regular' : 'Outfit_600SemiBold';
+
     return (
       <BlurView
         intensity={glassConfig.intensity}
@@ -246,24 +259,22 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
             borderWidth: glassConfig.borderWidth,
             shadowColor: glassConfig.shadowColor,
             shadowOpacity: glassConfig.shadowOpacity,
+            shadowRadius: glassConfig.shadowRadius,
             elevation: glassConfig.elevation,
+            minHeight: isCurrent ? 68 : isPast ? 48 : 58,
+            opacity: isPast && name !== 'Syuruk' ? 0.55 : 1,
           },
           name === 'Syuruk' && styles.disabledContainer,
         ]}
       >
+        {/* Accent left-bar for next prayer */}
+        {isNext && (
+          <View style={[styles.nextBar, { backgroundColor: theme.colors.accent }]} />
+        )}
+
         {/* Prayer Name + Countdown */}
         <View style={styles.nameContainer}>
-          <Text
-            style={[
-              styles.prayerName,
-              style,
-              {
-                color: mainTextColor,
-                fontFamily: isCurrent ? 'Outfit_700Bold' : 'Outfit_600SemiBold',
-                fontSize: isCurrent ? 19 : 17,
-              },
-            ]}
-          >
+          <Text style={[styles.prayerName, style, { color: mainTextColor, fontFamily, fontSize }]}>
             {name}
           </Text>
 
@@ -273,7 +284,8 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
                 styles.countdownText,
                 {
                   color: countdownColor,
-                  fontFamily: isCurrent ? 'Outfit_600SemiBold' : 'Outfit_400Regular',
+                  fontFamily: isNext ? 'Outfit_600SemiBold' : 'Outfit_400Regular',
+                  fontSize: isNext ? 12 : 11,
                 },
               ]}
             >
@@ -283,17 +295,7 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
         </View>
 
         {/* Prayer Time */}
-        <Text
-          style={[
-            styles.prayerTime,
-            style,
-            {
-              color: mainTextColor,
-              fontFamily: isCurrent ? 'Outfit_700Bold' : 'Outfit_600SemiBold',
-              fontSize: isCurrent ? 19 : 17,
-            },
-          ]}
-        >
+        <Text style={[styles.prayerTime, style, { color: mainTextColor, fontFamily, fontSize }]}>
           {formattedTime}
         </Text>
 
@@ -311,19 +313,27 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
 const styles = StyleSheet.create({
   container: {
     justifyContent: 'space-between',
-    width: containerWidth,
-    minHeight: Platform.OS === 'android' ? 45 : 54,
-    borderRadius: 16,
+    width: screenWidth - 32,
+    minHeight: Platform.OS === 'android' ? 52 : 58,
+    borderRadius: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingRight: 12,
+    paddingHorizontal: 20,
+    paddingRight: 14,
     shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
+    shadowRadius: 8,
     overflow: 'hidden',
   },
   disabledContainer: {
-    opacity: 0.5,
+    opacity: 0.4,
+  },
+  nextBar: {
+    position: 'absolute',
+    left: 0,
+    top: 8,
+    bottom: 8,
+    width: 3,
+    borderRadius: 2,
   },
   nameContainer: {
     flexDirection: 'column',

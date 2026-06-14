@@ -12,6 +12,7 @@ import { View, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTheme } from '../../../../context/ThemeContext';
 import { useDoa } from '../../../../hooks/prayer/doa/useDoa';
@@ -35,7 +36,11 @@ import { enter } from '../../../../utils';
  * - Optimized FlashList rendering
  */
 const Doa: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
+
+  const gradientColors = isDarkMode
+    ? (['#060B18', '#0C1428', '#080F1E'] as const)
+    : (['#EEF2FF', '#F0F4FF', '#E8EFFF'] as const);
   const { doas, loading, error, refetch } = useDoa();
   const [modalVisible, setModalVisible] = useState<boolean>(false);
 
@@ -71,7 +76,8 @@ const Doa: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+      <View style={styles.container}>
+        <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
         <LoadingState />
       </View>
     );
@@ -80,14 +86,16 @@ const Doa: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+      <View style={styles.container}>
+        <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
         <ErrorState error={error} onRetry={refetch} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+    <View style={styles.container}>
+      <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
       <FlashList
         data={doas}
         keyExtractor={keyExtractor}

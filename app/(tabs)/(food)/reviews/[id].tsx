@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { AirbnbRating } from '@rn-vui/ratings';
 import { FlashList } from '@shopify/flash-list';
 import { MotiView } from 'moti';
@@ -138,15 +139,21 @@ const AllReviews = () => {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+      <LinearGradient
+        colors={isDarkMode ? ['#060B18', '#0C1428', '#080F1E'] : ['#EEF2FF', '#F0F4FF', '#E8EFFF']}
+        style={styles.container}
+      >
         <ActivityIndicator size="large" color={theme.colors.accent} />
-      </View>
+      </LinearGradient>
     );
   }
 
   if (!uiReviews.length) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+      <LinearGradient
+        colors={isDarkMode ? ['#060B18', '#0C1428', '#080F1E'] : ['#EEF2FF', '#F0F4FF', '#E8EFFF']}
+        style={styles.container}
+      >
         <MotiView
           from={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -156,8 +163,8 @@ const AllReviews = () => {
           <View style={[styles.emptyIconContainer, { backgroundColor: theme.colors.accent + '15' }]}>
             <FontAwesome6 name="comment-dots" size={48} color={theme.colors.accent} />
           </View>
-          <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>No reviews yet</Text>
-          <Text style={[styles.emptySubtitle, { color: theme.colors.text.secondary }]}>
+          <Text style={[styles.emptyTitle, { color: isDarkMode ? 'rgba(255,255,255,0.92)' : theme.colors.text.primary }]}>No reviews yet</Text>
+          <Text style={[styles.emptySubtitle, { color: isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary }]}>
             Be the first to share your experience!
           </Text>
           <TouchableOpacity
@@ -168,12 +175,15 @@ const AllReviews = () => {
             <Text style={styles.writeReviewButtonText}>Write a Review</Text>
           </TouchableOpacity>
         </MotiView>
-      </View>
+      </LinearGradient>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+    <LinearGradient
+      colors={isDarkMode ? ['#060B18', '#0C1428', '#080F1E'] : ['#EEF2FF', '#F0F4FF', '#E8EFFF']}
+      style={styles.container}
+    >
       {/* Header Stats */}
       <MotiView
         from={{ opacity: 0, translateY: -20 }}
@@ -183,10 +193,17 @@ const AllReviews = () => {
         <BlurView
           intensity={20}
           tint={isDarkMode ? 'dark' : 'light'}
-          style={[styles.statsCard, { backgroundColor: theme.colors.secondary }]}
+          style={[
+            styles.statsCard,
+            {
+              backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+              borderWidth: 1,
+              borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+            },
+          ]}
         >
           <View style={styles.statsLeft}>
-            <Text style={[styles.averageRating, { color: theme.colors.text.primary }]}>
+            <Text style={[styles.averageRating, { color: isDarkMode ? 'rgba(255,255,255,0.92)' : theme.colors.text.primary }]}>
               {averageRating.toFixed(1)}
             </Text>
             <AirbnbRating
@@ -197,7 +214,7 @@ const AllReviews = () => {
               selectedColor="#FFD700"
               starContainerStyle={{ gap: 2 }}
             />
-            <Text style={[styles.reviewCount, { color: theme.colors.text.secondary }]}>
+            <Text style={[styles.reviewCount, { color: isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary }]}>
               {uiReviews.length} {uiReviews.length === 1 ? 'review' : 'reviews'}
             </Text>
           </View>
@@ -229,7 +246,14 @@ const AllReviews = () => {
             <BlurView
               intensity={20}
               tint={isDarkMode ? 'dark' : 'light'}
-              style={[styles.reviewCard, { backgroundColor: theme.colors.secondary }]}
+              style={[
+                styles.reviewCard,
+                {
+                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+                },
+              ]}
             >
               {/* User Info */}
               <View style={styles.reviewHeader}>
@@ -238,10 +262,10 @@ const AllReviews = () => {
                     <FontAwesome6 name="user" size={20} color={theme.colors.accent} />
                   </View>
                   <View style={styles.userDetails}>
-                    <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
+                    <Text style={[styles.userName, { color: isDarkMode ? 'rgba(255,255,255,0.92)' : theme.colors.text.primary }]}>
                       {item.userName}
                     </Text>
-                    <Text style={[styles.reviewDate, { color: theme.colors.text.muted }]}>
+                    <Text style={[styles.reviewDate, { color: isDarkMode ? 'rgba(255,255,255,0.35)' : theme.colors.text.muted }]}>
                       {formatDate(item.timestamp)}
                     </Text>
                   </View>
@@ -250,14 +274,14 @@ const AllReviews = () => {
                 {/* Rating */}
                 <View style={[styles.ratingBadge, { backgroundColor: '#FFD700' + '20' }]}>
                   <FontAwesome6 name="star" size={14} color="#FFD700" solid />
-                  <Text style={[styles.ratingNumber, { color: theme.colors.text.primary }]}>
+                  <Text style={[styles.ratingNumber, { color: isDarkMode ? 'rgba(255,255,255,0.92)' : theme.colors.text.primary }]}>
                     {item.rating.toFixed(1)}
                   </Text>
                 </View>
               </View>
 
               {/* Review Text */}
-              <Text style={[styles.reviewText, { color: theme.colors.text.primary }]}>
+              <Text style={[styles.reviewText, { color: isDarkMode ? 'rgba(255,255,255,0.80)' : theme.colors.text.primary }]}>
                 {item.comment}
               </Text>
 
@@ -361,7 +385,7 @@ const AllReviews = () => {
           )}
         </View>
       </Modal>
-    </View>
+    </LinearGradient>
   );
 };
 

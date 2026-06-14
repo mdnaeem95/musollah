@@ -69,7 +69,10 @@ struct Provider: TimelineProvider {
     // ✅ Returns (prayerTimes, lastUpdated, dataSource)
     private func loadPrayerTimesForToday() -> ([String: String], Date?, PrayerTimesEntry.DataSource) {
         let suiteName = "group.com.rihlah.prayerTimesWidget"
-        let key = "prayerTimes2025"
+        // Year-agnostic key written by widgetBridge.ts; fall back to the legacy
+        // key so older app builds (which only wrote "prayerTimes2025") still work.
+        let key = "prayerTimesData"
+        let legacyKey = "prayerTimes2025"
         let timestampKey = "lastUpdated"
 
         guard let userDefaults = UserDefaults(suiteName: suiteName) else {
@@ -85,7 +88,7 @@ struct Provider: TimelineProvider {
             print("✅ Last updated:", timestamp)
         }
         
-        guard let jsonString = userDefaults.string(forKey: key),
+        guard let jsonString = userDefaults.string(forKey: key) ?? userDefaults.string(forKey: legacyKey),
               let jsonData = jsonString.data(using: .utf8) else {
             print("⚠️ No prayer data found, using sample")
             return (samplePrayerTimes, lastUpdated, .sample)

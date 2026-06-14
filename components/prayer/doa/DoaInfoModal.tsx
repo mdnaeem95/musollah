@@ -72,7 +72,7 @@ const DoaInfoModal: React.FC<DoaInfoModalProps> = ({ visible, onClose }) => {
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
-      <View style={[styles.modalBackground, { backgroundColor: theme.colors.modalBackground }]}>
+      <View style={styles.modalBackground}>
         <MotiView
           from={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -80,25 +80,36 @@ const DoaInfoModal: React.FC<DoaInfoModalProps> = ({ visible, onClose }) => {
           style={styles.modalWrapper}
         >
           <BlurView
-            intensity={30}
+            intensity={40}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.modalContainer, { backgroundColor: theme.colors.primary }]}
+            style={[styles.modalContainer, {
+              backgroundColor: isDarkMode ? 'rgba(8,14,32,0.97)' : 'rgba(245,248,255,0.97)',
+              borderWidth: 1,
+              borderColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.07)',
+            }]}
           >
             {/* Header */}
             <View style={styles.header}>
-              <View style={[styles.headerIcon, { backgroundColor: theme.colors.accent + '15' }]}>
+              <View style={[styles.headerIcon, { backgroundColor: theme.colors.accent + '18' }]}>
                 <FontAwesome6 name="circle-info" size={24} color={theme.colors.accent} />
               </View>
               <View style={styles.headerContent}>
-                <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>
+                <Text style={[styles.modalTitle, { color: isDarkMode ? 'rgba(255,255,255,0.95)' : theme.colors.text.primary }]}>
                   How to Use
                 </Text>
-                <Text style={[styles.modalSubtitle, { color: theme.colors.text.secondary }]}>
+                <Text style={[styles.modalSubtitle, { color: isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary }]}>
                   Guidelines for reciting duas
                 </Text>
               </View>
-              <TouchableOpacity onPress={handleClose} style={[styles.closeButton, { backgroundColor: theme.colors.secondary }]}>
-                <FontAwesome6 name="xmark" size={18} color={theme.colors.text.primary} />
+              <TouchableOpacity
+                onPress={handleClose}
+                style={[styles.closeButton, {
+                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.13)' : 'rgba(0,0,0,0.08)',
+                }]}
+              >
+                <FontAwesome6 name="xmark" size={16} color={isDarkMode ? 'rgba(255,255,255,0.70)' : 'rgba(0,0,0,0.50)'} />
               </TouchableOpacity>
             </View>
 
@@ -106,7 +117,7 @@ const DoaInfoModal: React.FC<DoaInfoModalProps> = ({ visible, onClose }) => {
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
               {/* Guidelines Section */}
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? 'rgba(255,255,255,0.70)' : theme.colors.text.primary }]}>
                   Guidelines
                 </Text>
                 <View style={styles.guidelinesList}>
@@ -118,18 +129,22 @@ const DoaInfoModal: React.FC<DoaInfoModalProps> = ({ visible, onClose }) => {
                       transition={enter(0)}
                     >
                       <BlurView
-                        intensity={20}
+                        intensity={15}
                         tint={isDarkMode ? 'dark' : 'light'}
-                        style={[styles.guidelineCard, { backgroundColor: theme.colors.secondary }]}
+                        style={[styles.guidelineCard, {
+                          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.80)',
+                          borderWidth: 1,
+                          borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                        }]}
                       >
                         <View style={[styles.guidelineIcon, { backgroundColor: guideline.color + '15' }]}>
                           <FontAwesome6 name={guideline.icon as any} size={18} color={guideline.color} />
                         </View>
                         <View style={styles.guidelineContent}>
-                          <Text style={[styles.guidelineTitle, { color: theme.colors.text.primary }]}>
+                          <Text style={[styles.guidelineTitle, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
                             {guideline.title}
                           </Text>
-                          <Text style={[styles.guidelineDescription, { color: theme.colors.text.secondary }]}>
+                          <Text style={[styles.guidelineDescription, { color: isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary }]}>
                             {guideline.description}
                           </Text>
                         </View>
@@ -141,14 +156,18 @@ const DoaInfoModal: React.FC<DoaInfoModalProps> = ({ visible, onClose }) => {
 
               {/* Benefits Section */}
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? 'rgba(255,255,255,0.70)' : theme.colors.text.primary }]}>
                   Benefits
                 </Text>
-                <View style={[styles.benefitsCard, { backgroundColor: theme.colors.text.success + '15' || '#4CAF50' + '15' }]}>
+                <View style={[styles.benefitsCard, {
+                  backgroundColor: isDarkMode ? 'rgba(74,222,128,0.08)' : '#4CAF5015',
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? 'rgba(74,222,128,0.15)' : '#4CAF5025',
+                }]}>
                   {benefits.map((benefit, index) => (
                     <View key={index} style={styles.benefitItem}>
                       <FontAwesome6 name="circle-check" size={14} color={theme.colors.text.success || '#4CAF50'} />
-                      <Text style={[styles.benefitText, { color: theme.colors.text.primary }]}>
+                      <Text style={[styles.benefitText, { color: isDarkMode ? 'rgba(255,255,255,0.80)' : theme.colors.text.primary }]}>
                         {benefit}
                       </Text>
                     </View>
@@ -157,9 +176,13 @@ const DoaInfoModal: React.FC<DoaInfoModalProps> = ({ visible, onClose }) => {
               </View>
 
               {/* Note */}
-              <View style={[styles.noteCard, { backgroundColor: theme.colors.accent + '10' }]}>
+              <View style={[styles.noteCard, {
+                backgroundColor: theme.colors.accent + '12',
+                borderWidth: 1,
+                borderColor: theme.colors.accent + '25',
+              }]}>
                 <FontAwesome6 name="lightbulb" size={14} color={theme.colors.accent} />
-                <Text style={[styles.noteText, { color: theme.colors.text.primary }]}>
+                <Text style={[styles.noteText, { color: isDarkMode ? 'rgba(255,255,255,0.65)' : theme.colors.text.primary }]}>
                   All duas are from authentic Islamic sources and have been verified by scholars
                 </Text>
               </View>
@@ -188,6 +211,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.72)',
   },
   modalWrapper: {
     width: '100%',

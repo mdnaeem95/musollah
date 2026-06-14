@@ -4,26 +4,32 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { TouchableOpacity } from 'react-native';
 
+// Top color of the gradient backgrounds used in secondary prayer screens
+const GRADIENT_HEADER_BG = { dark: '#060B18', light: '#EEF2FF' };
+
 const PrayerLayout = () => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const router = useRouter();
+
+  const gradientHeaderBg = isDarkMode ? GRADIENT_HEADER_BG.dark : GRADIENT_HEADER_BG.light;
+  const headerTextColor = isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary;
 
   return (
     <Stack
       screenOptions={({ route }) => ({
         headerShown: true,
         headerStyle: {
-          backgroundColor: theme.colors.primary,
+          backgroundColor: gradientHeaderBg,
         },
-        headerTintColor: theme.colors.text.primary,
+        headerTintColor: headerTextColor,
         headerTitleStyle: {
           fontFamily: 'Outfit_700Bold',
           fontSize: 20,
-          color: theme.colors.text.primary,
+          color: headerTextColor,
         },
         headerLeft: () => (
           <TouchableOpacity style={{ padding: 10 }} onPress={() => router.back()}>
-            <FontAwesome6 name="arrow-left" size={24} color={theme.colors.text.primary} />
+            <FontAwesome6 name="arrow-left" size={22} color={isDarkMode ? 'rgba(255,255,255,0.80)' : theme.colors.text.primary} />
           </TouchableOpacity>
         ),
       })}

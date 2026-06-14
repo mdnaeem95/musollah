@@ -12,16 +12,18 @@
  */
 
 import React, { memo, useCallback, useState, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
   RefreshControl,
 } from 'react-native';
 import { MotiView } from 'moti';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 
 // Theme & Hooks
 import { useTheme } from '../../../context/ThemeContext';
@@ -165,9 +167,10 @@ interface SortControlsProps {
   sortBy: SortOption;
   onSortChange: (sort: SortOption) => void;
   theme: any;
+  isDarkMode: boolean;
 }
 
-const SortControls = memo<SortControlsProps>(({ sortBy, onSortChange, theme }) => (
+const SortControls = memo<SortControlsProps>(({ sortBy, onSortChange, theme, isDarkMode }) => (
   <MotiView
     from={{ opacity: 0, translateY: 10 }}
     animate={{ opacity: 1, translateY: 0 }}
@@ -175,65 +178,46 @@ const SortControls = memo<SortControlsProps>(({ sortBy, onSortChange, theme }) =
     style={styles.controlsContainer}
   >
     <View style={styles.sortControls}>
-        <TouchableOpacity
-          style={[styles.sortButton, { 
-            backgroundColor: theme.colors.secondary,
-            borderColor: sortBy === 'distance' ? theme.colors.accent : 'transparent',
-          }]}
-          onPress={() => onSortChange('distance')}
-        >
-          <FontAwesome6 
-            name="location-arrow" 
-            size={14} 
-            color={sortBy === 'distance' ? theme.colors.accent : theme.colors.text.secondary} 
-          />
-          <Text style={[
-            styles.sortButtonText, 
-            { color: sortBy === 'distance' ? theme.colors.accent : theme.colors.text.secondary }
-          ]}>
-            Distance
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.sortButton, { 
-            backgroundColor: theme.colors.secondary,
-            borderColor: sortBy === 'rating' ? theme.colors.accent : 'transparent',
-          }]}
-          onPress={() => onSortChange('rating')}
-        >
-          <FontAwesome6 
-            name="star" 
-            size={14} 
-            color={sortBy === 'rating' ? theme.colors.accent : theme.colors.text.secondary} 
-          />
-          <Text style={[
-            styles.sortButtonText, 
-            { color: sortBy === 'rating' ? theme.colors.accent : theme.colors.text.secondary }
-          ]}>
-            Rating
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.sortButton, { 
-            backgroundColor: theme.colors.secondary,
-            borderColor: sortBy === 'name' ? theme.colors.accent : 'transparent',
-          }]}
-          onPress={() => onSortChange('name')}
-        >
-          <FontAwesome6 
-            name="arrow-down-a-z" 
-            size={14} 
-            color={sortBy === 'name' ? theme.colors.accent : theme.colors.text.secondary} 
-          />
-          <Text style={[
-            styles.sortButtonText, 
-            { color: sortBy === 'name' ? theme.colors.accent : theme.colors.text.secondary }
-          ]}>
-            Name
-          </Text>
-        </TouchableOpacity>
+      {(['distance', 'rating', 'name'] as SortOption[]).map((option) => {
+        const isActive = sortBy === option;
+        const icons = { distance: 'location-arrow', rating: 'star', name: 'arrow-down-a-z' } as const;
+        const labels = { distance: 'Distance', rating: 'Rating', name: 'Name' };
+        return (
+          <BlurView
+            key={option}
+            intensity={isDarkMode ? 16 : 20}
+            tint={isDarkMode ? 'dark' : 'light'}
+            style={[
+              styles.sortButton,
+              {
+                backgroundColor: isActive
+                  ? theme.colors.accent + '20'
+                  : isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.85)',
+                borderColor: isActive
+                  ? theme.colors.accent + '70'
+                  : isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.sortButtonInner}
+              onPress={() => onSortChange(option)}
+            >
+              <FontAwesome6
+                name={icons[option]}
+                size={13}
+                color={isActive ? theme.colors.accent : isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary}
+              />
+              <Text style={[
+                styles.sortButtonText,
+                { color: isActive ? theme.colors.accent : isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary },
+              ]}>
+                {labels[option]}
+              </Text>
+            </TouchableOpacity>
+          </BlurView>
+        );
+      })}
     </View>
   </MotiView>
 ));
@@ -251,6 +235,7 @@ interface ListHeaderProps {
   sortBy: SortOption;
   onSortChange: (sort: SortOption) => void;
   theme: any;
+  isDarkMode: boolean;
 }
 
 /**
@@ -265,6 +250,7 @@ const ListHeader = memo<ListHeaderProps>(({
   sortBy,
   onSortChange,
   theme,
+  isDarkMode,
 }) => (
   <>
     {/* Static sections - never change */}
@@ -284,10 +270,11 @@ const ListHeader = memo<ListHeaderProps>(({
       sortBy={sortBy}
       onSortChange={onSortChange}
       theme={theme}
+      isDarkMode={isDarkMode}
     />
 
     {/* Divider */}
-    <View style={[styles.divider, { backgroundColor: theme.colors.text.muted + '20' }]} />
+    <View style={[styles.divider, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]} />
   </>
 ));
 ListHeader.displayName = 'ListHeader';
@@ -336,7 +323,7 @@ RestaurantItem.displayName = 'RestaurantItem';
 // ============================================================================
 
 const RestaurantLocator = () => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const { user } = useAuthStore();
 
   // State
@@ -442,6 +429,7 @@ const RestaurantLocator = () => {
         sortBy={sortBy}
         onSortChange={setSortBy}
         theme={theme}
+        isDarkMode={isDarkMode}
       />
     ),
     [
@@ -451,6 +439,7 @@ const RestaurantLocator = () => {
       handleCategorySelect,
       sortBy,
       theme,
+      isDarkMode,
     ]
   );
 
@@ -475,18 +464,22 @@ const RestaurantLocator = () => {
         <View style={[styles.emptyIcon, { backgroundColor: theme.colors.accent + '15' }]}>
           <FontAwesome6 name="utensils" size={48} color={theme.colors.accent} />
         </View>
-        <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>
+        <Text style={[styles.emptyTitle, { color: isDarkMode ? 'rgba(255,255,255,0.88)' : theme.colors.text.primary }]}>
           No Restaurants Found
         </Text>
-        <Text style={[styles.emptySubtitle, { color: theme.colors.text.secondary }]}>
+        <Text style={[styles.emptySubtitle, { color: isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary }]}>
           Try adjusting your filters or search in a different area
         </Text>
       </MotiView>
     );
   };
 
+  const gradientColors = isDarkMode
+    ? ['#060B18', '#0C1428', '#080F1E'] as const
+    : ['#EEF2FF', '#F0F4FF', '#E8EFFF'] as const;
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+    <LinearGradient colors={gradientColors} style={styles.container}>
       <FlatList
         data={sortedRestaurants}
         keyExtractor={restaurantKeyExtractor}
@@ -513,7 +506,7 @@ const RestaurantLocator = () => {
         visible={showSignInModal}
         onClose={() => setShowSignInModal(false)}
       />
-    </View>
+    </LinearGradient>
   );
 };
 
@@ -550,17 +543,20 @@ const styles = StyleSheet.create({
   },
   sortButton: {
     flex: 1,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    overflow: 'hidden',
+  },
+  sortButtonInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1.5,
   },
   sortButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Outfit_600SemiBold',
   },
 

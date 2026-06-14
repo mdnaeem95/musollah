@@ -13,15 +13,11 @@ import { usePreferencesStore } from '../../stores/userPreferencesStore';
 // TYPES
 // ============================================================================
 
-interface CustomClockProps {
-  isRamadanMode?: boolean;
-}
-
 // ============================================================================
 // COMPONENT
 // ============================================================================
 
-const CustomClock: React.FC<CustomClockProps> = ({ isRamadanMode = false }) => {
+const CustomClock: React.FC = () => {
   const [currentTime, setCurrentTime] = useState('');
   
   // Zustand store - optimized selector
@@ -94,7 +90,7 @@ const CustomClock: React.FC<CustomClockProps> = ({ isRamadanMode = false }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.clockText, isRamadanMode && styles.clockTextRamadan]}>
+      <Text style={styles.clockText}>
         {currentTime}
       </Text>
     </View>
@@ -111,13 +107,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   clockText: {
-    fontFamily: 'Outfit_600SemiBold',
-    fontSize: 60,
-    color: '#000000',
+    fontFamily: 'Outfit_300Light',
+    fontSize: 64,
+    color: 'rgba(255, 255, 255, 0.95)',
     textAlign: 'center',
-  },
-  clockTextRamadan: {
-    fontSize: 24,
+    letterSpacing: -1,
+    textShadowColor: 'rgba(0, 0, 0, 0.25)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 8,
   },
 });
 

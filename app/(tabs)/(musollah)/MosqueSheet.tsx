@@ -214,7 +214,7 @@ export default function MosqueSheet({
   visible,
   userLocation,
 }: MosqueSheetProps) {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const sheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['45%', '75%'], []);
 
@@ -296,8 +296,8 @@ export default function MosqueSheet({
       snapPoints={snapPoints}
       enablePanDownToClose
       onClose={handleClose}
-      backgroundStyle={{ backgroundColor: theme.colors.primary }}
-      handleIndicatorStyle={{ backgroundColor: theme.colors.text.secondary }}
+      backgroundStyle={{ backgroundColor: isDarkMode ? '#080F1E' : '#E8EFFF' }}
+      handleIndicatorStyle={{ backgroundColor: isDarkMode ? 'rgba(255,255,255,0.30)' : 'rgba(0,0,0,0.20)' }}
     >
       <BottomSheetView style={styles.contentContainer}>
         {/* Close Button */}

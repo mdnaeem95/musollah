@@ -115,7 +115,7 @@ const Doas = () => {
         <BlurView
           intensity={20}
           tint={isDarkMode ? 'dark' : 'light'}
-          style={[styles.searchBar, { backgroundColor: theme.colors.secondary }]}
+          style={[styles.searchBar, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)', borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)' }]}
         >
           {/* Search Icon Badge */}
           <View style={[styles.searchIcon, { backgroundColor: accentBg }]}>
@@ -204,7 +204,7 @@ const Doas = () => {
         <BlurView
           intensity={20}
           tint={isDarkMode ? 'dark' : 'light'}
-          style={[styles.emptyCard, { backgroundColor: theme.colors.secondary }]}
+          style={[styles.emptyCard, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)', borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)' }]}
         >
           <View style={[styles.emptyIcon, { backgroundColor: theme.colors.accent + '15' }]}>
             <FontAwesome6
@@ -233,7 +233,7 @@ const Doas = () => {
   // Loading State
   if (isLoading && !refreshing) {
     return (
-      <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
+      <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF' }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.accent} />
           <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
@@ -245,7 +245,7 @@ const Doas = () => {
   }
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
+    <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF' }]}>
       {/* Header */}
       {renderHeader()}
 

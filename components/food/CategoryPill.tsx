@@ -63,12 +63,12 @@ const CategoryPill: React.FC<CategoryPillProps> = ({
           style={[
             styles.pill,
             {
-              backgroundColor: isSelected 
+              backgroundColor: isSelected
                 ? theme.colors.accent + '20'
-                : theme.colors.secondary,
-              borderColor: isSelected 
+                : isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.85)',
+              borderColor: isSelected
                 ? theme.colors.accent
-                : 'transparent',
+                : isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
             }
           ]}
         >          
@@ -79,9 +79,9 @@ const CategoryPill: React.FC<CategoryPillProps> = ({
             style={[
               styles.text,
               {
-                color: isSelected 
-                  ? theme.colors.accent 
-                  : theme.colors.text.primary,
+                color: isSelected
+                  ? theme.colors.accent
+                  : isDarkMode ? 'rgba(255,255,255,0.75)' : theme.colors.text.primary,
                 fontFamily: isSelected 
                   ? 'Outfit_700Bold' 
                   : 'Outfit_500Medium',

@@ -62,12 +62,12 @@ const PRAYER_MAPPINGS = [
   { label: 'Isyak', key: 'isyak' as keyof NormalizedPrayerTimes },
 ] as const;
 
-// Time-based gradients
+// Time-based gradients — rich, atmospheric
 const GRADIENTS = {
-  MORNING: ['#FF9A56', '#FF6B35'] as GradientColors,     // Golden
-  AFTERNOON: ['#87CEEB', '#4682B4'] as GradientColors,   // Sky blue
-  EVENING: ['#FF6B6B', '#C44569'] as GradientColors,     // Sunset
-  NIGHT: ['#2C3E50', '#34495E'] as GradientColors,       // Deep blue
+  MORNING:   ['#F97316', '#EA580C', '#7C2D12'] as GradientColors, // Deep amber sunrise
+  AFTERNOON: ['#0284C7', '#075985', '#0C4A6E'] as GradientColors, // Deep ocean
+  EVENING:   ['#DB2777', '#9D174D', '#F97316'] as GradientColors, // Sunset rose
+  NIGHT:     ['#1E1B4B', '#2D1F6E', '#0F0F23'] as GradientColors, // Deep indigo
 } as const;
 
 // ============================================================================

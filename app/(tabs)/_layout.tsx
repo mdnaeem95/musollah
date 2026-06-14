@@ -2,11 +2,8 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
-import { useRamadanMode } from '../../stores/userPreferencesStore';
-
 const TabLayout = () => {
   const { theme } = useTheme();
-  const isRamadanMode = useRamadanMode();
 
   return (
     <Tabs
@@ -33,9 +30,6 @@ const TabLayout = () => {
             case "(prayer)":
               iconName = "person-praying";
               break;
-            case "(ramadan)":
-              iconName = "moon";
-              break;
             case "(food)":
               iconName = "utensils";
               break;
@@ -57,14 +51,6 @@ const TabLayout = () => {
     >
       <Tabs.Screen name="index" options={{ href: null, title: "Prayers", headerShown: false }} />
       <Tabs.Screen name="(prayer)" options={{ title: "Prayers", headerShown: false }} />
-      <Tabs.Screen
-        name="(ramadan)"
-        options={{
-          title: "Ramadan",
-          headerShown: false,
-          href: isRamadanMode ? undefined : null,
-        }}
-      />
       <Tabs.Screen name="(food)" options={{ title: "Halal Food", headerShown: false }} />
       <Tabs.Screen name="(musollah)" options={{ title: "Musollah", headerShown: false }} />
       <Tabs.Screen name="(quran)" options={{ title: "Quran", headerShown: false }} />

@@ -2,6 +2,8 @@ import { View, TextInput, TouchableOpacity, StyleSheet, Text } from 'react-nativ
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import SurahItem from '../../../../components/quran/SurahItem';
 import { useTheme } from '../../../../context/ThemeContext';
 import { FlashList } from '@shopify/flash-list';
@@ -25,20 +27,19 @@ type SurahForItem = {
 };
 
 const Surahs = () => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const styles = createStyles(theme);
   const router = useRouter();
-  
+
   // TanStack Query for surahs
   const { data: surahs = [], isLoading } = useSurahs();
-  
+
   // Zustand for reading progress
   const readAyahs = useQuranStore((state) => state.readAyahs);
   const getReadCountForSurah = useQuranStore((state) => state.getReadCountForSurah);
-  
+
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debounceQuery, setDebounceQuery] = useState<string>(searchQuery);
-  const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
   const [mode, setMode] = useState<'surah' | 'juz'>('surah');
   const [renderMode, setRenderMode] = useState<'surah' | 'juz'>('surah');
 
@@ -85,13 +86,6 @@ const Surahs = () => {
     return { readAyahsMap: countMap, juzProgressMap: juzMap };
   }, [readAyahs]);
 
-  const toggleSearch = () => {
-    setIsSearchExpanded(!isSearchExpanded);
-    if (isSearchExpanded) {
-      setSearchQuery('');
-    }
-  };
-
   const filteredSurahs = useMemo(() => {
     return itemSurahs.filter(
       (surah) =>
@@ -110,69 +104,94 @@ const Surahs = () => {
   }, [searchQuery]);
 
   return (
-    <View style={styles.mainContainer}>
-      {/* Mode Toggle */}
-      <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 12 }}>
-        <TouchableOpacity
-          onPress={() => setMode('surah')}
+    <LinearGradient
+      colors={isDarkMode ? ['#060B18', '#0C1428', '#080F1E'] as const : ['#EEF2FF', '#F0F4FF', '#E8EFFF'] as const}
+      style={styles.mainContainer}
+    >
+      {/* Glass Search Bar */}
+      <View style={{ paddingHorizontal: 4, marginTop: 8, marginBottom: 4 }}>
+        <BlurView
+          intensity={20}
+          tint={isDarkMode ? 'dark' : 'light'}
           style={{
-            paddingVertical: 8,
-            paddingHorizontal: 20,
-            backgroundColor: mode === 'surah' ? theme.colors.muted : theme.colors.secondary,
-            borderRadius: 10,
-            marginRight: 8,
+            flexDirection: 'row',
+            alignItems: 'center',
+            borderRadius: 14,
+            paddingHorizontal: 14,
+            paddingVertical: 10,
+            gap: 10,
+            overflow: 'hidden',
+            backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.88)',
+            borderWidth: 1,
+            borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
           }}
         >
-          <Text style={{ color: theme.colors.text.primary, fontFamily: 'Outfit_600SemiBold' }}>
-            Surahs
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => setMode('juz')}
-          style={{
-            paddingVertical: 8,
-            paddingHorizontal: 20,
-            backgroundColor: mode === 'juz' ? theme.colors.muted : theme.colors.secondary,
-            borderRadius: 10,
-          }}
-        >
-          <Text style={{ color: theme.colors.text.primary, fontFamily: 'Outfit_600SemiBold' }}>
-            Juz
-          </Text>
-        </TouchableOpacity>
+          <FontAwesome6 name="magnifying-glass" size={15} color={isDarkMode ? 'rgba(255,255,255,0.40)' : theme.colors.text.muted} />
+          <TextInput
+            placeholder={`Search ${mode === 'surah' ? 'surahs' : 'juz'}...`}
+            placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.35)' : theme.colors.text.muted}
+            style={{
+              flex: 1,
+              color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary,
+              fontFamily: 'Outfit_400Regular',
+              fontSize: 15,
+            }}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <FontAwesome6 name="circle-xmark" size={16} color={isDarkMode ? 'rgba(255,255,255,0.40)' : theme.colors.text.muted} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={() => router.push('/bookmarks')} style={{ paddingLeft: 4 }}>
+            <FontAwesome6 name="bookmark" size={16} color={theme.colors.accent} solid />
+          </TouchableOpacity>
+        </BlurView>
       </View>
 
-      {/* Header with Search Bar */}
-      <View style={styles.headerContainer}>
-        {isSearchExpanded && (
-          <View style={styles.searchBarContainer}>
-            <TextInput
-              placeholder="Search Surah"
-              placeholderTextColor={theme.colors.text.muted}
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
-        )}
-
-        <TouchableOpacity onPress={toggleSearch} style={styles.searchIconContainer}>
-          <FontAwesome6 
-            name={isSearchExpanded ? 'xmark' : 'magnifying-glass'} 
-            size={24} 
-            color={theme.colors.text.primary}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.bookmarkIconContainer} onPress={() => router.push('/bookmarks')}>
-          <FontAwesome6 
-            name="bookmark" 
-            size={24} 
-            solid 
-            color={theme.colors.text.primary} 
-          />
-        </TouchableOpacity>
+      {/* Premium Segmented Mode Toggle */}
+      <View style={{ paddingHorizontal: 4, marginTop: 12, marginBottom: 4 }}>
+        <BlurView
+          intensity={15}
+          tint={isDarkMode ? 'dark' : 'light'}
+          style={{
+            flexDirection: 'row',
+            borderRadius: 14,
+            padding: 4,
+            overflow: 'hidden',
+            backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.85)',
+            borderWidth: 1,
+            borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+          }}
+        >
+          {(['surah', 'juz'] as const).map((m) => {
+            const isActive = mode === m;
+            return (
+              <TouchableOpacity
+                key={m}
+                onPress={() => setMode(m)}
+                style={{ flex: 1 }}
+                activeOpacity={0.7}
+              >
+                <View style={{
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  alignItems: 'center',
+                  backgroundColor: isActive ? theme.colors.accent : 'transparent',
+                }}>
+                  <Text style={{
+                    fontFamily: isActive ? 'Outfit_600SemiBold' : 'Outfit_500Medium',
+                    fontSize: 14,
+                    color: isActive ? '#fff' : isDarkMode ? 'rgba(255,255,255,0.60)' : theme.colors.text.secondary,
+                  }}>
+                    {m === 'surah' ? 'Surahs' : 'Juz'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </BlurView>
       </View>
 
       {/* Surah List or Juz List */}
@@ -186,7 +205,7 @@ const Surahs = () => {
               onPress={(s) => router.push(`/surahs/${s.number}`)}
               readCount={readAyahsMap[item.number] || 0}
             />
-          )}          
+          )}
           keyExtractor={(item) => `surah-${item.number}`}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
@@ -204,13 +223,13 @@ const Surahs = () => {
               totalAyahs={juzProgressMap[item.number]?.total || calculateTotalAyahs(item)}
               onPress={() => router.push(`/surahs/${item.start.surah}`)}
             />
-          )}          
+          )}
           keyExtractor={(item) => `juz-${item.number}`}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
         />
       )}
-    </View>
+    </LinearGradient>
   );
 };
 
@@ -218,34 +237,7 @@ const createStyles = (theme: any) =>
   StyleSheet.create({
     mainContainer: {
       flex: 1,
-      backgroundColor: theme.colors.primary,
       paddingHorizontal: theme.spacing.medium,
-    },
-    headerContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: theme.spacing.small,
-    },
-    searchBarContainer: {
-      flex: 1,
-      backgroundColor: theme.colors.secondary,
-      borderRadius: theme.borderRadius.medium,
-      paddingHorizontal: theme.spacing.small,
-      paddingVertical: theme.spacing.small / 2,
-      ...theme.shadows.default,
-      marginRight: theme.spacing.small,
-    },
-    searchInput: {
-      color: theme.colors.text.primary,
-      fontFamily: 'Outfit_400Regular',
-      fontSize: theme.fontSizes.medium,
-    },
-    searchIconContainer: {
-      padding: theme.spacing.small / 2,
-    },
-    bookmarkIconContainer: {
-      padding: theme.spacing.small / 2,
     },
     listContainer: {
       paddingBottom: theme.spacing.large,

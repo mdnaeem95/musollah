@@ -37,7 +37,7 @@ const SurahDetailLayout = () => {
             headerShown: true,
             headerTitle: 'Quran',
             headerStyle: { 
-              backgroundColor: theme.colors.primary,
+              backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
             },
             headerTintColor: theme.colors.text.primary,
             headerTitleStyle: {
@@ -77,7 +77,7 @@ const SurahDetailLayout = () => {
             headerShown: true,
             headerTitle: 'Surah',
             headerStyle: { 
-              backgroundColor: theme.colors.primary,
+              backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
             },
             headerTintColor: theme.colors.text.primary,
             headerTitleStyle: {
@@ -92,18 +92,6 @@ const SurahDetailLayout = () => {
               >
                 <FontAwesome6
                   name="arrow-left"
-                  size={20}
-                  color={theme.colors.text.primary}
-                />
-              </TouchableOpacity>
-            ),
-            headerRight: () => (
-              <TouchableOpacity 
-                onPress={toggleModal}
-                style={styles.headerButton}
-              >
-                <FontAwesome6
-                  name="gear"
                   size={20}
                   color={theme.colors.text.primary}
                 />

@@ -78,7 +78,7 @@ const DoaContent = () => {
 
   if (!doa) {
     return (
-      <View style={[styles.centerContainer, { backgroundColor: theme.colors.primary }]}>
+      <View style={[styles.centerContainer, { backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF' }]}>
         <ActivityIndicator size="large" color={theme.colors.accent} />
         <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
           Loading Dua...
@@ -92,7 +92,7 @@ const DoaContent = () => {
   // ============================================================================
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
+    <View style={[styles.mainContainer, { backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF' }]}>
       {/* Islamic Pattern Background */}
 
       <ScrollView 
@@ -108,7 +108,7 @@ const DoaContent = () => {
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.headerCard, { backgroundColor: theme.colors.secondary }]}
+            style={[styles.headerCard, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)', borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)' }]}
           >
             <View style={styles.headerContent}>
               {/* Icon Badge */}
@@ -144,7 +144,7 @@ const DoaContent = () => {
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.contentCard, { backgroundColor: theme.colors.secondary }]}
+            style={[styles.contentCard, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)', borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)' }]}
           >
             {/* Section Label */}
             <View style={styles.sectionHeader}>
@@ -185,7 +185,7 @@ const DoaContent = () => {
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.contentCard, { backgroundColor: theme.colors.secondary }]}
+            style={[styles.contentCard, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)', borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)' }]}
           >
             {/* Section Label */}
             <View style={styles.sectionHeader}>
@@ -226,7 +226,7 @@ const DoaContent = () => {
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.contentCard, { backgroundColor: theme.colors.secondary }]}
+            style={[styles.contentCard, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)', borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)' }]}
           >
             {/* Section Label */}
             <View style={styles.sectionHeader}>
@@ -267,7 +267,7 @@ const DoaContent = () => {
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.sourceCard, { backgroundColor: theme.colors.secondary }]}
+            style={[styles.sourceCard, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)', borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)' }]}
           >
             <View style={styles.sourceRow}>
               <FontAwesome6

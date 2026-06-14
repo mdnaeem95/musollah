@@ -12,7 +12,7 @@ export default {
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#2E3D3A"
+      "backgroundColor": "#010409"
     },
     "ios": {
       "appleTeamId": "RF3P52KUZA",

@@ -7,6 +7,7 @@
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as Progress from 'react-native-progress';
 import { useQuranStore } from '../../stores/useQuranStore';
@@ -31,7 +32,7 @@ const STORAGE_KEY_OVERALL_SURAHS = 'readSurahsOverall';
 // ============================================================================
 
 const RecitationProgress: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const router = useRouter();
 
   // Zustand store
@@ -120,14 +121,23 @@ const RecitationProgress: React.FC = () => {
   // ============================================================================
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.colors.secondary }]}>
+    <BlurView
+      intensity={20}
+      tint={isDarkMode ? 'dark' : 'light'}
+      style={[styles.card, {
+        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+        borderWidth: 1,
+        borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+        overflow: 'hidden',
+      }]}
+    >
       {/* Header */}
-      <Text style={[styles.header, { color: theme.colors.text.primary }]}>
+      <Text style={[styles.header, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
         {plan ? 'My Reading Plan' : 'All-Time Quran Progress'}
       </Text>
 
       {/* Sub-header */}
-      <Text style={[styles.subHeader, { color: theme.colors.text.secondary }]}>
+      <Text style={[styles.subHeader, { color: isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary }]}>
         {plan
           ? `Day ${daysPassed} of ${plan.daysToFinish}`
           : `Surahs read: ${overallSurahsRead} / ${TOTAL_SURAHS}`}
@@ -139,13 +149,13 @@ const RecitationProgress: React.FC = () => {
         width={null}
         height={10}
         color={theme.colors.accent}
-        unfilledColor={theme.colors.primary}
+        unfilledColor={isDarkMode ? 'rgba(255,255,255,0.10)' : theme.colors.primary}
         borderWidth={0}
         style={styles.progressBar}
       />
 
       {/* Progress Label */}
-      <Text style={[styles.label, { color: theme.colors.text.primary }]}>
+      <Text style={[styles.label, { color: isDarkMode ? 'rgba(255,255,255,0.75)' : theme.colors.text.primary }]}>
         {plan
           ? `Completed ${actual} / ${expected} ${plan.planType}`
           : `${((overallSurahsRead / TOTAL_SURAHS) * 100).toFixed(2)}% complete`}
@@ -158,11 +168,11 @@ const RecitationProgress: React.FC = () => {
           onPress={handleResume}
         >
           <Text style={styles.resumeText}>
-            📖 Resume from Surah {plan.lastReadAyah}
+            Resume Reading
           </Text>
         </TouchableOpacity>
       )}
-    </View>
+    </BlurView>
   );
 };
 
@@ -175,6 +185,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginTop: 20,
+    overflow: 'hidden',
   },
   header: {
     fontSize: 20,

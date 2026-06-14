@@ -51,7 +51,7 @@ export default function UnitScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+    <View style={[styles.container, { backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF' }]}>
       <View style={styles.content}>
         {/* Header */}
         <MotiView
@@ -92,7 +92,7 @@ export default function UnitScreen() {
                   <BlurView
                     intensity={20}
                     tint={isDarkMode ? 'dark' : 'light'}
-                    style={[styles.optionCard, { backgroundColor: theme.colors.secondary }]}
+                    style={[styles.optionCard, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)', borderWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)' }]}
                   >
                     {/* Icon Badge */}
                     <View style={[styles.optionIcon, { backgroundColor: accentBg }]}>

@@ -65,21 +65,18 @@ export const LocationDisplay: React.FC = () => {
     updateLocationText();
   }, [userLocation]);
   
-  const textColor = isDarkMode ? '#ffffff' : '#1a1a1a';
-  const iconColor = isDarkMode ? '#ffffff' : theme.colors.accent;
+  // Always on sky background — use white text regardless of theme
+  const textColor = 'rgba(255, 255, 255, 0.9)';
+  const iconColor = 'rgba(255, 255, 255, 0.8)';
 
   return (
     <View style={styles.container}>
       <BlurView
-        intensity={20}
-        tint={isDarkMode ? 'dark' : 'light'}
+        intensity={25}
+        tint="dark"
         style={[
           styles.locationBadge,
-          {
-            backgroundColor: isDarkMode 
-              ? 'rgba(255, 255, 255, 0.15)'
-              : 'rgba(255, 255, 255, 0.75)',
-          }
+          { backgroundColor: 'rgba(255, 255, 255, 0.15)' }
         ]}
       >
         {isLoading ? (
@@ -105,7 +102,7 @@ export const LocationDisplay: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 0,
   },
   locationBadge: {
     flexDirection: 'row',

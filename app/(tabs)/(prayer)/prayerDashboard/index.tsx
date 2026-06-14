@@ -1,10 +1,10 @@
 /**
  * Prayer Dashboard - Modern Design (FIXED)
- * 
+ *
  * Track daily prayers, view weekly progress, and monitor streaks
- * 
- * @version 3.1 - Fixed query key mismatch
- * 
+ *
+ * @version 4.0 - Redesigned visual layer with glass cards and progress ring
+ *
  * ✅ FIXED: Using prayerQueryKeys.logs.daily() for cache consistency
  * ✅ FIXED: Added cancelQueries before reading cache
  */
@@ -19,6 +19,8 @@ import { MotiView } from 'moti';
 import { useQueryClient } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle as SvgCircle } from 'react-native-svg';
 
 // Hooks
 import { useTheme } from '../../../../context/ThemeContext';
@@ -48,12 +50,29 @@ import { createLogger } from '../../../../services/logging/logger';
 const logger = createLogger('Prayer Dashboard');
 
 // ============================================================================
+// PROGRESS RING COMPONENT
+// ============================================================================
+
+const ProgressRing = ({ progress, size, color, trackColor }: { progress: number; size: number; color: string; trackColor: string }) => {
+  const sw = 5;
+  const r = (size - sw * 2) / 2;
+  const circ = 2 * Math.PI * r;
+  return (
+    <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
+      <SvgCircle cx={size/2} cy={size/2} r={r} stroke={trackColor} strokeWidth={sw} fill="none" />
+      <SvgCircle cx={size/2} cy={size/2} r={r} stroke={color} strokeWidth={sw} fill="none"
+        strokeDasharray={`${circ} ${circ}`} strokeDashoffset={circ * (1 - Math.max(0, Math.min(1, progress)))} strokeLinecap="round" />
+    </Svg>
+  );
+};
+
+// ============================================================================
 // HELPER: Check if prayer can be logged
 // ============================================================================
 
 /**
  * ✅ IMPROVED: Determine if a prayer can be logged
- * 
+ *
  * Rules:
  * 1. For PAST dates: All prayers are loggable (day is complete)
  * 2. For TODAY: Prayer time must have passed
@@ -159,7 +178,7 @@ const PrayersDashboard: React.FC = () => {
   // Prayer availability checker
   const toggablePrayers = useMemo(() => {
     if (!todayPrayerData) return undefined;
-    
+
     return LOGGABLE_PRAYERS.map(prayer => {
       const prayerTime = todayPrayerData[prayer.toLowerCase() as keyof typeof todayPrayerData];
       return {
@@ -216,13 +235,13 @@ const PrayersDashboard: React.FC = () => {
 
       // ✅ CRITICAL FIX: Use the SAME query key as the mutation
       const queryKey = prayerQueryKeys.logs.daily(userId, dateStr);
-      
+
       // ✅ Cancel any pending mutations
       await queryClient.cancelQueries({ queryKey });
-      
+
       // ✅ Read FRESH data from React Query cache
       const currentLog = queryClient.getQueryData<PrayerLog>(queryKey);
-      
+
       const currentPrayers = currentLog?.prayers || {
         Subuh: false,
         Zohor: false,
@@ -281,10 +300,15 @@ const PrayersDashboard: React.FC = () => {
     };
   }, [prayerLog]);
 
+  const gradientColors = isDarkMode
+    ? (['#060B18', '#0C1428', '#080F1E'] as const)
+    : (['#EEF2FF', '#F0F4FF', '#EEF2FF'] as const);
+
   // Render loading state
   if (isLoadingLog || isLoadingWeekly) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+      <View style={styles.container}>
+        <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFillObject} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.section}>
             {[1, 2, 3, 4, 5].map((i) => (
@@ -297,66 +321,76 @@ const PrayersDashboard: React.FC = () => {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
+    <View style={styles.container}>
+      <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFillObject} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        {/* Stats Card */}
-        <MotiView {...enter(0)}>
+
+        {/* Stats Section - Two side-by-side cards */}
+        <MotiView {...enter(0)} style={styles.statsRow}>
+          {/* Left card: Progress ring */}
           <BlurView
-            intensity={20}
+            intensity={25}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.statsCard, { backgroundColor: theme.colors.secondary }]}
+            style={[
+              styles.statsCardHalf,
+              {
+                backgroundColor: isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.85)',
+                borderColor: 'rgba(255,255,255,0.12)',
+              },
+            ]}
           >
-            {/* Today's Progress */}
-            <View style={styles.statRow}>
-              <View style={[styles.statIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                <FontAwesome6 name="calendar-check" size={20} color={theme.colors.accent} />
-              </View>
-              <View style={styles.statContent}>
-                <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>Today</Text>
-                <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>
-                  {completionStats.completed}/{completionStats.total} Prayers
-                </Text>
-              </View>
-              <View style={[styles.percentageBadge, { backgroundColor: theme.colors.accent }]}>
-                <Text style={[styles.percentageText, { color: '#fff' }]}>
-                  {completionStats.percentage}%
-                </Text>
-              </View>
-            </View>
+            <ProgressRing
+              progress={completionStats.completed / 5}
+              size={60}
+              color={theme.colors.accent}
+              trackColor={isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}
+            />
+            <Text style={[styles.statsCardLarge, { color: theme.colors.text.primary }]}>
+              {completionStats.completed}/5
+            </Text>
+            <Text style={[styles.statsCardLabel, { color: theme.colors.text.secondary }]}>Today</Text>
+          </BlurView>
 
-            <View style={[styles.divider, { backgroundColor: theme.colors.text.muted + '15' }]} />
-
-            {/* Streak Info */}
-            <View style={styles.statRow}>
-              <View style={[styles.statIcon, { backgroundColor: '#FF6B6B15' }]}>
-                <FontAwesome6 name="fire-flame-curved" size={20} color="#FF6B6B" />
-              </View>
-              <View style={styles.statContent}>
-                <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>Current Streak</Text>
-                <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>
-                  {streakInfo.current} {streakInfo.current === 1 ? 'Day' : 'Days'}
-                </Text>
-              </View>
-              <View style={[styles.longestBadge, { backgroundColor: isDarkMode ? '#333' : '#f5f5f5' }]}>
-                <FontAwesome6 name="trophy" size={12} color={theme.colors.accent} />
-                <Text style={[styles.longestText, { color: theme.colors.text.secondary }]}>
-                  {streakInfo.longest}
-                </Text>
-              </View>
-            </View>
+          {/* Right card: Streak */}
+          <BlurView
+            intensity={25}
+            tint={isDarkMode ? 'dark' : 'light'}
+            style={[
+              styles.statsCardHalf,
+              {
+                backgroundColor: isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.85)',
+                borderColor: 'rgba(255,255,255,0.12)',
+              },
+            ]}
+          >
+            <Text style={[styles.streakNumber, { color: theme.colors.text.primary }]}>
+              {streakInfo.current}
+            </Text>
+            <Text style={[styles.statsCardLabel, { color: theme.colors.text.secondary }]}>
+              day streak
+            </Text>
+            <Text style={[styles.bestLabel, { color: theme.colors.text.muted }]}>
+              Best: {streakInfo.longest}
+            </Text>
           </BlurView>
         </MotiView>
 
         {/* Date Navigation */}
         <MotiView {...enter(1)} style={styles.headerSection}>
           <BlurView
-            intensity={20}
+            intensity={25}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.dateCard, { backgroundColor: theme.colors.secondary }]}
+            style={[
+              styles.dateCard,
+              {
+                backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.85)',
+                borderColor: 'rgba(255,255,255,0.12)',
+              },
+            ]}
           >
             <TouchableOpacity
               onPress={goToPrevDay}
-              style={[styles.navButton, { backgroundColor: isDarkMode ? '#333' : '#f5f5f5' }]}
+              style={[styles.navButton, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}
             >
               <FontAwesome6 name="chevron-left" size={18} color={theme.colors.text.primary} />
             </TouchableOpacity>
@@ -377,12 +411,8 @@ const PrayersDashboard: React.FC = () => {
                 styles.navButton,
                 {
                   backgroundColor: canGoNext
-                    ? isDarkMode
-                      ? '#333'
-                      : '#f5f5f5'
-                    : isDarkMode
-                    ? '#222'
-                    : '#e5e5e5',
+                    ? isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'
+                    : isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
                 },
               ]}
             >
@@ -405,22 +435,25 @@ const PrayersDashboard: React.FC = () => {
             return (
               <MotiView key={prayer} {...enter(index + 2)}>
                 <BlurView
-                  intensity={20}
+                  intensity={25}
                   tint={isDarkMode ? 'dark' : 'light'}
-                  style={[styles.prayerCard, { backgroundColor: theme.colors.secondary }]}
+                  style={[
+                    styles.prayerCard,
+                    {
+                      backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.85)',
+                      borderColor: 'rgba(255,255,255,0.12)',
+                    },
+                  ]}
                 >
-                  <View style={[styles.prayerIcon, { backgroundColor: config.color + '15' }]}>
+                  <View style={[styles.prayerIcon, { backgroundColor: config.color + '20' }]}>
                     <FontAwesome6 name={config.icon} size={20} color={config.color} />
                   </View>
 
                   <Text style={[styles.prayerName, { color: theme.colors.text.primary }]}>{prayer}</Text>
 
                   {!isAvailable ? (
-                    <View
-                      style={[styles.lockedBadge, { backgroundColor: isDarkMode ? '#333' : '#f5f5f5' }]}
-                    >
-                      <FontAwesome6 name="lock" size={10} color={theme.colors.text.muted} />
-                      <Text style={[styles.lockedText, { color: theme.colors.text.muted }]}>Locked</Text>
+                    <View style={[styles.toggleButton, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                      <FontAwesome6 name="lock" size={18} color={theme.colors.text.muted} />
                     </View>
                   ) : (
                     <TouchableOpacity
@@ -428,7 +461,7 @@ const PrayersDashboard: React.FC = () => {
                       style={[
                         styles.toggleButton,
                         {
-                          backgroundColor: isCompleted ? config.color + '15' : isDarkMode ? '#333' : '#f5f5f5',
+                          backgroundColor: isCompleted ? config.color + '20' : isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
                         },
                       ]}
                     >
@@ -448,9 +481,15 @@ const PrayersDashboard: React.FC = () => {
         {/* Weekly Calendar */}
         <MotiView {...enter(7)}>
           <BlurView
-            intensity={20}
+            intensity={25}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.calendarCard, { backgroundColor: theme.colors.secondary }]}
+            style={[
+              styles.calendarCard,
+              {
+                backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.85)',
+                borderColor: 'rgba(255,255,255,0.12)',
+              },
+            ]}
           >
             <View style={styles.calendarHeader}>
               <FontAwesome6 name="calendar-week" size={16} color={theme.colors.accent} />
@@ -463,25 +502,14 @@ const PrayersDashboard: React.FC = () => {
             <View style={styles.calendarRow}>
               <View style={styles.calendarLabelCell} />
               {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.calendarDayCell,
-                    {
-                      backgroundColor: i === currentDayIndex ? theme.colors.accent + '15' : 'transparent',
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.calendarDayText,
-                      {
-                        color: i === currentDayIndex ? theme.colors.accent : theme.colors.text.secondary,
-                      },
-                    ]}
-                  >
-                    {day}
-                  </Text>
+                <View key={i} style={[styles.calendarDayCell]}>
+                  {i === currentDayIndex ? (
+                    <View style={[styles.todayCircle, { backgroundColor: theme.colors.accent }]}>
+                      <Text style={[styles.calendarDayText, { color: '#fff' }]}>{day}</Text>
+                    </View>
+                  ) : (
+                    <Text style={[styles.calendarDayText, { color: theme.colors.text.secondary }]}>{day}</Text>
+                  )}
                 </View>
               ))}
             </View>
@@ -501,14 +529,18 @@ const PrayersDashboard: React.FC = () => {
                 </View>
                 {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => {
                   const logged = isLogged(dayIndex, session);
-                  const isActive = logged;
 
                   return (
                     <View key={dayIndex} style={styles.calendarDotCell}>
-                      <FontAwesome6
-                        name={isActive ? 'circle-check' : 'circle'}
-                        size={20}
-                        color={isActive ? '#FF6B6B' : theme.colors.text.muted}
+                      <View
+                        style={[
+                          styles.calendarDot,
+                          {
+                            backgroundColor: logged
+                              ? theme.colors.accent
+                              : isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
+                          },
+                        ]}
                       />
                     </View>
                   );
@@ -518,48 +550,6 @@ const PrayersDashboard: React.FC = () => {
           </BlurView>
         </MotiView>
 
-        {/* Streak Visualization */}
-        <MotiView {...enter(8)}>
-          <BlurView
-            intensity={20}
-            tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.streakCard, { backgroundColor: theme.colors.secondary }]}
-          >
-            <View style={styles.streakHeader}>
-              <FontAwesome6 name="fire-flame-curved" size={16} color="#FF6B6B" />
-              <Text style={[styles.streakTitle, { color: theme.colors.text.primary }]}>Prayer Streak</Text>
-            </View>
-
-            {/* 5 Flames */}
-            <View style={styles.flamesContainer}>
-              {[...Array(5)].map((_, i) => {
-                const isActive = i < streakInfo.current;
-                return (
-                  <View
-                    key={i}
-                    style={[
-                      styles.flameWrapper,
-                      { backgroundColor: isActive ? '#FF6B6B15' : isDarkMode ? '#333' : '#f5f5f5' },
-                    ]}
-                  >
-                    <FontAwesome6
-                      name="fire-flame-curved"
-                      size={20}
-                      color={isActive ? '#FF6B6B' : theme.colors.text.muted}
-                    />
-                  </View>
-                );
-              })}
-            </View>
-
-            {/* Streak Info */}
-            <View style={styles.streakInfo}>
-              <Text style={[styles.streakInfoText, { color: theme.colors.text.secondary }]}>
-                Keep going! Complete all 5 prayers daily to maintain your streak
-              </Text>
-            </View>
-          </BlurView>
-        </MotiView>
       </ScrollView>
 
       {/* Auth Modal */}
@@ -587,11 +577,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
-  // Stats Card
-  statsCard: {
-    borderRadius: 16,
-    padding: 20,
-    gap: 16,
+  // Stats Section - two-card row
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  statsCardHalf: {
+    flex: 1,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 18,
+    alignItems: 'center',
+    gap: 4,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -599,53 +597,22 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  statRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  statIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statContent: {
-    flex: 1,
-    gap: 2,
-  },
-  statLabel: {
-    fontSize: 12,
-    fontFamily: 'Outfit_400Regular',
-  },
-  statValue: {
-    fontSize: 16,
-    fontFamily: 'Outfit_600SemiBold',
-  },
-  percentageBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  percentageText: {
-    fontSize: 14,
+  statsCardLarge: {
+    fontSize: 18,
     fontFamily: 'Outfit_700Bold',
   },
-  longestBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+  statsCardLabel: {
+    fontSize: 13,
+    fontFamily: 'Outfit_400Regular',
   },
-  longestText: {
+  streakNumber: {
+    fontSize: 32,
+    fontFamily: 'Outfit_700Bold',
+    lineHeight: 38,
+  },
+  bestLabel: {
     fontSize: 12,
-    fontFamily: 'Outfit_600SemiBold',
-  },
-  divider: {
-    height: 1,
+    fontFamily: 'Outfit_400Regular',
   },
 
   // Date Card
@@ -654,8 +621,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    borderRadius: 14,
+    borderRadius: 16,
     marginBottom: 20,
+    borderWidth: 1,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -666,7 +634,7 @@ const styles = StyleSheet.create({
   navButton: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -693,7 +661,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderRadius: 14,
+    borderRadius: 16,
+    borderWidth: 1,
     gap: 12,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -703,9 +672,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   prayerIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -714,22 +683,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Outfit_600SemiBold',
   },
-  lockedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  lockedText: {
-    fontSize: 11,
-    fontFamily: 'Outfit_500Medium',
-  },
   toggleButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -737,6 +694,7 @@ const styles = StyleSheet.create({
   // Calendar Card
   calendarCard: {
     borderRadius: 16,
+    borderWidth: 1,
     padding: 16,
     marginBottom: 16,
     overflow: 'hidden',
@@ -772,8 +730,14 @@ const styles = StyleSheet.create({
   calendarDayCell: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingVertical: 4,
+  },
+  todayCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   calendarDayText: {
     fontSize: 12,
@@ -783,56 +747,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 4,
   },
   calendarDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-  },
-
-  // Streak Card
-  streakCard: {
-    borderRadius: 16,
-    padding: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  streakHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  streakTitle: {
-    fontSize: 16,
-    fontFamily: 'Outfit_600SemiBold',
-  },
-  flamesContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  flameWrapper: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  streakInfo: {
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
-  },
-  streakInfoText: {
-    fontSize: 13,
-    fontFamily: 'Outfit_400Regular',
-    textAlign: 'center',
-    lineHeight: 19,
   },
 });
 

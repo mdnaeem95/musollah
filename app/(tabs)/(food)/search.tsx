@@ -13,6 +13,7 @@ import { FlashList } from '@shopify/flash-list';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { MotiView } from 'moti';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../context/ThemeContext';
@@ -72,10 +73,10 @@ const SearchPage = () => {
         <View style={[styles.emptyIconContainer, { backgroundColor: theme.colors.accent + '15' }]}>
           <FontAwesome6 name="magnifying-glass" size={40} color={theme.colors.accent} />
         </View>
-        <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>
+        <Text style={[styles.emptyTitle, { color: isDarkMode ? 'rgba(255,255,255,0.88)' : theme.colors.text.primary }]}>
           No restaurants found
         </Text>
-        <Text style={[styles.emptySubtitle, { color: theme.colors.text.secondary }]}>
+        <Text style={[styles.emptySubtitle, { color: isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary }]}>
           Try searching with different keywords
         </Text>
       </MotiView>
@@ -83,13 +84,25 @@ const SearchPage = () => {
   };
 
   return (
+    <LinearGradient
+      colors={isDarkMode ? ['#060B18', '#0C1428', '#080F1E'] : ['#EEF2FF', '#F0F4FF', '#E8EFFF']}
+      style={styles.gradient}
+    >
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.colors.primary }]}
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Enhanced Search Bar */}
       <View style={styles.searchBarContainer}>
-        <View style={[styles.searchBar, { backgroundColor: theme.colors.secondary }]}>
+        <BlurView
+          intensity={isDarkMode ? 18 : 22}
+          tint={isDarkMode ? 'dark' : 'light'}
+          style={[styles.searchBar, {
+            backgroundColor: isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.90)',
+            borderColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.07)',
+            borderWidth: 1,
+          }]}
+        >
           <View style={[styles.searchIconContainer, { backgroundColor: theme.colors.accent }]}>
             <FontAwesome6 name="magnifying-glass" size={16} color="#fff" />
           </View>
@@ -97,7 +110,7 @@ const SearchPage = () => {
             ref={inputRef}
             style={[styles.searchInput, { color: theme.colors.text.primary }]}
             placeholder="Search restaurants, cuisines..."
-            placeholderTextColor={theme.colors.text.muted}
+            placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.35)' : theme.colors.text.muted}
             value={searchQuery}
             onChangeText={handleSearchChange}
             onSubmitEditing={handleSearchSubmit}
@@ -111,7 +124,7 @@ const SearchPage = () => {
               <FontAwesome6 name="circle-xmark" size={18} color={theme.colors.text.muted} />
             </TouchableOpacity>
           )}
-        </View>
+        </BlurView>
       </View>
 
       {/* Recent Searches */}
@@ -124,7 +137,7 @@ const SearchPage = () => {
         >
           <View style={styles.recentHeader}>
             <FontAwesome6 name="clock-rotate-left" size={16} color={theme.colors.accent} />
-            <Text style={[styles.recentTitle, { color: theme.colors.text.primary }]}>
+            <Text style={[styles.recentTitle, { color: isDarkMode ? 'rgba(255,255,255,0.88)' : theme.colors.text.primary }]}>
               Recent Searches
             </Text>
           </View>
@@ -140,21 +153,21 @@ const SearchPage = () => {
                 <BlurView
                   intensity={20}
                   tint={isDarkMode ? 'dark' : 'light'}
-                  style={[styles.recentChip, { 
-                    backgroundColor: theme.colors.secondary,
-                    borderColor: theme.colors.accent + '20',
+                  style={[styles.recentChip, {
+                    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.85)',
+                    borderColor: isDarkMode ? 'rgba(255,255,255,0.10)' : theme.colors.accent + '20',
                   }]}
                 >
                   <TouchableOpacity
                     onPress={() => handleRecentPress(search)}
                     style={styles.recentChipContent}
                   >
-                    <FontAwesome6 
-                      name="clock" 
-                      size={12} 
-                      color={theme.colors.text.secondary} 
+                    <FontAwesome6
+                      name="clock"
+                      size={12}
+                      color={isDarkMode ? 'rgba(255,255,255,0.45)' : theme.colors.text.secondary}
                     />
-                    <Text style={[styles.recentChipText, { color: theme.colors.text.primary }]}>
+                    <Text style={[styles.recentChipText, { color: isDarkMode ? 'rgba(255,255,255,0.80)' : theme.colors.text.primary }]}>
                       {search}
                     </Text>
                   </TouchableOpacity>
@@ -162,10 +175,10 @@ const SearchPage = () => {
                     onPress={() => handleRemovePress(search)}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <FontAwesome6 
-                      name="xmark" 
-                      size={12} 
-                      color={theme.colors.text.muted} 
+                    <FontAwesome6
+                      name="xmark"
+                      size={12}
+                      color={isDarkMode ? 'rgba(255,255,255,0.35)' : theme.colors.text.muted}
                     />
                   </TouchableOpacity>
                 </BlurView>
@@ -195,8 +208,10 @@ const SearchPage = () => {
               <BlurView
                 intensity={20}
                 tint={isDarkMode ? 'dark' : 'light'}
-                style={[styles.restaurantCard, { 
-                  backgroundColor: theme.colors.secondary,
+                style={[styles.restaurantCard, {
+                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
                 }]}
               >
                 {/* Restaurant Image */}
@@ -218,8 +233,8 @@ const SearchPage = () => {
                 {/* Restaurant Info */}
                 <View style={styles.restaurantInfo}>
                   <View style={styles.restaurantHeader}>
-                    <Text 
-                      style={[styles.restaurantName, { color: theme.colors.text.primary }]}
+                    <Text
+                      style={[styles.restaurantName, { color: isDarkMode ? 'rgba(255,255,255,0.92)' : theme.colors.text.primary }]}
                       numberOfLines={1}
                     >
                       {item.name}
@@ -257,8 +272,8 @@ const SearchPage = () => {
                   </View>
 
                   {/* Address */}
-                  <Text 
-                    style={[styles.restaurantAddress, { color: theme.colors.text.secondary }]}
+                  <Text
+                    style={[styles.restaurantAddress, { color: isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary }]}
                     numberOfLines={1}
                   >
                     {item.address}
@@ -267,10 +282,10 @@ const SearchPage = () => {
 
                 {/* Chevron */}
                 <View style={styles.chevronContainer}>
-                  <FontAwesome6 
-                    name="chevron-right" 
-                    size={16} 
-                    color={theme.colors.text.muted} 
+                  <FontAwesome6
+                    name="chevron-right"
+                    size={16}
+                    color={isDarkMode ? 'rgba(255,255,255,0.35)' : theme.colors.text.muted}
                   />
                 </View>
               </BlurView>
@@ -279,10 +294,14 @@ const SearchPage = () => {
         )}
       />
     </KeyboardAvoidingView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
@@ -302,6 +321,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
+    overflow: 'hidden',
   },
   searchIconContainer: {
     width: 36,

@@ -34,7 +34,7 @@ const JuzItem = ({
   index 
 }: JuzItemProps) => {
   const { theme, isDarkMode } = useTheme();
-  const styles = createStyles(theme);
+  const styles = createStyles(theme, isDarkMode);
 
   const progress = totalAyahs > 0 ? readCount / totalAyahs : 0;
   const progressPercentage = Math.round(progress * 100);
@@ -55,7 +55,11 @@ const JuzItem = ({
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.container, { backgroundColor: theme.colors.secondary }]}
+            style={[styles.container, {
+              backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+              borderWidth: 1,
+              borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+            }]}
           >
             {/* Left Section: Juz Badge */}
             <View style={[styles.juzBadge, { backgroundColor: theme.colors.accent + '15' }]}>
@@ -111,7 +115,7 @@ const JuzItem = ({
   );
 };
 
-const createStyles = (theme: any) =>
+const createStyles = (theme: any, isDarkMode: boolean) =>
   StyleSheet.create({
     container: {
       flexDirection: 'row',
@@ -139,7 +143,7 @@ const createStyles = (theme: any) =>
     juzLabel: {
       fontSize: 10,
       fontFamily: 'Outfit_500Medium',
-      color: theme.colors.text.secondary,
+      color: isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary,
       letterSpacing: 0.5,
     },
     juzNumber: {
@@ -160,7 +164,7 @@ const createStyles = (theme: any) =>
     rangeText: {
       fontSize: 13,
       fontFamily: 'Outfit_500Medium',
-      color: theme.colors.text.secondary,
+      color: isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary,
     },
 
     // Progress
@@ -179,7 +183,7 @@ const createStyles = (theme: any) =>
     progressText: {
       fontSize: 11,
       fontFamily: 'Outfit_500Medium',
-      color: theme.colors.text.secondary,
+      color: isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary,
     },
 
     // Right Section

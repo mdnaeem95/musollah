@@ -1,141 +1,124 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useMonthlyPrayerTimes } from '../../../../api/services/prayer';
 import MonthlyPrayerTimesTable from '../../../../components/prayer/MonthlyPrayerTimesTable';
 
-/**
- * Monthly Prayer Times Page
- * 
- * Displays prayer times for the entire current month in a table format.
- * 
- * Improvements over original:
- * - Uses TanStack Query hook (useMonthlyPrayerTimes)
- * - No manual AsyncStorage - MMKV cache in query hook
- * - Automatic background refetching
- * - Better error handling
- * - Cleaner code (60% fewer lines)
- */
 const MonthlyPrayerTimesPage: React.FC = () => {
-  const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const { theme, isDarkMode } = useTheme();
 
-  // Get current year and month
   const { year, month } = useMemo(() => {
     const now = new Date();
-    return {
-      year: now.getFullYear(),
-      month: now.getMonth() + 1,
-    };
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
   }, []);
 
-  // Fetch monthly prayer times with TanStack Query
-  const { 
-    data: monthlyPrayerTimes, 
-    isLoading, 
-    isError, 
-    error,
-    refetch 
-  } = useMonthlyPrayerTimes(year, month);
+  const { data: monthlyPrayerTimes, isLoading, isError, error, refetch } = useMonthlyPrayerTimes(year, month);
 
-  // Loading state
+  const gradientColors = isDarkMode
+    ? (['#060B18', '#0C1428', '#080F1E'] as const)
+    : (['#EEF2FF', '#F0F4FF', '#E8EFFF'] as const);
+
+  const textPrimary = isDarkMode ? 'rgba(255,255,255,0.88)' : theme.colors.text.primary;
+  const textSecondary = isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary;
+
   if (isLoading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={theme.colors.text.primary} />
-        <Text style={styles.loadingText}>
+      <LinearGradient colors={gradientColors} style={styles.centered}>
+        <ActivityIndicator size="large" color={theme.colors.accent} />
+        <Text style={[styles.loadingText, { color: textSecondary }]}>
           Loading prayer times for {month}/{year}...
         </Text>
-      </View>
+      </LinearGradient>
     );
   }
 
-  // Error state
   if (isError) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>
+      <LinearGradient colors={gradientColors} style={styles.centered}>
+        <View style={[styles.stateIcon, { backgroundColor: '#ff6b6b20' }]}>
+          <FontAwesome6 name="triangle-exclamation" size={40} color="#ff6b6b" />
+        </View>
+        <Text style={[styles.errorText, { color: '#ff6b6b' }]}>
           {error instanceof Error ? error.message : 'Failed to load monthly prayer times'}
         </Text>
-        <Text style={styles.retryText} onPress={() => refetch()}>
-          Tap to retry
-        </Text>
-      </View>
+        <TouchableOpacity
+          onPress={() => refetch()}
+          style={[styles.retryButton, { backgroundColor: theme.colors.accent }]}
+        >
+          <FontAwesome6 name="rotate-right" size={14} color="#fff" />
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </TouchableOpacity>
+      </LinearGradient>
     );
   }
 
-  // Empty state
   if (!monthlyPrayerTimes || monthlyPrayerTimes.length === 0) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyText}>
+      <LinearGradient colors={gradientColors} style={styles.centered}>
+        <Text style={[styles.emptyText, { color: textSecondary }]}>
           No prayer times available for {month}/{year}
         </Text>
-      </View>
+      </LinearGradient>
     );
   }
 
-  // Success state
   return (
-    <View style={styles.container}>
-      <View style={styles.tableContainer}>
-        <MonthlyPrayerTimesTable monthlyPrayerTimes={monthlyPrayerTimes} />
-      </View>
-    </View>
+    <LinearGradient colors={gradientColors} style={styles.container}>
+      <MonthlyPrayerTimesTable monthlyPrayerTimes={monthlyPrayerTimes} />
+    </LinearGradient>
   );
 };
 
-const createStyles = (theme: any) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.primary,
-      alignContent: 'center',
-      justifyContent: 'center',
-    },
-    tableContainer: {
-      flex: 1,
-      width: '100%',
-      height: '100%',
-      backgroundColor: theme.colors.secondary,
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-    },
-    centered: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: theme.colors.primary,
-      padding: 20,
-    },
-    loadingText: {
-      marginTop: 12,
-      fontSize: 14,
-      fontFamily: 'Outfit_400Regular',
-      color: theme.colors.text.secondary,
-    },
-    errorText: {
-      fontSize: 16,
-      fontFamily: 'Outfit_500Medium',
-      color: theme.colors.text.error,
-      textAlign: 'center',
-    },
-    retryText: {
-      marginTop: 16,
-      fontSize: 14,
-      fontFamily: 'Outfit_500Medium',
-      color: theme.colors.text.primary,
-      textDecorationLine: 'underline',
-    },
-    emptyText: {
-      fontSize: 16,
-      fontFamily: 'Outfit_400Regular',
-      color: theme.colors.text.secondary,
-      textAlign: 'center',
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+    gap: 16,
+  },
+  stateIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontFamily: 'Outfit_400Regular',
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 15,
+    fontFamily: 'Outfit_500Medium',
+    textAlign: 'center',
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  emptyText: {
+    fontSize: 16,
+    fontFamily: 'Outfit_400Regular',
+    textAlign: 'center',
+  },
+});
 
 export default MonthlyPrayerTimesPage;

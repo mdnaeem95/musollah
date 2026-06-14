@@ -24,7 +24,7 @@ interface SurahProps {
 
 const SurahItem = ({ surah, onPress, readCount = 0, index }: SurahProps) => {
   const { theme, isDarkMode, textSize } = useTheme();
-  const styles = createStyles(theme, textSize);
+  const styles = createStyles(theme, textSize, isDarkMode);
 
   const progress = surah.numberOfAyahs > 0 ? readCount / surah.numberOfAyahs : 0;
   const progressPercentage = Math.round(progress * 100);
@@ -45,7 +45,11 @@ const SurahItem = ({ surah, onPress, readCount = 0, index }: SurahProps) => {
           <BlurView
             intensity={20}
             tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.container, { backgroundColor: theme.colors.secondary }]}
+            style={[styles.container, {
+              backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+              borderWidth: 1,
+              borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+            }]}
           >
             {/* Left Section: Number & Names */}
             <View style={styles.leftSection}>
@@ -108,7 +112,7 @@ const SurahItem = ({ surah, onPress, readCount = 0, index }: SurahProps) => {
   );
 };
 
-const createStyles = (theme: any, textSize: number) =>
+const createStyles = (theme: any, textSize: number, isDarkMode: boolean) =>
   StyleSheet.create({
     container: {
       flexDirection: 'row',
@@ -155,7 +159,7 @@ const createStyles = (theme: any, textSize: number) =>
     englishName: {
       fontSize: 16,
       fontFamily: 'Outfit_600SemiBold',
-      color: theme.colors.text.primary,
+      color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary,
     },
     metaRow: {
       flexDirection: 'row',
@@ -166,7 +170,7 @@ const createStyles = (theme: any, textSize: number) =>
     metaText: {
       fontSize: 12,
       fontFamily: 'Outfit_400Regular',
-      color: theme.colors.text.secondary,
+      color: isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary,
     },
     separator: {
       width: 3,
@@ -184,7 +188,7 @@ const createStyles = (theme: any, textSize: number) =>
     arabicName: {
       fontSize: 20,
       fontFamily: 'Amiri_400Regular',
-      color: theme.colors.text.primary,
+      color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary,
     },
 
     // Progress
@@ -206,7 +210,7 @@ const createStyles = (theme: any, textSize: number) =>
     progressText: {
       fontSize: 11,
       fontFamily: 'Outfit_500Medium',
-      color: theme.colors.text.secondary,
+      color: isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary,
     },
 
     // Complete Badge

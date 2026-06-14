@@ -11,9 +11,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Animated, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Animated, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Dropdown } from 'react-native-element-dropdown';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSurahWithTranslation } from '../../api/services/quran';
 import { defaultStorage } from '../../api/client/storage';
 import { getRandomAyahByMood } from '../../utils';
@@ -122,7 +123,7 @@ const setCachedAyahSelection = (mood: Mood, surahNumber: number, ayahIndex: numb
 // ============================================================================
 
 const DailyAyah: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const styles = createStyles(theme);
   const router = useRouter();
 
@@ -241,11 +242,19 @@ const DailyAyah: React.FC = () => {
   if (error) {
     return (
       <View style={styles.container}>
-        <View style={styles.ayahCard}>
+        <BlurView
+          intensity={20}
+          tint={isDarkMode ? 'dark' : 'light'}
+          style={[styles.ayahCard, {
+            backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+            borderWidth: 1,
+            borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+          }]}
+        >
           <Text style={styles.errorText}>
             Failed to load daily ayah. Please try again.
           </Text>
-        </View>
+        </BlurView>
       </View>
     );
   }
@@ -253,26 +262,52 @@ const DailyAyah: React.FC = () => {
   return (
     <View style={styles.container}>
       {/* Mood Selector */}
-      <View style={styles.moodContainer}>
-        <Text style={styles.headerText}>I am feeling: </Text>
-        <Dropdown
-          data={[...MOODS] as any[]}
-          labelField="label"
-          valueField="value"
-          placeholder="Select mood"
-          value={mood}
-          onChange={(item) => handleMoodChange(item.value as Mood)}
-          style={styles.dropdown}
-          placeholderStyle={styles.dropdownPlaceholder}
-          selectedTextStyle={styles.dropdownSelectedText}
-          iconStyle={styles.dropdownIcon}
-          containerStyle={styles.dropdownContainer}
-          disable={isLoading}
-        />
+      <View style={{ marginBottom: 16 }}>
+        <Text style={[styles.headerText, { color: isDarkMode ? 'rgba(255,255,255,0.75)' : theme.colors.text.secondary, fontSize: 13, marginBottom: 10 }]}>
+          How are you feeling today?
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
+          <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 4 }}>
+            {MOODS.map((m) => {
+              const isSelected = mood === m.value;
+              return (
+                <TouchableOpacity
+                  key={m.value}
+                  onPress={() => handleMoodChange(m.value as Mood)}
+                  disabled={isLoading}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    borderWidth: 1.5,
+                    backgroundColor: isSelected ? theme.colors.accent + '20' : isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.85)',
+                    borderColor: isSelected ? theme.colors.accent : isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
+                  }}
+                >
+                  <Text style={{
+                    fontFamily: isSelected ? 'Outfit_600SemiBold' : 'Outfit_500Medium',
+                    fontSize: 13,
+                    color: isSelected ? theme.colors.accent : isDarkMode ? 'rgba(255,255,255,0.70)' : theme.colors.text.secondary,
+                  }}>
+                    {m.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </ScrollView>
       </View>
 
       {/* Ayah Card */}
-      <View style={styles.ayahCard}>
+      <BlurView
+        intensity={20}
+        tint={isDarkMode ? 'dark' : 'light'}
+        style={[styles.ayahCard, {
+          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+          borderWidth: 1,
+          borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+        }]}
+      >
         <Text style={styles.headerText}>Ayah of the Day</Text>
 
         {showSkeleton ? (
@@ -283,14 +318,14 @@ const DailyAyah: React.FC = () => {
           </View>
         ) : (
           <TouchableOpacity onPress={handleAyahClick} style={styles.ayahContent}>
-            <Text style={styles.arabicText}>{ayahData.arabicText}</Text>
-            <Text style={styles.englishText}>"{ayahData.englishText}"</Text>
-            <Text style={styles.ayahInfo}>
+            <Text style={[styles.arabicText, { color: isDarkMode ? 'rgba(255,255,255,0.92)' : theme.colors.text.primary }]}>{ayahData.arabicText}</Text>
+            <Text style={[styles.englishText, { color: isDarkMode ? 'rgba(255,255,255,0.60)' : theme.colors.text.secondary }]}>"{ayahData.englishText}"</Text>
+            <Text style={[styles.ayahInfo, { color: isDarkMode ? 'rgba(255,255,255,0.40)' : theme.colors.text.muted }]}>
               Surah {ayahData.surahNumber}, Ayah {ayahData.ayahNumber}
             </Text>
           </TouchableOpacity>
         )}
-      </View>
+      </BlurView>
     </View>
   );
 };
@@ -304,53 +339,18 @@ const createStyles = (theme: any) =>
     container: {
       paddingHorizontal: theme.spacing.medium,
     },
-    moodContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
     headerText: {
       fontSize: theme.fontSizes.large,
       fontFamily: 'Outfit_700Bold',
       color: theme.colors.text.primary,
       textAlign: 'center',
     },
-    dropdown: {
-      flex: 1,
-      backgroundColor: theme.colors.secondary,
-      borderRadius: theme.borderRadius.medium,
-      paddingHorizontal: theme.spacing.medium,
-      height: 40,
-      marginLeft: theme.spacing.small,
-    },
-    dropdownPlaceholder: {
-      color: theme.colors.text.muted,
-      fontSize: theme.fontSizes.medium,
-      fontFamily: 'Outfit_400Regular',
-    },
-    dropdownSelectedText: {
-      fontSize: theme.fontSizes.medium,
-      color: theme.colors.text.primary,
-      fontFamily: 'Outfit_400Regular',
-    },
-    dropdownIcon: {
-      width: 20,
-      height: 20,
-      tintColor: theme.colors.text.primary,
-    },
-    dropdownContainer: {
-      borderRadius: theme.borderRadius.medium,
-      backgroundColor: theme.colors.secondary,
-      shadowColor: theme.shadows.default.shadowColor,
-      shadowOffset: theme.shadows.default.shadowOffset,
-      shadowOpacity: theme.shadows.default.shadowOpacity,
-      shadowRadius: theme.shadows.default.shadowRadius,
-    },
     ayahCard: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: 'transparent',
       padding: theme.spacing.medium,
       borderRadius: theme.borderRadius.large,
       marginVertical: theme.spacing.large,
+      overflow: 'hidden',
     },
     ayahContent: {
       alignItems: 'center',

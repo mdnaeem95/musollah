@@ -12,7 +12,7 @@
  * - Performance tracking for all Firestore operations
  * 
  * Data Structure:
- * - Prayer times: Collection per year (prayerTimes2025, etc.)
+ * - Prayer times: Collection per year (prayerTimes{year}, e.g. prayerTimes2026)
  * - Prayer logs: Nested in user documents under prayerLogs.{date}
  * - Date format: Firebase uses D/M/YYYY, app uses YYYY-MM-DD
  * 
@@ -20,7 +20,7 @@
  * @since 2025-12-24
  */
 
-import { collection, getDocs, doc, getDoc, updateDoc } from '@react-native-firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, query, limit } from '@react-native-firebase/firestore';
 import { DailyPrayerTime, PrayerLog, PrayerServiceError, PrayerErrorCode } from '../types/index';
 import { FIREBASE_COLLECTIONS, getPrayerTimesCollection, ERROR_MESSAGES } from '../types/constants';
 import { db } from '../../../client/firebase';
@@ -905,46 +905,56 @@ export async function checkUserExists(userId: string): Promise<boolean> {
 }
 
 /**
- * Get all years with prayer time data in Firebase
- * 
- * Useful for showing available years in UI. Currently returns hardcoded
- * list but can be extended to dynamically check collections.
- * 
- * @returns Array of available years
- * 
+ * Get all years that actually have prayer-time data in Firebase.
+ *
+ * Probes the `prayerTimes{year}` collections around the current year and returns
+ * those that contain at least one document. No years are hardcoded.
+ *
+ * @returns Sorted array of available years (e.g. [2025, 2026])
+ *
  * @example
  * ```ts
  * const years = await getAvailablePrayerTimeYears();
- * console.log(years); // [2025]
  * ```
  */
 export async function getAvailablePrayerTimeYears(): Promise<number[]> {
   const startTime = performance.now();
-  
+  const currentYear = new Date().getFullYear();
+  // Look back a couple of years and ahead one (next year's table is often
+  // published in advance), then keep only collections that actually exist.
+  const candidates = [currentYear - 2, currentYear - 1, currentYear, currentYear + 1];
+
   try {
-    logger.debug('Fetching available prayer time years');
+    logger.debug('Probing available prayer time years', { candidates });
 
-    // For now, we only have 2025
-    // TODO: Dynamically check collections when we have multiple years
-    const years = [2025];
+    const results = await Promise.all(
+      candidates.map(async (year) => {
+        try {
+          const ref = collection(db, getPrayerTimesCollection(year));
+          const snapshot = await getDocs(query(ref, limit(1)));
+          return snapshot.empty ? null : year;
+        } catch {
+          return null;
+        }
+      })
+    );
 
-    const duration = performance.now() - startTime;
+    const years = results.filter((y): y is number => y !== null).sort((a, b) => a - b);
 
-    logger.debug('Available years fetched', {
+    logger.debug('Available years resolved', {
       years,
       count: years.length,
-      duration: `${duration.toFixed(0)}ms`,
+      duration: `${(performance.now() - startTime).toFixed(0)}ms`,
     });
 
-    return years;
+    // Fall back to the current year if probing turned up nothing.
+    return years.length > 0 ? years : [currentYear];
   } catch (error) {
-    const duration = performance.now() - startTime;
-    
-    logger.warn('Failed to fetch available years, using defaults', {
+    logger.warn('Failed to probe available years, falling back to current year', {
       error: error instanceof Error ? error.message : 'Unknown error',
-      duration: `${duration.toFixed(0)}ms`,
+      duration: `${(performance.now() - startTime).toFixed(0)}ms`,
     });
-    
-    return [2025];
+
+    return [currentYear];
   }
 }
