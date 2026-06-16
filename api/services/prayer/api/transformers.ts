@@ -284,11 +284,13 @@ export function convertISOToAladhanDate(isoDate: string): string {
  */
 export function cleanTimeString(time: string | undefined | null): string {
   if (!time) {
-    logger.debug('Empty time string, returning default', {
+    // Return empty (NOT "00:00") so a missing time FAILS validatePrayerTimes and the
+    // day falls back to another source, instead of silently showing a valid-looking
+    // 12:00 AM for a prayer that has no data.
+    logger.debug('Empty time string, returning empty (will fail validation)', {
       input: time,
-      output: '00:00',
     });
-    return '00:00';
+    return '';
   }
 
   // Remove timezone info like "(SGT)"
@@ -306,13 +308,12 @@ export function cleanTimeString(time: string | undefined | null): string {
     return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
   }
 
-  logger.warn('Invalid time string format', {
+  logger.warn('Invalid time string format, returning empty (will fail validation)', {
     input: time,
     cleaned,
-    output: cleaned || '00:00',
   });
 
-  return cleaned || '00:00';
+  return '';
 }
 
 /**

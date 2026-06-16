@@ -20,7 +20,7 @@
  * @since 2025-12-24
  */
 
-import { collection, getDocs, doc, getDoc, updateDoc, query, limit } from '@react-native-firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, query, limit, where } from '@react-native-firebase/firestore';
 import { DailyPrayerTime, PrayerLog, PrayerServiceError, PrayerErrorCode } from '../types/index';
 import { FIREBASE_COLLECTIONS, getPrayerTimesCollection, ERROR_MESSAGES } from '../types/constants';
 import { db } from '../../../client/firebase';
@@ -77,9 +77,13 @@ export async function fetchDailyPrayerTimeFromFirebase(
       targetDate: firebaseDate,
     });
 
-    // Fetch all documents (Firebase doesn't support direct lookup by date field)
+    // Query by the `date` field directly (Firestore auto-indexes single fields) so we
+    // read ONE matching doc instead of downloading the whole year and scanning in JS.
+    // Doc IDs are random, so a keyed getDoc isn't possible — where()+limit(1) is.
     const queryStart = performance.now();
-    const snapshot = await getDocs(prayerTimesRef);
+    const snapshot = await getDocs(
+      query(prayerTimesRef, where('date', '==', firebaseDate), limit(1))
+    );
     const queryDuration = performance.now() - queryStart;
 
     logger.debug('Firestore query complete', {
@@ -90,40 +94,16 @@ export async function fetchDailyPrayerTimeFromFirebase(
     });
 
     if (snapshot.empty) {
-      logger.warn('Firebase collection is empty', {
-        collection: collectionName,
-        year: parseInt(year, 10),
-        duration: `${(performance.now() - startTime).toFixed(0)}ms`,
-      });
-      return null;
-    }
-
-    // Find matching document
-    const searchStart = performance.now();
-    const matchingDoc = snapshot.docs.find((document: any) => {
-      const data = document.data();
-      return data.date === firebaseDate;
-    });
-    const searchDuration = performance.now() - searchStart;
-
-    logger.debug('Document search complete', {
-      targetDate: firebaseDate,
-      found: !!matchingDoc,
-      documentsSearched: snapshot.size,
-      duration: `${searchDuration.toFixed(0)}ms`,
-    });
-
-    if (!matchingDoc) {
       logger.warn('No prayer times found for date', {
         firebaseDate,
         dateISO: date,
         collection: collectionName,
-        documentsSearched: snapshot.size,
         duration: `${(performance.now() - startTime).toFixed(0)}ms`,
       });
       return null;
     }
 
+    const matchingDoc = snapshot.docs[0];
     const data = matchingDoc.data();
 
     logger.debug('Raw Firestore data', { data });
@@ -262,7 +242,6 @@ export async function fetchMonthlyPrayerTimesFromFirebase(
         return prayerMonth === monthStr && prayerYear === yearStr;
       })
       .map((prayerTime: any) => {
-        const [day] = String(prayerTime.date).split('/');
         return {
           date: prayerTime.date,
           subuh: prayerTime.time?.subuh || '',
@@ -274,7 +253,10 @@ export async function fetchMonthlyPrayerTimesFromFirebase(
           source: 'firebase' as const,
         } satisfies DailyPrayerTime;
       })
-      .sort((a: any, b: any) => (a.day ?? 0) - (b.day ?? 0)); // Sort by day
+      // Sort by day-of-month parsed from the "D/M/YYYY" date string. The mapped
+      // objects intentionally have no `day` field, so the old `a.day` sort was a no-op
+      // and the month table rendered in Firestore document order.
+      .sort((a: any, b: any) => parseInt(String(a.date).split('/')[0], 10) - parseInt(String(b.date).split('/')[0], 10));
     
     const filterDuration = performance.now() - filterStart;
 

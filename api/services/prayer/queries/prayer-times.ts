@@ -16,7 +16,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { fetchTodayPrayerTimesFromAladhan, fetchPrayerTimesByDateFromAladhan, convertToIslamicDate } from '../api/aladhan';
 import { fetchDailyPrayerTimeFromFirebase, fetchMonthlyPrayerTimesFromFirebase } from '../api/firebase';
-import { normalizeAladhanResponse, normalizeFirebaseTime, normalizeFirebaseTimesBatch, convertISOToAladhanDate } from '../api/transformers';
+import { normalizeAladhanResponse, normalizeFirebaseTime, normalizeFirebaseTimesBatch, convertISOToAladhanDate, validatePrayerTimes } from '../api/transformers';
 import { prayerQueryKeys } from './query-keys';
 import { Coordinates, NormalizedPrayerTimes, IslamicDateConversion, PrayerServiceError, PrayerErrorCode } from '../types/index';
 import { STALE_TIME, CACHE_TTL, DATE_FORMATS, ERROR_MESSAGES } from '../types/constants';
@@ -131,30 +131,31 @@ export function useTodayPrayerTimes(location: Coordinates | null) {
         const firebaseDuration = Date.now() - firebaseStartTime;
 
         if (firebaseData) {
-          const normalizationStartTime = Date.now();
           const normalized = normalizeFirebaseTime(firebaseData);
-          const normalizationDuration = Date.now() - normalizationStartTime;
 
-          // Cache the result
-          const cacheSetStartTime = Date.now();
-          cache.set(cacheKey, normalized, CACHE_TTL.ONE_DAY);
-          const cacheSetDuration = Date.now() - cacheSetStartTime;
+          // Guard against malformed/partial Firestore docs: only trust + cache data
+          // that passes format + chronological validation. Otherwise fall through to
+          // Aladhan rather than show wrong/placeholder times (the corruption class).
+          if (validatePrayerTimes(normalized)) {
+            cache.set(cacheKey, normalized, CACHE_TTL.ONE_DAY);
 
-          const overallDuration = Date.now() - overallStartTime;
+            logger.success('Prayer times fetched from Firebase', {
+              source: 'Firebase',
+              certification: 'MUIS Official',
+              date: today,
+              prayers: pickPrayerTimes(normalized),
+              firebaseDuration: `${firebaseDuration}ms`,
+              overallDuration: `${Date.now() - overallStartTime}ms`,
+              cacheTTL: CACHE_TTL.ONE_DAY,
+            });
 
-          logger.success('Prayer times fetched from Firebase', {
-            source: 'Firebase',
-            certification: 'MUIS Official',
+            return normalized;
+          }
+
+          logger.warn('Firebase prayer times failed validation, falling back to Aladhan', {
             date: today,
             prayers: pickPrayerTimes(normalized),
-            firebaseDuration: `${firebaseDuration}ms`,
-            normalizationDuration: `${normalizationDuration}ms`,
-            cacheSetDuration: `${cacheSetDuration}ms`,
-            overallDuration: `${overallDuration}ms`,
-            cacheTTL: CACHE_TTL.ONE_DAY,
           });
-
-          return normalized;
         }
 
         logger.warn('No Firebase data available for today', {
@@ -341,29 +342,29 @@ export function usePrayerTimesByDate(
         const firebaseDuration = Date.now() - firebaseStartTime;
 
         if (firebaseData) {
-          const normalizationStartTime = Date.now();
           const normalized = normalizeFirebaseTime(firebaseData);
-          const normalizationDuration = Date.now() - normalizationStartTime;
 
-          const cacheSetStartTime = Date.now();
-          cache.set(cacheKey, normalized, CACHE_TTL.ONE_WEEK);
-          const cacheSetDuration = Date.now() - cacheSetStartTime;
+          // Only trust + cache validated data; otherwise fall through to Aladhan.
+          if (validatePrayerTimes(normalized)) {
+            cache.set(cacheKey, normalized, CACHE_TTL.ONE_WEEK);
 
-          const overallDuration = Date.now() - overallStartTime;
+            logger.success('Prayer times fetched from Firebase (specific date)', {
+              source: 'Firebase',
+              certification: 'MUIS Official',
+              date: isoDate,
+              prayers: pickPrayerTimes(normalized),
+              firebaseDuration: `${firebaseDuration}ms`,
+              overallDuration: `${Date.now() - overallStartTime}ms`,
+              cacheTTL: CACHE_TTL.ONE_WEEK,
+            });
 
-          logger.success('Prayer times fetched from Firebase (specific date)', {
-            source: 'Firebase',
-            certification: 'MUIS Official',
+            return normalized;
+          }
+
+          logger.warn('Firebase prayer times failed validation (specific date), falling back to Aladhan', {
             date: isoDate,
             prayers: pickPrayerTimes(normalized),
-            firebaseDuration: `${firebaseDuration}ms`,
-            normalizationDuration: `${normalizationDuration}ms`,
-            cacheSetDuration: `${cacheSetDuration}ms`,
-            overallDuration: `${overallDuration}ms`,
-            cacheTTL: CACHE_TTL.ONE_WEEK,
           });
-
-          return normalized;
         }
 
         logger.warn('No Firebase data for date', {

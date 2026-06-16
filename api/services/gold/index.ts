@@ -43,7 +43,12 @@ interface MetalPriceAPIResponse {
 // CONSTANTS
 // ============================================================================
 
-const API_KEY = 'ac71d0fa4cfd6f4733484d2a30af6184'; // TODO: move to env
+// Read from env (sourced from the gitignored .env / an EAS secret) — never hardcode.
+// NOTE: EXPO_PUBLIC_* is still inlined into the client bundle, so this only removes
+// the key from source/git, not from a shipped binary. Proper fix: move this fetch
+// into a Cloud Function and have the client read goldPrice/{date} from Firestore only.
+// The previously-hardcoded key is leaked on the public repo and must be rotated.
+const API_KEY = process.env.EXPO_PUBLIC_METAL_PRICE_API_KEY ?? '';
 const OUNCES_TO_GRAMS = 31.1035;
 const COLLECTION = 'goldPrice';
 

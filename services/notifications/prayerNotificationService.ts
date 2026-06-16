@@ -284,28 +284,25 @@ class PrayerNotificationService {
       hasLocation: !!userLocation,
     });
 
+    // Check the scheduling lock FIRST (prevents concurrent calls). This guard runs
+    // BEFORE the try/finally so its early return does NOT release a lock held by the
+    // call that is currently in flight.
+    if (this.isScheduling) {
+      logger.warn('Scheduling already in progress, blocking duplicate call');
+      logger.timeEnd('schedule-notifications');
+      return;
+    }
+
+    // Acquire the lock, then run the body in try/finally so EVERY exit path
+    // (including the early returns below) releases it. Previously the early returns
+    // left isScheduling=true forever, silently blocking all later reschedules.
+    this.isScheduling = true;
+    logger.debug('Scheduling lock acquired');
+
     try {
-      // ✅ FIX: Check scheduling lock FIRST (prevents concurrent calls)
-      if (this.isScheduling) {
-        logger.warn('🚫 Scheduling already in progress, blocking duplicate call', {
-          caller: 'concurrent instance',
-          action: 'blocked by lock'
-        });
-        logger.timeEnd('schedule-notifications');
-        return;
-      }
-
-      // ✅ FIX: Set lock immediately to prevent race condition
-      this.isScheduling = true;
-      logger.debug('🔒 Scheduling lock acquired', {
-        timestamp: new Date().toISOString()
-      });
-
       // Step 1: Check if already scheduled
       if (this.hasExistingNotifications()) {
         logger.success('Notifications already scheduled, skipping');
-        // ❌ DON'T release lock here - keep it locked to block other calls
-        logger.timeEnd('schedule-notifications');
         return;
       }
 
@@ -314,8 +311,6 @@ class PrayerNotificationService {
       const hasPermission = await this.requestPermissions();
       if (!hasPermission) {
         logger.warn('No notification permissions, skipping scheduling');
-        // ❌ DON'T release lock here - keep it locked to block other calls
-        logger.timeEnd('schedule-notifications');
         return;
       }
 
@@ -421,27 +416,18 @@ class PrayerNotificationService {
         reminderCount: scheduledNotifications.filter(n => n.type === 'reminder').length,
         adhanCount: scheduledNotifications.filter(n => n.type === 'adhan').length,
       });
-      
-      // ✅ FIX: Release lock after successful completion
-      this.isScheduling = false;
-      logger.debug('🔓 Scheduling lock released', {
-        reason: 'success',
-        timestamp: new Date().toISOString()
-      });
-      
-      logger.timeEnd('schedule-notifications');
     } catch (error) {
-      // ✅ FIX: Release lock on error
-      this.isScheduling = false;
-      logger.debug('🔓 Scheduling lock released (error)');
-      
       logger.error('Error scheduling notifications', error as Error, {
         reminderMinutes,
         mutedCount: mutedPrayers.length,
         selectedAdhan,
       });
-      logger.timeEnd('schedule-notifications');
       throw error;
+    } finally {
+      // Release the lock on EVERY exit path (success, early return, or error).
+      this.isScheduling = false;
+      logger.debug('Scheduling lock released');
+      logger.timeEnd('schedule-notifications');
     }
   }
 

@@ -43,14 +43,6 @@ const QuickAccessButtons = () => {
         <Text style={styles.buttonLabel}>Monthly</Text>
       </View>
 
-      {/* Terawih */}
-      <View style={styles.buttonWrapper}>
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/terawih')}>
-          <FontAwesome6 name="location-dot" size={24} color={theme.colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={styles.buttonLabel}>Terawih</Text>
-      </View>
-
       {/* Prayer Dashboard */}
       <View style={styles.buttonWrapper}>
         <TouchableOpacity style={styles.button} onPress={() => router.push('/prayerDashboard')}>

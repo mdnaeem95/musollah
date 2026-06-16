@@ -136,7 +136,7 @@ async function fetchKhutbahById(id: string): Promise<Khutbah | null> {
     const ref = doc(db, COLLECTION, id);
     const snap = await getDoc(ref);
 
-    if (!snap.exists) {
+    if (!snap.exists()) {
       const duration = Math.round(performance.now() - startTime);
       logger.debug('Khutbah not found', {
         id,
