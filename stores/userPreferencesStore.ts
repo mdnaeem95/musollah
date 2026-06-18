@@ -47,6 +47,8 @@ interface PreferencesState {
   reminderInterval: number;
   selectedAdhan: AdhanSelection;
   mutedNotifications: string[];
+  /** When true (default), the highlight accent follows the live sky phase. */
+  useSkyAccent: boolean;
 
   // Actions
   setTheme: (theme: Theme) => void;
@@ -58,6 +60,7 @@ interface PreferencesState {
   toggleTimeFormat: () => void;
   setSelectedAdhan: (adhan: AdhanSelection) => void;
   toggleNotificationForPrayer: (prayer: string) => void;
+  setSkyAccent: (value: boolean) => void;
   resetPreferences: () => void;
 }
 
@@ -74,6 +77,7 @@ const initialState = {
   reminderInterval: 0,
   selectedAdhan: 'None' as AdhanSelection,
   mutedNotifications: [],
+  useSkyAccent: true,
 };
 
 // ============================================================================
@@ -123,7 +127,12 @@ export const usePreferencesStore = create<PreferencesState>()(
         
         set({ textSize });
       },
-      
+
+      setSkyAccent: (useSkyAccent) => {
+        logger.info('Sky accent toggled', { useSkyAccent });
+        set({ useSkyAccent });
+      },
+
       // ========================================================================
       // QURAN ACTIONS
       // ========================================================================
@@ -237,12 +246,15 @@ export const usePreferencesStore = create<PreferencesState>()(
           defaultStorage.delete(name);
         },
       })),
-      version: 1,
+      version: 2,
       // Migration logic
       migrate: (persistedState: any, version: number) => {
         if (version === 0) {
           logger.warn('Migrating preferences from version 0 to 1');
-          // Migration logic if needed
+        }
+        if (version < 2 && persistedState && persistedState.useSkyAccent === undefined) {
+          logger.warn('Migrating preferences to v2: defaulting useSkyAccent=true');
+          persistedState.useSkyAccent = true;
         }
         return persistedState as PreferencesState;
       },
@@ -292,6 +304,9 @@ export const useTextSize = () => usePreferencesStore((state) => state.textSize);
  * Select only time format - component only re-renders when time format changes
  */
 export const useTimeFormat = () => usePreferencesStore((state) => state.timeFormat);
+
+/** Whether the accent follows the live sky phase (vs the static theme accent). */
+export const useSkyAccentEnabled = () => usePreferencesStore((state) => state.useSkyAccent);
 
 // ============================================================================
 // UTILITY HOOKS

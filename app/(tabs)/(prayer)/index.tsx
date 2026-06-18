@@ -15,7 +15,7 @@ import { PrayerDateSelector } from '../../../components/prayer/PrayerDateSelecto
 import { PrayerErrorFallback } from '../../../components/prayer/PrayerErrorFallback';
 import { LocationDisplay } from '../../../components/prayer/LocationDisplay';
 
-import { NextPrayerBanner } from '../../../components/prayer/NextPrayerBanner';
+import { NextPrayerHero } from '../../../components/prayer/NextPrayerHero';
 
 // Hooks & Services
 import { usePrayerTimesOptimized } from '../../../hooks/prayer/usePrayerTimesOptimized';
@@ -175,9 +175,10 @@ const PrayerTab: React.FC = () => {
             <LocationDisplay />
           </View>
 
-          {/* Next prayer pill */}
+          {/* Next prayer hero (phase-aware focal point) */}
           {isToday && nextPrayerInfo && (
-            <NextPrayerBanner
+            <NextPrayerHero
+              prayerData={prayerData ?? null}
               nextPrayer={nextPrayerInfo.prayer}
               timeUntil={nextPrayerInfo.timeUntil}
             />

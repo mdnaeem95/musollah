@@ -2,14 +2,17 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
+import { useAccent } from '../../hooks/useAccent';
 const TabLayout = () => {
   const { theme } = useTheme();
+  // Active tab tint follows the live sky phase (falls back to the theme accent).
+  const { accent } = useAccent();
 
   return (
     <Tabs
       initialRouteName="(prayer)"
       screenOptions={({ route }) => ({
-        tabBarActiveTintColor: theme.colors.tabBar.activeTintColor,
+        tabBarActiveTintColor: accent,
         tabBarInactiveTintColor: theme.colors.tabBar.inactiveTintColor,
         tabBarStyle: {
           height: 70,

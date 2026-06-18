@@ -35,6 +35,8 @@ interface PrayerTimeItemProps {
   isCurrent?: boolean;
   isPast?: boolean;
   countdown?: string;
+  /** Live sky-phase accent; falls back to the theme accent when omitted. */
+  accentColor?: string;
 }
 
 // ============================================================================
@@ -100,16 +102,21 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
     isCurrent = false,
     isPast = false,
     countdown,
+    accentColor,
   }) => {
     // next prayer = has countdown but is not current
     const isNext = !!countdown && !isCurrent;
     const { theme, isDarkMode } = useTheme();
     const timeFormat = usePreferencesStore((state) => state.timeFormat);
 
+    // Accent tracks the live sky phase when provided (so the current/next prayer
+    // highlight shifts with the time of day), falling back to the theme accent.
+    const accent = accentColor ?? theme.colors.accent;
+
     // Contrast-safe text color for accent background
     const accentText = useMemo(
-      () => getContrastTextColor(theme.colors.accent),
-      [theme.colors.accent]
+      () => getContrastTextColor(accent),
+      [accent]
     );
 
     // ============================================================================
@@ -136,10 +143,10 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
         return {
           intensity: 45,
           tint: 'dark' as const,
-          backgroundColor: withHexAlpha(theme.colors.accent, 'D9'), // ~85%
+          backgroundColor: withHexAlpha(accent, 'D9'), // ~85%
           borderColor: 'rgba(255, 255, 255, 0.4)',
           borderWidth: 1.5,
-          shadowColor: theme.colors.accent,
+          shadowColor: accent,
           shadowOpacity: 0.55,
           elevation: 14,
           shadowRadius: 20,
@@ -183,7 +190,7 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
         elevation: 3,
         shadowRadius: 6,
       };
-    }, [isCurrent, isPast, isNext, theme.colors.accent]);
+    }, [isCurrent, isPast, isNext, accent]);
 
     // ============================================================================
     // TEXT COLORS (ALWAYS READABLE)
@@ -199,9 +206,9 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
     const countdownColor = useMemo(() => {
       if (name === 'Syuruk') return 'rgba(255, 255, 255, 0.25)';
       if (isCurrent) return accentText;
-      if (isNext)    return theme.colors.accent;
+      if (isNext)    return accent;
       return 'rgba(255, 255, 255, 0.55)';
-    }, [name, isCurrent, isNext, accentText, theme.colors.accent]);
+    }, [name, isCurrent, isNext, accentText, accent]);
 
     // ============================================================================
     // CHECKBOX
@@ -269,7 +276,7 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
       >
         {/* Accent left-bar for next prayer */}
         {isNext && (
-          <View style={[styles.nextBar, { backgroundColor: theme.colors.accent }]} />
+          <View style={[styles.nextBar, { backgroundColor: accent }]} />
         )}
 
         {/* Prayer Name + Countdown */}

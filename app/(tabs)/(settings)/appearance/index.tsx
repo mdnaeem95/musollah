@@ -14,6 +14,7 @@ import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 import { useAppearanceSettings } from '../../../../hooks/settings/useAppearanceSettings';
+import { useSkyAccentEnabled, usePreferencesStore } from '../../../../stores/userPreferencesStore';
 import { enter } from '../../../../utils';
 
 // Theme color mapping for preview swatches
@@ -39,6 +40,9 @@ const Appearance = () => {
     handleThemeChange,
     handleDarkModeToggle,
   } = useAppearanceSettings();
+
+  const useSky = useSkyAccentEnabled();
+  const setSkyAccent = usePreferencesStore((s) => s.setSkyAccent);
 
   return (
     <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
@@ -156,6 +160,50 @@ const Appearance = () => {
                   </MotiView>
                 );
               })}
+            </View>
+          </BlurView>
+        </MotiView>
+
+        {/* Living Sky Accent Section */}
+        <MotiView
+          from={{ opacity: 0, translateY: -20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={enter(0)}
+        >
+          <SectionHeader icon="cloud-sun" label="Accent" theme={theme} />
+
+          <BlurView
+            intensity={20}
+            tint={isDarkMode ? 'dark' : 'light'}
+            style={[styles.settingCard, { backgroundColor: theme.colors.secondary }]}
+          >
+            <View style={styles.settingRow}>
+              <View style={[styles.settingIcon, { backgroundColor: theme.colors.accent + '15' }]}>
+                <FontAwesome6 name="cloud-sun" size={18} color={theme.colors.accent} />
+              </View>
+              <View style={styles.settingContent}>
+                <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>
+                  Living Sky
+                </Text>
+                <Text style={[styles.settingDescription, { color: theme.colors.text.secondary }]}>
+                  {useSky
+                    ? 'Accent follows the time of day'
+                    : 'Using your theme accent'}
+                </Text>
+              </View>
+              <Switch
+                value={useSky}
+                onValueChange={(value) => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setSkyAccent(value);
+                }}
+                trackColor={{
+                  false: theme.colors.muted,
+                  true: theme.colors.accent + '80',
+                }}
+                thumbColor={theme.colors.primary}
+                ios_backgroundColor={theme.colors.muted}
+              />
             </View>
           </BlurView>
         </MotiView>

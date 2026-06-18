@@ -18,6 +18,7 @@ import React from 'react';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../context/ThemeContext';
+import { AccentHeaderBackground } from '../../../components/AccentHeaderBackground';
 
 const QuranLayout = () => {
   const router = useRouter();
@@ -39,6 +40,8 @@ const QuranLayout = () => {
       />
     </TouchableOpacity>
   );
+
+  const headerBg = isDarkMode ? '#060B18' : '#EEF2FF';
 
   return (
     <Stack
@@ -64,10 +67,7 @@ const QuranLayout = () => {
             backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
           },
           headerShadowVisible: false,
-          // Add subtle gradient background (optional)
-          headerBackground: () => (
-            <View style={{ flex: 1, backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF' }} />
-          ),
+          headerBackground: () => <AccentHeaderBackground backgroundColor={headerBg} />,
         }}
       />
 
@@ -86,6 +86,7 @@ const QuranLayout = () => {
             backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
           },
           headerShadowVisible: false,
+          headerBackground: () => <AccentHeaderBackground backgroundColor={headerBg} />,
           headerLeft: () => <BackButton />,
         }}
       />
@@ -105,6 +106,7 @@ const QuranLayout = () => {
             backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
           },
           headerShadowVisible: false,
+          headerBackground: () => <AccentHeaderBackground backgroundColor={headerBg} />,
           headerLeft: () => <BackButton />,
         }}
       />
@@ -123,6 +125,7 @@ const QuranLayout = () => {
             backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
           },
           headerShadowVisible: false,
+          headerBackground: () => <AccentHeaderBackground backgroundColor={headerBg} />,
           headerLeft: () => <BackButton />,
         }}
       />
@@ -142,6 +145,7 @@ const QuranLayout = () => {
             backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
           },
           headerShadowVisible: false,
+          headerBackground: () => <AccentHeaderBackground backgroundColor={headerBg} />,
           headerLeft: () => <BackButton />,
         }}
       />
@@ -161,6 +165,7 @@ const QuranLayout = () => {
             backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
           },
           headerShadowVisible: false,
+          headerBackground: () => <AccentHeaderBackground backgroundColor={headerBg} />,
           headerLeft: () => <BackButton />,
         }}
       />
@@ -180,6 +185,7 @@ const QuranLayout = () => {
             backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
           },
           headerShadowVisible: false,
+          headerBackground: () => <AccentHeaderBackground backgroundColor={headerBg} />,
           headerLeft: () => <BackButton />,
         }}
       />

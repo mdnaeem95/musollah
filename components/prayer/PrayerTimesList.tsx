@@ -13,6 +13,7 @@ import { LOGGABLE_PRAYERS, PRAYER_ORDER } from '../../api/services/prayer/types/
 import PrayerTimeItem from './PrayerTimeItem';
 import SignInModal from '../SignInModal';
 import { prayerQueryKeys } from '../../api/services/prayer/queries/query-keys';
+import { useAccent } from '../../hooks/useAccent';
 
 interface PrayerTimesListProps {
   prayerTimes: Record<LocalPrayerName, string> | null;
@@ -117,6 +118,25 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
   // Mutation for saving prayer log
   const { mutate: savePrayerLog } = useSavePrayerLog();
   const queryClient = useQueryClient();
+
+  // Live sky-phase accent so the current/next-prayer highlight tracks the time of
+  // day, matching SkyBackground + NextPrayerHero (one cohesive accent that shifts
+  // through the day instead of the static theme green).
+  const skyTimes = useMemo(
+    () =>
+      prayerTimes
+        ? {
+            subuh: prayerTimes.Subuh,
+            syuruk: prayerTimes.Syuruk,
+            zohor: prayerTimes.Zohor,
+            asar: prayerTimes.Asar,
+            maghrib: prayerTimes.Maghrib,
+            isyak: prayerTimes.Isyak,
+          }
+        : null,
+    [prayerTimes]
+  );
+  const { accent: phaseAccent } = useAccent(skyTimes);
 
   // Pre-calculate which prayer times have already passed (for visual dimming)
   const pastStatus = useMemo<Record<LocalPrayerName, boolean>>(() => {
@@ -250,6 +270,7 @@ const PrayerTimesList: React.FC<PrayerTimesListProps> = memo(({
                 isCurrent={isCurrent}
                 isPast={pastStatus[prayerName] ?? false}
                 countdown={countdown}
+                accentColor={phaseAccent}
               />
             </MotiView>
           );

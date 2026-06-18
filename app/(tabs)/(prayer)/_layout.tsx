@@ -2,6 +2,7 @@ import React from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
+import { AccentHeaderBackground } from '../../../components/AccentHeaderBackground';
 import { TouchableOpacity } from 'react-native';
 
 // Top color of the gradient backgrounds used in secondary prayer screens
@@ -21,6 +22,8 @@ const PrayerLayout = () => {
         headerStyle: {
           backgroundColor: gradientHeaderBg,
         },
+        headerShadowVisible: false,
+        headerBackground: () => <AccentHeaderBackground backgroundColor={gradientHeaderBg} />,
         headerTintColor: headerTextColor,
         headerTitleStyle: {
           fontFamily: 'Outfit_700Bold',

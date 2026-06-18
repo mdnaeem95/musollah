@@ -3,6 +3,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
+import { AccentHeaderBackground } from '../../../components/AccentHeaderBackground';
 
 export const CircleButton = ({ onPress }: any) => {
   const { theme, isDarkMode } = useTheme();
@@ -38,6 +39,8 @@ const FoodLayout = () => {
     headerStyle: {
       backgroundColor: gradientHeaderBg,
     },
+    headerShadowVisible: false,
+    headerBackground: () => <AccentHeaderBackground backgroundColor={gradientHeaderBg} />,
   };
 
   return (

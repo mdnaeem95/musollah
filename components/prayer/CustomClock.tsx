@@ -107,14 +107,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   clockText: {
-    fontFamily: 'Outfit_300Light',
-    fontSize: 64,
-    color: 'rgba(255, 255, 255, 0.95)',
+    // Demoted from a 64px hero to a quiet timestamp — the NextPrayerHero is now the
+    // focal point, and a smaller clock no longer collides with the sun behind it.
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 26,
+    color: 'rgba(255, 255, 255, 0.72)',
     textAlign: 'center',
-    letterSpacing: -1,
-    textShadowColor: 'rgba(0, 0, 0, 0.25)',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
+    textShadowRadius: 6,
   },
 });
 

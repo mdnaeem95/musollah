@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../context/ThemeContext';
+import { AccentHeaderBackground } from '../../../components/AccentHeaderBackground';
 import { useThemeTransition } from '../../../hooks/settings/useThemeTransition';
 
 const SettingsLayout = () => {
@@ -87,7 +88,7 @@ const SettingsLayout = () => {
               />
             </Animated.View>
           )
-        : undefined,
+        : () => <AccentHeaderBackground backgroundColor={theme.colors.primary} />,
     };
   };
 
