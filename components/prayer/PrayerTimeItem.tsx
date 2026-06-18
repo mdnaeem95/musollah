@@ -206,7 +206,10 @@ const PrayerTimeItem: React.FC<PrayerTimeItemProps> = memo(
     const countdownColor = useMemo(() => {
       if (name === 'Syuruk') return 'rgba(255, 255, 255, 0.25)';
       if (isCurrent) return accentText;
-      if (isNext)    return accent;
+      // Keep the "in Xm" subtitle readable on the glass card — the accent is
+      // already carried by the next-prayer edge bar, so accent-on-accent-tinted
+      // glass (e.g. rose at sunset) would be too low-contrast here.
+      if (isNext)    return 'rgba(255, 255, 255, 0.85)';
       return 'rgba(255, 255, 255, 0.55)';
     }, [name, isCurrent, isNext, accentText, accent]);
 

@@ -52,12 +52,12 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
   const textSecondary = isDarkMode ? 'rgba(255,255,255,0.50)' : theme.colors.text.secondary;
   const textMuted     = isDarkMode ? 'rgba(255,255,255,0.35)' : theme.colors.text.muted;
 
-  const ratingValue = (() => {
-    const r = typeof restaurant.averageRating === 'string'
-      ? parseFloat(restaurant.averageRating)
-      : restaurant.averageRating;
-    return typeof r === 'number' && !isNaN(r) && r > 0 ? r.toFixed(1) : 'New';
-  })();
+  // Aggregated Google rating (averageRating was the removed user-review value).
+  const ratingNum = typeof restaurant.rating === 'string'
+    ? parseFloat(restaurant.rating)
+    : restaurant.rating;
+  const hasRating = typeof ratingNum === 'number' && !isNaN(ratingNum) && ratingNum > 0;
+  const ratingValue = hasRating ? ratingNum!.toFixed(1) : null;
 
   return (
     <MotiView
@@ -67,7 +67,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
     >
       <Pressable
         onPress={handleCardPress}
-        style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]}
+        style={({ pressed }) => [{ transform: [{ scale: pressed ? 0.985 : 1 }], opacity: pressed ? 0.92 : 1 }]}
       >
         <BlurView
           intensity={isDarkMode ? 18 : 22}
@@ -95,6 +95,12 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
               <View style={styles.muisBadge}>
                 <FontAwesome6 name="certificate" size={7} color="#fff" />
               </View>
+            )}
+            {hasRating && (
+              <BlurView intensity={30} tint="dark" style={styles.ratingPill}>
+                <FontAwesome6 name="star" size={9} color="#FFC107" solid />
+                <Text style={styles.ratingPillText}>{ratingValue}</Text>
+              </BlurView>
             )}
           </View>
 
@@ -127,13 +133,6 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
 
             {/* Bottom row */}
             <View style={styles.bottomRow}>
-              <View style={styles.ratingRow}>
-                <FontAwesome6 name="star" size={11} color="#FFA500" solid />
-                <Text style={[styles.ratingText, { color: textPrimary }]}>{ratingValue}</Text>
-              </View>
-
-              <Text style={[styles.dot, { color: textMuted }]}>·</Text>
-
               {isOpenNow !== undefined && (
                 <>
                   <View style={styles.statusRow}>
@@ -195,6 +194,24 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  ratingPill: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  ratingPillText: {
+    fontSize: 11,
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#fff',
   },
 
   // Content

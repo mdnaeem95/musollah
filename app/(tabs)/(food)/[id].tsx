@@ -154,6 +154,14 @@ const RestaurantDetails = () => {
             style={[styles.heroImage, heroImageStyle]}
             resizeMode="cover"
           />
+          {/* Fade the bottom of the hero into the content surface — smooths the
+              transition for both food photos and logo-on-white images. */}
+          <LinearGradient
+            colors={['transparent', isDarkMode ? '#080F1E' : '#E8EFFF']}
+            locations={[0.5, 1]}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
         </View>
 
         {/* Content Container */}
