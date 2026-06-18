@@ -41,6 +41,32 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * True if a matched Google place plausibly IS this restaurant, rather than the
+ * food court / kopitiam it sits inside. Compares the restaurant's primary name
+ * (the part before "@" or " - ", parentheticals stripped) against the Google
+ * name — so "Kamala Express @ Kedai Kopi 108" won't inherit "Kedai Kopi 108"'s rating.
+ */
+function primaryNameMatches(restaurantName: string, googleName: string): boolean {
+  const norm = (s: string) =>
+    s
+      .replace(/\([^)]*\)/g, " ")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\b(the|restaurant|cafe|pte|ltd|sg|singapore|halal)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  const primary = norm(restaurantName.split(/@| - /)[0]);
+  const g = norm(googleName);
+  if (!primary || !g) return false;
+  if (g.includes(primary) || primary.includes(g)) return true;
+  const pt = primary.split(" ").filter(Boolean);
+  const gt = new Set(g.split(" ").filter(Boolean));
+  if (pt.length === 0) return false;
+  const overlap = pt.filter((t) => gt.has(t)).length / pt.length;
+  return overlap >= 0.6; // most of the restaurant's name tokens appear in the Google name
+}
+
 interface BackfillResult {
   scanned: number;
   candidates: number;
@@ -113,10 +139,12 @@ export async function runRatingBackfill(
           }
         );
         apiCalls++;
-        const results = resp.data?.results;
-        if (results && results.length > 0) {
-          place = results[0];
-          break; // first hit wins
+        const top = resp.data?.results?.[0];
+        // Only accept a result whose name actually matches this restaurant, so a
+        // stall doesn't inherit the rating of the food court it's matched to.
+        if (top && primaryNameMatches(name, top.name || "")) {
+          place = top;
+          break;
         }
         await sleep(200); // rate limit between strategies
       } catch (err: any) {
@@ -150,7 +178,7 @@ export async function runRatingBackfill(
       }
     } else {
       notFound++;
-      logger.info(`✗ ${name} → not found on Google`);
+      logger.info(`✗ ${name} → no confident name match on Google`);
     }
 
     if (!dryRun) {
