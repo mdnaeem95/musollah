@@ -12,6 +12,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../context/ThemeContext';
+import { useAccent } from '../../hooks/useAccent';
 import { enter } from '../../utils';
 
 export type ViewMode = 'map' | 'list';
@@ -30,7 +31,8 @@ const ViewControls: React.FC<ViewControlsProps> = ({
   location = 'Singapore',
 }) => {
   const { theme } = useTheme();
-  
+  const { accent } = useAccent();
+
   const handleViewChange = (mode: ViewMode) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onViewModeChange(mode);
@@ -57,7 +59,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
           onPress={handleLocationPress}
           activeOpacity={0.7}
         >
-          <FontAwesome6 name="location-dot" size={16} color={theme.colors.accent} />
+          <FontAwesome6 name="location-dot" size={16} color={accent} />
           <Text style={[styles.locationText, { color: theme.colors.text.primary }]}>
             {location}
           </Text>
@@ -76,8 +78,8 @@ const ViewControls: React.FC<ViewControlsProps> = ({
               <MotiView
                 key={mode}
                 animate={{
-                  backgroundColor: isSelected 
-                    ? theme.colors.accent 
+                  backgroundColor: isSelected
+                    ? accent
                     : 'transparent',
                 }}
                 transition={enter(0)}

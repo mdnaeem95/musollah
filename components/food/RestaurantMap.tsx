@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
+import { useAccent } from '../../hooks/useAccent';
 import { Restaurant } from '../../api/services/food';
 import { createLogger } from '../../services/logging/logger';
 
@@ -114,6 +115,7 @@ const RestaurantMap: React.FC<Props> = ({
 }) => {
   const router = useRouter();
   const { theme } = useTheme();
+  const { accent } = useAccent();
   const mapRef = useRef<MapView>(null);
 
   // Use provided region or fall back to Singapore default
@@ -162,7 +164,7 @@ const RestaurantMap: React.FC<Props> = ({
   // Show empty state if no restaurants at all
   if (restaurants.length === 0) {
     return (
-      <View style={[styles.container, styles.loadingContainer, { backgroundColor: theme.colors.accent || '#f0f0f0' }]}>
+      <View style={[styles.container, styles.loadingContainer, { backgroundColor: accent || '#f0f0f0' }]}>
         <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
           No restaurants to display
         </Text>
@@ -173,7 +175,7 @@ const RestaurantMap: React.FC<Props> = ({
   // Show error state if restaurants provided but none have valid coordinates
   if (validRestaurants.length === 0 && restaurants.length > 0) {
     return (
-      <View style={[styles.container, styles.loadingContainer, { backgroundColor: theme.colors.accent || '#f0f0f0' }]}>
+      <View style={[styles.container, styles.loadingContainer, { backgroundColor: accent || '#f0f0f0' }]}>
         <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
           Unable to load restaurant locations
         </Text>
@@ -202,7 +204,7 @@ const RestaurantMap: React.FC<Props> = ({
         rotateEnabled={true}
         pitchEnabled={false}
         loadingEnabled={true}
-        loadingIndicatorColor={theme.colors.accent}
+        loadingIndicatorColor={accent}
         loadingBackgroundColor={theme.colors.primary}
         // Performance optimizations
         moveOnMarkerPress={false}
@@ -217,7 +219,7 @@ const RestaurantMap: React.FC<Props> = ({
             description={restaurant.address || restaurant.categories?.join(', ')}
             onPress={() => handleMarkerPress(restaurant)}
             onCalloutPress={() => handleCalloutPress(restaurant.id)}
-            pinColor={theme.colors.accent}
+            pinColor={accent}
           />
         ))}
       </MapView>

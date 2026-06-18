@@ -7,10 +7,12 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../context/ThemeContext';
+import { useAccent } from '../../hooks/useAccent';
 import { enter } from '../../utils';
 
 const SearchBar = () => {
   const { theme, isDarkMode } = useTheme();
+  const { accent } = useAccent();
   const router = useRouter();
 
   const handlePress = () => {
@@ -42,9 +44,9 @@ const SearchBar = () => {
         >
           <BlurView
             intensity={0}
-            style={[styles.iconWrap, { backgroundColor: theme.colors.accent + '20' }]}
+            style={[styles.iconWrap, { backgroundColor: accent + '20' }]}
           >
-            <FontAwesome6 name="magnifying-glass" size={16} color={theme.colors.accent} />
+            <FontAwesome6 name="magnifying-glass" size={16} color={accent} />
           </BlurView>
 
           <Text style={[styles.placeholder, {

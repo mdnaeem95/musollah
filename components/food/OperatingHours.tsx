@@ -15,6 +15,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
+import { useAccent } from '../../hooks/useAccent';
 import { MotiView } from 'moti';
 import { BlurView } from 'expo-blur';
 import { enter } from '../../utils';
@@ -30,6 +31,7 @@ interface ParsedHour {
 
 const OperatingHours: React.FC<Props> = ({ hoursString }) => {
   const { theme, isDarkMode } = useTheme();
+  const { accent } = useAccent();
   const parsedHours = parseOperatingHours(hoursString);
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
@@ -54,8 +56,8 @@ const OperatingHours: React.FC<Props> = ({ hoursString }) => {
             style={[
               styles.statusBadge,
               {
-                backgroundColor: shopIsOpen 
-                  ? theme.colors.accent + '15'
+                backgroundColor: shopIsOpen
+                  ? accent + '15'
                   : theme.colors.secondary,
               },
             ]}
@@ -102,24 +104,24 @@ const OperatingHours: React.FC<Props> = ({ hoursString }) => {
                   styles.hourRow,
                   {
                     backgroundColor: isToday
-                      ? theme.colors.accent + '20'
+                      ? accent + '20'
                       : theme.colors.secondary + '40',
                     borderLeftWidth: isToday ? 3 : 0,
-                    borderLeftColor: theme.colors.accent,
+                    borderLeftColor: accent,
                   },
                 ]}
               >
                 {/* Day Indicator */}
                 <View style={styles.daySection}>
                   {isToday && (
-                    <View style={[styles.todayDot, { backgroundColor: theme.colors.accent }]} />
+                    <View style={[styles.todayDot, { backgroundColor: accent }]} />
                   )}
                   <Text
                     style={[
                       styles.dayText,
                       {
                         color: isToday
-                          ? theme.colors.accent
+                          ? accent
                           : theme.colors.text.primary,
                         fontFamily: isToday ? 'Outfit_700Bold' : 'Outfit_600SemiBold',
                       },
@@ -165,7 +167,7 @@ const OperatingHours: React.FC<Props> = ({ hoursString }) => {
                   <FontAwesome6
                     name="location-dot"
                     size={14}
-                    color={theme.colors.accent}
+                    color={accent}
                   />
                 )}
               </BlurView>

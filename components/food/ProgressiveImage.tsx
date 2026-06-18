@@ -13,6 +13,7 @@ import { View, ActivityIndicator, StyleSheet, Image, ImageStyle, StyleProp } fro
 import { MotiView } from 'moti';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
+import { useAccent } from '../../hooks/useAccent';
 
 interface ProgressiveImageProps {
   uri: string;
@@ -28,6 +29,7 @@ const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
   fallbackIcon = 'image'
 }) => {
   const { theme } = useTheme();
+  const { accent } = useAccent();
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
@@ -65,7 +67,7 @@ const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
       {/* Loading indicator */}
       {isLoading && (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={theme.colors.accent} />
+          <ActivityIndicator size="small" color={accent} />
         </View>
       )}
 

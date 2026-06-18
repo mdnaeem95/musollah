@@ -11,6 +11,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { AnimatePresence } from 'moti';
 
 import { useTheme } from '../../context/ThemeContext';
+import { useAccent } from '../../hooks/useAccent';
 import { enter } from '../../utils';
 
 interface ExpandableSectionProps {
@@ -31,7 +32,8 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
   delay = 0,
 }) => {
   const { theme } = useTheme();
-  
+  const { accent } = useAccent();
+
   return (
     <MotiView
       from={{ opacity: 0, translateY: 20 }}
@@ -50,9 +52,9 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
         >
           <View style={styles.headerLeft}>
             <View style={[styles.iconContainer, {
-              backgroundColor: theme.colors.accent + '15',
+              backgroundColor: accent + '15',
             }]}>
-              <FontAwesome6 name={icon} size={16} color={theme.colors.accent} />
+              <FontAwesome6 name={icon} size={16} color={accent} />
             </View>
             <Text style={[styles.title, { color: theme.colors.text.primary }]}>
               {title}

@@ -11,6 +11,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../context/ThemeContext';
+import { useAccent } from '../../hooks/useAccent';
 import { enter } from '../../utils';
 import { createLogger } from '../../services/logging/logger';
 
@@ -34,7 +35,8 @@ const QuickActionBar: React.FC<QuickActionBarProps> = ({
   website,
 }) => {
   const { theme } = useTheme();
-  
+  const { accent } = useAccent();
+
   const handleDirections = () => {
     if (Platform.OS === 'ios') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -77,7 +79,7 @@ const QuickActionBar: React.FC<QuickActionBarProps> = ({
         {/* Directions */}
         <TouchableOpacity
           style={[styles.actionButton, styles.primaryAction, {
-            backgroundColor: theme.colors.accent,
+            backgroundColor: accent,
           }]}
           onPress={handleDirections}
           activeOpacity={0.8}
@@ -95,7 +97,7 @@ const QuickActionBar: React.FC<QuickActionBarProps> = ({
           onPress={handleShare}
           activeOpacity={0.8}
         >
-          <FontAwesome6 name="share-nodes" size={18} color={theme.colors.accent} />
+          <FontAwesome6 name="share-nodes" size={18} color={accent} />
         </TouchableOpacity>
         
         {/* Website */}
@@ -108,7 +110,7 @@ const QuickActionBar: React.FC<QuickActionBarProps> = ({
             onPress={handleWebsite}
             activeOpacity={0.8}
           >
-            <FontAwesome6 name="globe" size={18} color={theme.colors.accent} />
+            <FontAwesome6 name="globe" size={18} color={accent} />
           </TouchableOpacity>
         )}
       </View>

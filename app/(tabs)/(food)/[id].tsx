@@ -11,6 +11,7 @@ import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'rea
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../../context/ThemeContext';
+import { useAccent } from '../../../hooks/useAccent';
 import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedStyle, interpolate } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome6 } from '@expo/vector-icons';
@@ -30,6 +31,7 @@ const HERO_IMAGE_HEIGHT = 280;
 
 const RestaurantDetails = () => {
   const { theme, isDarkMode } = useTheme();
+  const { accent } = useAccent();
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
@@ -84,7 +86,7 @@ const RestaurantDetails = () => {
   if (isLoading) {
     return (
       <LinearGradient colors={isDarkMode ? ['#060B18', '#0C1428', '#080F1E'] : ['#EEF2FF', '#F0F4FF', '#E8EFFF']} style={styles.centered}>
-        <ActivityIndicator size="large" color={theme.colors.accent} />
+        <ActivityIndicator size="large" color={accent} />
       </LinearGradient>
     );
   }
@@ -96,7 +98,7 @@ const RestaurantDetails = () => {
           Failed to load restaurant details.
         </Text>
         <TouchableOpacity
-          style={[styles.errorButton, { backgroundColor: theme.colors.accent }]}
+          style={[styles.errorButton, { backgroundColor: accent }]}
           onPress={() => router.back()}
         >
           <Text style={styles.errorButtonText}>Go Back</Text>

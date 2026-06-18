@@ -12,6 +12,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../context/ThemeContext';
+import { useAccent } from '../../hooks/useAccent';
 import { enter } from '../../utils';
 
 interface AddressCardProps {
@@ -21,7 +22,8 @@ interface AddressCardProps {
 
 const AddressCard: React.FC<AddressCardProps> = ({ address, distance }) => {
   const { theme } = useTheme();
-  
+  const { accent } = useAccent();
+
   const handleCopyAddress = async () => {
     await Clipboard.setStringAsync(address);
     if (Platform.OS === 'ios') {
@@ -43,18 +45,18 @@ const AddressCard: React.FC<AddressCardProps> = ({ address, distance }) => {
         {/* Header */}
         <View style={styles.header}>
           <View style={[styles.iconContainer, {
-            backgroundColor: theme.colors.accent + '15',
+            backgroundColor: accent + '15',
           }]}>
-            <FontAwesome6 name="location-dot" size={16} color={theme.colors.accent} />
+            <FontAwesome6 name="location-dot" size={16} color={accent} />
           </View>
           <Text style={[styles.title, { color: theme.colors.text.primary }]}>
             Location
           </Text>
           {distance && (
             <View style={[styles.distanceBadge, {
-              backgroundColor: theme.colors.accent + '15',
+              backgroundColor: accent + '15',
             }]}>
-              <Text style={[styles.distanceText, { color: theme.colors.accent }]}>
+              <Text style={[styles.distanceText, { color: accent }]}>
                 {distance}
               </Text>
             </View>
@@ -74,8 +76,8 @@ const AddressCard: React.FC<AddressCardProps> = ({ address, distance }) => {
           onPress={handleCopyAddress}
           activeOpacity={0.7}
         >
-          <FontAwesome6 name="copy" size={14} color={theme.colors.accent} />
-          <Text style={[styles.copyText, { color: theme.colors.accent }]}>
+          <FontAwesome6 name="copy" size={14} color={accent} />
+          <Text style={[styles.copyText, { color: accent }]}>
             Copy Address
           </Text>
         </TouchableOpacity>

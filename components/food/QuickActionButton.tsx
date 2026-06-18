@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { MotiView } from 'moti';
 
 import { useTheme } from '../../context/ThemeContext';
+import { useAccent } from '../../hooks/useAccent';
 import { enter } from '../../utils';
 
 interface QuickActionButtonProps {
@@ -25,7 +26,8 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   active = false,
 }) => {
   const { theme } = useTheme();
-  
+  const { accent } = useAccent();
+
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onPress();
@@ -39,8 +41,8 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
     >
       <MotiView
         animate={{
-          backgroundColor: active 
-            ? theme.colors.accent 
+          backgroundColor: active
+            ? accent
             : theme.colors.secondary + '80',
         }}
         transition={enter(0)}

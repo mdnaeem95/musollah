@@ -27,6 +27,7 @@ import { BlurView } from 'expo-blur';
 
 // Theme & Hooks
 import { useTheme } from '../../../context/ThemeContext';
+import { useAccent } from '../../../hooks/useAccent';
 import { useFoodTab } from '../../../hooks/food/useFoodTab';
 import { useUserFavorites, useToggleFavorite, calculateDistance } from '../../../api/services/food';
 import { useAuthStore } from '../../../stores/useAuthStore';
@@ -167,10 +168,11 @@ interface SortControlsProps {
   sortBy: SortOption;
   onSortChange: (sort: SortOption) => void;
   theme: any;
+  accent: string;
   isDarkMode: boolean;
 }
 
-const SortControls = memo<SortControlsProps>(({ sortBy, onSortChange, theme, isDarkMode }) => (
+const SortControls = memo<SortControlsProps>(({ sortBy, onSortChange, theme, accent, isDarkMode }) => (
   <MotiView
     from={{ opacity: 0, translateY: 10 }}
     animate={{ opacity: 1, translateY: 0 }}
@@ -191,10 +193,10 @@ const SortControls = memo<SortControlsProps>(({ sortBy, onSortChange, theme, isD
               styles.sortButton,
               {
                 backgroundColor: isActive
-                  ? theme.colors.accent + '20'
+                  ? accent + '20'
                   : isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.85)',
                 borderColor: isActive
-                  ? theme.colors.accent + '70'
+                  ? accent + '70'
                   : isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
               },
             ]}
@@ -206,11 +208,11 @@ const SortControls = memo<SortControlsProps>(({ sortBy, onSortChange, theme, isD
               <FontAwesome6
                 name={icons[option]}
                 size={13}
-                color={isActive ? theme.colors.accent : isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary}
+                color={isActive ? accent : isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary}
               />
               <Text style={[
                 styles.sortButtonText,
-                { color: isActive ? theme.colors.accent : isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary },
+                { color: isActive ? accent : isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary },
               ]}>
                 {labels[option]}
               </Text>
@@ -235,6 +237,7 @@ interface ListHeaderProps {
   sortBy: SortOption;
   onSortChange: (sort: SortOption) => void;
   theme: any;
+  accent: string;
   isDarkMode: boolean;
 }
 
@@ -250,6 +253,7 @@ const ListHeader = memo<ListHeaderProps>(({
   sortBy,
   onSortChange,
   theme,
+  accent,
   isDarkMode,
 }) => (
   <>
@@ -270,6 +274,7 @@ const ListHeader = memo<ListHeaderProps>(({
       sortBy={sortBy}
       onSortChange={onSortChange}
       theme={theme}
+      accent={accent}
       isDarkMode={isDarkMode}
     />
 
@@ -324,6 +329,7 @@ RestaurantItem.displayName = 'RestaurantItem';
 
 const RestaurantLocator = () => {
   const { theme, isDarkMode } = useTheme();
+  const { accent } = useAccent();
   const { user } = useAuthStore();
 
   // State
@@ -429,6 +435,7 @@ const RestaurantLocator = () => {
         sortBy={sortBy}
         onSortChange={setSortBy}
         theme={theme}
+        accent={accent}
         isDarkMode={isDarkMode}
       />
     ),
@@ -439,6 +446,7 @@ const RestaurantLocator = () => {
       handleCategorySelect,
       sortBy,
       theme,
+      accent,
       isDarkMode,
     ]
   );
@@ -461,8 +469,8 @@ const RestaurantLocator = () => {
         transition={enter(0)}
         style={styles.emptyContainer}
       >
-        <View style={[styles.emptyIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-          <FontAwesome6 name="utensils" size={48} color={theme.colors.accent} />
+        <View style={[styles.emptyIcon, { backgroundColor: accent + '15' }]}>
+          <FontAwesome6 name="utensils" size={48} color={accent} />
         </View>
         <Text style={[styles.emptyTitle, { color: isDarkMode ? 'rgba(255,255,255,0.88)' : theme.colors.text.primary }]}>
           No Restaurants Found
@@ -492,8 +500,8 @@ const RestaurantLocator = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={theme.colors.accent}
-            colors={[theme.colors.accent]}
+            tintColor={accent}
+            colors={[accent]}
           />
         }
         removeClippedSubviews={true}

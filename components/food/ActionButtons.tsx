@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
+import { useAccent } from '../../hooks/useAccent';
 import { MotiView } from 'moti';
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 const ActionButtons: React.FC<Props> = ({ restaurantId, address, name, website }) => {
   const router = useRouter();
   const { theme } = useTheme();
+  const { accent } = useAccent();
 
   const openMaps = () => {
     const url = `https://www.google.com/maps/search/?api=1&query=${name},${address}`;
@@ -27,7 +29,7 @@ const ActionButtons: React.FC<Props> = ({ restaurantId, address, name, website }
         animate={{ opacity: 1, translateY: 0 }}
         transition={{ delay: 50 }}
       >
-        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.accent }]} onPress={openMaps}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: accent }]} onPress={openMaps}>
           <Text style={[styles.text, { color: theme.colors.text.primary }]}>Get Directions</Text>
         </TouchableOpacity>
       </MotiView>
@@ -39,7 +41,7 @@ const ActionButtons: React.FC<Props> = ({ restaurantId, address, name, website }
           transition={{ delay: 100 }}
         >
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: theme.colors.accent }]}
+            style={[styles.button, { backgroundColor: accent }]}
             onPress={() => Linking.openURL(website)}
           >
             <Text style={[styles.text, { color: theme.colors.text.primary }]}>Make a Reservation</Text>

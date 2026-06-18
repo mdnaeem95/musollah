@@ -17,12 +17,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../context/ThemeContext';
+import { useAccent } from '../../../hooks/useAccent';
 import useAutoFocus from '../../../hooks/food/useAutoFocus';
 import { useRestaurantSearch } from '../../../hooks/food/useRestaurantSearch';
 import { enter } from '../../../utils';
 
 const SearchPage = () => {
   const { theme, isDarkMode } = useTheme();
+  const { accent } = useAccent();
   const router = useRouter();
   const inputRef = useAutoFocus();
 
@@ -70,8 +72,8 @@ const SearchPage = () => {
         transition={{ type: 'timing', duration: 300 }}
         style={styles.emptyContainer}
       >
-        <View style={[styles.emptyIconContainer, { backgroundColor: theme.colors.accent + '15' }]}>
-          <FontAwesome6 name="magnifying-glass" size={40} color={theme.colors.accent} />
+        <View style={[styles.emptyIconContainer, { backgroundColor: accent + '15' }]}>
+          <FontAwesome6 name="magnifying-glass" size={40} color={accent} />
         </View>
         <Text style={[styles.emptyTitle, { color: isDarkMode ? 'rgba(255,255,255,0.88)' : theme.colors.text.primary }]}>
           No restaurants found
@@ -103,7 +105,7 @@ const SearchPage = () => {
             borderWidth: 1,
           }]}
         >
-          <View style={[styles.searchIconContainer, { backgroundColor: theme.colors.accent }]}>
+          <View style={[styles.searchIconContainer, { backgroundColor: accent }]}>
             <FontAwesome6 name="magnifying-glass" size={16} color="#fff" />
           </View>
           <TextInput
@@ -136,7 +138,7 @@ const SearchPage = () => {
           style={styles.recentSection}
         >
           <View style={styles.recentHeader}>
-            <FontAwesome6 name="clock-rotate-left" size={16} color={theme.colors.accent} />
+            <FontAwesome6 name="clock-rotate-left" size={16} color={accent} />
             <Text style={[styles.recentTitle, { color: isDarkMode ? 'rgba(255,255,255,0.88)' : theme.colors.text.primary }]}>
               Recent Searches
             </Text>
@@ -155,7 +157,7 @@ const SearchPage = () => {
                   tint={isDarkMode ? 'dark' : 'light'}
                   style={[styles.recentChip, {
                     backgroundColor: isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.85)',
-                    borderColor: isDarkMode ? 'rgba(255,255,255,0.10)' : theme.colors.accent + '20',
+                    borderColor: isDarkMode ? 'rgba(255,255,255,0.10)' : accent + '20',
                   }]}
                 >
                   <TouchableOpacity
@@ -241,15 +243,15 @@ const SearchPage = () => {
                     </Text>
                     
                     {/* Distance Badge */}
-                    <View style={[styles.distanceBadge, { 
-                      backgroundColor: theme.colors.accent + '15',
+                    <View style={[styles.distanceBadge, {
+                      backgroundColor: accent + '15',
                     }]}>
-                      <FontAwesome6 
-                        name="location-dot" 
-                        size={10} 
-                        color={theme.colors.accent} 
+                      <FontAwesome6
+                        name="location-dot"
+                        size={10}
+                        color={accent}
                       />
-                      <Text style={[styles.distanceText, { color: theme.colors.accent }]}>
+                      <Text style={[styles.distanceText, { color: accent }]}>
                         1.2 km
                       </Text>
                     </View>
@@ -261,10 +263,10 @@ const SearchPage = () => {
                       <View
                         key={`${category}-${idx}`}
                         style={[styles.categoryPill, {
-                          backgroundColor: theme.colors.accent + '10',
+                          backgroundColor: accent + '10',
                         }]}
                       >
-                        <Text style={[styles.categoryText, { color: theme.colors.accent }]}>
+                        <Text style={[styles.categoryText, { color: accent }]}>
                           {category}
                         </Text>
                       </View>
