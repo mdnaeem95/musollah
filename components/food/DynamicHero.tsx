@@ -25,7 +25,6 @@ const DynamicHero = memo(() => {
     backgroundGradient,
     restaurantCount,
     verifiedCount,
-    reviewCount,
   } = useHeroContent();
 
   return (
@@ -84,7 +83,6 @@ const DynamicHero = memo(() => {
           <View style={styles.statsRow}>
             <StatPill icon="store"       label={`${restaurantCount}+`}  delay={400} />
             <StatPill icon="certificate" label="MUIS Verified"           delay={480} />
-            <StatPill icon="star"        label={`${reviewCount}+ reviews`} delay={560} />
           </View>
         </View>
       </LinearGradient>

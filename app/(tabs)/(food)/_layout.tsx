@@ -78,28 +78,6 @@ const FoodLayout = () => {
           headerTransparent: true,
         }}
       />
-      <Stack.Screen
-        name="reviews/submit/[id]"
-        options={{
-          presentation: 'fullScreenModal',
-          gestureEnabled: false,
-          headerShown: true,
-          headerTitle: 'Submit Your Review',
-          ...commonHeaderStyles,
-          headerLeft: () => <CircleButton onPress={() => router.back()} />,
-        }}
-      />
-      <Stack.Screen
-        name="reviews/[id]"
-        options={{
-          presentation: 'fullScreenModal',
-          gestureEnabled: false,
-          headerShown: true,
-          headerTitle: 'All Reviews',
-          ...commonHeaderStyles,
-          headerLeft: () => <CircleButton onPress={() => router.back()} />,
-        }}
-      />
     </Stack>
   );
 };

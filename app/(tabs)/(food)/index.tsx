@@ -363,8 +363,8 @@ const RestaurantLocator = () => {
       
       case 'rating':
         return sorted.sort((a, b) => {
-          const ratingA = a.averageRating || a.rating || 0;
-          const ratingB = b.averageRating || b.rating || 0;
+          const ratingA = a.rating || 0;
+          const ratingB = b.rating || 0;
           return ratingB - ratingA;
         });
       

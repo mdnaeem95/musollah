@@ -20,7 +20,6 @@ import CertificationBadge from '../../../components/food/CertificationBadge';
 import AddressCard from '../../../components/food/AddressCard';
 import QuickActionBar from '../../../components/food/QuickActionBar';
 import ExpandableSection from '../../../components/food/ExpandableSection';
-import ReviewPreviewCarousel from '../../../components/food/ReviewPreviewCarousel';
 import SocialIcons from '../../../components/food/SocialIcons';
 import OperatingHours from '../../../components/food/OperatingHours';
 import SignInModal from '../../../components/SignInModal';
@@ -38,8 +37,7 @@ const RestaurantDetails = () => {
 
   const {
     restaurant,
-    reviews,
-    averageRating,
+    rating,
     isFavorited,
     isLoading,
     error,
@@ -162,8 +160,7 @@ const RestaurantDetails = () => {
           <RestaurantInfoCard
             name={restaurant.name}
             categories={restaurant.categories}
-            averageRating={averageRating}
-            reviewCount={restaurant.totalReviews ?? reviews.length} 
+            averageRating={rating}
             isFavorited={isFavorited}
             onToggleFavorite={toggleFavorite}
           />
@@ -223,26 +220,6 @@ const RestaurantDetails = () => {
             </View>
           )}
           
-          {/* Reviews Section */}
-          <View style={styles.section}>
-            <ReviewPreviewCarousel
-              reviews={reviews}
-              onSeeAll={() => router.push(`/reviews/${restaurant.id}`)}
-            />
-
-          {/* ✅ NEW: Write Review Button */}
-          <TouchableOpacity
-            style={[styles.writeReviewButton, { 
-              backgroundColor: theme.colors.accent,
-              marginTop: 16,
-            }]}
-            onPress={() => router.push(`/reviews/submit/${restaurant.id}`)}
-            activeOpacity={0.8}
-          >
-            <FontAwesome6 name="pen" size={16} color="#fff" />
-            <Text style={styles.writeReviewButtonText}>Write a Review</Text>
-          </TouchableOpacity>
-          </View>
         </View>
       </Animated.ScrollView>
 
@@ -320,25 +297,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Outfit_600SemiBold',
   },
-writeReviewButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 8,
-  paddingVertical: 14,
-  paddingHorizontal: 24,
-  borderRadius: 12,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.15,
-  shadowRadius: 6,
-  elevation: 3,
-},
-writeReviewButtonText: {
-  color: '#fff',
-  fontSize: 16,
-  fontFamily: 'Outfit_600SemiBold',
-},
 });
 
 export default RestaurantDetails;

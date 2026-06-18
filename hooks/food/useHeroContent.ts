@@ -41,7 +41,6 @@ interface HeroContent {
   backgroundGradient: GradientColors;
   restaurantCount: number;
   verifiedCount: number;
-  reviewCount: string;
 }
 
 // ============================================================================
@@ -288,15 +287,8 @@ export const useHeroContent = (): HeroContent => {
     return count;
   }, [restaurants]);
   
-  const reviewCount = useMemo(() => {
-    // TODO: Calculate from actual reviews when available
-    const count = '10k';
-    logger.debug('Review count', { count, note: 'hardcoded - needs implementation' });
-    return count;
-  }, []);
-  
   logger.timeEnd('hero-content-calculation');
-  
+
   return {
     greeting,
     nextPrayer,
@@ -304,6 +296,5 @@ export const useHeroContent = (): HeroContent => {
     backgroundGradient,
     restaurantCount,
     verifiedCount,
-    reviewCount,
   };
 };

@@ -10,6 +10,7 @@ import { MotiView } from 'moti';
 import { AirbnbRating } from 'react-native-ratings';
 
 import { useTheme } from '../../context/ThemeContext';
+import { useAccent } from '../../hooks/useAccent';
 import FavoriteButton from './FavouriteButton';
 import { enter } from '../../utils';
 
@@ -17,7 +18,6 @@ interface RestaurantInfoCardProps {
   name: string;
   categories: string[];
   averageRating: number;
-  reviewCount: number;
   isFavorited: boolean;
   onToggleFavorite: () => void;
 }
@@ -26,12 +26,12 @@ const RestaurantInfoCard: React.FC<RestaurantInfoCardProps> = ({
   name,
   categories,
   averageRating,
-  reviewCount,
   isFavorited,
   onToggleFavorite,
 }) => {
   const { theme } = useTheme();
-  
+  const { accent } = useAccent();
+
   return (
     <MotiView
       from={{ opacity: 0, translateY: 20 }}
@@ -52,10 +52,10 @@ const RestaurantInfoCard: React.FC<RestaurantInfoCardProps> = ({
             <View
               key={`${category}-${index}`}
               style={[styles.categoryPill, {
-                backgroundColor: theme.colors.accent + '15',
+                backgroundColor: accent + '15',
               }]}
             >
-              <Text style={[styles.categoryText, { color: theme.colors.accent }]}>
+              <Text style={[styles.categoryText, { color: accent }]}>
                 {category}
               </Text>
             </View>
@@ -65,24 +65,32 @@ const RestaurantInfoCard: React.FC<RestaurantInfoCardProps> = ({
         {/* Rating Row - FIXED BASELINE ALIGNMENT */}
         {/* Rating Row - SINGLE LINE */}
         <View style={styles.ratingRow}>
-        {/* Left cluster: number + stars + review text */}
+        {/* Left cluster: aggregated Google rating */}
         <View style={styles.ratingLeft}>
-            <Text style={[styles.ratingNumber, { color: theme.colors.text.primary }]}>
-            {averageRating.toFixed(1)}
-            </Text>
+            {averageRating > 0 ? (
+              <>
+                <Text style={[styles.ratingNumber, { color: theme.colors.text.primary }]}>
+                  {averageRating.toFixed(1)}
+                </Text>
 
-            <AirbnbRating
-            isDisabled
-            showRating={false}
-            defaultRating={averageRating}
-            size={18}
-            selectedColor="#FFD700"
-            starContainerStyle={styles.starContainer}
-            />
+                <AirbnbRating
+                  isDisabled
+                  showRating={false}
+                  defaultRating={averageRating}
+                  size={18}
+                  selectedColor="#FFD700"
+                  starContainerStyle={styles.starContainer}
+                />
 
-            <Text style={[styles.reviewCount, { color: theme.colors.text.secondary }]}>
-            ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
-            </Text>
+                <Text style={[styles.reviewCount, { color: theme.colors.text.muted }]}>
+                  Google
+                </Text>
+              </>
+            ) : (
+              <Text style={[styles.reviewCount, { color: theme.colors.text.muted }]}>
+                No rating yet
+              </Text>
+            )}
         </View>
 
         {/* Right: Favorite */}

@@ -47,18 +47,6 @@ const ActionButtons: React.FC<Props> = ({ restaurantId, address, name, website }
         </MotiView>
       )}
 
-      <MotiView
-        from={{ opacity: 0, translateY: 10 }}
-        animate={{ opacity: 1, translateY: 0 }}
-        transition={{ delay: 150 }}
-      >
-        <TouchableOpacity
-          style={[styles.button, styles.reviewButton, { backgroundColor: theme.colors.accent }]}
-          onPress={() => router.push(`/reviews/submit/${restaurantId}`)}
-        >
-          <Text style={[styles.text, { color: theme.colors.text.primary }]}>Write a Review</Text>
-        </TouchableOpacity>
-      </MotiView>
     </View>
   );
 };
@@ -77,9 +65,6 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 16,
     fontFamily: 'Outfit_600SemiBold',
-  },
-  reviewButton: {
-    marginBottom: 0,
   },
 });
 
