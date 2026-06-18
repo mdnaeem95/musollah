@@ -368,7 +368,7 @@ export const testGooglePlacesScraper = onRequest(
  * Build multiple search strategies for a restaurant
  * Tries different combinations to maximize success rate
  */
-function buildSearchStrategies(name: string, address: string, postal?: string) {
+export function buildSearchStrategies(name: string, address: string, postal?: string) {
   const strategies: Array<{query: string; radius: number; description: string}> = [];
 
   // Strategy 1: Name + Postal (best for most restaurants)

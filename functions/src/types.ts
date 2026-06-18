@@ -30,9 +30,16 @@ export interface Restaurant {
     tiktok?: string;
   };
 
-  // Reviews (calculated from reviews subcollection)
+  // Reviews (legacy user-review aggregates — no longer written)
   averageRating?: number;
   totalReviews?: number;
+
+  // Aggregated Google Places rating (backfilled by the ratings scraper)
+  rating?: number;
+  userRatingsTotal?: number;
+  googlePlaceId?: string;
+  googleName?: string;
+  lastRatingSync?: Timestamp;
 
   // === MUIS Discovery Fields (new) ===
   postal?: string; // Singapore postal code

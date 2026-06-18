@@ -12,6 +12,9 @@ export {scrapeMUISCertifications} from "./scrapers/muisScraper";
 export {checkSocialMediaActivity} from "./scrapers/socialMediaChecker";
 export {discoverMUISRestaurants} from "./scrapers/muisDiscovery";
 
+// Restaurant rating backfill (Google Places rating -> restaurant docs)
+export {backfillRestaurantRatings, scheduledRatingBackfill} from "./scrapers/ratingBackfill";
+
 // Utils
 export {migrateRestaurantSchema} from "./utils/migrateRestaurants";
 export {analyzeMUISRestaurants} from "./utils/analyzeMUISRestaurants";
