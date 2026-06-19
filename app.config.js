@@ -22,6 +22,7 @@ export default {
         "UIBackgroundModes": ["location", "fetch", "remote-notification", "audio"],
         "LSApplicationQueriesSchemes": ["file", "tel"],
         "ITSAppUsesNonExemptEncryption": false,
+        "NSSupportsLiveActivities": true,
         "NSLocationWhenInUseUsageDescription": "We use your location to show you locations of interest nearby (mosques, musollah, food).",
         "NSLocationAlwaysUsageDescription": "We use your location to show you locations of interest nearby (mosques, musollah, food)."
       },

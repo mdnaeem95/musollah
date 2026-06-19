@@ -20,6 +20,7 @@ import { NextPrayerHero } from '../../../components/prayer/NextPrayerHero';
 
 // Hooks & Services
 import { usePrayerTimesOptimized } from '../../../hooks/prayer/usePrayerTimesOptimized';
+import { usePrayerLiveActivity } from '../../../hooks/prayer/usePrayerLiveActivity';
 import { usePrayerNotifications } from '../../../hooks/prayer/usePrayerNotifications';
 import { usePrayerDateNavigation } from '../../../hooks/prayer/usePrayerDateNavigation';
 import { usePrayerModals } from '../../../hooks/prayer/usePrayerModals';
@@ -70,6 +71,15 @@ const PrayerTab: React.FC = () => {
 
   // Calculate prayer times with new structure
   const { currentPrayer, nextPrayerInfo } = usePrayerTimesOptimized(prayerData || null);
+
+  // Keep the iOS Live Activity (Lock Screen / Dynamic Island) in sync with the
+  // next prayer (no-op on Android / iOS < 16.1).
+  usePrayerLiveActivity(
+    isToday && nextPrayerInfo
+      ? { prayer: nextPrayerInfo.prayer, minutesUntil: nextPrayerInfo.minutesUntil }
+      : null,
+    prayerData ?? null
+  );
 
   // Initialize notifications
   usePrayerNotifications(prayerData || null);

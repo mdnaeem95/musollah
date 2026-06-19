@@ -1,0 +1,7 @@
+{
+  "name": "prayer-live-activity",
+  "version": "1.0.0",
+  "description": "Local Expo module: start/update/end the prayer countdown Live Activity (ActivityKit).",
+  "main": "index.ts",
+  "private": true
+}

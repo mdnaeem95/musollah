@@ -94,7 +94,7 @@ yarn-error.*
 GoogleService-Info.plist
 google-services.json
 
-ios/
+/ios/
 android/
 .env.local
 
