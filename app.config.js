@@ -5,7 +5,7 @@ export default {
     "name": "rihlah",
     "slug": "rihlah",
     "scheme": "rihlah",
-    "version": "2.0.0",
+    "version": "3.7.0",
     "orientation": "portrait",
     "icon": "./assets/rihlahAppIcon.png",
     "userInterfaceStyle": "light",
@@ -27,6 +27,7 @@ export default {
         "NSLocationAlwaysUsageDescription": "We use your location to show you locations of interest nearby (mosques, musollah, food)."
       },
       "googleServicesFile": "./GoogleService-Info.plist",
+      "buildNumber": "1",
       "bundleIdentifier": "com.naeemsani95.rihlah",
       "runtimeVersion": "1.0.0",
       "privacyManifests": applePrivacyManifest,
