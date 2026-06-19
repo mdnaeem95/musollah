@@ -59,6 +59,7 @@ export default {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "./plugins/withFmtConstevalFix",
       [
         "expo-build-properties",
         {
