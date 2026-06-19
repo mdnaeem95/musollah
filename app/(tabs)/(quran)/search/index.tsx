@@ -454,7 +454,6 @@ export default function QuranSearchScreen() {
         data={results}
         renderItem={renderItem}
         keyExtractor={(item) => `${item.surahNumber}:${item.ayahNumber}`}
-        estimatedItemSize={100}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}

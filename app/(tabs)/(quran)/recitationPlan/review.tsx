@@ -51,6 +51,7 @@ export default function ReviewScreen() {
       ...plan,
       startDate: new Date().toISOString(),
       completedAyahKeys: [],
+      lastReadAyah: '',
     });
     router.replace('/(quran)');
   };

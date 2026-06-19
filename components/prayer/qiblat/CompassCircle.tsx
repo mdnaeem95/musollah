@@ -1,10 +1,10 @@
 import React, { memo } from 'react';
 import { View, StyleSheet } from 'react-native';
-import Animated, { useAnimatedStyle, interpolateColor } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, interpolateColor, SharedValue } from 'react-native-reanimated';
 import { COMPASS_SIZE } from '../../../constants/compass.constants';
 
 interface CompassCircleProps {
-  backgroundProgress: Animated.SharedValue<number>;
+  backgroundProgress: SharedValue<number>;
   arrowAnimatedStyle: any;
   kaabahAnimatedStyle: any;
   isNearQibla: boolean;

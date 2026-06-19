@@ -148,7 +148,9 @@ export const useAppInit = (): InitState => {
         logger.debug('Fetching fresh location (3s timeout)');
 
         const loc = await Promise.race<LocationObject>([
-          fetchLocation(),
+          // fetchLocation() resolves void (it writes to the store); cast keeps
+          // the existing runtime behavior while satisfying the race's type.
+          fetchLocation() as unknown as Promise<LocationObject>,
           new Promise<LocationObject>((_, reject) =>
             setTimeout(() => reject(new Error('Location timeout')), 3000)
           ),

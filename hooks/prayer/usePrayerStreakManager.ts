@@ -33,7 +33,9 @@ const DEFAULT_STREAK_INFO: StreakInfo = Object.freeze({
  */
 const isDayFullyCompleted = (prayers: PrayerLog['prayers'] | undefined): boolean => {
   if (!prayers) return false;
-  return LOGGABLE_PRAYERS.every((prayer) => prayers[prayer] === true);
+  return LOGGABLE_PRAYERS.every(
+    (prayer) => prayers[prayer as keyof PrayerLog['prayers']] === true
+  );
 };
 
 /**

@@ -91,7 +91,7 @@ const PrayerTab: React.FC = () => {
   const renderContent = () => {
     // Show data if available
     if (prayerData) {
-      logger.info('Rendering prayer data for:', dateNavigation.formattedDate);
+      logger.info('Rendering prayer data', { date: dateNavigation.formattedDate });
       
       // Convert flat structure to Record for PrayerTimesList
       const prayerTimesRecord = {
