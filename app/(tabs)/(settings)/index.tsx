@@ -27,7 +27,6 @@ const SETTINGS_ITEMS = [
   { icon: 'person-praying', label: 'Prayers', route: '/prayers' },
   { icon: 'palette', label: 'Appearance', route: '/appearance' },
   { icon: 'envelope', label: 'Support', route: '/support' },
-  { icon: 'gift', label: 'Referral', route: '/referral' },
 ];
 
 const FEATURE_CARDS = [

@@ -129,11 +129,6 @@ export const usePrayerActions = ({
         onPress: handleLocationPress,
       },
       {
-        icon: 'chart-simple',
-        label: 'Dashboard',
-        onPress: () => navigateTo('/prayerDashboard', 'Dashboard'),
-      },
-      {
         icon: 'message',
         label: 'Khutbah',
         onPress: () => navigateTo('/khutbah', 'Khutbah'),

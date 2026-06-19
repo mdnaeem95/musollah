@@ -42,14 +42,6 @@ const QuickAccessButtons = () => {
         </TouchableOpacity>
         <Text style={styles.buttonLabel}>Monthly</Text>
       </View>
-
-      {/* Prayer Dashboard */}
-      <View style={styles.buttonWrapper}>
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/prayerDashboard')}>
-          <FontAwesome6 name="chart-bar" size={24} color={theme.colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={styles.buttonLabel}>Dashboard</Text>
-      </View>
     </View>
   );
 };

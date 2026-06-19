@@ -13,7 +13,7 @@
  */
 
 import React, { useEffect, useCallback, memo, useMemo, useState, useRef } from 'react';
-import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Text, TextInput, Platform, Animated, Easing } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Text, Platform, Animated, Easing, FlatList } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import { FlashList } from '@shopify/flash-list';
 import { FontAwesome6 } from '@expo/vector-icons';
@@ -21,10 +21,25 @@ import { MotiView } from 'moti';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 
-import Map from '../../../components/musollah/Map';
+import { useRouter } from 'expo-router';
+
+import Map, { MapMarkerLike, MarkerKind } from '../../../components/musollah/Map';
 import { createLogger } from '../../../services/logging/logger';
 import { useLocationStore } from '../../../stores/useLocationStore';
+import { useAuthStore } from '../../../stores/useAuthStore';
+import { useNearbyFocusStore, NearbyFocusKind } from '../../../stores/useNearbyFocusStore';
+import { useAccent } from '../../../hooks/useAccent';
 import { MosqueLocation, LocationUnion } from '../../../api/services/musollah';
+import { useFoodTab } from '../../../hooks/food/useFoodTab';
+import {
+  useUserFavorites,
+  useToggleFavorite,
+  calculateDistance,
+  Restaurant,
+} from '../../../api/services/food';
+import RestaurantCard from '../../../components/food/RestaurantCard';
+import CategoryPill from '../../../components/food/CategoryPill';
+import SignInModal from '../../../components/SignInModal';
 import BidetSheet from './BidetSheet';
 import MosqueSheet from './MosqueSheet';
 import MusollahSheet from './MusollahSheet';
@@ -36,12 +51,58 @@ import { enter } from '../../../utils';
 // CONSTANTS
 // ============================================================================
 
-const LOCATION_TYPES = ['Bidets', 'Musollahs', 'Mosques'] as const;
+// Layer order MUST match INDEX_TO_TYPE in useLocationsTab.
+const LOCATION_TYPES = ['All', 'Food', 'Musollahs', 'Mosques', 'Bidets'] as const;
 
 const LOCATION_ICONS: Record<string, string> = {
+  All: 'layer-group',
+  Food: 'utensils',
   Bidets: 'toilet',
   Musollahs: 'person-praying',
   Mosques: 'mosque',
+};
+
+// Per-kind metadata for the combined "All" list rows + cluster colours.
+const KIND_META: Record<MarkerKind, { icon: string; label: string; color: string }> = {
+  food: { icon: 'utensils', label: 'Halal Food', color: '#F97316' },
+  musollah: { icon: 'person-praying', label: 'Musollah', color: '#22C55E' },
+  mosque: { icon: 'mosque', label: 'Mosque', color: '#0EA5E9' },
+  bidet: { icon: 'toilet', label: 'Bidet', color: '#8B5CF6' },
+};
+
+// Cluster bubble colour per single-type layer (the 'All' layer uses the accent).
+const CLUSTER_COLORS: Record<string, string> = {
+  food: '#F97316',
+  musollah: '#22C55E',
+  mosque: '#0EA5E9',
+  bidet: '#8B5CF6',
+};
+
+// A row in the combined "All" list.
+interface AllListItem {
+  kind: MarkerKind;
+  id: string;
+  title: string;
+  subtitle: string;
+  distanceKm: number;
+  image?: string;
+  raw: Restaurant | LocationUnion;
+}
+
+// Food layer sort options (parity with the old Food tab).
+type FoodSortOption = 'distance' | 'rating' | 'name';
+
+const FOOD_SORTS: { key: FoodSortOption; label: string; icon: string }[] = [
+  { key: 'distance', label: 'Distance', icon: 'location-arrow' },
+  { key: 'rating', label: 'Rating', icon: 'star' },
+  { key: 'name', label: 'Name', icon: 'arrow-down-a-z' },
+];
+
+// Maps a facility focus (from unified search) to its segmented-control layer.
+const FOCUS_KIND_TO_TYPE: Record<NearbyFocusKind, typeof LOCATION_TYPES[number]> = {
+  musollah: 'Musollahs',
+  mosque: 'Mosques',
+  bidet: 'Bidets',
 };
 
 const SPACING = {
@@ -52,75 +113,6 @@ const SPACING = {
   xl: 20,
   xxl: 24,
 };
-
-// ============================================================================
-// CUSTOM SEARCH BAR (Glassmorphism)
-// ============================================================================
-
-interface CustomSearchBarProps {
-  value: string;
-  onChangeText: (text: string) => void;
-  onClear: () => void;
-  placeholder: string;
-  theme: any;
-  isDarkMode: boolean;
-}
-
-const CustomSearchBar = memo(function CustomSearchBar({
-  value,
-  onChangeText,
-  onClear,
-  placeholder,
-  theme,
-  isDarkMode,
-}: CustomSearchBarProps) {
-  const handleClear = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onClear();
-  }, [onClear]);
-
-  return (
-    <MotiView
-      from={{ opacity: 0, translateY: -20 }}
-      animate={{ opacity: 1, translateY: 0 }}
-      transition={enter(0)}
-    >
-      <BlurView
-        intensity={20}
-        tint={isDarkMode ? 'dark' : 'light'}
-        style={[styles.searchContainer, {
-          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.90)',
-          borderWidth: 1,
-          borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
-        }]}
-      >
-        {/* Search Icon */}
-        <View style={[styles.searchIconContainer, { backgroundColor: theme.colors.accent }]}>
-          <FontAwesome6 name="magnifying-glass" size={16} color="#fff" />
-        </View>
-
-        {/* Input */}
-        <TextInput
-          style={[styles.searchInput, { color: theme.colors.text.primary }]}
-          placeholder={placeholder}
-          placeholderTextColor={theme.colors.text.muted}
-          value={value}
-          onChangeText={onChangeText}
-          returnKeyType="search"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-
-        {/* Clear Button */}
-        {value.length > 0 && (
-          <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
-            <FontAwesome6 name="circle-xmark" size={18} color={theme.colors.text.secondary} />
-          </TouchableOpacity>
-        )}
-      </BlurView>
-    </MotiView>
-  );
-});
 
 // ============================================================================
 // CUSTOM SEGMENTED CONTROL (Premium Pills)
@@ -202,76 +194,62 @@ const AnimatedSegmentButton = memo(function AnimatedSegmentButton({
   accentColor,
   textSecondary,
 }: AnimatedSegmentButtonProps) {
-  // Animated value for background color
+  // Animated background fill for the active pill.
   const animatedBg = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
-  
-  // Animated value for text/icon opacity (for smooth color transition)
-  const animatedColor = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(animatedBg, {
-        toValue: isSelected ? 1 : 0,
-        duration: 200,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: false, // backgroundColor doesn't support native driver
-      }),
-      Animated.timing(animatedColor, {
-        toValue: isSelected ? 1 : 0,
-        duration: 200,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }, [isSelected, animatedBg, animatedColor]);
+    Animated.timing(animatedBg, {
+      toValue: isSelected ? 1 : 0,
+      duration: 200,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: false, // backgroundColor doesn't support native driver
+    }).start();
+  }, [isSelected, animatedBg]);
 
-  // Interpolate background color
   const backgroundColor = animatedBg.interpolate({
     inputRange: [0, 1],
     outputRange: ['transparent', accentColor],
   });
 
-  // Interpolate text color
-  const color = animatedColor.interpolate({
-    inputRange: [0, 1],
-    outputRange: [textSecondary, '#FFFFFF'],
-  });
-
+  // Only the active segment shows its label; the rest stay icon-only. The
+  // active pill grows wider so the whole bar never crowds four labels in a row.
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.7}
-      style={styles.segmentButton}
+    <MotiView
+      animate={{ flex: isSelected ? 2.3 : 1 }}
+      transition={{ type: 'timing', duration: 240 }}
     >
-      <Animated.View
-        style={[
-          styles.segmentInner,
-          { backgroundColor },
-        ]}
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.7}
+        style={styles.segmentButton}
       >
-        <Animated.Text style={{ color }}>
+        <Animated.View style={[styles.segmentInner, { backgroundColor }]}>
           <FontAwesome6
             name={icon}
-            size={14}
+            size={15}
             color={isSelected ? '#FFFFFF' : textSecondary}
           />
-        </Animated.Text>
-        <Animated.Text
-          style={[
-            styles.segmentText,
-            {
-              color,
-              fontFamily: isSelected ? 'Outfit_600SemiBold' : 'Outfit_500Medium',
-            },
-            isSelected && styles.segmentTextActive,
-          ]}
-          numberOfLines={1}
-          allowFontScaling={false}
-        >
-          {type}
-        </Animated.Text>
-      </Animated.View>
-    </TouchableOpacity>
+          {isSelected && (
+            <MotiView
+              from={{ opacity: 0, translateX: -6 }}
+              animate={{ opacity: 1, translateX: 0 }}
+              transition={{ type: 'timing', duration: 200 }}
+            >
+              <Text
+                style={[styles.segmentText, styles.segmentTextActive, {
+                  color: '#FFFFFF',
+                  fontFamily: 'Outfit_600SemiBold',
+                }]}
+                numberOfLines={1}
+                allowFontScaling={false}
+              >
+                {type}
+              </Text>
+            </MotiView>
+          )}
+        </Animated.View>
+      </TouchableOpacity>
+    </MotiView>
   );
 });
 
@@ -578,15 +556,166 @@ const LocationPermissionPrompt = memo(function LocationPermissionPrompt({
 });
 
 // ============================================================================
+// FOOD FILTER HEADER (category chips + sort — Food layer only)
+// ============================================================================
+
+interface FoodFilterHeaderProps {
+  categories: string[];
+  categoryCounts: Record<string, number>;
+  selectedCategories: string[];
+  onCategorySelect: (category: string) => void;
+  sortBy: FoodSortOption;
+  onSortChange: (sort: FoodSortOption) => void;
+  theme: any;
+  accent: string;
+}
+
+const FoodFilterHeader = memo(function FoodFilterHeader({
+  categories,
+  categoryCounts,
+  selectedCategories,
+  onCategorySelect,
+  sortBy,
+  onSortChange,
+  theme,
+  accent,
+}: FoodFilterHeaderProps) {
+  const renderChip = useCallback(
+    ({ item, index }: { item: string; index: number }) => (
+      <CategoryPill
+        category={item}
+        count={categoryCounts[item] ?? 0}
+        isSelected={selectedCategories.includes(item)}
+        onPress={() => onCategorySelect(item)}
+        index={index}
+      />
+    ),
+    [categoryCounts, selectedCategories, onCategorySelect]
+  );
+
+  return (
+    <View style={styles.foodFilterHeader}>
+      {categories.length > 0 && (
+        <FlatList
+          data={categories}
+          horizontal
+          keyExtractor={(c) => c}
+          renderItem={renderChip}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.foodChipsContent}
+          style={styles.foodChipsList}
+        />
+      )}
+
+      <View style={styles.foodSortRow}>
+        {FOOD_SORTS.map(({ key, label, icon }) => {
+          const active = sortBy === key;
+          return (
+            <TouchableOpacity
+              key={key}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onSortChange(key);
+              }}
+              activeOpacity={0.7}
+              style={[
+                styles.foodSortBtn,
+                {
+                  backgroundColor: active ? accent + '20' : 'transparent',
+                  borderColor: active ? accent : theme.colors.muted,
+                },
+              ]}
+            >
+              <FontAwesome6
+                name={icon}
+                size={12}
+                color={active ? accent : theme.colors.text.secondary}
+              />
+              <Text
+                style={[
+                  styles.foodSortText,
+                  { color: active ? accent : theme.colors.text.secondary },
+                ]}
+              >
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+});
+
+// ============================================================================
+// ALL-LAYER LIST ROW (mixed food + facilities)
+// ============================================================================
+
+interface AllPlaceRowProps {
+  item: AllListItem;
+  onPress: () => void;
+  theme: any;
+  isDarkMode: boolean;
+}
+
+const AllPlaceRow = memo(function AllPlaceRow({ item, onPress, theme, isDarkMode }: AllPlaceRowProps) {
+  const meta = KIND_META[item.kind];
+  const distanceLabel =
+    isFinite(item.distanceKm)
+      ? item.distanceKm < 1
+        ? `${Math.round(item.distanceKm * 1000)}m`
+        : `${item.distanceKm.toFixed(1)}km`
+      : null;
+
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+      <BlurView
+        intensity={20}
+        tint={isDarkMode ? 'dark' : 'light'}
+        style={[styles.allRow, {
+          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+          borderWidth: 1,
+          borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+        }]}
+      >
+        <View style={[styles.allIconTile, { backgroundColor: meta.color + '1A' }]}>
+          <FontAwesome6 name={meta.icon} size={18} color={meta.color} />
+        </View>
+
+        <View style={styles.allRowInfo}>
+          <Text style={[styles.allRowTitle, { color: theme.colors.text.primary }]} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <View style={[styles.allKindBadge, { backgroundColor: meta.color + '18' }]}>
+            <Text style={[styles.allKindBadgeText, { color: meta.color }]}>{meta.label}</Text>
+          </View>
+        </View>
+
+        {distanceLabel && (
+          <View style={[styles.allDistanceBadge, { backgroundColor: meta.color }]}>
+            <FontAwesome6 name="location-dot" size={10} color="#fff" />
+            <Text style={styles.allDistanceText}>{distanceLabel}</Text>
+          </View>
+        )}
+      </BlurView>
+    </TouchableOpacity>
+  );
+});
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
-const logger = createLogger('Musollah');
+const logger = createLogger('Nearby');
 
-export default function MusollahScreen() {
+export default function NearbyScreen() {
   const { theme, isDarkMode } = useTheme();
+  const { accent } = useAccent();
+  const router = useRouter();
+  const { user } = useAuthStore();
   const { userLocation, fetchLocation, isLoading: locationLoading } = useLocationStore();
   const [isAddLocationSheetVisible, setIsAddLocationSheetVisible] = useState(false);
+  const [showSignInModal, setShowSignInModal] = useState(false);
 
   const handleOpenAddLocation = () => {
     setIsAddLocationSheetVisible(true);
@@ -596,7 +725,6 @@ export default function MusollahScreen() {
     selectedIndex,
     setSelectedIndex,
     searchQuery,
-    setSearchQuery,
     filteredLocations,
     region,
     selectedLocation,
@@ -606,17 +734,168 @@ export default function MusollahScreen() {
     isLoading,
     isError,
     error,
-    clearSearch,
     locationCount,
+    locationType,
+    allFacilities,
   } = useLocationsTab(userLocation);
 
-  // Calculate nearest distance
+  // Unified-search hand-off: when a facility is picked in the search modal,
+  // switch to its layer and open its sheet once the layer's data is active.
+  const focus = useNearbyFocusStore((s) => s.focus);
+  const clearFocus = useNearbyFocusStore((s) => s.clearFocus);
+  useEffect(() => {
+    if (!focus) return;
+    const targetIndex = LOCATION_TYPES.indexOf(FOCUS_KIND_TO_TYPE[focus.kind]);
+    if (targetIndex < 0) {
+      clearFocus();
+      return;
+    }
+    if (selectedIndex !== targetIndex) {
+      setSelectedIndex(targetIndex);
+      return; // wait for the layer's data to become active
+    }
+    const loc = filteredLocations.find((l) => l.id === focus.id);
+    if (loc) {
+      handleSelectLocation(loc);
+      clearFocus();
+    } else if (!isLoading) {
+      clearFocus(); // stale id or filtered out — give up quietly
+    }
+  }, [focus, selectedIndex, filteredLocations, handleSelectLocation, setSelectedIndex, isLoading, clearFocus]);
+
+  // Food layer (its own data source — restaurants, distance, favourites).
+  const {
+    restaurants,
+    categories,
+    categoryCounts,
+    selectedCategories,
+    handleCategorySelect,
+    getRestaurantDistance,
+    userCoords,
+    isLoading: foodLoading,
+  } = useFoodTab();
+  const { data: favorites = [] } = useUserFavorites(user?.uid || null);
+  const { mutate: toggleFavorite } = useToggleFavorite();
+
+  const [foodSortBy, setFoodSortBy] = useState<FoodSortOption>('distance');
+
+  const isFood = locationType === 'food';
+  const isAll = locationType === 'all';
+
+  // Food list filtered by the shared search query (categories already applied
+  // upstream by useFoodTab).
+  const foodFiltered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return restaurants;
+    return restaurants.filter((r) =>
+      r.name?.toLowerCase().includes(q) ||
+      r.address?.toLowerCase().includes(q) ||
+      r.categories?.some((c) => c.toLowerCase().includes(q)));
+  }, [restaurants, searchQuery]);
+
+  // Distance-sorted copy — drives the map pins + "nearest" stat regardless of
+  // the list's chosen sort.
+  const foodByDistance = useMemo(
+    () =>
+      [...foodFiltered].sort(
+        (a, b) =>
+          calculateDistance(userCoords, a.coordinates) -
+          calculateDistance(userCoords, b.coordinates)
+      ),
+    [foodFiltered, userCoords]
+  );
+
+  // List order honours the selected sort (distance / rating / name).
+  const foodSorted = useMemo(() => {
+    switch (foodSortBy) {
+      case 'rating':
+        return [...foodFiltered].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+      case 'name':
+        return [...foodFiltered].sort((a, b) => a.name.localeCompare(b.name));
+      default:
+        return foodByDistance;
+    }
+  }, [foodFiltered, foodByDistance, foodSortBy]);
+
+  // Food restaurants as map markers (clustering handles density — no cap).
+  const foodMarkers = useMemo<MapMarkerLike[]>(
+    () =>
+      foodByDistance.map((r) => ({
+        id: r.id,
+        coordinates: r.coordinates,
+        building: r.name,
+        address: r.address ?? '',
+        kind: 'food' as MarkerKind,
+      })),
+    [foodByDistance]
+  );
+
+  const facilityKind = useCallback((f: LocationUnion): MarkerKind => {
+    if (isBidetLocation(f)) return 'bidet';
+    if (isMosqueLocation(f)) return 'mosque';
+    return 'musollah';
+  }, []);
+
+  // "All" layer: facilities (full objects, kept whole so tap can open a sheet)
+  // + food markers, all kind-tagged so each pin renders its own icon.
+  const allMarkers = useMemo<MapMarkerLike[]>(() => {
+    const facilityMarkers = allFacilities.map((f) => ({
+      ...f,
+      kind: facilityKind(f),
+    })) as MapMarkerLike[];
+    return [...facilityMarkers, ...foodMarkers];
+  }, [allFacilities, foodMarkers, facilityKind]);
+
+  // Combined, distance-sorted list for the "All" layer.
+  const allList = useMemo<AllListItem[]>(() => {
+    const facItems: AllListItem[] = allFacilities.map((f) => ({
+      kind: facilityKind(f),
+      id: f.id,
+      title: f.building || 'Unknown',
+      subtitle: f.address || '',
+      distanceKm: f.distance ?? Infinity,
+      raw: f,
+    }));
+    const foodItems: AllListItem[] = foodByDistance.map((r) => ({
+      kind: 'food',
+      id: r.id,
+      title: r.name,
+      subtitle: r.address || '',
+      distanceKm: calculateDistance(userCoords, r.coordinates),
+      image: r.image,
+      raw: r,
+    }));
+    return [...facItems, ...foodItems].sort((a, b) => a.distanceKm - b.distanceKm);
+  }, [allFacilities, foodByDistance, userCoords, facilityKind]);
+
+  // Markers + counts switch by active layer.
+  const markerLocations: MapMarkerLike[] = isAll
+    ? allMarkers
+    : isFood
+    ? foodMarkers
+    : (filteredLocations as MapMarkerLike[]);
+
+  const clusterColor = CLUSTER_COLORS[locationType] ?? accent;
+
+  const layerCount = isAll ? allList.length : isFood ? foodSorted.length : locationCount;
+  const showLoading = isAll ? foodLoading || isLoading : isFood ? foodLoading : isLoading;
+
+  // Calculate nearest distance for the active layer
   const nearestDistance = useMemo(() => {
+    if (isAll) {
+      const d = allList[0]?.distanceKm;
+      return d !== undefined && isFinite(d) ? d : undefined;
+    }
+    if (isFood) {
+      return foodSorted.length > 0
+        ? calculateDistance(userCoords, foodSorted[0].coordinates)
+        : undefined;
+    }
     if (filteredLocations.length > 0 && filteredLocations[0].distance !== undefined) {
       return filteredLocations[0].distance;
     }
     return undefined;
-  }, [filteredLocations]);
+  }, [isAll, allList, isFood, foodSorted, userCoords, filteredLocations]);
 
   // Fetch user location on mount
   useEffect(() => {
@@ -631,7 +910,45 @@ export default function MusollahScreen() {
     fetchLocation();
   }, [fetchLocation]);
 
-  // Render location item
+  // Marker tap: food routes to detail; facilities open their sheet. Routing is
+  // by marker.kind so it works in every layer (incl. the mixed "All" layer).
+  const handleMarkerPress = useCallback(
+    (marker: MapMarkerLike) => {
+      if (marker.kind === 'food') {
+        router.push(`/${marker.id}`);
+        return;
+      }
+      handleSelectLocation(marker as unknown as LocationUnion);
+    },
+    [router, handleSelectLocation]
+  );
+
+  // "All" list row tap — same routing by kind.
+  const handleAllItemPress = useCallback(
+    (item: AllListItem) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      if (item.kind === 'food') {
+        router.push(`/${item.id}`);
+      } else {
+        handleSelectLocation(item.raw as LocationUnion);
+      }
+    },
+    [router, handleSelectLocation]
+  );
+
+  // Favourite toggle (food) — gated by sign-in like the old Food tab.
+  const handleToggleFavorite = useCallback(
+    (restaurantId: string, currentlyFavorited: boolean) => {
+      if (!user) {
+        setShowSignInModal(true);
+        return;
+      }
+      toggleFavorite({ userId: user.uid, restaurantId, isFavorited: !currentlyFavorited });
+    },
+    [user, toggleFavorite]
+  );
+
+  // Render facility list item
   const renderItem = useCallback(
     ({ item, index }: { item: LocationUnion; index: number }) => (
       <LocationItem
@@ -645,8 +962,58 @@ export default function MusollahScreen() {
     [handleSelectLocation, theme, isDarkMode]
   );
 
-  // Key extractor
-  const keyExtractor = useCallback((item: LocationUnion) => item.id, []);
+  // Render food (restaurant) list item
+  const renderFoodItem = useCallback(
+    ({ item, index }: { item: Restaurant; index: number }) => {
+      const isFavorited = favorites.includes(item.id);
+      return (
+        <View style={styles.foodCardWrap}>
+          <RestaurantCard
+            restaurant={item}
+            distance={getRestaurantDistance(item)}
+            isFavorited={isFavorited}
+            onToggleFavorite={() => handleToggleFavorite(item.id, isFavorited)}
+            index={index}
+          />
+        </View>
+      );
+    },
+    [favorites, getRestaurantDistance, handleToggleFavorite]
+  );
+
+  // Render combined "All" list row
+  const renderAllItem = useCallback(
+    ({ item }: { item: AllListItem }) => (
+      <AllPlaceRow
+        item={item}
+        onPress={() => handleAllItemPress(item)}
+        theme={theme}
+        isDarkMode={isDarkMode}
+      />
+    ),
+    [handleAllItemPress, theme, isDarkMode]
+  );
+
+  // Key extractor (shared — every item has a string id)
+  const keyExtractor = useCallback((item: { id: string }) => item.id, []);
+  const allKeyExtractor = useCallback((item: AllListItem) => `${item.kind}-${item.id}`, []);
+
+  // Food filter chips + sort (stable element so the list header doesn't remount)
+  const foodListHeader = useMemo(
+    () => (
+      <FoodFilterHeader
+        categories={categories}
+        categoryCounts={categoryCounts}
+        selectedCategories={selectedCategories}
+        onCategorySelect={handleCategorySelect}
+        sortBy={foodSortBy}
+        onSortChange={setFoodSortBy}
+        theme={theme}
+        accent={accent}
+      />
+    ),
+    [categories, categoryCounts, selectedCategories, handleCategorySelect, foodSortBy, theme, accent]
+  );
 
   // Main render
   return (
@@ -656,9 +1023,11 @@ export default function MusollahScreen() {
         <View style={styles.mapContainer}>
           <Map
             region={region}
-            markerLocations={filteredLocations}
-            onMarkerPress={handleSelectLocation}
+            markerLocations={markerLocations}
+            onMarkerPress={handleMarkerPress}
             onAddLocationPress={handleOpenAddLocation}
+            showAddButton={!isFood && !isAll}
+            clusterColor={clusterColor}
             shouldFollowUserLocation
             onRegionChangeComplete={() => {}}
             onRefocusPress={() => {}}
@@ -671,7 +1040,7 @@ export default function MusollahScreen() {
           />
         </View>
 
-        {/* Search Bar Overlay */}
+        {/* Search Bar Overlay — opens the unified cross-layer search */}
         <View
           pointerEvents={isSheetVisible ? 'none' : 'auto'}
           style={[
@@ -679,14 +1048,30 @@ export default function MusollahScreen() {
             isSheetVisible && styles.searchOverlayBehind,
           ]}
         >
-          <CustomSearchBar
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onClear={clearSearch}
-            placeholder={`Search ${LOCATION_TYPES[selectedIndex].toLowerCase()}...`}
-            theme={theme}
-            isDarkMode={isDarkMode}
-          />
+          <MotiView
+            from={{ opacity: 0, translateY: -20 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={enter(0)}
+          >
+            <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/search')}>
+              <BlurView
+                intensity={20}
+                tint={isDarkMode ? 'dark' : 'light'}
+                style={[styles.searchContainer, {
+                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.90)',
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+                }]}
+              >
+                <View style={[styles.searchIconContainer, { backgroundColor: accent }]}>
+                  <FontAwesome6 name="magnifying-glass" size={16} color="#fff" />
+                </View>
+                <Text style={[styles.searchInput, { color: theme.colors.text.muted }]} numberOfLines={1}>
+                  Search food, musollahs, mosques…
+                </Text>
+              </BlurView>
+            </TouchableOpacity>
+          </MotiView>
         </View>
 
         {/* Bottom Sheet Container */}
@@ -729,24 +1114,42 @@ export default function MusollahScreen() {
 
             {/* Stats */}
             <StatsHeader
-              locationCount={locationCount}
+              locationCount={layerCount}
               nearestDistance={nearestDistance}
               theme={theme}
               isDarkMode={isDarkMode}
             />
 
             {/* Content */}
-            {isError ? (
+            {isError && !isFood ? (
               <ErrorState error={error} onRetry={handleRetry} theme={theme} />
-            ) : isLoading ? (
+            ) : showLoading ? (
               <View style={styles.listLoadingContainer}>
                 <ActivityIndicator size="large" color={theme.colors.accent} />
               </View>
-            ) : filteredLocations.length === 0 ? (
+            ) : layerCount === 0 ? (
               <EmptyState
                 type={LOCATION_TYPES[selectedIndex]}
                 isSearching={searchQuery.length > 0}
                 theme={theme}
+              />
+            ) : isAll ? (
+              <FlashList
+                data={allList}
+                renderItem={renderAllItem}
+                keyExtractor={allKeyExtractor}
+                contentContainerStyle={styles.flashListContent}
+                showsVerticalScrollIndicator={false}
+                ItemSeparatorComponent={() => <View style={styles.separator} />}
+              />
+            ) : isFood ? (
+              <FlashList
+                data={foodSorted}
+                renderItem={renderFoodItem}
+                keyExtractor={keyExtractor}
+                ListHeaderComponent={foodListHeader}
+                contentContainerStyle={styles.flashListContent}
+                showsVerticalScrollIndicator={false}
               />
             ) : (
               <FlashList
@@ -762,8 +1165,10 @@ export default function MusollahScreen() {
         </View>
       </View>
 
-      {/* Detail Sheets */}
-      {selectedIndex === 0 && selectedLocation && isBidetLocation(selectedLocation) && (
+      {/* Detail Sheets — keyed off the selected location's type (mutually
+          exclusive guards) so they work in any layer, including "All". Food
+          has no sheet; it routes to its detail page. */}
+      {selectedLocation && isBidetLocation(selectedLocation) && (
         <BidetSheet
           locationId={selectedLocation.id}
           visible={isSheetVisible}
@@ -771,7 +1176,7 @@ export default function MusollahScreen() {
         />
       )}
 
-      {selectedIndex === 1 && selectedLocation && isMusollahLocation(selectedLocation) && (
+      {selectedLocation && isMusollahLocation(selectedLocation) && (
         <MusollahSheet
           locationId={selectedLocation.id}
           visible={isSheetVisible}
@@ -779,13 +1184,16 @@ export default function MusollahScreen() {
         />
       )}
 
-      {selectedIndex === 2 && selectedLocation && isMosqueLocation(selectedLocation) && (
+      {selectedLocation && isMosqueLocation(selectedLocation) && (
         <MosqueSheet
           location={selectedLocation as MosqueLocation}
           visible={isSheetVisible}
           onClose={handleCloseSheet}
         />
       )}
+
+      {/* Sign-in prompt for favouriting restaurants */}
+      <SignInModal visible={showSignInModal} onClose={() => setShowSignInModal(false)} />
     </View>
   );
 }
@@ -913,7 +1321,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   segmentButton: {
-    flex: 1,
+    width: '100%',
   },
   segmentInner: {
     flexDirection: 'row',
@@ -1034,6 +1442,93 @@ const styles = StyleSheet.create({
   },
   flashListContent: {
     paddingBottom: 100,
+  },
+  foodCardWrap: {
+    paddingHorizontal: SPACING.xl,
+  },
+
+  // All-layer combined row
+  allRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    marginHorizontal: SPACING.xl,
+    padding: SPACING.md,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  allIconTile: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  allRowInfo: {
+    flex: 1,
+    gap: 5,
+  },
+  allRowTitle: {
+    fontSize: 15,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  allKindBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 7,
+  },
+  allKindBadgeText: {
+    fontSize: 11,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  allDistanceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 999,
+  },
+  allDistanceText: {
+    fontSize: 12,
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#fff',
+  },
+
+  // Food filter header (chips + sort)
+  foodFilterHeader: {
+    marginBottom: SPACING.md,
+  },
+  foodChipsList: {
+    marginBottom: SPACING.md,
+  },
+  foodChipsContent: {
+    paddingHorizontal: SPACING.xl,
+  },
+  foodSortRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    paddingHorizontal: SPACING.xl,
+  },
+  foodSortBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: SPACING.sm,
+    borderRadius: 10,
+    borderWidth: 1.5,
+  },
+  foodSortText: {
+    fontSize: 13,
+    fontFamily: 'Outfit_600SemiBold',
   },
   listLoadingContainer: {
     flex: 1,

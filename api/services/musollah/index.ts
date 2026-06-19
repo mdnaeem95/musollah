@@ -22,7 +22,7 @@ import { LocationObject } from 'expo-location';
 import { db } from '../../client/firebase';
 import { cache, TTL, cacheStorage } from '../../client/storage';
 import { logger } from '../../../services/logging/logger';
-import { addDoc, collection, doc, getDocs, limit, query as fsQuery, updateDoc } from '@react-native-firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, increment, limit, query as fsQuery, setDoc, updateDoc, writeBatch } from '@react-native-firebase/firestore';
 
 // ============================================================================
 // TYPES
@@ -52,6 +52,9 @@ export interface BidetLocation {
   distance?: number;
   status?: 'Available' | 'Unavailable' | 'Unknown';
   lastUpdated?: number;
+  // Aggregated community cleanliness rating (sum / count of 1–5 ratings).
+  cleanlinessSum?: number;
+  cleanlinessCount?: number;
 }
 
 export interface MosqueLocation {
@@ -78,6 +81,9 @@ export interface MusollahLocation {
   distance?: number;
   status?: 'Available' | 'Unavailable' | 'Unknown';
   lastUpdated?: number;
+  // Aggregated community cleanliness rating (sum / count of 1–5 ratings).
+  cleanlinessSum?: number;
+  cleanlinessCount?: number;
 }
 
 export type LocationUnion = BidetLocation | MusollahLocation | MosqueLocation;
@@ -499,6 +505,8 @@ async function fetchAllBidets(): Promise<BidetLocation[]> {
         male: data.male || data.Male || 'No',
         status: data.status || data.Status,
         lastUpdated: data.lastUpdated || data.updatedAt,
+        cleanlinessSum: data.cleanlinessSum || 0,
+        cleanlinessCount: data.cleanlinessCount || 0,
       } as BidetLocation;
     });
 
@@ -681,6 +689,8 @@ async function fetchAllMusollahs(): Promise<MusollahLocation[]> {
         directions: data.directions || data.Directions || data.howToGet || '',
         status: data.status || data.Status,
         lastUpdated: data.lastUpdated || data.updatedAt,
+        cleanlinessSum: data.cleanlinessSum || 0,
+        cleanlinessCount: data.cleanlinessCount || 0,
       } as MusollahLocation;
     });
 
@@ -1445,6 +1455,123 @@ export function useSubmitLocationRequest() {
         type: data.type,
         building: data.buildingName,
       });
+    },
+  });
+}
+
+// ============================================================================
+// CLEANLINESS RATINGS (community, one per user)
+// ============================================================================
+
+export type RatingTargetType = 'bidet' | 'musollah';
+
+const RATING_COLLECTION: Record<RatingTargetType, string> = {
+  bidet: COLLECTIONS.bidets,
+  musollah: COLLECTIONS.musollahs,
+};
+
+export interface SubmitCleanlinessRatingPayload {
+  type: RatingTargetType;
+  id: string;
+  userId: string;
+  rating: number; // 1–5
+  note?: string;
+}
+
+export interface UserRating {
+  rating: number;
+  note: string;
+}
+
+/**
+ * Submit (or update) a user's cleanliness rating for a location. Stores the
+ * per-user rating in a `ratings/{userId}` subcollection and keeps the
+ * aggregate (cleanlinessSum / cleanlinessCount) on the location doc via atomic
+ * increments — re-rating adjusts the sum by the delta and never double-counts.
+ */
+export async function submitCleanlinessRating({
+  type,
+  id,
+  userId,
+  rating,
+  note,
+}: SubmitCleanlinessRatingPayload): Promise<void> {
+  const startTime = performance.now();
+  const colName = RATING_COLLECTION[type];
+  const locRef = doc(db, colName, id);
+  const userRatingRef = doc(db, colName, id, 'ratings', userId);
+
+  try {
+    // Prior rating (if any) lets us adjust the aggregate without double-counting.
+    const prevSnap = await getDoc(userRatingRef);
+    const prev = prevSnap.exists() ? (prevSnap.data()?.rating as number | undefined) : undefined;
+    const sumDelta = prev !== undefined ? rating - prev : rating;
+    const countDelta = prev !== undefined ? 0 : 1;
+
+    const batch = writeBatch(db);
+    batch.update(locRef, {
+      cleanlinessSum: increment(sumDelta),
+      cleanlinessCount: increment(countDelta),
+      lastRatedAt: Date.now(),
+    });
+    batch.set(
+      userRatingRef,
+      { rating, note: note ?? '', userId, updatedAt: Date.now() },
+      { merge: true }
+    );
+    await batch.commit();
+
+    cache.clear(type === 'bidet' ? CACHE_KEYS.allBidets : CACHE_KEYS.allMusollahs);
+
+    logger.success('Cleanliness rating submitted', {
+      type,
+      id,
+      rating,
+      updated: prev !== undefined,
+      duration: `${Math.round(performance.now() - startTime)}ms`,
+    });
+  } catch (error: any) {
+    logger.error('Failed to submit cleanliness rating', { error: error.message, type, id });
+    throw error;
+  }
+}
+
+/**
+ * Hook: submit a cleanliness rating.
+ */
+export function useSubmitCleanlinessRating() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: submitCleanlinessRating,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.all });
+      queryClient.invalidateQueries({
+        queryKey: ['musollah', 'user-rating', variables.type, variables.id, variables.userId],
+      });
+    },
+  });
+}
+
+/**
+ * Hook: the signed-in user's existing rating for a location (to prefill the
+ * rate sheet). Returns null when unrated / signed out.
+ */
+export function useUserRating(
+  type: RatingTargetType,
+  id: string | null,
+  userId: string | null
+) {
+  return useQuery<UserRating | null>({
+    queryKey: ['musollah', 'user-rating', type, id, userId],
+    enabled: !!id && !!userId,
+    queryFn: async () => {
+      if (!id || !userId) return null;
+      const ref = doc(db, RATING_COLLECTION[type], id, 'ratings', userId);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) return null;
+      const data = snap.data();
+      return { rating: (data?.rating as number) ?? 0, note: (data?.note as string) ?? '' };
     },
   });
 }

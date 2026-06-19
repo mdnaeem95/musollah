@@ -1,26 +1,48 @@
 /**
- * Musollah Layout (MODERN DESIGN v2.0)
- * 
+ * Nearby Layout (MODERN DESIGN v2.0)
+ *
+ * Hosts the unified map-first discovery screen (Food / Musollah / Mosque /
+ * Bidet) plus the food restaurant detail + search routes.
+ *
  * Premium navigation layout with:
  * - Glassmorphism header
  * - Smooth animations
  * - Haptic feedback
- * 
- * @version 2.0
- * @updated December 2025
+ *
+ * @version 3.0
+ * @updated June 2026
  */
 
 import React from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { TouchableOpacity, Platform } from 'react-native';
+import { TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../context/ThemeContext';
 
-const MusollahLayout = () => {
+// Round back button reused by the full-screen search modal.
+export const CircleButton = ({ onPress }: { onPress: () => void }) => {
+  const { theme, isDarkMode } = useTheme();
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[styles.circleButton, {
+        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+      }]}
+    >
+      <FontAwesome6
+        name="arrow-left"
+        size={18}
+        color={isDarkMode ? 'rgba(255,255,255,0.80)' : theme.colors.text.primary}
+      />
+    </TouchableOpacity>
+  );
+};
+
+const NearbyLayout = () => {
   const { theme, isDarkMode } = useTheme();
   const router = useRouter();
 
@@ -90,18 +112,50 @@ const MusollahLayout = () => {
           animationDuration: 250,
         }}
       >
-        <Stack.Screen 
-          name="index" 
-          options={{ 
+        <Stack.Screen
+          name="index"
+          options={{
             headerShown: false,
             gestureEnabled: false, // Disable swipe back on main screen
-          }} 
+          }}
         />
-        
-        {/* Add other screens here as needed */}
+
+        {/* Restaurant detail (moved from the old Food tab) */}
+        <Stack.Screen
+          name="[id]"
+          options={{
+            headerShown: false,
+            headerTitle: '',
+            headerTransparent: true,
+            gestureEnabled: false,
+          }}
+        />
+
+        {/* Restaurant search modal (moved from the old Food tab) */}
+        <Stack.Screen
+          name="search"
+          options={{
+            presentation: 'fullScreenModal',
+            headerShown: true,
+            headerTitle: 'Search',
+            gestureEnabled: false,
+            headerLeft: () => <CircleButton onPress={() => router.back()} />,
+          }}
+        />
       </Stack>
     </GestureHandlerRootView>
   );
 };
 
-export default MusollahLayout;
+const styles = StyleSheet.create({
+  circleButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+  },
+});
+
+export default NearbyLayout;

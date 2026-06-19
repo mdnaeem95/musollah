@@ -36,27 +36,15 @@ const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
   // ✅ FIX: Validate URI before rendering
   const isValidUri = uri && uri.trim().length > 0 && uri !== 'undefined' && uri !== 'null';
 
-  // ✅ FIX: Show error state immediately for invalid URIs
-  if (!isValidUri) {
+  // Branded fallback: soft accent-tinted surface + accent icon (used for
+  // both invalid URIs and load errors) instead of a flat grey icon.
+  if (!isValidUri || hasError) {
     return (
-      <View style={[styles.container, style, { backgroundColor: theme.colors.secondary }]}>
-        <FontAwesome6 
-          name={fallbackIcon} 
-          size={48} 
-          color={theme.colors.text.muted} 
-        />
-      </View>
-    );
-  }
-
-  // Show error state
-  if (hasError) {
-    return (
-      <View style={[styles.container, style, { backgroundColor: theme.colors.secondary }]}>
-        <FontAwesome6 
-          name={fallbackIcon} 
-          size={48} 
-          color={theme.colors.text.muted} 
+      <View style={[styles.container, style, { backgroundColor: accent + '14' }]}>
+        <FontAwesome6
+          name={fallbackIcon}
+          size={32}
+          color={accent + '99'}
         />
       </View>
     );

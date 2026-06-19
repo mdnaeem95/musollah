@@ -89,18 +89,12 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
             <ProgressiveImage
               uri={restaurant.image}
               style={styles.image}
-              fallbackIcon="utensils"
+              fallbackIcon="bowl-food"
             />
             {restaurant.halal && (
               <View style={styles.muisBadge}>
                 <FontAwesome6 name="certificate" size={7} color="#fff" />
               </View>
-            )}
-            {hasRating && (
-              <BlurView intensity={30} tint="dark" style={styles.ratingPill}>
-                <FontAwesome6 name="star" size={9} color="#FFC107" solid />
-                <Text style={styles.ratingPillText}>{ratingValue}</Text>
-              </BlurView>
             )}
           </View>
 
@@ -140,6 +134,16 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
                     <Text style={[styles.statusText, { color: isOpenNow ? '#4CAF50' : '#FF6B6B' }]}>
                       {isOpenNow ? 'Open' : 'Closed'}
                     </Text>
+                  </View>
+                  <Text style={[styles.dot, { color: textMuted }]}>·</Text>
+                </>
+              )}
+
+              {hasRating && (
+                <>
+                  <View style={styles.ratingRow}>
+                    <FontAwesome6 name="star" size={11} color="#FFC107" solid />
+                    <Text style={[styles.ratingText, { color: textPrimary }]}>{ratingValue}</Text>
                   </View>
                   <Text style={[styles.dot, { color: textMuted }]}>·</Text>
                 </>
@@ -194,24 +198,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  ratingPill: {
-    position: 'absolute',
-    bottom: 4,
-    left: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  ratingPillText: {
-    fontSize: 11,
-    fontFamily: 'Outfit_600SemiBold',
-    color: '#fff',
   },
 
   // Content

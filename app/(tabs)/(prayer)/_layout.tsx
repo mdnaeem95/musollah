@@ -60,12 +60,6 @@ const PrayerLayout = () => {
         }}
       />
       <Stack.Screen
-        name="prayerDashboard/index"
-        options={{
-          title: 'Prayer Dashboard',
-        }}
-      />
-      <Stack.Screen
         name="khutbah/index"
         options={{
           title: '',

@@ -26,9 +26,19 @@ import { useTheme } from '../../../context/ThemeContext';
 import { createLogger } from '../../../services/logging/logger';
 import { formatTimeAgo, getStatusColor } from '../../../utils/musollah';
 import MusollahReportStatusSheet from './MusollahReportStatusSheet';
-import { MusollahLocation, useUpdateLocationStatus } from '../../../api/services/musollah';
+import RateLocationSheet from './RateLocationSheet';
+import {
+  MusollahLocation,
+  useUpdateLocationStatus,
+  useUserRating,
+  useSubmitCleanlinessRating,
+} from '../../../api/services/musollah';
+import { useAuthStore } from '../../../stores/useAuthStore';
+import SignInModal from '../../../components/SignInModal';
 import Toast from 'react-native-toast-message';
 import { enter } from '../../../utils';
+
+const STAR_COLOR = '#FFC107';
 
 // ============================================================================
 // CONSTANTS
@@ -319,11 +329,49 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
   const sheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['55%', '85%'], []);
   const [showReportSheet, setShowReportSheet] = useState(false);
+  const [showRateSheet, setShowRateSheet] = useState(false);
+  const [showSignIn, setShowSignIn] = useState(false);
   const [expandedDirections, setExpandedDirections] = useState(false);
   const [location, setLocation] = useState<MusollahLocation | null>(null);
 
+  const { user } = useAuthStore();
+
   // Mutation for updating location status
   const { mutate: updateStatus } = useUpdateLocationStatus();
+
+  // Cleanliness rating
+  const { data: userRating } = useUserRating('musollah', locationId, user?.uid ?? null);
+  const { mutate: submitRating, isPending: isRatingSubmitting } = useSubmitCleanlinessRating();
+
+  const ratingCount = location?.cleanlinessCount ?? 0;
+  const ratingAvg = ratingCount > 0 ? (location!.cleanlinessSum ?? 0) / ratingCount : 0;
+
+  const handleOpenRate = useCallback(() => {
+    if (!user) {
+      setShowSignIn(true);
+      return;
+    }
+    setShowRateSheet(true);
+  }, [user]);
+
+  const handleSubmitRating = useCallback(
+    (rating: number, note: string) => {
+      if (!user || !location) return;
+      submitRating(
+        { type: 'musollah', id: location.id, userId: user.uid, rating, note },
+        {
+          onSuccess: () => {
+            Toast.show({ type: 'success', text1: 'Thanks for rating!', text2: 'Your cleanliness rating helps the community.' });
+            setShowRateSheet(false);
+          },
+          onError: () => {
+            Toast.show({ type: 'error', text1: 'Could not submit', text2: 'Please try again later' });
+          },
+        }
+      );
+    },
+    [user, location, submitRating]
+  );
 
   // Handle status update from ReportStatusSheet
   const handleStatusUpdate = async (updates: {
@@ -387,6 +435,8 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
             coordinates: data.Coordinates || { latitude: 0, longitude: 0 },
             status: data.status || 'Unknown',
             lastUpdated: data.lastUpdated || null,
+            cleanlinessSum: data.cleanlinessSum || 0,
+            cleanlinessCount: data.cleanlinessCount || 0,
           };
           setLocation(normalized);
         }
@@ -492,6 +542,42 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
             theme={theme}
             isDarkMode={isDarkMode}
           />
+
+          {/* Cleanliness rating */}
+          <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={enter(0)}>
+            <TouchableOpacity activeOpacity={0.8} onPress={handleOpenRate}>
+              <BlurView
+                intensity={15}
+                tint={isDarkMode ? 'dark' : 'light'}
+                style={[styles.cleanlinessCard, {
+                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+                }]}
+              >
+                <View style={styles.cleanlinessLeft}>
+                  <FontAwesome6 name="star" size={18} solid color={STAR_COLOR} />
+                  {ratingCount > 0 ? (
+                    <Text style={[styles.cleanlinessValue, { color: theme.colors.text.primary }]}>
+                      {ratingAvg.toFixed(1)}
+                      <Text style={[styles.cleanlinessCount, { color: theme.colors.text.muted }]}>
+                        {`  ·  ${ratingCount} ${ratingCount === 1 ? 'rating' : 'ratings'}`}
+                      </Text>
+                    </Text>
+                  ) : (
+                    <Text style={[styles.cleanlinessCount, { color: theme.colors.text.secondary }]}>
+                      No cleanliness ratings yet
+                    </Text>
+                  )}
+                </View>
+                <View style={[styles.cleanlinessCta, { backgroundColor: theme.colors.accent + '15' }]}>
+                  <Text style={[styles.cleanlinessCtaText, { color: theme.colors.accent }]}>
+                    {userRating ? 'Edit' : 'Rate'}
+                  </Text>
+                </View>
+              </BlurView>
+            </TouchableOpacity>
+          </MotiView>
 
           {/* Amenities Section Header */}
           <MotiView
@@ -608,6 +694,20 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
         currentStatus={location.status || 'Unknown'}
         onStatusUpdate={handleStatusUpdate}
       />
+
+      {/* Cleanliness Rating Modal */}
+      <RateLocationSheet
+        visible={showRateSheet}
+        onClose={() => setShowRateSheet(false)}
+        locationName={location.building}
+        currentRating={userRating?.rating ?? 0}
+        currentNote={userRating?.note ?? ''}
+        isSubmitting={isRatingSubmitting}
+        onSubmit={handleSubmitRating}
+      />
+
+      {/* Sign-in prompt (rating needs an account) */}
+      <SignInModal visible={showSignIn} onClose={() => setShowSignIn(false)} />
     </>
   );
 }
@@ -687,6 +787,46 @@ const styles = StyleSheet.create({
   lastUpdated: {
     fontSize: 12,
     fontFamily: 'Outfit_400Regular',
+  },
+
+  // Cleanliness rating
+  cleanlinessCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 16,
+    marginBottom: SPACING.xl,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cleanlinessLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    flex: 1,
+  },
+  cleanlinessValue: {
+    fontSize: 16,
+    fontFamily: 'Outfit_700Bold',
+  },
+  cleanlinessCount: {
+    fontSize: 13,
+    fontFamily: 'Outfit_400Regular',
+  },
+  cleanlinessCta: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  cleanlinessCtaText: {
+    fontSize: 13,
+    fontFamily: 'Outfit_600SemiBold',
   },
 
   // Section Header

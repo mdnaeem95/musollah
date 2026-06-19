@@ -187,6 +187,7 @@ interface SkyState {
   moonVisible: boolean;
   moonX: number;
   moonY: number;
+  moonOpacity: number;
   // Stars
   starOpacity: number;
   // Horizon glow
@@ -217,6 +218,7 @@ function computeSkyState(
       moonVisible: true,
       moonX: SCREEN_WIDTH * 0.5,
       moonY: HORIZON_Y - ARC_HEIGHT * 0.85 * Math.sin(0.5 * Math.PI),
+      moonOpacity: 1,
       starOpacity: 1,
       sunriseGlow: 0,
       sunsetGlow: 0,
@@ -311,7 +313,11 @@ function computeSkyState(
   moonProgress = clamp01(moonProgress);
   // Right → left arc
   const moonX = SCREEN_WIDTH - moonProgress * SCREEN_WIDTH;
-  const moonY = HORIZON_Y - ARC_HEIGHT * 0.85 * Math.sin(moonProgress * Math.PI);
+  const moonAltitude = Math.sin(moonProgress * Math.PI); // 0 at horizon, 1 at zenith
+  const moonY = HORIZON_Y - ARC_HEIGHT * 0.85 * moonAltitude;
+  // Fade the moon out near the horizon — that's also where it clips at the
+  // screen edges during rise/set, so it never reads as a hard dot in the corner.
+  const moonOpacity = moonVisible ? clamp01(moonAltitude / 0.18) : 0;
 
   // ---- Star opacity ----
   let starOpacity = 0;
@@ -363,6 +369,7 @@ function computeSkyState(
     moonVisible,
     moonX,
     moonY,
+    moonOpacity,
     starOpacity,
     sunriseGlow,
     sunsetGlow,
@@ -538,8 +545,8 @@ export default function SkyBackground({ prayerTimes, children }: SkyBackgroundPr
         )}
 
         {/* ---- Moon (crescent via two overlapping circles) ---- */}
-        {sky.moonVisible && (
-          <G>
+        {sky.moonVisible && sky.moonOpacity > 0.01 && (
+          <G opacity={sky.moonOpacity}>
             {/* Outer atmospheric glow */}
             <Circle cx={sky.moonX} cy={sky.moonY} r={50} fill="url(#moonGlow)" />
             {/* Moon disc */}

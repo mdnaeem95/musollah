@@ -24,6 +24,7 @@ import Svg, { Circle as SvgCircle } from 'react-native-svg';
 
 // Hooks
 import { useTheme } from '../../../../context/ThemeContext';
+import { useAccent } from '../../../../hooks/useAccent';
 import { useAuth } from '../../../../stores/useAuthStore';
 import { useLocationStore } from '../../../../stores/useLocationStore';
 import { LOGGABLE_PRAYERS, useTodayPrayerTimes } from '../../../../api/services/prayer';
@@ -133,9 +134,16 @@ function canLogPrayer(prayerTime: string): boolean {
 
 const PrayersDashboard: React.FC = () => {
   const { theme, isDarkMode } = useTheme();
+  const { accent } = useAccent();
   const { userId } = useAuth();
   const { userLocation } = useLocationStore();
   const queryClient = useQueryClient();
+
+  // Shared glass surface — matches the Progress tab's card language.
+  const glass = {
+    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.9)',
+    borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+  };
 
   // Convert location to API format
   const location = useMemo(() => {
@@ -302,7 +310,7 @@ const PrayersDashboard: React.FC = () => {
 
   const gradientColors = isDarkMode
     ? (['#060B18', '#0C1428', '#080F1E'] as const)
-    : (['#EEF2FF', '#F0F4FF', '#EEF2FF'] as const);
+    : (['#EEF2FF', '#F0F4FF', '#E8EFFF'] as const);
 
   // Render loading state
   if (isLoadingLog || isLoadingWeekly) {
@@ -329,20 +337,17 @@ const PrayersDashboard: React.FC = () => {
         <MotiView {...enter(0)} style={styles.statsRow}>
           {/* Left card: Progress ring */}
           <BlurView
-            intensity={25}
+            intensity={isDarkMode ? 18 : 22}
             tint={isDarkMode ? 'dark' : 'light'}
             style={[
               styles.statsCardHalf,
-              {
-                backgroundColor: isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.85)',
-                borderColor: 'rgba(255,255,255,0.12)',
-              },
+              glass,
             ]}
           >
             <ProgressRing
               progress={completionStats.completed / 5}
               size={60}
-              color={theme.colors.accent}
+              color={accent}
               trackColor={isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}
             />
             <Text style={[styles.statsCardLarge, { color: theme.colors.text.primary }]}>
@@ -353,14 +358,11 @@ const PrayersDashboard: React.FC = () => {
 
           {/* Right card: Streak */}
           <BlurView
-            intensity={25}
+            intensity={isDarkMode ? 18 : 22}
             tint={isDarkMode ? 'dark' : 'light'}
             style={[
               styles.statsCardHalf,
-              {
-                backgroundColor: isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.85)',
-                borderColor: 'rgba(255,255,255,0.12)',
-              },
+              glass,
             ]}
           >
             <Text style={[styles.streakNumber, { color: theme.colors.text.primary }]}>
@@ -378,14 +380,11 @@ const PrayersDashboard: React.FC = () => {
         {/* Date Navigation */}
         <MotiView {...enter(1)} style={styles.headerSection}>
           <BlurView
-            intensity={25}
+            intensity={isDarkMode ? 18 : 22}
             tint={isDarkMode ? 'dark' : 'light'}
             style={[
               styles.dateCard,
-              {
-                backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.85)',
-                borderColor: 'rgba(255,255,255,0.12)',
-              },
+              glass,
             ]}
           >
             <TouchableOpacity
@@ -435,7 +434,7 @@ const PrayersDashboard: React.FC = () => {
             return (
               <MotiView key={prayer} {...enter(index + 2)}>
                 <BlurView
-                  intensity={25}
+                  intensity={isDarkMode ? 18 : 22}
                   tint={isDarkMode ? 'dark' : 'light'}
                   style={[
                     styles.prayerCard,
@@ -481,18 +480,15 @@ const PrayersDashboard: React.FC = () => {
         {/* Weekly Calendar */}
         <MotiView {...enter(7)}>
           <BlurView
-            intensity={25}
+            intensity={isDarkMode ? 18 : 22}
             tint={isDarkMode ? 'dark' : 'light'}
             style={[
               styles.calendarCard,
-              {
-                backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.85)',
-                borderColor: 'rgba(255,255,255,0.12)',
-              },
+              glass,
             ]}
           >
             <View style={styles.calendarHeader}>
-              <FontAwesome6 name="calendar-week" size={16} color={theme.colors.accent} />
+              <FontAwesome6 name="calendar-week" size={16} color={accent} />
               <Text style={[styles.calendarTitle, { color: theme.colors.text.primary }]}>
                 Weekly Calendar
               </Text>
@@ -504,7 +500,7 @@ const PrayersDashboard: React.FC = () => {
               {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
                 <View key={i} style={[styles.calendarDayCell]}>
                   {i === currentDayIndex ? (
-                    <View style={[styles.todayCircle, { backgroundColor: theme.colors.accent }]}>
+                    <View style={[styles.todayCircle, { backgroundColor: accent }]}>
                       <Text style={[styles.calendarDayText, { color: '#fff' }]}>{day}</Text>
                     </View>
                   ) : (
@@ -537,7 +533,7 @@ const PrayersDashboard: React.FC = () => {
                           styles.calendarDot,
                           {
                             backgroundColor: logged
-                              ? theme.colors.accent
+                              ? accent
                               : isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
                           },
                         ]}
@@ -585,16 +581,16 @@ const styles = StyleSheet.create({
   },
   statsCardHalf: {
     flex: 1,
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 18,
     alignItems: 'center',
     gap: 4,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: 10,
     elevation: 3,
   },
   statsCardLarge: {
@@ -621,15 +617,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     marginBottom: 20,
     borderWidth: 1,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
   },
   navButton: {
     width: 40,
@@ -661,15 +657,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     gap: 12,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
   },
   prayerIcon: {
     width: 48,
@@ -693,15 +689,15 @@ const styles = StyleSheet.create({
 
   // Calendar Card
   calendarCard: {
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 16,
     marginBottom: 16,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: 10,
     elevation: 3,
   },
   calendarHeader: {

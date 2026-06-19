@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { format } from 'date-fns';
 const ErrorBoundary = require('react-native-error-boundary').default;
 
 // Components
@@ -55,8 +56,10 @@ const PrayerTab: React.FC = () => {
     onActionComplete: modals.closeActionsModal,
   });
 
-  // Determine if we're viewing today or a specific date
-  const isToday = dateNavigation.formattedDate === new Date().toISOString().split('T')[0];
+  // Determine if we're viewing today or a specific date. Compare in LOCAL time
+  // (matching how formattedDate is built) — using UTC via toISOString() wrongly
+  // reads as "not today" between midnight and 8am SGT, hiding the next-prayer hero.
+  const isToday = dateNavigation.formattedDate === format(new Date(), 'yyyy-MM-dd');
 
   // Fetch prayer times using new API
   const todayQuery = useTodayPrayerTimes(coordinates);

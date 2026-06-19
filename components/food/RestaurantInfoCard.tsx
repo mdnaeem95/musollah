@@ -7,7 +7,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MotiView } from 'moti';
-import { AirbnbRating } from 'react-native-ratings';
+import { FontAwesome6 } from '@expo/vector-icons';
 
 import { useTheme } from '../../context/ThemeContext';
 import { useAccent } from '../../hooks/useAccent';
@@ -62,39 +62,26 @@ const RestaurantInfoCard: React.FC<RestaurantInfoCardProps> = ({
           ))}
         </View>
         
-        {/* Rating Row - FIXED BASELINE ALIGNMENT */}
-        {/* Rating Row - SINGLE LINE */}
+        {/* Rating Row — aggregated Google rating + favourite */}
         <View style={styles.ratingRow}>
-        {/* Left cluster: aggregated Google rating */}
-        <View style={styles.ratingLeft}>
-            {averageRating > 0 ? (
-              <>
-                <Text style={[styles.ratingNumber, { color: theme.colors.text.primary }]}>
-                  {averageRating.toFixed(1)}
-                </Text>
-
-                <AirbnbRating
-                  isDisabled
-                  showRating={false}
-                  defaultRating={averageRating}
-                  size={18}
-                  selectedColor="#FFD700"
-                  starContainerStyle={styles.starContainer}
-                />
-
-                <Text style={[styles.reviewCount, { color: theme.colors.text.muted }]}>
-                  Google
-                </Text>
-              </>
-            ) : (
-              <Text style={[styles.reviewCount, { color: theme.colors.text.muted }]}>
-                No rating yet
+          {averageRating > 0 ? (
+            <View style={styles.ratingChip}>
+              <FontAwesome6 name="star" size={12} color="#FFC107" solid />
+              <Text style={[styles.ratingNumber, { color: theme.colors.text.primary }]}>
+                {averageRating.toFixed(1)}
               </Text>
-            )}
-        </View>
+              <Text style={[styles.ratingSource, { color: theme.colors.text.muted }]}>
+                on Google
+              </Text>
+            </View>
+          ) : (
+            <Text style={[styles.reviewCount, { color: theme.colors.text.muted }]}>
+              No rating yet
+            </Text>
+          )}
 
-        {/* Right: Favorite */}
-        <FavoriteButton isFavorited={isFavorited} onToggle={onToggleFavorite} />
+          {/* Right: Favorite */}
+          <FavoriteButton isFavorited={isFavorited} onToggle={onToggleFavorite} />
         </View>
       </View>
     </MotiView>
@@ -138,32 +125,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  ratingContainer: {
-    flex: 1,
-    gap: 8,
-  },
-  starContainer: {
-    gap: 2,
-    justifyContent: 'flex-start',
-  },
-  ratingTextContainer: {
-    flexDirection: 'row',
-    alignItems: 'center', // Changed from 'baseline' to 'center'
-  },
-  ratingLeft: {
+  ratingChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexShrink: 1,
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,193,7,0.12)',
   },
   ratingNumber: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Outfit_700Bold',
-    lineHeight: 20, // Added explicit lineHeight
+    lineHeight: 18,
+  },
+  ratingSource: {
+    fontSize: 13,
+    fontFamily: 'Outfit_500Medium',
+    lineHeight: 18,
   },
   reviewCount: {
     fontSize: 14,
     fontFamily: 'Outfit_400Regular',
-    lineHeight: 20, // Added explicit lineHeight to match
+    lineHeight: 20,
   },
 });
 

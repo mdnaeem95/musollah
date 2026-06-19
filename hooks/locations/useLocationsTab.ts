@@ -35,7 +35,12 @@ const logger = createLogger('Locations Tab');
 // ============================================================================
 
 export type { LocationUnion };
-export type LocationType = 'bidet' | 'musollah' | 'mosque';
+// 'all' + 'food' are handled by the screen — this hook returns no facility
+// locations for them, but owns the shared selected-layer index.
+export type LocationType = 'all' | 'food' | 'bidet' | 'musollah' | 'mosque';
+
+// Segmented-control order. MUST match LOCATION_TYPES in the Nearby screen.
+const INDEX_TO_TYPE: LocationType[] = ['all', 'food', 'musollah', 'mosque', 'bidet'];
 
 export interface UseLocationsTabReturn {
   // State
@@ -43,6 +48,7 @@ export interface UseLocationsTabReturn {
   searchQuery: string;
   filteredLocations: LocationUnion[];
   currentLocations: LocationUnion[];
+  allFacilities: LocationUnion[];
   region: Region | undefined;
   selectedLocation: LocationUnion | null;
   isSheetVisible: boolean;
@@ -68,6 +74,8 @@ export interface UseLocationsTabReturn {
 // ============================================================================
 
 const LOCATION_TYPE_NAMES: Record<LocationType, string> = {
+  all: 'All',
+  food: 'Food',
   bidet: 'Bidets',
   musollah: 'Musollahs',
   mosque: 'Mosques',
@@ -168,20 +176,22 @@ export function useLocationsTab(userLocation: LocationObject | null): UseLocatio
     [data?.musollahLocations]
   );
   
-  const mosqueLocations = useMemo(() => 
-    data?.mosqueLocations ?? [], 
+  const mosqueLocations = useMemo(() =>
+    data?.mosqueLocations ?? [],
     [data?.mosqueLocations]
   );
 
+  // Every facility in one list (for the "All" layer's combined map + list).
+  const allFacilities = useMemo<LocationUnion[]>(
+    () => [...musollahLocations, ...mosqueLocations, ...bidetLocations],
+    [musollahLocations, mosqueLocations, bidetLocations]
+  );
+
   // Current location type
-  const locationType = useMemo<LocationType>(() => {
-    switch (selectedIndex) {
-      case 0: return 'bidet';
-      case 1: return 'musollah';
-      case 2: return 'mosque';
-      default: return 'bidet';
-    }
-  }, [selectedIndex]);
+  const locationType = useMemo<LocationType>(
+    () => INDEX_TO_TYPE[selectedIndex] ?? 'food',
+    [selectedIndex]
+  );
 
   // ✅ Log tab changes
   useEffect(() => {
@@ -197,11 +207,11 @@ export function useLocationsTab(userLocation: LocationObject | null): UseLocatio
     logger.time('get-current-locations');
     
     let locations: LocationUnion[];
-    switch (selectedIndex) {
-      case 0: locations = bidetLocations; break;
-      case 1: locations = musollahLocations; break;
-      case 2: locations = mosqueLocations; break;
-      default: locations = [];
+    switch (locationType) {
+      case 'bidet': locations = bidetLocations; break;
+      case 'musollah': locations = musollahLocations; break;
+      case 'mosque': locations = mosqueLocations; break;
+      default: locations = []; // 'food' handled by the screen
     }
 
     logger.timeEnd('get-current-locations');
@@ -335,6 +345,7 @@ export function useLocationsTab(userLocation: LocationObject | null): UseLocatio
     searchQuery,
     filteredLocations,
     currentLocations,
+    allFacilities,
     region,
     selectedLocation,
     isSheetVisible,

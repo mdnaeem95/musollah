@@ -173,6 +173,18 @@ export function useFoodTab() {
     };
   }, [userCoords]);
 
+  // Per-category restaurant counts from the FULL (unfiltered) list, so chip
+  // counts stay stable when a category is selected.
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const r of restaurants) {
+      for (const c of r.categories ?? []) {
+        counts[c] = (counts[c] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [restaurants]);
+
   // Filtered restaurants by selected categories
   const filteredRestaurants = useMemo(() => {
     if (selectedCategories.length === 0) {
@@ -265,6 +277,7 @@ export function useFoodTab() {
     restaurants: filteredRestaurants,
     recommendedRestaurants,
     categories,
+    categoryCounts,
     selectedCategories,
     region,
     userCoords,
