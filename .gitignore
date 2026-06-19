@@ -99,3 +99,6 @@ android/
 .env.local
 
 .env.local
+
+# Du'a seed backups (generated)
+scripts/duas/backups/
