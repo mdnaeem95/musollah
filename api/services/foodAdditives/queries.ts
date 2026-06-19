@@ -11,7 +11,7 @@
 import { db } from "../../client/firebase";
 import { logger } from '../../../services/logging/logger';
 import { collection, getDocs, limit, query, where, type FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
-import { FoodAdditive } from "../../../functions/src/types";
+import { FoodAdditive } from "../../../utils/types";
 
 const COLLECTION = "foodAdditives";
 

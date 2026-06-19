@@ -6,7 +6,17 @@
  */
 
 export type { Doa } from '../../api/services/duas';
-export type { FoodAdditive } from '../../functions/src/types';
+
+/** Halal food additive (E-number). App-local copy of the shape the Cloud
+ *  Function writes — kept here so the app never typechecks `functions/` code. */
+export interface FoodAdditive {
+  id: string;
+  eCode: string;
+  category: string;
+  chemicalName: string;
+  description: string;
+  status: string;
+}
 
 /** UI-facing surah shape used by the surah list + item (distinct from the
  *  quran service's `Surah`, which stores the Arabic under `name`). */

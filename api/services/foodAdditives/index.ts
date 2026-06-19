@@ -9,7 +9,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchFoodAdditives, fetchFoodAdditiveByECode, fetchFoodAdditivesByStatus, fetchFoodAdditivesByCategory } from './queries';
-import { FoodAdditive } from "../../../functions/src/types";
+import { FoodAdditive } from "../../../utils/types";
 import { cache, TTL } from '../../client/storage';
 import { logger } from '../../../services/logging/logger';
 
