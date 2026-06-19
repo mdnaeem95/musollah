@@ -41,6 +41,7 @@ import { MushafPlayingProvider } from '../../../../context/MushafPlayingContext'
 import { FloatingPlayer } from '../../../../components/quran/FloatingPlayer';
 import MushafPage from '../../../../components/quran/MushafPage';
 import SettingsModal from '../../../../components/quran/SettingsModal';
+import HifzSheet from '../../../../components/quran/HifzSheet';
 import { useMushafPage } from '../../../../hooks/quran/useMushafPage';
 import { enter } from '../../../../utils';
 import { defaultStorage } from '../../../../api/client/storage';
@@ -188,6 +189,13 @@ const SurahDetailScreen = () => {
     setSettingsVisible((v) => !v);
   }, []);
 
+  // --- hifz (memorization) sheet
+  const [isHifzVisible, setHifzVisible] = useState(false);
+  const toggleHifz = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setHifzVisible((v) => !v);
+  }, []);
+
   // --- mark all ayahs in the current surah as read
   const handleMarkAllRead = useCallback(() => {
     if (!surah) return;
@@ -234,6 +242,12 @@ const SurahDetailScreen = () => {
             />
           </TouchableOpacity>
           <TouchableOpacity
+            onPress={toggleHifz}
+            style={[styles.headerButton, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)' }]}
+          >
+            <FontAwesome6 name="brain" size={16} color={theme.colors.text.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={toggleSettings}
             style={[styles.headerButton, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)' }]}
           >
@@ -245,7 +259,7 @@ const SurahDetailScreen = () => {
   }, [
     navigation, surah, isPickerVisible, showTranslation, isDarkMode,
     theme.colors.text.primary, theme.colors.text.secondary, theme.colors.accent,
-    togglePickerVisibility, toggleTranslation, toggleSettings,
+    togglePickerVisibility, toggleTranslation, toggleSettings, toggleHifz,
   ]);
 
   // --- progress card
@@ -455,6 +469,9 @@ const SurahDetailScreen = () => {
         activeTheme={theme}
         showReciter={true}
       />
+
+      {/* Memorization (hifz) controls */}
+      <HifzSheet visible={isHifzVisible} onClose={toggleHifz} />
     </LinearGradient>
   );
 };

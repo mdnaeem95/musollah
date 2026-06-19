@@ -11,9 +11,10 @@
  * @since 2025-12-24
  */
 
-import { useEffect, useState, useCallback } from 'react';
-import TrackPlayer, { Event, Track, type PlaybackTrackChangedEvent } from 'react-native-track-player';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import TrackPlayer, { Event, RepeatMode, Track, type PlaybackTrackChangedEvent } from 'react-native-track-player';
 import { useQuranStore } from '../../stores/useQuranStore';
+import { useHifzStore, REPEAT_INFINITE } from '../../stores/useHifzStore';
 import { reciterOptions } from '../../utils/constants';
 
 // ✅ Import structured logging
@@ -63,6 +64,13 @@ export function useQuranAudioPlayer({
   const [isReady, setIsReady] = useState(false);
 
   const { setLastListenedAyah } = useQuranStore();
+
+  // Hifz (memorization) settings
+  const playbackRate = useHifzStore((s) => s.playbackRate);
+  const repeatEachAyah = useHifzStore((s) => s.repeatEachAyah);
+  // Repeat-each-ayah bookkeeping
+  const repeatCountRef = useRef(0);
+  const skipBackRef = useRef(false);
 
   // ✅ Log hook initialization
   useEffect(() => {
@@ -174,50 +182,85 @@ export function useQuranAudioPlayer({
   }, [enabled, isPlayerSetup, audioLinks, generateTracks, surahNumber, surahName]);
 
   /**
-   * Track playback changes
+   * Hifz: apply playback speed. Re-applied on ready + rate change (and after
+   * track setup, which can reset the rate).
+   */
+  useEffect(() => {
+    if (!isReady) return;
+    TrackPlayer.setRate(playbackRate).catch((e) =>
+      logger.warn('Failed to set playback rate', { error: String(e) })
+    );
+  }, [playbackRate, isReady]);
+
+  /**
+   * Hifz: ∞ repeat loops the current ayah (RepeatMode.Track); finite repeat is
+   * handled by the skip-back counter below, so it needs RepeatMode.Off.
+   */
+  useEffect(() => {
+    if (!isReady) return;
+    TrackPlayer.setRepeatMode(
+      repeatEachAyah === REPEAT_INFINITE ? RepeatMode.Track : RepeatMode.Off
+    ).catch(() => {});
+  }, [repeatEachAyah, isReady]);
+
+  /**
+   * Track playback changes (+ finite repeat-each-ayah for memorization)
    */
   useEffect(() => {
     if (!enabled || !isPlayerSetup) return;
 
     logger.debug('Setting up track change listener', { surahNumber });
 
+    const updateLastListened = async (index: number) => {
+      const queue = await TrackPlayer.getQueue();
+      const activeTrack = queue[index];
+      if (activeTrack?.id) {
+        const [, ayahStr] = activeTrack.id.split('-');
+        const ayahNumber = parseInt(ayahStr, 10);
+        if (!Number.isNaN(ayahNumber)) setLastListenedAyah(surahNumber, ayahNumber);
+      }
+    };
+
     const onTrackChange = TrackPlayer.addEventListener(
       Event.PlaybackTrackChanged,
-      async ({ nextTrack }: PlaybackTrackChangedEvent) => {
+      async ({ track: prevIndex, nextTrack }: PlaybackTrackChangedEvent) => {
         if (nextTrack == null) {
           logger.debug('Track changed to null (playback stopped)');
           return;
         }
 
-        logger.info('Ayah changed', {
-          ayahIndex: nextTrack,
-          ayahNumber: nextTrack + 1,
-          surahNumber,
-        });
-
-        setCurrentAyahIndex(nextTrack);
-
-        // Update last listened ayah
-        const queue = await TrackPlayer.getQueue();
-        const activeTrack = queue[nextTrack];
-
-        if (activeTrack?.id) {
-          const [, ayahStr] = activeTrack.id.split('-');
-          const ayahNumber = parseInt(ayahStr, 10);
-          
-          if (!Number.isNaN(ayahNumber)) {
-            logger.debug('Updating last listened ayah', {
-              surahNumber,
-              ayahNumber,
-            });
-            setLastListenedAyah(surahNumber, ayahNumber);
-          } else {
-            logger.warn('Invalid ayah number from track ID', {
-              trackId: activeTrack.id,
-              ayahStr,
-            });
-          }
+        // This change was our own skip-back to repeat an ayah — consume it.
+        if (skipBackRef.current) {
+          skipBackRef.current = false;
+          setCurrentAyahIndex(nextTrack);
+          updateLastListened(nextTrack);
+          return;
         }
+
+        const repeat = useHifzStore.getState().repeatEachAyah;
+
+        // Finite repeat: replay the just-finished ayah until it's played `repeat` times.
+        if (repeat > 1 && prevIndex != null && nextTrack === prevIndex + 1) {
+          repeatCountRef.current += 1;
+          if (repeatCountRef.current < repeat) {
+            skipBackRef.current = true;
+            try {
+              await TrackPlayer.skip(prevIndex);
+              await TrackPlayer.play();
+            } catch (e) {
+              logger.warn('Repeat skip-back failed', { error: String(e) });
+            }
+            return; // stay on the same ayah
+          }
+          repeatCountRef.current = 0; // hit the target — advance normally
+        } else if (prevIndex == null || nextTrack !== prevIndex + 1) {
+          // Manual skip / seek — reset the repeat counter for the new ayah.
+          repeatCountRef.current = 0;
+        }
+
+        logger.info('Ayah changed', { ayahIndex: nextTrack, surahNumber });
+        setCurrentAyahIndex(nextTrack);
+        updateLastListened(nextTrack);
       }
     );
 

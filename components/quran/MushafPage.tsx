@@ -6,7 +6,7 @@
  * handled naturally — a surah header is shown whenever a new surah begins.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,12 @@ import {
   ActivityIndicator,
   StyleSheet,
   Platform,
+  Pressable,
 } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useMushafPage } from '../../hooks/quran/useMushafPage';
 import { useMushafPlaying } from '../../context/MushafPlayingContext';
+import { useHifzStore } from '../../stores/useHifzStore';
 import type { MushafAyah } from '../../api/services/quran/mushafPage';
 
 // ============================================================================
@@ -189,6 +191,12 @@ const MushafPage = ({
 }: MushafPageProps) => {
   const { data, isLoading, error } = useMushafPage(pageNumber);
 
+  // Hifz test mode — hide the page until tapped, to practise recall.
+  const testMode = useHifzStore((s) => s.testMode);
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => { setRevealed(false); }, [testMode]);
+  const hidden = testMode && !revealed;
+
   const theme: Theme = useMemo(() => ({
     accent: accentColor,
     textPrimary,
@@ -218,6 +226,7 @@ const MushafPage = ({
   const surahGroups = groupBySurah(data.ayahs);
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={styles.content}
@@ -262,6 +271,21 @@ const MushafPage = ({
         );
       })}
     </ScrollView>
+
+      {/* Test mode: cover the page until tapped */}
+      {hidden && (
+        <Pressable
+          onPress={() => setRevealed(true)}
+          style={[StyleSheet.absoluteFill, styles.testOverlay, { backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF' }]}
+        >
+          <View style={[styles.testCard, { backgroundColor: accentColor + '14', borderColor: accentColor + '40' }]}>
+            <FontAwesome6 name="eye-slash" size={30} color={accentColor} />
+            <Text style={[styles.testTitle, { color: textPrimary }]}>Recite from memory</Text>
+            <Text style={[styles.testHint, { color: textSecondary }]}>Tap anywhere to reveal & check</Text>
+          </View>
+        </Pressable>
+      )}
+    </View>
   );
 };
 
@@ -314,6 +338,29 @@ const styles = StyleSheet.create({
   },
   surahGroup: {
     marginBottom: 12,
+  },
+  testOverlay: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  testCard: {
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 28,
+    paddingHorizontal: 32,
+    borderRadius: 20,
+    borderWidth: 1.5,
+  },
+  testTitle: {
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 18,
+    marginTop: 4,
+  },
+  testHint: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    textAlign: 'center',
   },
 });
 
