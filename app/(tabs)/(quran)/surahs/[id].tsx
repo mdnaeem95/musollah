@@ -54,9 +54,10 @@ import { SURAH_START_PAGES, TOTAL_MUSHAF_PAGES } from '../../../../constants/qur
 const SurahDetailScreen = () => {
   const navigation = useNavigation();
 
-  const { id, ayahIndex } = useLocalSearchParams<{
+  const { id, ayahIndex, autoplay } = useLocalSearchParams<{
     id: string;
     ayahIndex?: string;
+    autoplay?: string;
   }>();
 
   // surahNumber from route = where we entered; used only for the initial page
@@ -91,6 +92,7 @@ const SurahDetailScreen = () => {
     isLoading,
     error,
     currentAyahIndex,
+    audioReady,
     isPickerVisible,
     selectedSurah,
     readAyahsCount,
@@ -112,6 +114,15 @@ const SurahDetailScreen = () => {
       }
     }
   }, [routeSurahNumber]);
+
+  // --- "Listen" entry: auto-start playback once the audio is ready
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (autoplay === '1' && audioReady && !autoStartedRef.current) {
+      autoStartedRef.current = true;
+      TrackPlayer.play().catch(() => {});
+    }
+  }, [autoplay, audioReady]);
 
   // --- fetch current page data to know which ayah starts this page
   const { data: currentPageData } = useMushafPage(currentPage);

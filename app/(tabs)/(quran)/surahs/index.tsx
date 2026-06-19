@@ -1,6 +1,6 @@
 import { View, TextInput, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,6 +30,12 @@ const Surahs = () => {
   const { theme, isDarkMode } = useTheme();
   const styles = createStyles(theme);
   const router = useRouter();
+
+  // "Listen" entry (from the Quran home) opens surahs with autoplay; "Read" doesn't.
+  const { mode: navMode } = useLocalSearchParams<{ mode?: string }>();
+  const listenMode = navMode === 'listen';
+  const openSurah = (surahNumber: number) =>
+    router.push(listenMode ? `/surahs/${surahNumber}?autoplay=1` : `/surahs/${surahNumber}`);
 
   // TanStack Query for surahs
   const { data: surahs = [], isLoading } = useSurahs();
@@ -194,6 +200,20 @@ const Surahs = () => {
         </BlurView>
       </View>
 
+      {/* Listen-mode hint */}
+      {listenMode && (
+        <View style={{
+          flexDirection: 'row', alignItems: 'center', gap: 8,
+          marginHorizontal: 4, marginBottom: 8, paddingHorizontal: 12, paddingVertical: 8,
+          borderRadius: 10, backgroundColor: theme.colors.accent + '18',
+        }}>
+          <FontAwesome6 name="headphones" size={13} color={theme.colors.accent} />
+          <Text style={{ color: theme.colors.accent, fontFamily: 'Outfit_500Medium', fontSize: 13 }}>
+            Listen mode · tap a surah to play
+          </Text>
+        </View>
+      )}
+
       {/* Surah List or Juz List */}
       {mode === 'surah' ? (
         <FlashList
@@ -202,7 +222,7 @@ const Surahs = () => {
             <SurahItem
               index={index}
               surah={item}
-              onPress={(s) => router.push(`/surahs/${s.number}`)}
+              onPress={(s) => openSurah(s.number)}
               readCount={readAyahsMap[item.number] || 0}
             />
           )}
@@ -221,7 +241,7 @@ const Surahs = () => {
               end={item.end}
               readCount={juzProgressMap[item.number]?.read || 0}
               totalAyahs={juzProgressMap[item.number]?.total || calculateTotalAyahs(item)}
-              onPress={() => router.push(`/surahs/${item.start.surah}`)}
+              onPress={() => openSurah(item.start.surah)}
             />
           )}
           keyExtractor={(item) => `juz-${item.number}`}

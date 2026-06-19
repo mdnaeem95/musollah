@@ -56,6 +56,7 @@ interface UseSurahDetailPageReturn {
 
   // State
   currentAyahIndex: number;
+  audioReady: boolean;
   isPickerVisible: boolean;
   selectedSurah: number;
   readAyahsCount: number;
@@ -173,7 +174,7 @@ export function useSurahDetailPage({
   }, [data]);
 
   // Audio player
-  const { currentAyahIndex } = useQuranAudioPlayer({
+  const { currentAyahIndex, isReady: audioReady } = useQuranAudioPlayer({
     surahNumber,
     surahName: surah?.englishName || '',
     audioLinks: surah?.audioLinks || [],
@@ -375,6 +376,7 @@ export function useSurahDetailPage({
 
     // State
     currentAyahIndex,
+    audioReady,
     isPickerVisible,
     selectedSurah,
     readAyahsCount,
