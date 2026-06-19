@@ -37,7 +37,10 @@ private func prayerSymbol(_ name: String) -> String {
   }
 }
 
-private let accent = Color(red: 0.13, green: 0.77, blue: 0.49) // app green
+private let accent = Color(red: 0.24, green: 0.92, blue: 0.59) // bright mint — high contrast on dark
+private let cardBackground = Color(red: 0.04, green: 0.06, blue: 0.12) // near-opaque dark navy
+private let textPrimary = Color.white
+private let textSecondary = Color.white.opacity(0.7)
 
 private func targetDate(_ state: PrayerLiveActivityAttributes.ContentState) -> Date {
   Date(timeIntervalSince1970: state.prayerTimeEpoch)
@@ -61,7 +64,7 @@ struct WidgetLiveActivity: Widget {
       // Lock screen / banner
       HStack(spacing: 14) {
         ZStack {
-          Circle().fill(accent.opacity(0.18)).frame(width: 44, height: 44)
+          Circle().fill(accent.opacity(0.22)).frame(width: 44, height: 44)
           Image(systemName: prayerSymbol(context.state.nextPrayer))
             .font(.system(size: 20, weight: .semibold))
             .foregroundColor(accent)
@@ -69,28 +72,29 @@ struct WidgetLiveActivity: Widget {
 
         VStack(alignment: .leading, spacing: 2) {
           Text("NEXT PRAYER")
-            .font(.system(size: 11, weight: .medium))
-            .foregroundColor(.secondary)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundColor(textSecondary)
           Text(context.state.nextPrayer)
             .font(.system(size: 20, weight: .bold))
-            .foregroundColor(.primary)
+            .foregroundColor(textPrimary)
         }
 
-        Spacer()
+        Spacer(minLength: 8)
 
         VStack(alignment: .trailing, spacing: 2) {
           countdownText(context.state)
             .font(.system(size: 22, weight: .bold, design: .rounded))
             .monospacedDigit()
             .foregroundColor(accent)
-            .multilineTextAlignment(.trailing)
+            .lineLimit(1)
+            .fixedSize()
           Text(context.state.clockLabel)
-            .font(.system(size: 12))
-            .foregroundColor(.secondary)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(textSecondary)
         }
       }
       .padding(16)
-      .activityBackgroundTint(Color.black.opacity(0.5))
+      .activityBackgroundTint(cardBackground)
       .activitySystemActionForegroundColor(accent)
 
     } dynamicIsland: { context in
@@ -101,6 +105,7 @@ struct WidgetLiveActivity: Widget {
               .foregroundColor(accent)
             Text(context.state.nextPrayer)
               .font(.system(size: 15, weight: .semibold))
+              .foregroundColor(textPrimary)
           }
         }
         DynamicIslandExpandedRegion(.trailing) {
@@ -108,12 +113,13 @@ struct WidgetLiveActivity: Widget {
             .font(.system(size: 15, weight: .bold, design: .rounded))
             .monospacedDigit()
             .foregroundColor(accent)
-            .frame(maxWidth: 90, alignment: .trailing)
+            .lineLimit(1)
+            .fixedSize()
         }
         DynamicIslandExpandedRegion(.bottom) {
           Text("at \(context.state.clockLabel)")
-            .font(.system(size: 12))
-            .foregroundColor(.secondary)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(textSecondary)
         }
       } compactLeading: {
         Image(systemName: prayerSymbol(context.state.nextPrayer))
@@ -122,7 +128,8 @@ struct WidgetLiveActivity: Widget {
         countdownText(context.state)
           .monospacedDigit()
           .foregroundColor(accent)
-          .frame(maxWidth: 60)
+          .lineLimit(1)
+          .fixedSize()
       } minimal: {
         Image(systemName: prayerSymbol(context.state.nextPrayer))
           .foregroundColor(accent)
