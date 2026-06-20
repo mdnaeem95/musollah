@@ -31,11 +31,12 @@ const Surahs = () => {
   const styles = createStyles(theme);
   const router = useRouter();
 
-  // "Listen" entry (from the Quran home) opens surahs with autoplay; "Read" doesn't.
+  // "Listen" entry (from the Quran home) opens the dedicated audio player;
+  // "Read" opens the Mushaf reader.
   const { mode: navMode } = useLocalSearchParams<{ mode?: string }>();
   const listenMode = navMode === 'listen';
   const openSurah = (surahNumber: number) =>
-    router.push(listenMode ? `/surahs/${surahNumber}?autoplay=1` : `/surahs/${surahNumber}`);
+    router.push(listenMode ? `/listen/${surahNumber}` : `/surahs/${surahNumber}`);
 
   // TanStack Query for surahs
   const { data: surahs = [], isLoading } = useSurahs();

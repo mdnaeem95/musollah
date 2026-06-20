@@ -171,6 +171,26 @@ const QuranLayout = () => {
         }}
       />
 
+      {/* Listen — dedicated audio player */}
+      <Stack.Screen
+        name="listen/[id]"
+        options={{
+          headerShown: true,
+          headerTitle: 'Now Playing',
+          headerTitleStyle: {
+            fontFamily: 'Outfit_700Bold',
+            fontSize: 20,
+            color: theme.colors.text.primary,
+          },
+          headerStyle: {
+            backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
+          },
+          headerShadowVisible: false,
+          headerBackground: () => <AccentHeaderBackground backgroundColor={headerBg} />,
+          headerLeft: () => <BackButton />,
+        }}
+      />
+
       {/* Recitation Plan Screen */}
       <Stack.Screen
         name="recitationPlan/index"

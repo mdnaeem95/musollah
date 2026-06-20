@@ -26,6 +26,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import DailyAyah from '../../../components/quran/DailyAyah';
 import RecitationProgress from '../../../components/quran/RecitationProgress';
 import { useTheme } from '../../../context/ThemeContext';
+import { useAccent } from '../../../hooks/useAccent';
 import { getLastReadAyah, getLastListenedAyah } from '../../../utils/quran/storage';
 import { useQuranStore, useReadingStreak } from '../../../stores/useQuranStore';
 import { useSurahs } from '../../../api/services/quran';
@@ -35,6 +36,7 @@ const { width } = Dimensions.get('window');
 
 const StreakCard = () => {
   const { theme, isDarkMode } = useTheme();
+  const { accent } = useAccent();
   const { currentStreak, longestStreak, todayCount, totalCount } = useReadingStreak();
 
   const stats = [
@@ -65,7 +67,7 @@ const StreakCard = () => {
             <FontAwesome6
               name={stat.icon}
               size={14}
-              color={theme.colors.accent}
+              color={accent}
               solid
             />
             <Text style={[streakStyles.statValue, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
@@ -111,6 +113,7 @@ const streakStyles = StyleSheet.create({
 
 const QuranDashboard = () => {
   const { theme, isDarkMode } = useTheme();
+  const { accent } = useAccent();
   const router = useRouter();
   
   const [lastReadAyah, setLastReadAyah] = useState({ ayahNumber: 0, surahNumber: 0 });
@@ -260,8 +263,8 @@ const QuranDashboard = () => {
               <Text style={[styles.searchEntryText, { color: isDarkMode ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.30)' }]}>
                 Search 6,236 ayahs...
               </Text>
-              <View style={[styles.searchEntryBadge, { backgroundColor: theme.colors.accent + '18' }]}>
-                <FontAwesome6 name="book-quran" size={11} color={theme.colors.accent} />
+              <View style={[styles.searchEntryBadge, { backgroundColor: accent + '18' }]}>
+                <FontAwesome6 name="book-quran" size={11} color={accent} />
               </View>
             </BlurView>
           </TouchableOpacity>
@@ -296,13 +299,13 @@ const QuranDashboard = () => {
                   <View
                     style={[
                       styles.mainActionIcon,
-                      { backgroundColor: theme.colors.accent + '15' },
+                      { backgroundColor: accent + '15' },
                     ]}
                   >
                     <FontAwesome6
                       name={action.icon}
                       size={28}
-                      color={theme.colors.accent}
+                      color={accent}
                       solid
                     />
                   </View>
@@ -328,7 +331,7 @@ const QuranDashboard = () => {
             <FontAwesome6
               name="star-and-crescent"
               size={16}
-              color={theme.colors.accent}
+              color={accent}
             />
             <Text style={[styles.sectionTitle, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
               Daily Ayah
@@ -347,7 +350,7 @@ const QuranDashboard = () => {
             <FontAwesome6
               name="chart-line"
               size={16}
-              color={theme.colors.accent}
+              color={accent}
             />
             <Text style={[styles.sectionTitle, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
               Your Progress
@@ -360,108 +363,46 @@ const QuranDashboard = () => {
           <RecitationProgress />
         </MotiView>
 
-        {/* Last Listened */}
-        {lastListenedAyah.surahNumber > 0 && (
+        {/* Jump back in — unified continue (read + listen) */}
+        {(lastReadAyah.surahNumber > 0 || lastListenedAyah.surahNumber > 0) && (
           <MotiView
             from={{ opacity: 0, translateY: 20 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={enter(0)}
           >
-            <TouchableOpacity
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push({
-                  pathname: `/surahs/${lastListenedAyah.surahNumber}`,
-                  params: { ayahIndex: lastListenedAyah.ayahIndex },
-                });
-              }}
-              activeOpacity={0.8}
-            >
-              <BlurView
-                intensity={20}
-                tint={isDarkMode ? 'dark' : 'light'}
-                style={[
-                  styles.continueCard,
-                  {
-                    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
-                    borderWidth: 1,
-                    borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
-                  },
-                ]}
-              >
-                <View style={styles.continueCardHeader}>
-                  <View
-                    style={[
-                      styles.continueIcon,
-                      { backgroundColor: theme.colors.accent + '15' },
-                    ]}
-                  >
-                    <FontAwesome6
-                      name="headphones"
-                      size={20}
-                      color={theme.colors.accent}
-                    />
-                  </View>
-                  <View style={styles.continueTextContainer}>
-                    <Text style={[styles.continueLabel, { color: isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary }]}>
-                      Continue Listening
-                    </Text>
-                    <Text style={[styles.continueText, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
-                      {getSurahName(lastListenedAyah.surahNumber)} · Ayah {lastListenedAyah.ayahIndex}
-                    </Text>
-                  </View>
-                  <FontAwesome6
-                    name="chevron-right"
-                    size={16}
-                    color={theme.colors.text.muted}
-                  />
-                </View>
-              </BlurView>
-            </TouchableOpacity>
-          </MotiView>
-        )}
+            <View style={styles.sectionHeader}>
+              <FontAwesome6 name="clock-rotate-left" size={16} color={accent} />
+              <Text style={[styles.sectionTitle, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
+                Jump back in
+              </Text>
+            </View>
 
-        {/* Last Read */}
-        {lastReadAyah.surahNumber > 0 && (
-          <MotiView
-            from={{ opacity: 0, translateY: 20 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition={enter(0)}
-          >
-            <TouchableOpacity
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push({
-                  pathname: `/surahs/${lastReadAyah.surahNumber}`,
-                  params: { ayahIndex: lastReadAyah.ayahNumber },
-                });
-              }}
-              activeOpacity={0.8}
+            <BlurView
+              intensity={20}
+              tint={isDarkMode ? 'dark' : 'light'}
+              style={[
+                styles.continueCard,
+                {
+                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+                },
+              ]}
             >
-              <BlurView
-                intensity={20}
-                tint={isDarkMode ? 'dark' : 'light'}
-                style={[
-                  styles.continueCard,
-                  {
-                    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
-                    borderWidth: 1,
-                    borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
-                  },
-                ]}
-              >
-                <View style={styles.continueCardHeader}>
-                  <View
-                    style={[
-                      styles.continueIcon,
-                      { backgroundColor: theme.colors.accent + '15' },
-                    ]}
-                  >
-                    <FontAwesome6
-                      name="book-open"
-                      size={20}
-                      color={theme.colors.accent}
-                    />
+              {lastReadAyah.surahNumber > 0 && (
+                <TouchableOpacity
+                  style={styles.jumpRow}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push({
+                      pathname: `/surahs/${lastReadAyah.surahNumber}`,
+                      params: { ayahIndex: lastReadAyah.ayahNumber },
+                    });
+                  }}
+                >
+                  <View style={[styles.jumpIcon, { backgroundColor: accent + '15' }]}>
+                    <FontAwesome6 name="book-open" size={16} color={accent} />
                   </View>
                   <View style={styles.continueTextContainer}>
                     <Text style={[styles.continueLabel, { color: isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary }]}>
@@ -471,14 +412,38 @@ const QuranDashboard = () => {
                       {getSurahName(lastReadAyah.surahNumber)} · Ayah {lastReadAyah.ayahNumber}
                     </Text>
                   </View>
-                  <FontAwesome6
-                    name="chevron-right"
-                    size={16}
-                    color={theme.colors.text.muted}
-                  />
-                </View>
-              </BlurView>
-            </TouchableOpacity>
+                  <FontAwesome6 name="chevron-right" size={15} color={theme.colors.text.muted} />
+                </TouchableOpacity>
+              )}
+
+              {lastReadAyah.surahNumber > 0 && lastListenedAyah.surahNumber > 0 && (
+                <View style={[styles.jumpDivider, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]} />
+              )}
+
+              {lastListenedAyah.surahNumber > 0 && (
+                <TouchableOpacity
+                  style={styles.jumpRow}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push(`/listen/${lastListenedAyah.surahNumber}`);
+                  }}
+                >
+                  <View style={[styles.jumpIcon, { backgroundColor: accent + '15' }]}>
+                    <FontAwesome6 name="headphones" size={16} color={accent} />
+                  </View>
+                  <View style={styles.continueTextContainer}>
+                    <Text style={[styles.continueLabel, { color: isDarkMode ? 'rgba(255,255,255,0.55)' : theme.colors.text.secondary }]}>
+                      Continue Listening
+                    </Text>
+                    <Text style={[styles.continueText, { color: isDarkMode ? 'rgba(255,255,255,0.90)' : theme.colors.text.primary }]}>
+                      {getSurahName(lastListenedAyah.surahNumber)} · Ayah {lastListenedAyah.ayahIndex}
+                    </Text>
+                  </View>
+                  <FontAwesome6 name="play" size={13} color={theme.colors.text.muted} solid />
+                </TouchableOpacity>
+              )}
+            </BlurView>
           </MotiView>
         )}
 
@@ -508,13 +473,13 @@ const QuranDashboard = () => {
                 <View
                   style={[
                     styles.recitationPlanIcon,
-                    { backgroundColor: theme.colors.accent + '15' },
+                    { backgroundColor: accent + '15' },
                   ]}
                 >
                   <FontAwesome6
                     name="calendar-check"
                     size={24}
-                    color={theme.colors.accent}
+                    color={accent}
                   />
                 </View>
                 <View style={styles.recitationPlanText}>
@@ -528,7 +493,7 @@ const QuranDashboard = () => {
                 <FontAwesome6
                   name="chevron-right"
                   size={20}
-                  color={theme.colors.accent}
+                  color={accent}
                 />
               </View>
             </BlurView>
@@ -664,8 +629,9 @@ const styles = StyleSheet.create({
   // Continue Cards (Last Read/Listened)
   continueCard: {
     borderRadius: 16,
-    padding: 16,
-    marginTop: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 4,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -673,17 +639,23 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  continueCardHeader: {
+  jumpRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
   },
-  continueIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  jumpIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  jumpDivider: {
+    height: 1,
+    marginLeft: 56,
   },
   continueTextContainer: {
     flex: 1,

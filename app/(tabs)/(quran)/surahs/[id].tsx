@@ -24,7 +24,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
 import { FontAwesome6 } from '@expo/vector-icons';
@@ -53,6 +53,7 @@ import { SURAH_START_PAGES, TOTAL_MUSHAF_PAGES } from '../../../../constants/qur
 
 const SurahDetailScreen = () => {
   const navigation = useNavigation();
+  const router = useRouter();
 
   const { id, ayahIndex, autoplay } = useLocalSearchParams<{
     id: string;
@@ -67,26 +68,31 @@ const SurahDetailScreen = () => {
   const { theme, isDarkMode, toggleDarkMode, textSize, setTextSize, reciter, setReciter } = useTheme();
   const { data: surahs = [] } = useSurahs();
 
-  // --- pager state (must be declared before useSurahDetailPage so displaySurahNum is available)
+  // --- pager state (must be declared before useSurahDetailPage so activeSurahNum is available)
   const pagerRef = useRef<PagerView>(null);
   const startPage = SURAH_START_PAGES[routeSurahNumber - 1] ?? 1;
   const [currentPage, setCurrentPage] = useState(startPage);
 
-  // Derive which surah is primarily shown on the current page
-  const displaySurahNum = useMemo(() => {
+  // Page -> surah: the LAST surah that has started on/before `page`. A single
+  // Mushaf page can hold several short surahs, so this resolves to the
+  // bottom-most surah on the page — only correct once the user is actually
+  // swiping pages, NOT for the initially-opened surah.
+  const surahForPage = useCallback((page: number) => {
     let result = 1;
     for (let i = 0; i < SURAH_START_PAGES.length; i++) {
-      if (SURAH_START_PAGES[i] <= currentPage) {
-        result = i + 1;
-      } else {
-        break;
-      }
+      if (SURAH_START_PAGES[i] <= page) result = i + 1;
+      else break;
     }
     return result;
-  }, [currentPage]);
+  }, []);
 
-  // useSurahDetailPage uses displaySurahNum so header, progress, and audio all
-  // update dynamically as the user swipes between pages
+  // The surah header/progress/audio should reflect. Seeded with the surah the
+  // user actually opened (routeSurahNumber) so audio plays THAT surah — not the
+  // bottom-most one sharing its start page. It then follows the page on swipe.
+  const [activeSurahNum, setActiveSurahNum] = useState(routeSurahNumber);
+
+  // useSurahDetailPage uses activeSurahNum so header, progress, and audio all
+  // update as the user swipes between pages
   const {
     surah,
     isLoading,
@@ -100,13 +106,15 @@ const SurahDetailScreen = () => {
     isRead,
     handleSurahChange,
     togglePickerVisibility,
-  } = useSurahDetailPage({ surahNumber: displaySurahNum, initialAyahIndex, reciter });
+  } = useSurahDetailPage({ surahNumber: activeSurahNum, initialAyahIndex, reciter });
 
-  // When surah changes via picker (same component instance), jump to its page
+  // When surah changes via picker / new route entry (same component instance),
+  // jump to its page and make it the active surah (so audio targets it).
   const prevRouteRef = useRef(routeSurahNumber);
   useEffect(() => {
     if (prevRouteRef.current !== routeSurahNumber) {
       prevRouteRef.current = routeSurahNumber;
+      setActiveSurahNum(routeSurahNumber);
       const page = SURAH_START_PAGES[routeSurahNumber - 1];
       if (page && pagerRef.current) {
         pagerRef.current.setPage(page - 1);
@@ -135,8 +143,10 @@ const SurahDetailScreen = () => {
   const handlePageSelected = useCallback((e: { nativeEvent: { position: number } }) => {
     const newPage = e.nativeEvent.position + 1;
     setCurrentPage(newPage);
+    // A real swipe re-derives the active surah from the page the user landed on.
+    setActiveSurahNum(surahForPage(newPage));
     seekRequestRef.current = { page: newPage, done: false };
-  }, []);
+  }, [surahForPage]);
 
   useEffect(() => {
     if (seekRequestRef.current.done) return;
@@ -145,12 +155,12 @@ const SurahDetailScreen = () => {
 
     seekRequestRef.current = { page: seekRequestRef.current.page, done: true };
 
-    const firstAyah = currentPageData.ayahs.find(a => a.surahNumber === displaySurahNum);
+    const firstAyah = currentPageData.ayahs.find(a => a.surahNumber === activeSurahNum);
     // ayah 1 = track 0, already the default start — no seek needed
     if (!firstAyah || firstAyah.ayahNumber === 1) return;
 
     TrackPlayer.skip(firstAyah.ayahNumber - 1).catch(() => {});
-  }, [currentPage, currentPageData, surah, displaySurahNum]);
+  }, [currentPage, currentPageData, surah, activeSurahNum]);
 
   // Prefetch adjacent pages so auto-flip and manual swipes are instant
   useMushafPage(currentPage - 1);
@@ -159,10 +169,10 @@ const SurahDetailScreen = () => {
   // Last ayah of the current surah shown on the current page
   const lastAyahOnPage = useMemo(() => {
     if (!currentPageData || currentPageData.pageNumber !== currentPage) return Infinity;
-    const surahAyahs = currentPageData.ayahs.filter(a => a.surahNumber === displaySurahNum);
+    const surahAyahs = currentPageData.ayahs.filter(a => a.surahNumber === activeSurahNum);
     if (surahAyahs.length === 0) return Infinity;
     return Math.max(...surahAyahs.map(a => a.ayahNumber));
-  }, [currentPageData, currentPage, displaySurahNum]);
+  }, [currentPageData, currentPage, activeSurahNum]);
 
   // Auto-flip page when audio advances past the last ayah visible on the current page
   useEffect(() => {
@@ -243,6 +253,15 @@ const SurahDetailScreen = () => {
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 4 }}>
           <TouchableOpacity
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push(`/listen/${activeSurahNum}`);
+            }}
+            style={[styles.headerButton, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)' }]}
+          >
+            <FontAwesome6 name="headphones" size={16} color={theme.colors.accent} />
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={toggleTranslation}
             style={[styles.headerButton, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)' }]}
           >
@@ -268,7 +287,7 @@ const SurahDetailScreen = () => {
       ),
     });
   }, [
-    navigation, surah, isPickerVisible, showTranslation, isDarkMode,
+    navigation, surah, isPickerVisible, showTranslation, isDarkMode, router, activeSurahNum,
     theme.colors.text.primary, theme.colors.text.secondary, theme.colors.accent,
     togglePickerVisibility, toggleTranslation, toggleSettings, toggleHifz,
   ]);
@@ -336,9 +355,9 @@ const SurahDetailScreen = () => {
 
   // --- playing state for context (updates on every ayah advance — cheap, only 1-3 pages rendered)
   const playingState = useMemo(() => ({
-    surahNum: displaySurahNum,
+    surahNum: activeSurahNum,
     ayahNum: currentAyahIndex >= 0 ? currentAyahIndex + 1 : 0,
-  }), [displaySurahNum, currentAyahIndex]);
+  }), [activeSurahNum, currentAyahIndex]);
 
   // --- 604 page children (memoized so they only re-create when settings change)
   const pageViews = useMemo(() =>

@@ -34,6 +34,13 @@ interface UseQuranAudioPlayerParams {
   reciter: string;
   enabled: boolean;
   isPlayerSetup: boolean;
+  /**
+   * Called when the surah's audio finishes. When provided (the Listen player),
+   * it OWNS end-of-surah behaviour (e.g. advance to the next surah) and the
+   * default loop-back-to-ayah-1 is skipped. Omit it (the Read reader) to keep
+   * the surah looping.
+   */
+  onQueueEnd?: () => void;
 }
 
 interface UseQuranAudioPlayerReturn {
@@ -59,9 +66,14 @@ export function useQuranAudioPlayer({
   reciter,
   enabled,
   isPlayerSetup,
+  onQueueEnd,
 }: UseQuranAudioPlayerParams): UseQuranAudioPlayerReturn {
   const [currentAyahIndex, setCurrentAyahIndex] = useState(0);
   const [isReady, setIsReady] = useState(false);
+
+  // Keep the latest onQueueEnd without re-subscribing the queue-end listener.
+  const onQueueEndRef = useRef(onQueueEnd);
+  onQueueEndRef.current = onQueueEnd;
 
   const { setLastListenedAyah } = useQuranStore();
 
@@ -144,8 +156,12 @@ export function useQuranAudioPlayer({
         surahName,
         ayahCount: audioLinks.length,
       });
-      
+
       logger.time('setup-tracks');
+
+      // Not ready until THIS surah's tracks are queued — lets the Listen player
+      // gate auto-play correctly when it advances to the next surah.
+      setIsReady(false);
 
       try {
         const tracks = generateTracks();
@@ -281,6 +297,13 @@ export function useQuranAudioPlayer({
     const onQueueEnd = TrackPlayer.addEventListener(
       Event.PlaybackQueueEnded,
       async () => {
+        // Listen player owns end-of-surah behaviour (advance to next surah).
+        if (onQueueEndRef.current) {
+          logger.info('Playback queue ended, handing off to onQueueEnd', { surahNumber });
+          onQueueEndRef.current();
+          return;
+        }
+
         logger.info('Playback queue ended, restarting from beginning', {
           surahNumber,
         });

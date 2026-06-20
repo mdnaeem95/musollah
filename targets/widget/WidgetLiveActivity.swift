@@ -62,7 +62,7 @@ struct WidgetLiveActivity: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: PrayerLiveActivityAttributes.self) { context in
       // Lock screen / banner
-      HStack(spacing: 14) {
+      HStack(spacing: 16) {
         ZStack {
           Circle().fill(accent.opacity(0.22)).frame(width: 44, height: 44)
           Image(systemName: prayerSymbol(context.state.nextPrayer))
@@ -79,8 +79,6 @@ struct WidgetLiveActivity: Widget {
             .foregroundColor(textPrimary)
         }
 
-        Spacer(minLength: 8)
-
         VStack(alignment: .trailing, spacing: 2) {
           countdownText(context.state)
             .font(.system(size: 22, weight: .bold, design: .rounded))
@@ -93,6 +91,7 @@ struct WidgetLiveActivity: Widget {
             .foregroundColor(textSecondary)
         }
       }
+      .frame(maxWidth: .infinity, alignment: .center)
       .padding(16)
       .activityBackgroundTint(cardBackground)
       .activitySystemActionForegroundColor(accent)
