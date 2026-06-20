@@ -87,19 +87,17 @@ const NearbyLayout = () => {
           // Back Button
           headerLeft: () => (
             <TouchableOpacity
-              style={{
-                padding: 12,
+              style={[styles.circleButton, {
                 marginLeft: 4,
-                borderRadius: 12,
                 backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
-              }}
+              }]}
               onPress={handleBackPress}
               activeOpacity={0.7}
             >
-              <FontAwesome6 
-                name="arrow-left" 
-                size={20} 
-                color={theme.colors.text.primary} 
+              <FontAwesome6
+                name="arrow-left"
+                size={18}
+                color={theme.colors.text.primary}
               />
             </TouchableOpacity>
           ),
@@ -148,13 +146,13 @@ const NearbyLayout = () => {
 };
 
 const styles = StyleSheet.create({
+  // Flex-centred circle — no padding, so the arrow glyph sits dead-centre.
   circleButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 8,
   },
 });
 

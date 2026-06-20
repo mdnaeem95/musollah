@@ -14,6 +14,7 @@ import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 import { useAppearanceSettings } from '../../../../hooks/settings/useAppearanceSettings';
+import { useAccent } from '../../../../hooks/useAccent';
 import { useSkyAccentEnabled, usePreferencesStore } from '../../../../stores/userPreferencesStore';
 import { enter } from '../../../../utils';
 
@@ -40,6 +41,7 @@ const Appearance = () => {
     handleThemeChange,
     handleDarkModeToggle,
   } = useAppearanceSettings();
+  const { accent } = useAccent();
 
   const useSky = useSkyAccentEnabled();
   const setSkyAccent = usePreferencesStore((s) => s.setSkyAccent);
@@ -178,8 +180,8 @@ const Appearance = () => {
             style={[styles.settingCard, { backgroundColor: theme.colors.secondary }]}
           >
             <View style={styles.settingRow}>
-              <View style={[styles.settingIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                <FontAwesome6 name="cloud-sun" size={18} color={theme.colors.accent} />
+              <View style={[styles.settingIcon, { backgroundColor: accent + '15' }]}>
+                <FontAwesome6 name="cloud-sun" size={18} color={accent} />
               </View>
               <View style={styles.settingContent}>
                 <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>
@@ -199,7 +201,7 @@ const Appearance = () => {
                 }}
                 trackColor={{
                   false: theme.colors.muted,
-                  true: theme.colors.accent + '80',
+                  true: accent + '80',
                 }}
                 thumbColor={theme.colors.primary}
                 ios_backgroundColor={theme.colors.muted}
@@ -222,11 +224,11 @@ const Appearance = () => {
             style={[styles.settingCard, { backgroundColor: theme.colors.secondary }]}
           >
             <View style={styles.settingRow}>
-              <View style={[styles.settingIcon, { backgroundColor: theme.colors.accent + '15' }]}>
+              <View style={[styles.settingIcon, { backgroundColor: accent + '15' }]}>
                 <FontAwesome6
                   name={isDarkMode ? 'moon' : 'sun'}
                   size={18}
-                  color={theme.colors.accent}
+                  color={accent}
                 />
               </View>
               <View style={styles.settingContent}>
@@ -245,7 +247,7 @@ const Appearance = () => {
                 }}
                 trackColor={{
                   false: theme.colors.muted,
-                  true: theme.colors.accent + '80',
+                  true: accent + '80',
                 }}
                 thumbColor={theme.colors.primary}
                 ios_backgroundColor={theme.colors.muted}
@@ -290,16 +292,19 @@ const SectionHeader = ({
   icon: string;
   label: string;
   theme: any;
-}) => (
-  <View style={styles.sectionHeader}>
-    <View style={[styles.sectionIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-      <FontAwesome6 name={icon} size={14} color={theme.colors.accent} />
+}) => {
+  const { accent } = useAccent();
+  return (
+    <View style={styles.sectionHeader}>
+      <View style={[styles.sectionIcon, { backgroundColor: accent + '15' }]}>
+        <FontAwesome6 name={icon} size={14} color={accent} />
+      </View>
+      <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
+        {label}
+      </Text>
     </View>
-    <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
-      {label}
-    </Text>
-  </View>
-);
+  );
+};
 
 // ============================================================================
 // STYLES

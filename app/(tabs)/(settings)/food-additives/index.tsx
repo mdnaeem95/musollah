@@ -15,6 +15,7 @@ import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../../context/ThemeContext';
+import { useAccent } from '../../../../hooks/useAccent';
 import { useFoodAdditivesPage } from '../../../../hooks/foodAdditives/useFoodAdditivesPage';
 import { FoodAdditive } from '../../../../utils/types';
 import { enter } from '../../../../utils';
@@ -25,6 +26,7 @@ import { enter } from '../../../../utils';
 
 const FoodAdditivesPage = () => {
     const { theme, isDarkMode } = useTheme();
+    const { accent } = useAccent();
 
     const {
         searchQuery,
@@ -73,9 +75,9 @@ const FoodAdditivesPage = () => {
                     {/* Header Row */}
                     <View style={styles.cardHeader}>
                         {/* E-Code Badge */}
-                        <View style={[styles.eCodeBadge, { backgroundColor: theme.colors.accent + '15' }]}>
-                            <FontAwesome6 name="barcode" size={16} color={theme.colors.accent} />
-                            <Text style={[styles.eCodeText, { color: theme.colors.accent }]}>
+                        <View style={[styles.eCodeBadge, { backgroundColor: accent + '15' }]}>
+                            <FontAwesome6 name="barcode" size={16} color={accent} />
+                            <Text style={[styles.eCodeText, { color: accent }]}>
                                 E{item.eCode}
                             </Text>
                         </View>
@@ -117,8 +119,8 @@ const FoodAdditivesPage = () => {
         return (
             <View style={[styles.mainContainer, { backgroundColor: theme.colors.primary }]}>
                 <View style={styles.centeredContent}>
-                    <View style={[styles.loadingIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                        <FontAwesome6 name="flask" size={48} color={theme.colors.accent} />
+                    <View style={[styles.loadingIcon, { backgroundColor: accent + '15' }]}>
+                        <FontAwesome6 name="flask" size={48} color={accent} />
                     </View>
                     <Text style={[styles.loadingTitle, { color: theme.colors.text.primary }]}>
                         Loading Database
@@ -145,7 +147,7 @@ const FoodAdditivesPage = () => {
                         Failed to load food additives database
                     </Text>
                     <TouchableOpacity
-                        style={[styles.retryButton, { backgroundColor: theme.colors.accent }]}
+                        style={[styles.retryButton, { backgroundColor: accent }]}
                         onPress={() => window.location.reload()}
                         activeOpacity={0.8}
                     >
@@ -166,8 +168,8 @@ const FoodAdditivesPage = () => {
                 transition={enter(0)}
             >
                 <View style={styles.header}>
-                    <View style={[styles.headerIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                        <FontAwesome6 name="flask-vial" size={28} color={theme.colors.accent} />
+                    <View style={[styles.headerIcon, { backgroundColor: accent + '15' }]}>
+                        <FontAwesome6 name="flask-vial" size={28} color={accent} />
                     </View>
                     <View style={styles.headerContent}>
                         <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
@@ -211,7 +213,7 @@ const FoodAdditivesPage = () => {
                     tint={isDarkMode ? 'dark' : 'light'}
                     style={[styles.searchContainer, { backgroundColor: theme.colors.secondary }]}
                 >
-                    <View style={[styles.searchIconBadge, { backgroundColor: theme.colors.accent }]}>
+                    <View style={[styles.searchIconBadge, { backgroundColor: accent }]}>
                         <FontAwesome6 name="magnifying-glass" size={16} color="#fff" />
                     </View>
                     <TextInput
@@ -300,8 +302,8 @@ const FoodAdditivesPage = () => {
                         tint={isDarkMode ? 'dark' : 'light'}
                         style={[styles.noResultsCard, { backgroundColor: theme.colors.secondary }]}
                     >
-                        <View style={[styles.noResultsIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                            <FontAwesome6 name="flask" size={48} color={theme.colors.accent} />
+                        <View style={[styles.noResultsIcon, { backgroundColor: accent + '15' }]}>
+                            <FontAwesome6 name="flask" size={48} color={accent} />
                         </View>
                         <Text style={[styles.noResultsTitle, { color: theme.colors.text.primary }]}>
                             Search Additives

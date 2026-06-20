@@ -27,7 +27,7 @@ const ProgressLayout = () => {
       }}
       style={[styles.backButton, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)' }]}
     >
-      <FontAwesome6 name="arrow-left" size={20} color={theme.colors.text.primary} />
+      <FontAwesome6 name="arrow-left" size={18} color={theme.colors.text.primary} />
     </TouchableOpacity>
   );
 
@@ -82,9 +82,9 @@ const ProgressLayout = () => {
 const styles = StyleSheet.create({
   backButton: {
     marginLeft: 8,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
   },

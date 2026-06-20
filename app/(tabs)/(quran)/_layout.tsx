@@ -35,7 +35,7 @@ const QuranLayout = () => {
     >
       <FontAwesome6
         name="arrow-left"
-        size={20}
+        size={18}
         color={theme.colors.text.primary}
       />
     </TouchableOpacity>
@@ -150,9 +150,10 @@ const QuranLayout = () => {
         }}
       />
 
-      {/* Search Screen */}
+      {/* Search Screen — route is /quran-search to avoid colliding with the
+          Nearby tab's /search (both groups are URL-transparent in Expo Router). */}
       <Stack.Screen
-        name="search/index"
+        name="quran-search/index"
         options={{
           headerShown: true,
           headerTitle: 'Search Quran',
@@ -196,9 +197,9 @@ const QuranLayout = () => {
 const styles = StyleSheet.create({
   backButton: {
     marginLeft: 8,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
   },

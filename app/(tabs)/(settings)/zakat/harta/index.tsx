@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { format } from 'date-fns';
 
 import { useTheme } from '../../../../../context/ThemeContext';
+import { useAccent } from '../../../../../hooks/useAccent';
 import GuideModal from '../../../../../components/zakat/GuideModal';
 import SharesModal from '../../../../../components/zakat/SharesModal';
 import InsuranceModal from '../../../../../components/zakat/InsuranceModal';
@@ -32,6 +33,7 @@ import { enter } from '../../../../../utils';
 
 const ZakatHarta = () => {
     const { theme, isDarkMode } = useTheme();
+    const { accent } = useAccent();
 
     const {
         // State
@@ -90,8 +92,8 @@ const ZakatHarta = () => {
         return (
             <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
                 <View style={styles.centeredContent}>
-                    <View style={[styles.loadingIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                        <FontAwesome6 name="coins" size={48} color={theme.colors.accent} />
+                    <View style={[styles.loadingIcon, { backgroundColor: accent + '15' }]}>
+                        <FontAwesome6 name="coins" size={48} color={accent} />
                     </View>
                     <Text style={[styles.loadingTitle, { color: theme.colors.text.primary }]}>
                         Loading Calculator
@@ -143,14 +145,14 @@ const ZakatHarta = () => {
                         style={[styles.nisabCard, { backgroundColor: theme.colors.secondary }]}
                     >
                         <View style={styles.nisabHeader}>
-                            <View style={[styles.nisabIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                                <FontAwesome6 name="scale-balanced" size={20} color={theme.colors.accent} />
+                            <View style={[styles.nisabIcon, { backgroundColor: accent + '15' }]}>
+                                <FontAwesome6 name="scale-balanced" size={20} color={accent} />
                             </View>
                             <Text style={[styles.nisabLabel, { color: theme.colors.text.secondary }]}>
                                 Nisab Threshold
                             </Text>
                         </View>
-                        <Text style={[styles.nisabAmount, { color: theme.colors.accent }]}>
+                        <Text style={[styles.nisabAmount, { color: accent }]}>
                             ${nisabAmount.toLocaleString()}
                         </Text>
                         {goldPriceData && (
@@ -214,7 +216,7 @@ const ZakatHarta = () => {
                                 setIsEligibilityModalVisible(true);
                             }}
                             textStyle={{ color: '#fff' }}
-                            style={{ backgroundColor: theme.colors.accent }}
+                            style={{ backgroundColor: accent }}
                         />
                         <ThemedButton
                             text="View Guide"
@@ -222,11 +224,11 @@ const ZakatHarta = () => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                 setIsGuideModalVisible(true);
                             }}
-                            textStyle={{ color: theme.colors.accent }}
+                            textStyle={{ color: accent }}
                             style={{
                                 backgroundColor: theme.colors.secondary,
                                 borderWidth: 1.5,
-                                borderColor: theme.colors.accent,
+                                borderColor: accent,
                             }}
                         />
                     </View>

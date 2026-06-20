@@ -29,15 +29,18 @@ import {
 import { enter } from '../../utils';
 
 // ============================================================================
-// MARKER IMAGES
+// MARKER STYLING
 // ============================================================================
 
-const BidetMarker = require('../../assets/bidetMarker.png') as number;
-const MusollahMarker = require('../../assets/musollahMarker.png') as number;
-const MosqueMarker = require('../../assets/mosqueMarker.png') as number;
-
-// Food pins use a colored default pin (no bespoke asset needed).
-const FOOD_PIN_COLOR = '#F97316';
+// One standardised marker design for every layer: a coloured pin carrying the
+// same FontAwesome6 icon used in the segmented filter bar. Keep these in sync
+// with KIND_META / LOCATION_ICONS in app/(tabs)/(nearby)/index.tsx.
+const KIND_MARKER_META: Record<MarkerKind, { icon: string; color: string }> = {
+  food: { icon: 'bowl-food', color: '#F97316' },
+  musollah: { icon: 'person-praying', color: '#22C55E' },
+  mosque: { icon: 'mosque', color: '#0EA5E9' },
+  bidet: { icon: 'toilet', color: '#8B5CF6' },
+};
 
 // ============================================================================
 // TYPES
@@ -133,14 +136,54 @@ const zoomForRegion = (longitudeDelta: number): number => {
   return Math.max(1, Math.min(20, z));
 };
 
-// Facility pins use bespoke PNGs; food uses a colored default pin (undefined).
-const markerImageForKind = (kind: MarkerKind): number | undefined => {
-  switch (kind) {
-    case 'bidet': return BidetMarker;
-    case 'mosque': return MosqueMarker;
-    case 'musollah': return MusollahMarker;
-    default: return undefined; // food
-  }
+// ============================================================================
+// LEAF MARKER (standardised icon pin)
+// ============================================================================
+
+/** A single facility/food pin. Renders a custom view (coloured bubble + the
+ *  layer's FontAwesome6 icon + a downward pointer), so all layers share one
+ *  look. Manages tracksViewChanges so the custom view rasterises on iOS then
+ *  stops re-rendering for performance (same trick as ClusterMarker). */
+const LeafMarker = ({
+  location,
+  kind,
+  selected,
+  onPress,
+  onCalloutPress,
+}: {
+  location: MapMarkerLike;
+  kind: MarkerKind;
+  selected: boolean;
+  onPress: () => void;
+  onCalloutPress: () => void;
+}) => {
+  const { icon, color } = KIND_MARKER_META[kind];
+  const [track, setTrack] = useState(true);
+  useEffect(() => {
+    setTrack(true);
+    const t = setTimeout(() => setTrack(false), 500);
+    return () => clearTimeout(t);
+  }, [icon, color]);
+
+  return (
+    <Marker
+      coordinate={{
+        latitude: location.coordinates.latitude,
+        longitude: location.coordinates.longitude,
+      }}
+      anchor={{ x: 0.5, y: 1 }}
+      onPress={onPress}
+      tracksViewChanges={track || selected}
+    >
+      <View style={styles.pinWrap}>
+        <View style={[styles.pinBubble, { backgroundColor: color }]}>
+          <FontAwesome6 name={icon} size={15} color="#fff" solid />
+        </View>
+        <View style={[styles.pinPointer, { borderTopColor: color }]} />
+      </View>
+      <CustomCallout location={location} onPress={onCalloutPress} />
+    </Marker>
+  );
 };
 
 // ============================================================================
@@ -301,6 +344,10 @@ const Map = ({
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   // Track the visible region so clustering recomputes as the user pans/zooms.
   const [region, setRegion] = useState<MapRegion | undefined>(initialRegion as MapRegion | undefined);
+  // Follow the user's location for the initial centering only. As soon as the
+  // user pans the map we stop following so it doesn't snap back under them; the
+  // refocus button re-enables it on demand. (iOS `followsUserLocation`.)
+  const [following, setFollowing] = useState(shouldFollowUserLocation);
 
   const resolveKind = useCallback(
     (loc: MapMarkerLike): MarkerKind => loc.kind ?? KIND_FROM_TYPE[locationType] ?? 'musollah',
@@ -355,6 +402,20 @@ const Map = ({
     [onRegionChangeComplete]
   );
 
+  // User started dragging — stop following so the map stays where they put it.
+  const handlePanDrag = useCallback(() => {
+    setFollowing((f) => (f ? false : f));
+  }, []);
+
+  // Refocus button: re-center on the user and resume following.
+  const handleRefocus = useCallback(() => {
+    setFollowing(true);
+    if (initialRegion) {
+      mapRef.current?.animateToRegion(initialRegion as MapRegion, 400);
+    }
+    onRefocusPress();
+  }, [initialRegion, onRefocusPress]);
+
   const handleClusterPress = useCallback(
     (clusterId: number, latitude: number, longitude: number) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -395,11 +456,12 @@ const Map = ({
         initialRegion={initialRegion}
         showsUserLocation
         showsMyLocationButton={false} // We have custom button
-        followsUserLocation={shouldFollowUserLocation}
+        followsUserLocation={following}
         scrollEnabled
         zoomEnabled
         rotateEnabled={false}
         pitchEnabled={false}
+        onPanDrag={handlePanDrag}
         onRegionChangeComplete={handleRegionChangeComplete}
         mapPadding={{
           top: 100,
@@ -430,31 +492,22 @@ const Map = ({
           const location = markerById[props.markerId];
           if (!location) return null;
           const kind = resolveKind(location);
-          const isFood = kind === 'food';
           return (
-            <Marker
+            <LeafMarker
               key={location.id}
-              coordinate={{
-                latitude: location.coordinates.latitude,
-                longitude: location.coordinates.longitude,
-              }}
-              image={isFood ? undefined : markerImageForKind(kind)}
-              pinColor={isFood ? FOOD_PIN_COLOR : undefined}
+              location={location}
+              kind={kind}
+              selected={selectedMarkerId === location.id}
               onPress={() => handleMarkerPress(location)}
-              tracksViewChanges={selectedMarkerId === location.id}
-            >
-              <CustomCallout
-                location={location}
-                onPress={() => handleCalloutPress(location)}
-              />
-            </Marker>
+              onCalloutPress={() => handleCalloutPress(location)}
+            />
           );
         })}
       </MapView>
 
       {/* Map Controls */}
       <MapControls
-        onRefocusPress={onRefocusPress}
+        onRefocusPress={handleRefocus}
         onAddLocationPress={onAddLocationPress}
         showAddButton={showAddButton}
       />
@@ -467,6 +520,36 @@ const Map = ({
 // ============================================================================
 
 const styles = StyleSheet.create({
+  // Standardised leaf pin (coloured bubble + icon + downward pointer)
+  pinWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pinBubble: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  pinPointer: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 7,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    marginTop: -1,
+  },
+
   // Cluster bubble
   clusterOuter: {
     justifyContent: 'center',

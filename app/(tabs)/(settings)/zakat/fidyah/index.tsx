@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../../../../../context/ThemeContext';
+import { useAccent } from '../../../../../hooks/useAccent';
 import { useFidyahCalculator } from '../../../../../hooks/zakat/useFidyahCalculator';
 
 type FidyahCategoryConfig = {
@@ -15,6 +16,7 @@ type FidyahCategoryConfig = {
 
 const FidyahCalculator = () => {
   const { theme } = useTheme();
+  const { accent } = useAccent();
   const styles = createStyles(theme);
 
   const {
@@ -71,7 +73,7 @@ const FidyahCalculator = () => {
 
         {/* Fixed rate display */}
         <View style={styles.rateContainer}>
-          <FontAwesome6 name="coins" size={20} color={theme.colors.accent} />
+          <FontAwesome6 name="coins" size={20} color={accent} />
           <Text style={styles.rateText}>Daily Rate: ${ratePerDay.toFixed(2)}</Text>
         </View>
 
@@ -82,7 +84,7 @@ const FidyahCalculator = () => {
               <FontAwesome6
                 name={category.icon as any}
                 size={24}
-                color={theme.colors.accent}
+                color={accent}
               />
               <Text style={styles.cardTitle}>{category.title}</Text>
             </View>
@@ -98,7 +100,7 @@ const FidyahCalculator = () => {
 
             <View style={styles.resultContainer}>
               <Text style={styles.resultLabel}>Amount:</Text>
-              <Text style={styles.resultValue}>${category.total.toFixed(2)}</Text>
+              <Text style={[styles.resultValue, { color: accent }]}>${category.total.toFixed(2)}</Text>
             </View>
           </View>
         ))}
@@ -106,7 +108,7 @@ const FidyahCalculator = () => {
         {/* Grand Total */}
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>Total Fidyah Payable</Text>
-          <Text style={styles.totalAmount}>${calculation.grandTotal.toFixed(2)}</Text>
+          <Text style={[styles.totalAmount, { color: accent }]}>${calculation.grandTotal.toFixed(2)}</Text>
 
           {calculation.grandTotal > 0 && (
             <Text style={styles.totalDescription}>

@@ -14,6 +14,7 @@ import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../../context/ThemeContext';
+import { useAccent } from '../../../../hooks/useAccent';
 import { usePrayerSettings } from '../../../../hooks/settings/usePrayerSettings';
 import { calculateContrastColor, enter } from '../../../../utils';
 
@@ -23,6 +24,7 @@ import { calculateContrastColor, enter } from '../../../../utils';
 
 const AdhanSelectionScreen = () => {
   const { theme, isDarkMode } = useTheme();
+  const { accent } = useAccent();
 
   const {
     adhanOptions,
@@ -62,7 +64,7 @@ const AdhanSelectionScreen = () => {
           contentContainerStyle={styles.listContent}
           renderItem={({ item, index }) => {
             const isSelected = item.label === selectedAdhan;
-            const accentBg = theme.colors.accent;
+            const accentBg = accent;
             const accentText = calculateContrastColor(accentBg);
 
             return (
@@ -90,7 +92,7 @@ const AdhanSelectionScreen = () => {
                     {/* Icon or Checkmark */}
                     <View style={[
                       styles.optionIcon,
-                      { backgroundColor: isSelected ? accentBg : theme.colors.accent + '15' },
+                      { backgroundColor: isSelected ? accentBg : accent + '15' },
                     ]}>
                       {isSelected ? (
                         <FontAwesome6
@@ -102,7 +104,7 @@ const AdhanSelectionScreen = () => {
                         <FontAwesome6
                           name="music"
                           size={16}
-                          color={theme.colors.accent}
+                          color={accent}
                         />
                       )}
                     </View>
@@ -112,7 +114,7 @@ const AdhanSelectionScreen = () => {
                       style={[
                         styles.adhanLabel,
                         { color: theme.colors.text.primary },
-                        isSelected && [styles.selectedLabel, { color: theme.colors.accent }],
+                        isSelected && [styles.selectedLabel, { color: accent }],
                       ]}
                     >
                       {item.label}
@@ -120,11 +122,11 @@ const AdhanSelectionScreen = () => {
 
                     {/* Play Icon */}
                     {item.file && (
-                      <View style={[styles.playIcon, { backgroundColor: theme.colors.accent + '15' }]}>
+                      <View style={[styles.playIcon, { backgroundColor: accent + '15' }]}>
                         <FontAwesome6
                           name="play"
                           size={12}
-                          color={theme.colors.accent}
+                          color={accent}
                         />
                       </View>
                     )}
@@ -149,11 +151,11 @@ const AdhanSelectionScreen = () => {
               tint={isDarkMode ? 'dark' : 'light'}
               style={[styles.playingIndicator, { backgroundColor: theme.colors.secondary }]}
             >
-              <View style={[styles.playingIcon, { backgroundColor: theme.colors.accent }]}>
+              <View style={[styles.playingIcon, { backgroundColor: accent }]}>
                 <FontAwesome6
                   name="volume-high"
                   size={18}
-                  color={calculateContrastColor(theme.colors.accent)}
+                  color={calculateContrastColor(accent)}
                 />
               </View>
               <View style={styles.playingContent}>

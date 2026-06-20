@@ -16,6 +16,7 @@ import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../../context/ThemeContext';
+import { useAccent } from '../../../../hooks/useAccent';
 import { enter } from '../../../../utils';
 
 // ============================================================================
@@ -61,6 +62,7 @@ const ZAKAT_CARDS: ZakatCard[] = [
 const ZakatIndex = () => {
     const router = useRouter();
     const { theme, isDarkMode } = useTheme();
+    const { accent } = useAccent();
 
     const handleCardPress = (route: string) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -80,8 +82,8 @@ const ZakatIndex = () => {
                     transition={enter(0)}
                 >
                     <View style={styles.header}>
-                        <View style={[styles.headerIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                            <FontAwesome6 name="hand-holding-dollar" size={32} color={theme.colors.accent} />
+                        <View style={[styles.headerIcon, { backgroundColor: accent + '15' }]}>
+                            <FontAwesome6 name="hand-holding-dollar" size={32} color={accent} />
                         </View>
                         <View style={styles.headerContent}>
                             <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
@@ -145,11 +147,11 @@ const ZakatIndex = () => {
                                             <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
                                                 {card.title}
                                             </Text>
-                                            <View style={[styles.arrowBadge, { backgroundColor: theme.colors.accent + '15' }]}>
+                                            <View style={[styles.arrowBadge, { backgroundColor: accent + '15' }]}>
                                                 <FontAwesome6
                                                     name="arrow-right"
                                                     size={16}
-                                                    color={theme.colors.accent}
+                                                    color={accent}
                                                 />
                                             </View>
                                         </View>
@@ -181,8 +183,8 @@ const ZakatIndex = () => {
                         <View style={styles.quickInfoItems}>
                             {/* Nisab */}
                             <View style={styles.quickInfoItem}>
-                                <View style={[styles.quickInfoIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                                    <FontAwesome6 name="scale-balanced" size={16} color={theme.colors.accent} />
+                                <View style={[styles.quickInfoIcon, { backgroundColor: accent + '15' }]}>
+                                    <FontAwesome6 name="scale-balanced" size={16} color={accent} />
                                 </View>
                                 <View style={styles.quickInfoText}>
                                     <Text style={[styles.quickInfoLabel, { color: theme.colors.text.primary }]}>
@@ -196,8 +198,8 @@ const ZakatIndex = () => {
 
                             {/* Rate */}
                             <View style={styles.quickInfoItem}>
-                                <View style={[styles.quickInfoIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                                    <FontAwesome6 name="percent" size={16} color={theme.colors.accent} />
+                                <View style={[styles.quickInfoIcon, { backgroundColor: accent + '15' }]}>
+                                    <FontAwesome6 name="percent" size={16} color={accent} />
                                 </View>
                                 <View style={styles.quickInfoText}>
                                     <Text style={[styles.quickInfoLabel, { color: theme.colors.text.primary }]}>
@@ -211,8 +213,8 @@ const ZakatIndex = () => {
 
                             {/* Haul */}
                             <View style={styles.quickInfoItem}>
-                                <View style={[styles.quickInfoIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                                    <FontAwesome6 name="calendar-days" size={16} color={theme.colors.accent} />
+                                <View style={[styles.quickInfoIcon, { backgroundColor: accent + '15' }]}>
+                                    <FontAwesome6 name="calendar-days" size={16} color={accent} />
                                 </View>
                                 <View style={styles.quickInfoText}>
                                     <Text style={[styles.quickInfoLabel, { color: theme.colors.text.primary }]}>

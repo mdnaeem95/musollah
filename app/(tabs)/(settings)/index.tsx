@@ -15,6 +15,7 @@ import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../context/ThemeContext';
+import { useAccent } from '../../../hooks/useAccent';
 import { calculateContrastColor, enter } from '../../../utils';
 import { usePreferencesStore } from '../../../stores/userPreferencesStore';
 
@@ -41,6 +42,7 @@ const FEATURE_CARDS = [
 const SettingsTab = () => {
   const router = useRouter();
   const { theme, isDarkMode } = useTheme();
+  const { accent } = useAccent();
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
       <ScrollView
@@ -53,7 +55,7 @@ const SettingsTab = () => {
           animate={{ opacity: 1, translateY: 0 }}
           transition={enter(0)}
         >
-          <SectionHeader icon="gear" label="Settings" theme={theme} />
+          <SectionHeader icon="gear" label="Settings" theme={theme} accent={accent} />
 
           <BlurView
             intensity={20}
@@ -71,6 +73,7 @@ const SettingsTab = () => {
                   }}
                   index={index}
                   theme={theme}
+                  accent={accent}
                 />
                 {index < SETTINGS_ITEMS.length - 1 && (
                   <View style={[styles.divider, { backgroundColor: theme.colors.muted }]} />
@@ -86,7 +89,7 @@ const SettingsTab = () => {
           animate={{ opacity: 1, translateY: 0 }}
           transition={enter(0)}
         >
-          <SectionHeader icon="plus" label="Other Features" theme={theme} />
+          <SectionHeader icon="plus" label="Other Features" theme={theme} accent={accent} />
 
           <View style={styles.featuresGrid}>
             {FEATURE_CARDS.map((feature, index) => (
@@ -100,6 +103,7 @@ const SettingsTab = () => {
                 }}
                 index={index}
                 theme={theme}
+                accent={accent}
                 isDarkMode={isDarkMode}
               />
             ))}
@@ -129,18 +133,20 @@ const SettingsTab = () => {
 // SECTION HEADER COMPONENT
 // ============================================================================
 
-const SectionHeader = ({ 
-  icon, 
-  label, 
-  theme 
-}: { 
-  icon: string; 
-  label: string; 
+const SectionHeader = ({
+  icon,
+  label,
+  theme,
+  accent,
+}: {
+  icon: string;
+  label: string;
   theme: any;
+  accent: string;
 }) => (
   <View style={styles.sectionHeader}>
-    <View style={[styles.sectionIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-      <FontAwesome6 name={icon} size={14} color={theme.colors.accent} />
+    <View style={[styles.sectionIcon, { backgroundColor: accent + '15' }]}>
+      <FontAwesome6 name={icon} size={14} color={accent} />
     </View>
     <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
       {label}
@@ -158,12 +164,14 @@ const SettingsItem = ({
   onPress,
   index,
   theme,
+  accent,
 }: {
   icon: string;
   label: string;
   onPress: () => void;
   index: number;
   theme: any;
+  accent: string;
 }) => {
   return (
     <MotiView
@@ -177,8 +185,8 @@ const SettingsItem = ({
         activeOpacity={0.7}
       >
         {/* Icon Badge */}
-        <View style={[styles.itemIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-          <FontAwesome6 name={icon} size={18} color={theme.colors.accent} />
+        <View style={[styles.itemIcon, { backgroundColor: accent + '15' }]}>
+          <FontAwesome6 name={icon} size={18} color={accent} />
         </View>
 
         {/* Label */}
@@ -207,6 +215,7 @@ const FeatureCard = ({
   onPress,
   index,
   theme,
+  accent,
   isDarkMode,
 }: {
   icon: string;
@@ -214,9 +223,10 @@ const FeatureCard = ({
   onPress: () => void;
   index: number;
   theme: any;
+  accent: string;
   isDarkMode: boolean;
 }) => {
-  const accentBg = theme.colors.accent;
+  const accentBg = accent;
   const accentText = calculateContrastColor(accentBg);
 
   return (

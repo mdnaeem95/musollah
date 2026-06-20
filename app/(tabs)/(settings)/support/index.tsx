@@ -15,6 +15,7 @@ import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../../context/ThemeContext';
+import { useAccent } from '../../../../hooks/useAccent';
 import ThemedButton from '../../../../components/ThemedButton';
 import { enter } from '../../../../utils';
 import { createLogger } from '../../../../services/logging/logger';
@@ -27,6 +28,7 @@ const logger = createLogger('Support');
 
 const SupportPage = () => {
   const { theme, isDarkMode } = useTheme();
+  const { accent } = useAccent();
   const firestore = getFirestore();
 
   const [feedback, setFeedback] = useState<string>('');
@@ -106,8 +108,8 @@ const SupportPage = () => {
           transition={enter(0)}
         >
           <View style={styles.header}>
-            <View style={[styles.headerIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-              <FontAwesome6 name="comment-dots" size={28} color={theme.colors.accent} />
+            <View style={[styles.headerIcon, { backgroundColor: accent + '15' }]}>
+              <FontAwesome6 name="comment-dots" size={28} color={accent} />
             </View>
             <View style={styles.headerContent}>
               <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
@@ -144,7 +146,7 @@ const SupportPage = () => {
             {/* Feedback Input */}
             <View style={styles.inputGroup}>
               <View style={styles.inputHeader}>
-                <FontAwesome6 name="pen" size={14} color={theme.colors.accent} />
+                <FontAwesome6 name="pen" size={14} color={accent} />
                 <Text style={[styles.inputLabel, { color: theme.colors.text.primary }]}>
                   Your Feedback
                 </Text>
@@ -169,8 +171,8 @@ const SupportPage = () => {
             {/* Anonymous Toggle */}
             <View style={[styles.toggleContainer, { backgroundColor: theme.colors.primary + '30' }]}>
               <View style={styles.toggleContent}>
-                <View style={[styles.toggleIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                  <FontAwesome6 name="user-secret" size={16} color={theme.colors.accent} />
+                <View style={[styles.toggleIcon, { backgroundColor: accent + '15' }]}>
+                  <FontAwesome6 name="user-secret" size={16} color={accent} />
                 </View>
                 <View style={styles.toggleTextContainer}>
                   <Text style={[styles.toggleLabel, { color: theme.colors.text.primary }]}>
@@ -189,7 +191,7 @@ const SupportPage = () => {
                 }}
                 trackColor={{
                   false: theme.colors.muted,
-                  true: theme.colors.accent + '80',
+                  true: accent + '80',
                 }}
                 thumbColor={theme.colors.primary}
                 ios_backgroundColor={theme.colors.muted}
@@ -207,7 +209,7 @@ const SupportPage = () => {
               >
                 <View style={styles.inputGroup}>
                   <View style={styles.inputHeader}>
-                    <FontAwesome6 name="envelope" size={14} color={theme.colors.accent} />
+                    <FontAwesome6 name="envelope" size={14} color={accent} />
                     <Text style={[styles.inputLabel, { color: theme.colors.text.primary }]}>
                       Your Email (Optional)
                     </Text>
@@ -274,8 +276,8 @@ const SupportPage = () => {
               tint={isDarkMode ? 'dark' : 'light'}
               style={[styles.infoCard, { backgroundColor: theme.colors.secondary }]}
             >
-              <View style={[styles.infoCardIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                <FontAwesome6 name="clock" size={20} color={theme.colors.accent} />
+              <View style={[styles.infoCardIcon, { backgroundColor: accent + '15' }]}>
+                <FontAwesome6 name="clock" size={20} color={accent} />
               </View>
               <View style={styles.infoCardContent}>
                 <Text style={[styles.infoCardTitle, { color: theme.colors.text.primary }]}>

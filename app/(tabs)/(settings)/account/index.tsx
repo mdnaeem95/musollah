@@ -15,6 +15,7 @@ import Modal from 'react-native-modal'
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../../context/ThemeContext';
+import { useAccent } from '../../../../hooks/useAccent';
 import SignInModal from '../../../../components/SignInModal';
 import { useAccountSettings } from '../../../../hooks/settings/useAccountSettings';
 import { calculateContrastColor, enter } from '../../../../utils';
@@ -25,6 +26,7 @@ import { calculateContrastColor, enter } from '../../../../utils';
 
 const AccountSettings = () => {
   const { theme, isDarkMode } = useTheme();
+  const { accent } = useAccent();
 
   const {
     profile,
@@ -52,8 +54,8 @@ const AccountSettings = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={enter(0)}
         >
-          <View style={[styles.loadingIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-            <ActivityIndicator size="large" color={theme.colors.accent} />
+          <View style={[styles.loadingIcon, { backgroundColor: accent + '15' }]}>
+            <ActivityIndicator size="large" color={accent} />
           </View>
         </MotiView>
         <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
@@ -83,8 +85,8 @@ const AccountSettings = () => {
                 style={[styles.profileHeader, { backgroundColor: theme.colors.secondary }]}
               >
                 {/* Avatar */}
-                <View style={[styles.avatar, { backgroundColor: theme.colors.accent }]}>
-                  <Text style={[styles.avatarText, { color: calculateContrastColor(theme.colors.accent) }]}>
+                <View style={[styles.avatar, { backgroundColor: accent }]}>
+                  <Text style={[styles.avatarText, { color: calculateContrastColor(accent) }]}>
                     {profile?.name?.charAt(0).toUpperCase() || 'U'}
                   </Text>
                 </View>
@@ -187,8 +189,8 @@ const AccountSettings = () => {
               tint={isDarkMode ? 'dark' : 'light'}
               style={[styles.emptyState, { backgroundColor: theme.colors.secondary }]}
             >
-              <View style={[styles.emptyIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                <FontAwesome6 name="user-lock" size={48} color={theme.colors.accent} />
+              <View style={[styles.emptyIcon, { backgroundColor: accent + '15' }]}>
+                <FontAwesome6 name="user-lock" size={48} color={accent} />
               </View>
 
               <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>
@@ -204,16 +206,16 @@ const AccountSettings = () => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setSignUpModalVisible(true);
                 }}
-                style={[styles.signInButton, { backgroundColor: theme.colors.accent }]}
+                style={[styles.signInButton, { backgroundColor: accent }]}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.signInText, { color: calculateContrastColor(theme.colors.accent) }]}>
+                <Text style={[styles.signInText, { color: calculateContrastColor(accent) }]}>
                   Sign In / Sign Up
                 </Text>
                 <FontAwesome6
                   name="arrow-right"
                   size={16}
-                  color={calculateContrastColor(theme.colors.accent)}
+                  color={calculateContrastColor(accent)}
                 />
               </TouchableOpacity>
             </BlurView>
@@ -250,8 +252,8 @@ const AccountSettings = () => {
           </TouchableOpacity>
 
           {/* Icon */}
-          <View style={[styles.modalIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-            <FontAwesome6 name="user-pen" size={32} color={theme.colors.accent} />
+          <View style={[styles.modalIcon, { backgroundColor: accent + '15' }]}>
+            <FontAwesome6 name="user-pen" size={32} color={accent} />
           </View>
 
           {/* Title */}
@@ -264,7 +266,7 @@ const AccountSettings = () => {
             <FontAwesome6
               name="user"
               size={18}
-              color={theme.colors.accent}
+              color={accent}
               style={styles.inputIcon}
             />
             <TextInput
@@ -305,22 +307,22 @@ const AccountSettings = () => {
               style={[
                 styles.modalButton,
                 styles.saveButton,
-                { backgroundColor: theme.colors.accent },
+                { backgroundColor: accent },
                 (!newName.trim() || isUpdating) && styles.buttonDisabled,
               ]}
               activeOpacity={0.8}
               disabled={isUpdating || !newName.trim()}
             >
               {isUpdating ? (
-                <ActivityIndicator size="small" color={calculateContrastColor(theme.colors.accent)} />
+                <ActivityIndicator size="small" color={calculateContrastColor(accent)} />
               ) : (
                 <>
                   <FontAwesome6
                     name="check"
                     size={16}
-                    color={calculateContrastColor(theme.colors.accent)}
+                    color={calculateContrastColor(accent)}
                   />
-                  <Text style={[styles.modalButtonText, { color: calculateContrastColor(theme.colors.accent) }]}>
+                  <Text style={[styles.modalButtonText, { color: calculateContrastColor(accent) }]}>
                     Save
                   </Text>
                 </>
@@ -351,16 +353,19 @@ const SectionHeader = ({
   icon: string;
   label: string;
   theme: any;
-}) => (
-  <View style={styles.sectionHeader}>
-    <View style={[styles.sectionIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-      <FontAwesome6 name={icon} size={14} color={theme.colors.accent} />
+}) => {
+  const { accent } = useAccent();
+  return (
+    <View style={styles.sectionHeader}>
+      <View style={[styles.sectionIcon, { backgroundColor: accent + '15' }]}>
+        <FontAwesome6 name={icon} size={14} color={accent} />
+      </View>
+      <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
+        {label}
+      </Text>
     </View>
-    <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
-      {label}
-    </Text>
-  </View>
-);
+  );
+};
 
 // ============================================================================
 // SETTINGS FIELD COMPONENT
@@ -381,6 +386,7 @@ const SettingsField = ({
   editable?: boolean;
   theme: any;
 }) => {
+  const { accent } = useAccent();
   return (
     <TouchableOpacity
       onPress={editable ? onPress : undefined}
@@ -389,8 +395,8 @@ const SettingsField = ({
       style={styles.settingsField}
     >
       {/* Icon Badge */}
-      <View style={[styles.fieldIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-        <FontAwesome6 name={icon} size={16} color={theme.colors.accent} />
+      <View style={[styles.fieldIcon, { backgroundColor: accent + '15' }]}>
+        <FontAwesome6 name={icon} size={16} color={accent} />
       </View>
 
       {/* Content */}

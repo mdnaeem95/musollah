@@ -15,6 +15,7 @@ import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../../context/ThemeContext';
+import { useAccent } from '../../../../hooks/useAccent';
 import { usePrayerSettings } from '../../../../hooks/settings/usePrayerSettings';
 import { calculateContrastColor, enter } from '../../../../utils';
 
@@ -27,6 +28,7 @@ const REMINDER_INTERVALS = [5, 10, 15, 20, 25, 30];
 
 const PrayersSettings = () => {
   const { theme, isDarkMode } = useTheme();
+  const { accent } = useAccent();
 
   const {
     timeFormat,
@@ -69,8 +71,8 @@ const PrayersSettings = () => {
           >
             {/* 24-hour format */}
             <View style={styles.settingRow}>
-              <View style={[styles.settingIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                <FontAwesome6 name="clock" size={18} color={theme.colors.accent} />
+              <View style={[styles.settingIcon, { backgroundColor: accent + '15' }]}>
+                <FontAwesome6 name="clock" size={18} color={accent} />
               </View>
               <View style={styles.settingContent}>
                 <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>
@@ -85,7 +87,7 @@ const PrayersSettings = () => {
                 onValueChange={() => handleSwitchToggle(handleTimeFormatToggle)}
                 trackColor={{
                   false: theme.colors.muted,
-                  true: theme.colors.accent + '80',
+                  true: accent + '80',
                 }}
                 thumbColor={theme.colors.primary}
                 ios_backgroundColor={theme.colors.muted}
@@ -103,8 +105,8 @@ const PrayersSettings = () => {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.settingIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                <FontAwesome6 name="bell" size={18} color={theme.colors.accent} />
+              <View style={[styles.settingIcon, { backgroundColor: accent + '15' }]}>
+                <FontAwesome6 name="bell" size={18} color={accent} />
               </View>
               <View style={styles.settingContent}>
                 <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>
@@ -115,7 +117,7 @@ const PrayersSettings = () => {
                 </Text>
               </View>
               <View style={styles.settingAction}>
-                <Text style={[styles.settingValue, { color: theme.colors.accent }]}>
+                <Text style={[styles.settingValue, { color: accent }]}>
                   {reminderInterval === 0 ? 'None' : `${reminderInterval} mins`}
                 </Text>
                 <FontAwesome6
@@ -137,8 +139,8 @@ const PrayersSettings = () => {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.settingIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                <FontAwesome6 name="volume-high" size={18} color={theme.colors.accent} />
+              <View style={[styles.settingIcon, { backgroundColor: accent + '15' }]}>
+                <FontAwesome6 name="volume-high" size={18} color={accent} />
               </View>
               <View style={styles.settingContent}>
                 <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>
@@ -149,7 +151,7 @@ const PrayersSettings = () => {
                 </Text>
               </View>
               <View style={styles.settingAction}>
-                <Text style={[styles.settingValue, { color: theme.colors.accent }]}>
+                <Text style={[styles.settingValue, { color: accent }]}>
                   {selectedAdhan}
                 </Text>
                 <FontAwesome6
@@ -186,11 +188,11 @@ const PrayersSettings = () => {
                   transition={enter(0)}
                 >
                   <View style={styles.prayerRow}>
-                    <View style={[styles.prayerIcon, { backgroundColor: theme.colors.accent + '15' }]}>
+                    <View style={[styles.prayerIcon, { backgroundColor: accent + '15' }]}>
                       <FontAwesome6
                         name="mosque"
                         size={16}
-                        color={theme.colors.accent}
+                        color={accent}
                       />
                     </View>
                     <Text style={[styles.prayerLabel, { color: theme.colors.text.primary }]}>
@@ -201,7 +203,7 @@ const PrayersSettings = () => {
                       onValueChange={() => handleSwitchToggle(() => handleToggleNotification(prayer))}
                       trackColor={{
                         false: theme.colors.muted,
-                        true: theme.colors.accent + '80',
+                        true: accent + '80',
                       }}
                       thumbColor={theme.colors.primary}
                       ios_backgroundColor={theme.colors.muted}
@@ -245,8 +247,8 @@ const PrayersSettings = () => {
               style={[styles.modalContainer, { backgroundColor: theme.colors.secondary }]}
             >
               {/* Icon */}
-              <View style={[styles.modalIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-                <FontAwesome6 name="bell" size={32} color={theme.colors.accent} />
+              <View style={[styles.modalIcon, { backgroundColor: accent + '15' }]}>
+                <FontAwesome6 name="bell" size={32} color={accent} />
               </View>
 
               {/* Title */}
@@ -279,15 +281,15 @@ const PrayersSettings = () => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   closeReminderPicker();
                 }}
-                style={[styles.doneButton, { backgroundColor: theme.colors.accent }]}
+                style={[styles.doneButton, { backgroundColor: accent }]}
                 activeOpacity={0.8}
               >
                 <FontAwesome6
                   name="check"
                   size={16}
-                  color={calculateContrastColor(theme.colors.accent)}
+                  color={calculateContrastColor(accent)}
                 />
-                <Text style={[styles.doneButtonText, { color: calculateContrastColor(theme.colors.accent) }]}>
+                <Text style={[styles.doneButtonText, { color: calculateContrastColor(accent) }]}>
                   Done
                 </Text>
               </TouchableOpacity>
@@ -311,16 +313,19 @@ const SectionHeader = ({
   icon: string;
   label: string;
   theme: any;
-}) => (
-  <View style={styles.sectionHeader}>
-    <View style={[styles.sectionIcon, { backgroundColor: theme.colors.accent + '15' }]}>
-      <FontAwesome6 name={icon} size={14} color={theme.colors.accent} />
+}) => {
+  const { accent } = useAccent();
+  return (
+    <View style={styles.sectionHeader}>
+      <View style={[styles.sectionIcon, { backgroundColor: accent + '15' }]}>
+        <FontAwesome6 name={icon} size={14} color={accent} />
+      </View>
+      <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
+        {label}
+      </Text>
     </View>
-    <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
-      {label}
-    </Text>
-  </View>
-);
+  );
+};
 
 // ============================================================================
 // STYLES

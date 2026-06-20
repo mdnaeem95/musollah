@@ -56,7 +56,7 @@ const LOCATION_TYPES = ['All', 'Food', 'Musollahs', 'Mosques', 'Bidets'] as cons
 
 const LOCATION_ICONS: Record<string, string> = {
   All: 'layer-group',
-  Food: 'utensils',
+  Food: 'bowl-food',
   Bidets: 'toilet',
   Musollahs: 'person-praying',
   Mosques: 'mosque',
@@ -64,7 +64,7 @@ const LOCATION_ICONS: Record<string, string> = {
 
 // Per-kind metadata for the combined "All" list rows + cluster colours.
 const KIND_META: Record<MarkerKind, { icon: string; label: string; color: string }> = {
-  food: { icon: 'utensils', label: 'Halal Food', color: '#F97316' },
+  food: { icon: 'bowl-food', label: 'Halal Food', color: '#F97316' },
   musollah: { icon: 'person-praying', label: 'Musollah', color: '#22C55E' },
   mosque: { icon: 'mosque', label: 'Mosque', color: '#0EA5E9' },
   bidet: { icon: 'toilet', label: 'Bidet', color: '#8B5CF6' },

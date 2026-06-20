@@ -87,7 +87,7 @@ struct WidgetLiveActivity: Widget {
             .monospacedDigit()
             .foregroundColor(accent)
             .lineLimit(1)
-            .fixedSize()
+            .frame(minWidth: 96, alignment: .trailing)
           Text(context.state.clockLabel)
             .font(.system(size: 12, weight: .medium))
             .foregroundColor(textSecondary)
@@ -114,7 +114,7 @@ struct WidgetLiveActivity: Widget {
             .monospacedDigit()
             .foregroundColor(accent)
             .lineLimit(1)
-            .fixedSize()
+            .frame(minWidth: 68, alignment: .trailing)
         }
         DynamicIslandExpandedRegion(.bottom) {
           Text("at \(context.state.clockLabel)")
@@ -129,7 +129,7 @@ struct WidgetLiveActivity: Widget {
           .monospacedDigit()
           .foregroundColor(accent)
           .lineLimit(1)
-          .fixedSize()
+          .frame(maxWidth: 56)
       } minimal: {
         Image(systemName: prayerSymbol(context.state.nextPrayer))
           .foregroundColor(accent)

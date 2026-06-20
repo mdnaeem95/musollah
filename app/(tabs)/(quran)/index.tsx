@@ -237,7 +237,7 @@ const QuranDashboard = () => {
           style={{ marginBottom: 20 }}
         >
           <TouchableOpacity
-            onPress={() => handleNavigate('/search')}
+            onPress={() => handleNavigate('/quran-search')}
             activeOpacity={0.8}
           >
             <BlurView
