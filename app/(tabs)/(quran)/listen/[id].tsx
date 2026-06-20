@@ -120,19 +120,32 @@ const ListenScreen = () => {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: 'Now Playing',
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          hitSlop={12}
+          style={styles.headerBtn}
+        >
+          <FontAwesome6 name="arrow-left" size={20} color={theme.colors.text.primary} />
+        </TouchableOpacity>
+      ),
       headerRight: () => (
         <TouchableOpacity
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setSettingsVisible(true);
           }}
-          style={[styles.headerBtn, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)' }]}
+          hitSlop={12}
+          style={styles.headerBtn}
         >
-          <FontAwesome6 name="sliders" size={15} color={theme.colors.text.primary} />
+          <FontAwesome6 name="sliders" size={18} color={theme.colors.text.primary} />
         </TouchableOpacity>
       ),
     });
-  }, [navigation, isDarkMode, theme.colors.text.primary]);
+  }, [navigation, router, theme.colors.text.primary]);
 
   // --- transport
   const togglePlay = useCallback(() => {
@@ -344,12 +357,10 @@ const styles = StyleSheet.create({
   scroll: { padding: 20, paddingBottom: 40 },
 
   headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 4,
   },
 
   // Hero

@@ -129,7 +129,8 @@ const NearbyLayout = () => {
           }}
         />
 
-        {/* Restaurant search modal (moved from the old Food tab) */}
+        {/* Unified search modal. Header is NON-transparent here (the group default
+            is transparent) so it doesn't overlap the search field underneath. */}
         <Stack.Screen
           name="search"
           options={{
@@ -137,6 +138,12 @@ const NearbyLayout = () => {
             headerShown: true,
             headerTitle: 'Search',
             gestureEnabled: false,
+            headerTransparent: false,
+            headerBackground: undefined,
+            headerStyle: {
+              backgroundColor: isDarkMode ? '#060B18' : '#EEF2FF',
+            },
+            headerShadowVisible: false,
             headerLeft: () => <CircleButton onPress={() => router.back()} />,
           }}
         />

@@ -11,7 +11,7 @@
  * @lastUpdated December 2025
  */
 
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, usePathname } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import React from 'react';
@@ -19,6 +19,7 @@ import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../../context/ThemeContext';
 import { AccentHeaderBackground } from '../../../components/AccentHeaderBackground';
+import { FloatingPlayer } from '../../../components/quran/FloatingPlayer';
 
 const QuranLayout = () => {
   const router = useRouter();
@@ -31,11 +32,12 @@ const QuranLayout = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.back();
       }}
-      style={[styles.backButton, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)' }]}
+      hitSlop={10}
+      style={styles.backButton}
     >
       <FontAwesome6
         name="arrow-left"
-        size={18}
+        size={20}
         color={theme.colors.text.primary}
       />
     </TouchableOpacity>
@@ -43,7 +45,14 @@ const QuranLayout = () => {
 
   const headerBg = isDarkMode ? '#060B18' : '#EEF2FF';
 
+  // Persistent mini-player across the Quran tab, so audio can be controlled
+  // (and stopped) from anywhere — hidden on the Listen screen, which is itself
+  // the full player.
+  const pathname = usePathname();
+  const showMiniPlayer = !pathname?.includes('/listen');
+
   return (
+    <View style={{ flex: 1 }}>
     <Stack
       screenOptions={{
         headerShown: false,
@@ -211,6 +220,8 @@ const QuranLayout = () => {
         }}
       />
     </Stack>
+    {showMiniPlayer && <FloatingPlayer />}
+    </View>
   );
 };
 

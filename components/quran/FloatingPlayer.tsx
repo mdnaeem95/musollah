@@ -11,7 +11,8 @@ import { StyleSheet, Text, TouchableOpacity, View, ViewProps } from 'react-nativ
 import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
-import TrackPlayer, { RepeatMode, useActiveTrack } from 'react-native-track-player';
+import TrackPlayer, { useActiveTrack } from 'react-native-track-player';
+import { useRouter } from 'expo-router';
 import { useLastActiveTrack } from '../../hooks/quran/useLastActiveTrack';
 import { PlayPauseButton } from './AyahPlayPauseButton';
 import { MovingText } from './MovingText';
@@ -23,11 +24,11 @@ import { enter } from '../../utils';
 
 export const FloatingPlayer = ({ style }: ViewProps) => {
   const { theme, isDarkMode } = useTheme();
+  const router = useRouter();
   const activeTrack = useActiveTrack();
   const lastActiveTrack = useLastActiveTrack();
   const [displayedTrack, setDisplayedTrack] = useState(activeTrack ?? lastActiveTrack);
   const [isVisible, setIsVisible] = useState(false);
-  const [isLooping, setIsLooping] = useState(false);
 
   useEffect(() => {
     const track = activeTrack ?? lastActiveTrack;
@@ -35,11 +36,17 @@ export const FloatingPlayer = ({ style }: ViewProps) => {
     setIsVisible(!!track);
   }, [activeTrack, lastActiveTrack]);
 
-  const handleToggleLoop = async () => {
-    const next = !isLooping;
-    setIsLooping(next);
-    await TrackPlayer.setRepeatMode(next ? RepeatMode.Track : RepeatMode.Off);
+  // Track ids are `${surahNumber}-${ayahIndex}` — open the full Listen player.
+  const handleOpen = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const surahNumber = displayedTrack?.id?.split('-')[0];
+    if (surahNumber) router.push(`/listen/${surahNumber}`);
+  };
+
+  const handleStop = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsVisible(false);
+    await TrackPlayer.reset();
   };
 
   if (!displayedTrack || !isVisible) return null;
@@ -69,13 +76,9 @@ export const FloatingPlayer = ({ style }: ViewProps) => {
           style,
         ]}
       >
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-          style={styles.content}
-        >
-          {/* Track Info */}
-          <View style={styles.trackInfo}>
+        <View style={styles.content}>
+          {/* Track Info — tap to open the full Listen player */}
+          <TouchableOpacity activeOpacity={0.7} onPress={handleOpen} style={styles.trackInfo}>
             <MovingText
               style={[styles.trackTitle, { color: titleColor }]}
               text={displayedTrack.title ?? ''}
@@ -84,32 +87,24 @@ export const FloatingPlayer = ({ style }: ViewProps) => {
             <Text style={[styles.reciterName, { color: reciterColor }]}>
               {displayedTrack.artist ?? 'Unknown Reciter'}
             </Text>
-          </View>
+          </TouchableOpacity>
 
           {/* Controls */}
           <View style={styles.controls}>
-            <TouchableOpacity
-              onPress={handleToggleLoop}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <FontAwesome6
-                name="rotate"
-                size={18}
-                color={isLooping ? theme.colors.accent : iconColor}
-                solid={isLooping}
-              />
-            </TouchableOpacity>
-            <SkipPreviousButton iconSize={22} color={iconColor} />
+            <SkipPreviousButton iconSize={20} color={iconColor} />
             <View style={[styles.playButton, { backgroundColor: theme.colors.accent }]}>
               <PlayPauseButton
-                iconSize={20}
+                iconSize={18}
                 color="#fff"
                 isActiveAyah={!!activeTrack}
               />
             </View>
-            <SkipNextButton iconSize={22} color={iconColor} />
+            <SkipNextButton iconSize={20} color={iconColor} />
+            <TouchableOpacity onPress={handleStop} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <FontAwesome6 name="xmark" size={18} color={iconColor} />
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
       </BlurView>
     </MotiView>
   );

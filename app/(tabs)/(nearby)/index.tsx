@@ -13,7 +13,9 @@
  */
 
 import React, { useEffect, useCallback, memo, useMemo, useState, useRef } from 'react';
-import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Text, Platform, Animated, Easing, FlatList } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Text, Platform, Animated, Easing, FlatList, Dimensions } from 'react-native';
+import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTheme } from '../../../context/ThemeContext';
 import { FlashList } from '@shopify/flash-list';
 import { FontAwesome6 } from '@expo/vector-icons';
@@ -50,6 +52,14 @@ import { enter } from '../../../utils';
 // ============================================================================
 // CONSTANTS
 // ============================================================================
+
+// Collapsible bottom-sheet geometry. The sheet is tall when expanded; collapsed
+// it slides down so only a peek (handle + segmented control) shows, leaving the
+// map large. Drag (or tap) the notch to toggle.
+const SCREEN_H = Dimensions.get('window').height;
+const SHEET_HEIGHT = Math.round(SCREEN_H * 0.8);
+const SHEET_PEEK = 188; // visible height when collapsed
+const SHEET_COLLAPSED_Y = SHEET_HEIGHT - SHEET_PEEK;
 
 // Layer order MUST match INDEX_TO_TYPE in useLocationsTab.
 const LOCATION_TYPES = ['All', 'Food', 'Musollahs', 'Mosques', 'Bidets'] as const;
@@ -717,6 +727,35 @@ export default function NearbyScreen() {
   const [isAddLocationSheetVisible, setIsAddLocationSheetVisible] = useState(false);
   const [showSignInModal, setShowSignInModal] = useState(false);
 
+  // --- collapsible bottom sheet (collapsed by default; drag or tap the notch)
+  const sheetY = useSharedValue(SHEET_COLLAPSED_Y);
+  const sheetStartY = useSharedValue(0);
+
+  const sheetPan = Gesture.Pan()
+    .onStart(() => {
+      sheetStartY.value = sheetY.value;
+    })
+    .onUpdate((e) => {
+      sheetY.value = Math.min(SHEET_COLLAPSED_Y, Math.max(0, sheetStartY.value + e.translationY));
+    })
+    .onEnd((e) => {
+      const expand = e.velocityY < -300 || (e.velocityY <= 300 && sheetY.value < SHEET_COLLAPSED_Y / 2);
+      sheetY.value = withSpring(expand ? 0 : SHEET_COLLAPSED_Y, { damping: 22, stiffness: 220 });
+    });
+
+  const sheetTap = Gesture.Tap().onEnd(() => {
+    sheetY.value = withSpring(
+      sheetY.value > SHEET_COLLAPSED_Y / 2 ? 0 : SHEET_COLLAPSED_Y,
+      { damping: 22, stiffness: 220 }
+    );
+  });
+
+  const sheetGesture = Gesture.Race(sheetPan, sheetTap);
+
+  const sheetAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: sheetY.value }],
+  }));
+
   const handleOpenAddLocation = () => {
     setIsAddLocationSheetVisible(true);
   };
@@ -1074,8 +1113,8 @@ export default function NearbyScreen() {
           </MotiView>
         </View>
 
-        {/* Bottom Sheet Container */}
-        <View style={styles.bottomSheet}>
+        {/* Bottom Sheet Container — collapsed by default; drag/tap the notch */}
+        <Reanimated.View style={[styles.bottomSheet, { height: SHEET_HEIGHT }, sheetAnimStyle]}>
           <BlurView
             intensity={40}
             tint={isDarkMode ? 'dark' : 'light'}
@@ -1083,10 +1122,12 @@ export default function NearbyScreen() {
               backgroundColor: isDarkMode ? 'rgba(6,11,24,0.94)' : 'rgba(238,242,255,0.94)',
             }]}
           >
-            {/* Handle Bar */}
-            <View style={styles.handleContainer}>
-              <View style={[styles.handleBar, { backgroundColor: theme.colors.text.muted }]} />
-            </View>
+            {/* Handle Bar — drag or tap to expand/collapse */}
+            <GestureDetector gesture={sheetGesture}>
+              <View style={styles.handleContainer}>
+                <View style={[styles.handleBar, { backgroundColor: theme.colors.text.muted }]} />
+              </View>
+            </GestureDetector>
 
             {/* Segmented Control */}
             <View style={styles.segmentedWrapper}>
@@ -1162,7 +1203,7 @@ export default function NearbyScreen() {
               />
             )}
           </BlurView>
-        </View>
+        </Reanimated.View>
       </View>
 
       {/* Detail Sheets — keyed off the selected location's type (mutually
@@ -1279,7 +1320,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    height: '50%',
+    // height is set inline (SHEET_HEIGHT); translateY collapses/expands it.
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',
@@ -1293,15 +1334,17 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
   },
+  // Generous hit area so the notch is easy to grab/drag.
   handleContainer: {
     alignItems: 'center',
-    paddingVertical: SPACING.md,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.sm,
   },
   handleBar: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    opacity: 0.3,
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    opacity: 0.35,
   },
 
   // Segmented Control

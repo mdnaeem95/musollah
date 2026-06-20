@@ -38,7 +38,6 @@ import { useSurahDetailPage } from '../../../../hooks/quran/useSurahDetailPage';
 import { useSurahs } from '../../../../api/services/quran';
 import TrackPlayer from 'react-native-track-player';
 import { MushafPlayingProvider } from '../../../../context/MushafPlayingContext';
-import { FloatingPlayer } from '../../../../components/quran/FloatingPlayer';
 import MushafPage from '../../../../components/quran/MushafPage';
 import SettingsModal from '../../../../components/quran/SettingsModal';
 import HifzSheet from '../../../../components/quran/HifzSheet';
@@ -454,8 +453,7 @@ const SurahDetailScreen = () => {
         </PagerView>
       </MushafPlayingProvider>
 
-      {/* Floating audio player */}
-      <FloatingPlayer />
+      {/* Audio mini-player is now mounted globally in the Quran layout */}
 
       {/* Surah picker overlay */}
       {isPickerVisible && (
