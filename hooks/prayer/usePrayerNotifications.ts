@@ -19,6 +19,11 @@ export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null)
   const reminderInterval = usePreferencesStore((state) => state.reminderInterval);
   const selectedAdhan = usePreferencesStore((state) => state.selectedAdhan);
   const notificationsEnabled = usePreferencesStore((state) => state.notificationsEnabled);
+  const prayerReminders = usePreferencesStore((state) => state.prayerReminders);
+  const silentPrayers = usePreferencesStore((state) => state.silentPrayers);
+  const quietHoursEnabled = usePreferencesStore((state) => state.quietHoursEnabled);
+  const quietStartMinutes = usePreferencesStore((state) => state.quietStartMinutes);
+  const quietEndMinutes = usePreferencesStore((state) => state.quietEndMinutes);
 
   useEffect(() => {
     if (!prayerData) {
@@ -53,8 +58,17 @@ export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null)
       return;
     }
 
-    // Create unique key
-    const scheduleKey = `${prayerData.date}_${reminderInterval}_${selectedAdhan}_${mutedNotifications.sort().join(',')}`;
+    // Create unique key — include every input that affects scheduling so changes
+    // trigger a reschedule.
+    const quietKey = quietHoursEnabled ? `${quietStartMinutes}-${quietEndMinutes}` : 'off';
+    const remindersKey = Object.entries(prayerReminders)
+      .sort()
+      .map(([p, m]) => `${p}:${m}`)
+      .join(',');
+    const scheduleKey = `${prayerData.date}_${reminderInterval}_${selectedAdhan}_${mutedNotifications
+      .slice()
+      .sort()
+      .join(',')}_${remindersKey}_${silentPrayers.slice().sort().join(',')}_${quietKey}`;
     
     if (lastScheduledRef.current === scheduleKey) {
       logger.debug('Notifications already scheduled');
@@ -85,13 +99,19 @@ export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null)
         );
         
         logger.info('Scheduling notifications for next 5 days');
-        // ✅ prayerData is already in NormalizedPrayerTimes format (lowercase keys)
-        await prayerNotificationService.schedulePrayerNotifications(
-          prayerData, // ✅ Pass directly - already has lowercase keys (subuh, zohor, etc.)
-          reminderInterval,
-          validMutedPrayers as any,
-          selectedAdhan
-        );
+        // prayerData is already NormalizedPrayerTimes (lowercase keys).
+        await prayerNotificationService.schedulePrayerNotifications(prayerData, {
+          reminderMinutes: reminderInterval,
+          mutedPrayers: validMutedPrayers as any,
+          selectedAdhan,
+          prayerReminders,
+          silentPrayers,
+          quietHours: {
+            enabled: quietHoursEnabled,
+            startMinutes: quietStartMinutes,
+            endMinutes: quietEndMinutes,
+          },
+        });
 
         if (mounted) {
           logger.success('Notifications scheduled successfully');
@@ -124,5 +144,16 @@ export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null)
       mounted = false;
       subscription.remove();
     };
-  }, [prayerData?.date, mutedNotifications, reminderInterval, selectedAdhan, notificationsEnabled]);
+  }, [
+    prayerData?.date,
+    mutedNotifications,
+    reminderInterval,
+    selectedAdhan,
+    notificationsEnabled,
+    prayerReminders,
+    silentPrayers,
+    quietHoursEnabled,
+    quietStartMinutes,
+    quietEndMinutes,
+  ]);
 };

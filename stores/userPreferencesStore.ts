@@ -44,11 +44,20 @@ interface PreferencesState {
   textSize: number;
   reciter: string;
   timeFormat: TimeFormat;
+  /** Default pre-prayer reminder (minutes). Per-prayer overrides win. */
   reminderInterval: number;
   selectedAdhan: AdhanSelection;
   mutedNotifications: string[];
   /** Master switch for all prayer notifications (default on). */
   notificationsEnabled: boolean;
+  /** Per-prayer reminder override (minutes before). Missing = use reminderInterval. */
+  prayerReminders: Record<string, number>;
+  /** Prayers whose at-time alert is silent (no adhan, just a banner). */
+  silentPrayers: string[];
+  /** Quiet hours: alerts still arrive but silently within the window. */
+  quietHoursEnabled: boolean;
+  quietStartMinutes: number; // minutes from midnight
+  quietEndMinutes: number;   // minutes from midnight (may wrap past midnight)
   /** When true (default), the highlight accent follows the live sky phase. */
   useSkyAccent: boolean;
 
@@ -63,6 +72,10 @@ interface PreferencesState {
   setSelectedAdhan: (adhan: AdhanSelection) => void;
   toggleNotificationForPrayer: (prayer: string) => void;
   setNotificationsEnabled: (value: boolean) => void;
+  setPrayerReminder: (prayer: string, minutes: number) => void;
+  togglePrayerSilent: (prayer: string) => void;
+  setQuietHoursEnabled: (value: boolean) => void;
+  setQuietHours: (startMinutes: number, endMinutes: number) => void;
   setSkyAccent: (value: boolean) => void;
   resetPreferences: () => void;
 }
@@ -81,6 +94,11 @@ const initialState = {
   selectedAdhan: 'None' as AdhanSelection,
   mutedNotifications: [],
   notificationsEnabled: true,
+  prayerReminders: {} as Record<string, number>,
+  silentPrayers: [] as string[],
+  quietHoursEnabled: false,
+  quietStartMinutes: 22 * 60, // 22:00
+  quietEndMinutes: 5 * 60,    // 05:00
   useSkyAccent: true,
 };
 
@@ -202,6 +220,35 @@ export const usePreferencesStore = create<PreferencesState>()(
         set({ notificationsEnabled });
       },
 
+      setPrayerReminder: (prayer, minutes) => {
+        set((state) => {
+          const next = { ...state.prayerReminders, [prayer]: minutes };
+          logger.info('Per-prayer reminder set', { prayer, minutes });
+          return { prayerReminders: next };
+        });
+      },
+
+      togglePrayerSilent: (prayer) => {
+        set((state) => {
+          const isSilent = state.silentPrayers.includes(prayer);
+          const silentPrayers = isSilent
+            ? state.silentPrayers.filter((p) => p !== prayer)
+            : [...state.silentPrayers, prayer];
+          logger.info('Per-prayer silent toggled', { prayer, silent: !isSilent });
+          return { silentPrayers };
+        });
+      },
+
+      setQuietHoursEnabled: (quietHoursEnabled) => {
+        logger.info('Quiet hours toggled', { enabled: quietHoursEnabled });
+        set({ quietHoursEnabled });
+      },
+
+      setQuietHours: (quietStartMinutes, quietEndMinutes) => {
+        logger.info('Quiet hours window set', { quietStartMinutes, quietEndMinutes });
+        set({ quietStartMinutes, quietEndMinutes });
+      },
+
       toggleNotificationForPrayer: (prayer) => {
         set((state) => {
           const isMuted = state.mutedNotifications.includes(prayer);
@@ -257,7 +304,7 @@ export const usePreferencesStore = create<PreferencesState>()(
           defaultStorage.delete(name);
         },
       })),
-      version: 3,
+      version: 4,
       // Migration logic
       migrate: (persistedState: any, version: number) => {
         if (version === 0) {
@@ -270,6 +317,14 @@ export const usePreferencesStore = create<PreferencesState>()(
         if (version < 3 && persistedState && persistedState.notificationsEnabled === undefined) {
           logger.warn('Migrating preferences to v3: defaulting notificationsEnabled=true');
           persistedState.notificationsEnabled = true;
+        }
+        if (version < 4 && persistedState) {
+          logger.warn('Migrating preferences to v4: per-prayer + quiet-hours defaults');
+          persistedState.prayerReminders = persistedState.prayerReminders ?? {};
+          persistedState.silentPrayers = persistedState.silentPrayers ?? [];
+          persistedState.quietHoursEnabled = persistedState.quietHoursEnabled ?? false;
+          persistedState.quietStartMinutes = persistedState.quietStartMinutes ?? 22 * 60;
+          persistedState.quietEndMinutes = persistedState.quietEndMinutes ?? 5 * 60;
         }
         return persistedState as PreferencesState;
       },

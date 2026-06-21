@@ -23,6 +23,8 @@ import { calculateContrastColor, enter } from '../../../../utils';
 // and was never scheduled — listing it here was misleading).
 const PRAYER_SESSIONS = ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
 const REMINDER_INTERVALS = [5, 10, 15, 20, 25, 30];
+const PER_PRAYER_OFFSETS = [0, 5, 10, 15, 30]; // 0 = no reminder
+const QUIET_TIME_SLOTS = Array.from({ length: 48 }, (_, i) => i * 30); // 30-min slots
 
 // ============================================================================
 // MAIN COMPONENT
@@ -38,15 +40,39 @@ const PrayersSettings = () => {
     selectedAdhan,
     mutedNotifications,
     notificationsEnabled,
+    prayerReminders,
+    silentPrayers,
+    quietHoursEnabled,
+    quietStartMinutes,
+    quietEndMinutes,
     isReminderPickerVisible,
     handleTimeFormatToggle,
     handleReminderIntervalChange,
     handleToggleNotification,
     handleToggleNotificationsEnabled,
+    setPrayerReminder,
+    togglePrayerSilent,
+    setQuietHoursEnabled,
+    setQuietHours,
     navigateToAdhanSelection,
     openReminderPicker,
     closeReminderPicker,
   } = usePrayerSettings();
+
+  // Which prayer's per-prayer config is expanded, and which quiet-hours field
+  // (start/end) is being edited in the time modal.
+  const [expandedPrayer, setExpandedPrayer] = React.useState<string | null>(null);
+  const [quietField, setQuietField] = React.useState<'start' | 'end' | null>(null);
+
+  const formatMinutes = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const mm = String(m).padStart(2, '0');
+    if (timeFormat === '24-hour') return `${String(h).padStart(2, '0')}:${mm}`;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${mm} ${ampm}`;
+  };
 
   const handleSwitchToggle = (handler: () => void) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -210,41 +236,199 @@ const PrayersSettings = () => {
               <View style={[styles.divider, { backgroundColor: theme.colors.muted }]} />
             )}
 
-            {notificationsEnabled && PRAYER_SESSIONS.map((prayer, index) => (
-              <React.Fragment key={prayer}>
-                <MotiView
-                  from={{ opacity: 0, translateX: -20 }}
-                  animate={{ opacity: 1, translateX: 0 }}
-                  transition={enter(0)}
-                >
-                  <View style={styles.prayerRow}>
-                    <View style={[styles.prayerIcon, { backgroundColor: accent + '15' }]}>
-                      <FontAwesome6
-                        name="mosque"
-                        size={16}
-                        color={accent}
+            {notificationsEnabled && PRAYER_SESSIONS.map((prayer, index) => {
+              const enabled = !mutedNotifications.includes(prayer);
+              const expanded = expandedPrayer === prayer;
+              const effectiveReminder = prayerReminders[prayer] ?? reminderInterval;
+              const isSilent = silentPrayers.includes(prayer);
+              const summary = `${effectiveReminder === 0 ? 'No reminder' : `${effectiveReminder} min before`} · ${isSilent ? 'Silent' : 'Adhan'}`;
+              return (
+                <React.Fragment key={prayer}>
+                  <MotiView
+                    from={{ opacity: 0, translateX: -20 }}
+                    animate={{ opacity: 1, translateX: 0 }}
+                    transition={enter(0)}
+                  >
+                    <View style={styles.prayerRow}>
+                      <TouchableOpacity
+                        style={styles.prayerRowMain}
+                        activeOpacity={enabled ? 0.7 : 1}
+                        disabled={!enabled}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setExpandedPrayer(expanded ? null : prayer);
+                        }}
+                      >
+                        <View style={[styles.prayerIcon, { backgroundColor: accent + '15' }]}>
+                          <FontAwesome6 name="mosque" size={16} color={accent} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.prayerLabel, { color: theme.colors.text.primary }]}>
+                            {prayer}
+                          </Text>
+                          {enabled && (
+                            <Text style={[styles.prayerSummary, { color: theme.colors.text.secondary }]}>
+                              {summary}
+                            </Text>
+                          )}
+                        </View>
+                        {enabled && (
+                          <FontAwesome6
+                            name={expanded ? 'chevron-up' : 'chevron-down'}
+                            size={13}
+                            color={theme.colors.text.muted}
+                          />
+                        )}
+                      </TouchableOpacity>
+                      <Switch
+                        value={enabled}
+                        onValueChange={() => handleSwitchToggle(() => handleToggleNotification(prayer))}
+                        trackColor={{ false: theme.colors.muted, true: accent + '80' }}
+                        thumbColor={theme.colors.primary}
+                        ios_backgroundColor={theme.colors.muted}
+                        style={{ marginLeft: 8 }}
                       />
                     </View>
-                    <Text style={[styles.prayerLabel, { color: theme.colors.text.primary }]}>
-                      {prayer}
-                    </Text>
-                    <Switch
-                      value={!mutedNotifications.includes(prayer)}
-                      onValueChange={() => handleSwitchToggle(() => handleToggleNotification(prayer))}
-                      trackColor={{
-                        false: theme.colors.muted,
-                        true: accent + '80',
-                      }}
-                      thumbColor={theme.colors.primary}
-                      ios_backgroundColor={theme.colors.muted}
-                    />
+
+                    {enabled && expanded && (
+                      <View style={styles.prayerConfig}>
+                        <Text style={[styles.configLabel, { color: theme.colors.text.muted }]}>REMINDER</Text>
+                        <View style={styles.chipRow}>
+                          {PER_PRAYER_OFFSETS.map((min) => {
+                            const active = effectiveReminder === min;
+                            return (
+                              <TouchableOpacity
+                                key={min}
+                                onPress={() => {
+                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                  setPrayerReminder(prayer, min);
+                                }}
+                                style={[
+                                  styles.chip,
+                                  {
+                                    backgroundColor: active ? accent : (isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
+                                  },
+                                ]}
+                              >
+                                <Text style={[styles.chipText, { color: active ? calculateContrastColor(accent) : theme.colors.text.secondary }]}>
+                                  {min === 0 ? 'Off' : `${min}m`}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+
+                        <View style={styles.configRow}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.configRowLabel, { color: theme.colors.text.primary }]}>Silent</Text>
+                            <Text style={[styles.configRowDesc, { color: theme.colors.text.secondary }]}>
+                              Banner only, no adhan
+                            </Text>
+                          </View>
+                          <Switch
+                            value={isSilent}
+                            onValueChange={() => handleSwitchToggle(() => togglePrayerSilent(prayer))}
+                            trackColor={{ false: theme.colors.muted, true: accent + '80' }}
+                            thumbColor={theme.colors.primary}
+                            ios_backgroundColor={theme.colors.muted}
+                          />
+                        </View>
+                      </View>
+                    )}
+                  </MotiView>
+                  {index < PRAYER_SESSIONS.length - 1 && (
+                    <View style={[styles.divider, { backgroundColor: theme.colors.muted }]} />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </BlurView>
+        </MotiView>
+
+        {/* Quiet Hours */}
+        <MotiView
+          from={{ opacity: 0, translateY: -20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={enter(0)}
+        >
+          <SectionHeader icon="moon" label="Quiet Hours" theme={theme} />
+          <Text style={[styles.sectionDescription, { color: theme.colors.text.secondary }]}>
+            Within this window prayer alerts still arrive, but silently
+          </Text>
+
+          <BlurView
+            intensity={20}
+            tint={isDarkMode ? 'dark' : 'light'}
+            style={[styles.settingsCard, { backgroundColor: theme.colors.secondary }]}
+          >
+            <View style={styles.settingRow}>
+              <View style={[styles.settingIcon, { backgroundColor: accent + '15' }]}>
+                <FontAwesome6 name="moon" size={18} color={accent} />
+              </View>
+              <View style={styles.settingContent}>
+                <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>
+                  Quiet Hours
+                </Text>
+                <Text style={[styles.settingDescription, { color: theme.colors.text.secondary }]}>
+                  {quietHoursEnabled
+                    ? `${formatMinutes(quietStartMinutes)} – ${formatMinutes(quietEndMinutes)}`
+                    : 'Off'}
+                </Text>
+              </View>
+              <Switch
+                value={quietHoursEnabled}
+                onValueChange={() => handleSwitchToggle(() => setQuietHoursEnabled(!quietHoursEnabled))}
+                trackColor={{ false: theme.colors.muted, true: accent + '80' }}
+                thumbColor={theme.colors.primary}
+                ios_backgroundColor={theme.colors.muted}
+              />
+            </View>
+
+            {quietHoursEnabled && (
+              <>
+                <View style={[styles.divider, { backgroundColor: theme.colors.muted }]} />
+                <TouchableOpacity
+                  style={styles.settingRow}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setQuietField('start');
+                  }}
+                >
+                  <View style={[styles.settingIcon, { backgroundColor: accent + '15' }]}>
+                    <FontAwesome6 name="hourglass-start" size={16} color={accent} />
                   </View>
-                </MotiView>
-                {index < PRAYER_SESSIONS.length - 1 && (
-                  <View style={[styles.divider, { backgroundColor: theme.colors.muted }]} />
-                )}
-              </React.Fragment>
-            ))}
+                  <View style={styles.settingContent}>
+                    <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>Starts</Text>
+                  </View>
+                  <View style={styles.settingAction}>
+                    <Text style={[styles.settingValue, { color: accent }]}>{formatMinutes(quietStartMinutes)}</Text>
+                    <FontAwesome6 name="chevron-right" size={16} color={theme.colors.text.muted} />
+                  </View>
+                </TouchableOpacity>
+
+                <View style={[styles.divider, { backgroundColor: theme.colors.muted }]} />
+                <TouchableOpacity
+                  style={styles.settingRow}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setQuietField('end');
+                  }}
+                >
+                  <View style={[styles.settingIcon, { backgroundColor: accent + '15' }]}>
+                    <FontAwesome6 name="hourglass-end" size={16} color={accent} />
+                  </View>
+                  <View style={styles.settingContent}>
+                    <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>Ends</Text>
+                  </View>
+                  <View style={styles.settingAction}>
+                    <Text style={[styles.settingValue, { color: accent }]}>{formatMinutes(quietEndMinutes)}</Text>
+                    <FontAwesome6 name="chevron-right" size={16} color={theme.colors.text.muted} />
+                  </View>
+                </TouchableOpacity>
+              </>
+            )}
           </BlurView>
         </MotiView>
       </ScrollView>
@@ -319,6 +503,63 @@ const PrayersSettings = () => {
                   size={16}
                   color={calculateContrastColor(accent)}
                 />
+                <Text style={[styles.doneButtonText, { color: calculateContrastColor(accent) }]}>
+                  Done
+                </Text>
+              </TouchableOpacity>
+            </BlurView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Quiet Hours time picker */}
+      <Modal
+        visible={quietField !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setQuietField(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackground}
+          activeOpacity={1}
+          onPress={() => setQuietField(null)}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <BlurView
+              intensity={30}
+              tint={isDarkMode ? 'dark' : 'light'}
+              style={[styles.modalContainer, { backgroundColor: theme.colors.secondary }]}
+            >
+              <View style={[styles.modalIcon, { backgroundColor: accent + '15' }]}>
+                <FontAwesome6 name="moon" size={32} color={accent} />
+              </View>
+              <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>
+                {quietField === 'start' ? 'Quiet Hours Start' : 'Quiet Hours End'}
+              </Text>
+
+              <Picker
+                selectedValue={quietField === 'start' ? quietStartMinutes : quietEndMinutes}
+                style={[styles.picker, { color: theme.colors.text.primary }]}
+                onValueChange={(value) => {
+                  const v = value as number;
+                  if (quietField === 'start') setQuietHours(v, quietEndMinutes);
+                  else setQuietHours(quietStartMinutes, v);
+                }}
+              >
+                {QUIET_TIME_SLOTS.map((min) => (
+                  <Picker.Item key={min} label={formatMinutes(min)} value={min} />
+                ))}
+              </Picker>
+
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setQuietField(null);
+                }}
+                style={[styles.doneButton, { backgroundColor: accent }]}
+                activeOpacity={0.8}
+              >
+                <FontAwesome6 name="check" size={16} color={calculateContrastColor(accent)} />
                 <Text style={[styles.doneButtonText, { color: calculateContrastColor(accent) }]}>
                   Done
                 </Text>
@@ -454,8 +695,13 @@ const styles = StyleSheet.create({
   prayerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
     paddingVertical: 8,
+  },
+  prayerRowMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   prayerIcon: {
     width: 36,
@@ -465,9 +711,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   prayerLabel: {
-    flex: 1,
     fontSize: 16,
     fontFamily: 'Outfit_500Medium',
+  },
+  prayerSummary: {
+    fontSize: 12,
+    fontFamily: 'Outfit_400Regular',
+    marginTop: 2,
+  },
+  prayerConfig: {
+    paddingLeft: 48,
+    paddingRight: 4,
+    paddingBottom: 12,
+    gap: 10,
+  },
+  configLabel: {
+    fontSize: 11,
+    fontFamily: 'Outfit_600SemiBold',
+    letterSpacing: 0.6,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  chipText: {
+    fontSize: 13,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  configRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  configRowLabel: {
+    fontSize: 14,
+    fontFamily: 'Outfit_500Medium',
+  },
+  configRowDesc: {
+    fontSize: 12,
+    fontFamily: 'Outfit_400Regular',
+    marginTop: 1,
   },
 
   // Divider

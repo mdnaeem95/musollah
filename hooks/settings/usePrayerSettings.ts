@@ -78,11 +78,20 @@ export function usePrayerSettings() {
     selectedAdhan,
     mutedNotifications,
     notificationsEnabled,
+    prayerReminders,
+    silentPrayers,
+    quietHoursEnabled,
+    quietStartMinutes,
+    quietEndMinutes,
     toggleTimeFormat,
     setReminderInterval,
     setSelectedAdhan,
     toggleNotificationForPrayer,
     setNotificationsEnabled,
+    setPrayerReminder,
+    togglePrayerSilent,
+    setQuietHoursEnabled,
+    setQuietHours,
   } = usePreferencesStore();
 
   // ✅ Log hook initialization
@@ -318,6 +327,11 @@ export function usePrayerSettings() {
     selectedAdhan,
     mutedNotifications,
     notificationsEnabled,
+    prayerReminders,
+    silentPrayers,
+    quietHoursEnabled,
+    quietStartMinutes,
+    quietEndMinutes,
     isReminderPickerVisible,
 
     // State - Adhan
@@ -329,6 +343,10 @@ export function usePrayerSettings() {
     handleReminderIntervalChange,
     handleToggleNotification,
     handleToggleNotificationsEnabled,
+    setPrayerReminder,
+    togglePrayerSilent,
+    setQuietHoursEnabled,
+    setQuietHours,
     navigateToAdhanSelection,
     openReminderPicker,
     closeReminderPicker,

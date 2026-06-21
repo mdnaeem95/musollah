@@ -153,11 +153,38 @@ const ANDROID_CHANNEL_SOUND: Record<string, string> = {
 };
 
 const REMINDER_CHANNEL = 'prayer-reminder';
+// Delivered but silent (quiet hours / per-prayer silent). Still visible in tray.
+const SILENT_CHANNEL = 'prayer-silent';
 
 // iOS silently drops pending notifications beyond 64. Stay well under so the
 // last scheduled days never get dropped (and leave headroom for other local
 // notifications the app may post).
 const MAX_SCHEDULED_NOTIFICATIONS = 58;
+
+export interface QuietHours {
+  enabled: boolean;
+  startMinutes: number; // minutes from midnight
+  endMinutes: number;   // minutes from midnight (window may wrap past midnight)
+}
+
+/** Whether a moment falls inside the quiet-hours window (handles midnight wrap). */
+function isWithinQuietHours(date: Date, qh: QuietHours): boolean {
+  if (!qh.enabled) return false;
+  const mins = date.getHours() * 60 + date.getMinutes();
+  const { startMinutes: s, endMinutes: e } = qh;
+  if (s === e) return false; // empty window
+  return s < e ? mins >= s && mins < e : mins >= s || mins < e;
+}
+
+/** Per-call notification config threaded down from the user's preferences. */
+interface ScheduleConfig {
+  reminderMinutes: number;            // default offset
+  mutedPrayers: LocalPrayerName[];
+  selectedAdhan: string;
+  prayerReminders: Record<string, number>; // per-prayer override (minutes)
+  silentPrayers: string[];            // prayers whose at-time alert is silent
+  quietHours: QuietHours;
+}
 
 // ============================================================================
 // SERVICE CLASS
@@ -252,6 +279,18 @@ class PrayerNotificationService {
           ...base,
         });
 
+        // Silent delivery (quiet hours / per-prayer silent): visible, no sound.
+        await Notifications.setNotificationChannelAsync(SILENT_CHANNEL, {
+          name: 'Prayer (silent)',
+          importance: Notifications.AndroidImportance.DEFAULT,
+          sound: null,
+          vibrationPattern: [0],
+          lightColor: '#BFE1DB',
+          bypassDnd: false,
+          lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+          showBadge: true,
+        });
+
         for (const [channelId, sound] of Object.entries(ANDROID_CHANNEL_SOUND)) {
           await Notifications.setNotificationChannelAsync(channelId, {
             name: 'Prayer Adhan',
@@ -319,11 +358,10 @@ class PrayerNotificationService {
    */
   async schedulePrayerNotifications(
     prayerData: NormalizedPrayerTimes,
-    reminderMinutes: number,
-    mutedPrayers: LocalPrayerName[],
-    selectedAdhan: string,
+    config: ScheduleConfig,
     userLocation?: LocationCoords
   ): Promise<void> {
+    const { reminderMinutes, mutedPrayers, selectedAdhan } = config;
     logger.time('schedule-notifications');
     logger.info('Starting notification scheduling', {
       daysToSchedule: this.DAYS_TO_SCHEDULE,
@@ -331,6 +369,8 @@ class PrayerNotificationService {
       mutedCount: mutedPrayers.length,
       mutedPrayers,
       selectedAdhan,
+      silentPrayers: config.silentPrayers,
+      quietHours: config.quietHours.enabled,
       hasLocation: !!userLocation,
     });
 
@@ -395,9 +435,9 @@ class PrayerNotificationService {
         const dateStr = format(targetDate, 'yyyy-MM-dd');
 
         // Stay under iOS's 64-pending cap: stop before scheduling a day that
-        // would push us over, so earlier days are never silently dropped.
-        const perDayMax =
-          (LOGGABLE_PRAYERS.length - mutedPrayers.length) * (reminderMinutes > 0 ? 2 : 1);
+        // would push us over, so earlier days are never silently dropped. Upper
+        // bound = every non-muted prayer with both a reminder and an at-time alert.
+        const perDayMax = (LOGGABLE_PRAYERS.length - mutedPrayers.length) * 2;
         if (scheduledNotifications.length + perDayMax > MAX_SCHEDULED_NOTIFICATIONS) {
           logger.warn('Approaching notification cap; stopping early', {
             scheduled: scheduledNotifications.length,
@@ -433,9 +473,7 @@ class PrayerNotificationService {
           // Schedule notifications for this day
           const dayNotifications = await this.scheduleDayNotifications(
             dayPrayerData,
-            reminderMinutes,
-            mutedPrayers,
-            selectedAdhan,
+            config,
             dateStr
           );
 
@@ -500,11 +538,10 @@ class PrayerNotificationService {
    */
   private async scheduleDayNotifications(
     prayerData: NormalizedPrayerTimes,
-    reminderMinutes: number,
-    mutedPrayers: LocalPrayerName[],
-    selectedAdhan: string,
+    config: ScheduleConfig,
     dateStr: string
   ): Promise<ScheduledNotification[]> {
+    const { reminderMinutes, mutedPrayers, selectedAdhan, prayerReminders, silentPrayers, quietHours } = config;
     logger.debug(`Scheduling day notifications`, {
       date: dateStr,
       prayers: LOGGABLE_PRAYERS.length,
@@ -553,18 +590,22 @@ class PrayerNotificationService {
         hasReminder: reminderMinutes > 0,
       });
 
-      // Schedule reminder notification (default sound — the adhan is for the
-      // at-time alert, the reminder is a gentle heads-up).
-      if (reminderMinutes > 0) {
-        const reminderTime = new Date(prayerTime.getTime() - reminderMinutes * 60 * 1000);
+      // Schedule the "get ready" reminder (per-prayer offset; default sound, or
+      // silent within quiet hours). The adhan is the at-time alert; this is the
+      // gentle heads-up beforehand.
+      const effectiveReminder = prayerReminders[prayerName] ?? reminderMinutes;
+      if (effectiveReminder > 0) {
+        const reminderTime = new Date(prayerTime.getTime() - effectiveReminder * 60 * 1000);
         if (reminderTime > now) {
+          const reminderQuiet = isWithinQuietHours(reminderTime, quietHours);
           try {
             const reminderId = await this.scheduleNotification({
-              title: `${prayerName} in ${reminderMinutes} minutes`,
-              body: 'Time to prepare for prayer',
+              title: `${prayerName} in ${effectiveReminder} min`,
+              body: `Time to get ready for ${prayerName}.`,
               data: { type: 'reminder', prayer: prayerName },
               trigger: reminderTime,
-              channelId: REMINDER_CHANNEL,
+              channelId: reminderQuiet ? SILENT_CHANNEL : REMINDER_CHANNEL,
+              silent: reminderQuiet,
             });
 
             scheduledNotifications.push({
@@ -589,18 +630,24 @@ class PrayerNotificationService {
         }
       }
 
-      // Schedule adhan notification (at prayer time). iOS plays the bundled
+      // Schedule the at-prayer-time alert. Silent (per-prayer choice or quiet
+      // hours) -> visible banner, no sound. Otherwise iOS plays the bundled
       // adhan clip by filename; Android routes to the matching adhan channel.
       try {
-        const iosSound = ADHAN_IOS_SOUND[selectedAdhan]; // undefined for 'None' -> default
-        const androidChannel = ADHAN_ANDROID_CHANNEL[selectedAdhan] ?? 'prayer-adhan-default';
+        const atTimeSilent =
+          silentPrayers.includes(prayerName) || isWithinQuietHours(prayerTime, quietHours);
+        const iosSound = atTimeSilent ? undefined : ADHAN_IOS_SOUND[selectedAdhan];
+        const androidChannel = atTimeSilent
+          ? SILENT_CHANNEL
+          : ADHAN_ANDROID_CHANNEL[selectedAdhan] ?? 'prayer-adhan-default';
         const adhanId = await this.scheduleNotification({
           title: `${prayerName} Prayer Time`,
           body: 'Time for prayer',
-          data: { type: 'adhan', prayer: prayerName, sound: selectedAdhan },
+          data: { type: 'adhan', prayer: prayerName, sound: atTimeSilent ? 'silent' : selectedAdhan },
           trigger: prayerTime,
           sound: Platform.OS === 'ios' ? iosSound : undefined,
           channelId: Platform.OS === 'android' ? androidChannel : undefined,
+          silent: atTimeSilent,
         });
 
         scheduledNotifications.push({
@@ -646,12 +693,14 @@ class PrayerNotificationService {
     trigger: Date | number;
     sound?: string;
     channelId?: string;
+    silent?: boolean;
   }): Promise<string> {
     logger.debug('Scheduling notification', {
       title: config.title,
       type: config.data.type,
       prayer: config.data.prayer,
       hasSound: !!config.sound,
+      silent: config.silent,
       channelId: config.channelId,
     });
 
@@ -661,8 +710,11 @@ class PrayerNotificationService {
         body: config.body,
         data: config.data,
         // iOS plays this sound directly; on Android the channel owns the sound.
-        sound: config.sound || 'default',
-        priority: Notifications.AndroidNotificationPriority.HIGH,
+        // silent -> no sound (false), so quiet-hours/silent alerts still show.
+        sound: config.silent ? false : config.sound || 'default',
+        priority: config.silent
+          ? Notifications.AndroidNotificationPriority.DEFAULT
+          : Notifications.AndroidNotificationPriority.HIGH,
       };
 
       const trigger = this.createTrigger(config.trigger, config.channelId);
