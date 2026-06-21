@@ -18,6 +18,10 @@ export default {
       "appleTeamId": "RF3P52KUZA",
       "supportsTablet": false,
       "infoPlist": {
+        // Keep the pre-iOS-26 (non Liquid Glass) appearance. iOS 26 otherwise
+        // wraps every nav-bar button in a circular glass background; the app uses
+        // its own custom glassmorphism, so we opt out of the system redesign.
+        "UIDesignRequiresCompatibility": true,
         "NSPhotoLibraryAddUsageDescription": "This app needs access to your photo library to save images.",
         "UIBackgroundModes": ["location", "fetch", "remote-notification", "audio"],
         "LSApplicationQueriesSchemes": ["file", "tel"],

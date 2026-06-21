@@ -27,15 +27,10 @@ import { useTheme } from '../../../context/ThemeContext';
 export const CircleButton = ({ onPress }: { onPress: () => void }) => {
   const { theme, isDarkMode } = useTheme();
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={[styles.circleButton, {
-        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-      }]}
-    >
+    <TouchableOpacity onPress={onPress} hitSlop={10} style={styles.circleButton}>
       <FontAwesome6
         name="arrow-left"
-        size={18}
+        size={20}
         color={isDarkMode ? 'rgba(255,255,255,0.80)' : theme.colors.text.primary}
       />
     </TouchableOpacity>
@@ -87,16 +82,14 @@ const NearbyLayout = () => {
           // Back Button
           headerLeft: () => (
             <TouchableOpacity
-              style={[styles.circleButton, {
-                marginLeft: 4,
-                backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
-              }]}
+              style={[styles.circleButton, { marginLeft: 4 }]}
               onPress={handleBackPress}
               activeOpacity={0.7}
+              hitSlop={10}
             >
               <FontAwesome6
                 name="arrow-left"
-                size={18}
+                size={20}
                 color={theme.colors.text.primary}
               />
             </TouchableOpacity>

@@ -25,9 +25,10 @@ const ProgressLayout = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.back();
       }}
-      style={[styles.backButton, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)' }]}
+      hitSlop={10}
+      style={styles.backButton}
     >
-      <FontAwesome6 name="arrow-left" size={18} color={theme.colors.text.primary} />
+      <FontAwesome6 name="arrow-left" size={20} color={theme.colors.text.primary} />
     </TouchableOpacity>
   );
 
