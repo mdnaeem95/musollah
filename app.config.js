@@ -31,7 +31,7 @@ export default {
         "NSLocationAlwaysUsageDescription": "We use your location to show you locations of interest nearby (mosques, musollah, food)."
       },
       "googleServicesFile": "./GoogleService-Info.plist",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "bundleIdentifier": "com.naeemsani95.rihlah",
       "runtimeVersion": "1.0.0",
       "privacyManifests": applePrivacyManifest,
