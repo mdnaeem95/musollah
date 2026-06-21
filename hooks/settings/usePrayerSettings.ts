@@ -77,10 +77,12 @@ export function usePrayerSettings() {
     reminderInterval,
     selectedAdhan,
     mutedNotifications,
+    notificationsEnabled,
     toggleTimeFormat,
     setReminderInterval,
     setSelectedAdhan,
     toggleNotificationForPrayer,
+    setNotificationsEnabled,
   } = usePreferencesStore();
 
   // ✅ Log hook initialization
@@ -209,6 +211,11 @@ export function usePrayerSettings() {
     [toggleNotificationForPrayer, mutedNotifications]
   );
 
+  const handleToggleNotificationsEnabled = useCallback(() => {
+    logger.info('Notifications master toggle', { to: !notificationsEnabled });
+    setNotificationsEnabled(!notificationsEnabled);
+  }, [notificationsEnabled, setNotificationsEnabled]);
+
   // ============================================================================
   // ADHAN SELECTION
   // ============================================================================
@@ -310,6 +317,7 @@ export function usePrayerSettings() {
     reminderInterval,
     selectedAdhan,
     mutedNotifications,
+    notificationsEnabled,
     isReminderPickerVisible,
 
     // State - Adhan
@@ -320,6 +328,7 @@ export function usePrayerSettings() {
     handleTimeFormatToggle,
     handleReminderIntervalChange,
     handleToggleNotification,
+    handleToggleNotificationsEnabled,
     navigateToAdhanSelection,
     openReminderPicker,
     closeReminderPicker,

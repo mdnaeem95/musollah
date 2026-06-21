@@ -19,7 +19,9 @@ import { useAccent } from '../../../../hooks/useAccent';
 import { usePrayerSettings } from '../../../../hooks/settings/usePrayerSettings';
 import { calculateContrastColor, enter } from '../../../../utils';
 
-const PRAYER_SESSIONS = ['Subuh', 'Syuruk', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
+// Only the 5 obligatory prayers are notifiable (Syuruk/sunrise is not a prayer
+// and was never scheduled — listing it here was misleading).
+const PRAYER_SESSIONS = ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
 const REMINDER_INTERVALS = [5, 10, 15, 20, 25, 30];
 
 // ============================================================================
@@ -35,10 +37,12 @@ const PrayersSettings = () => {
     reminderInterval,
     selectedAdhan,
     mutedNotifications,
+    notificationsEnabled,
     isReminderPickerVisible,
     handleTimeFormatToggle,
     handleReminderIntervalChange,
     handleToggleNotification,
+    handleToggleNotificationsEnabled,
     navigateToAdhanSelection,
     openReminderPicker,
     closeReminderPicker,
@@ -180,7 +184,33 @@ const PrayersSettings = () => {
             tint={isDarkMode ? 'dark' : 'light'}
             style={[styles.settingsCard, { backgroundColor: theme.colors.secondary }]}
           >
-            {PRAYER_SESSIONS.map((prayer, index) => (
+            {/* Master switch */}
+            <View style={styles.settingRow}>
+              <View style={[styles.settingIcon, { backgroundColor: accent + '15' }]}>
+                <FontAwesome6 name="bell" size={18} color={accent} />
+              </View>
+              <View style={styles.settingContent}>
+                <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>
+                  All Notifications
+                </Text>
+                <Text style={[styles.settingDescription, { color: theme.colors.text.secondary }]}>
+                  {notificationsEnabled ? 'On' : 'Off — no prayer alerts'}
+                </Text>
+              </View>
+              <Switch
+                value={notificationsEnabled}
+                onValueChange={() => handleSwitchToggle(handleToggleNotificationsEnabled)}
+                trackColor={{ false: theme.colors.muted, true: accent + '80' }}
+                thumbColor={theme.colors.primary}
+                ios_backgroundColor={theme.colors.muted}
+              />
+            </View>
+
+            {notificationsEnabled && (
+              <View style={[styles.divider, { backgroundColor: theme.colors.muted }]} />
+            )}
+
+            {notificationsEnabled && PRAYER_SESSIONS.map((prayer, index) => (
               <React.Fragment key={prayer}>
                 <MotiView
                   from={{ opacity: 0, translateX: -20 }}

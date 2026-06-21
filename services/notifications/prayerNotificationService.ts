@@ -125,6 +125,41 @@ async function fetchPrayerTimesForDate(
 }
 
 // ============================================================================
+// ADHAN SOUND MAPPING
+// ============================================================================
+//
+// The adhan clips are bundled as notification sounds via the expo-notifications
+// config plugin (app.config.js -> sounds). iOS references the filename (with
+// extension); Android plays the sound through a per-adhan channel (res/raw name,
+// no extension), because an Android channel's sound is fixed at creation.
+
+const ADHAN_IOS_SOUND: Record<string, string | undefined> = {
+  'Ahmad Al-Nafees': 'adhan_ahmad.wav',
+  'Mishary Rashid Alafasy': 'adhan_mishary.wav',
+  None: undefined, // falls back to the default notification sound
+};
+
+const ADHAN_ANDROID_CHANNEL: Record<string, string> = {
+  'Ahmad Al-Nafees': 'prayer-adhan-ahmad',
+  'Mishary Rashid Alafasy': 'prayer-adhan-mishary',
+  None: 'prayer-adhan-default',
+};
+
+// Android channel id -> res/raw sound name (no extension). 'default' = system sound.
+const ANDROID_CHANNEL_SOUND: Record<string, string> = {
+  'prayer-adhan-ahmad': 'adhan_ahmad',
+  'prayer-adhan-mishary': 'adhan_mishary',
+  'prayer-adhan-default': 'default',
+};
+
+const REMINDER_CHANNEL = 'prayer-reminder';
+
+// iOS silently drops pending notifications beyond 64. Stay well under so the
+// last scheduled days never get dropped (and leave headroom for other local
+// notifications the app may post).
+const MAX_SCHEDULED_NOTIFICATIONS = 58;
+
+// ============================================================================
 // SERVICE CLASS
 // ============================================================================
 
@@ -196,20 +231,35 @@ class PrayerNotificationService {
         return false;
       }
 
-      // Step 4: Setup Android notification channel
+      // Step 4: Setup Android notification channels. A channel's sound is fixed
+      // at creation, so we use one channel per adhan choice (plus a reminder
+      // channel with the default sound) and route each notification to the right
+      // one. Re-creating with the same id is a no-op, so this is idempotent.
       if (Platform.OS === 'android') {
-        logger.debug('Setting up Android notification channel...');
-        await Notifications.setNotificationChannelAsync('prayer', {
-          name: 'Prayer Notifications',
+        logger.debug('Setting up Android notification channels...');
+        const base = {
           importance: Notifications.AndroidImportance.HIGH,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#BFE1DB',
-          sound: 'default',
           bypassDnd: false,
           lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
           showBadge: true,
+        };
+
+        await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL, {
+          name: 'Prayer Reminders',
+          sound: 'default',
+          ...base,
         });
-        logger.debug('Android notification channel created');
+
+        for (const [channelId, sound] of Object.entries(ANDROID_CHANNEL_SOUND)) {
+          await Notifications.setNotificationChannelAsync(channelId, {
+            name: 'Prayer Adhan',
+            sound, // res/raw name (no extension), or 'default'
+            ...base,
+          });
+        }
+        logger.debug('Android notification channels created');
       }
 
       logger.success('Notification permissions granted', {
@@ -343,6 +393,20 @@ class PrayerNotificationService {
       for (let i = 0; i < this.DAYS_TO_SCHEDULE; i++) {
         const targetDate = addDays(startOfDay(new Date()), i);
         const dateStr = format(targetDate, 'yyyy-MM-dd');
+
+        // Stay under iOS's 64-pending cap: stop before scheduling a day that
+        // would push us over, so earlier days are never silently dropped.
+        const perDayMax =
+          (LOGGABLE_PRAYERS.length - mutedPrayers.length) * (reminderMinutes > 0 ? 2 : 1);
+        if (scheduledNotifications.length + perDayMax > MAX_SCHEDULED_NOTIFICATIONS) {
+          logger.warn('Approaching notification cap; stopping early', {
+            scheduled: scheduledNotifications.length,
+            perDayMax,
+            cap: MAX_SCHEDULED_NOTIFICATIONS,
+            daysScheduled: i,
+          });
+          break;
+        }
 
         try {
           logger.debug(`Processing day ${i + 1}/${this.DAYS_TO_SCHEDULE}`, {
@@ -489,7 +553,8 @@ class PrayerNotificationService {
         hasReminder: reminderMinutes > 0,
       });
 
-      // Schedule reminder notification
+      // Schedule reminder notification (default sound — the adhan is for the
+      // at-time alert, the reminder is a gentle heads-up).
       if (reminderMinutes > 0) {
         const reminderTime = new Date(prayerTime.getTime() - reminderMinutes * 60 * 1000);
         if (reminderTime > now) {
@@ -499,6 +564,7 @@ class PrayerNotificationService {
               body: 'Time to prepare for prayer',
               data: { type: 'reminder', prayer: prayerName },
               trigger: reminderTime,
+              channelId: REMINDER_CHANNEL,
             });
 
             scheduledNotifications.push({
@@ -523,14 +589,18 @@ class PrayerNotificationService {
         }
       }
 
-      // Schedule adhan notification (at prayer time)
+      // Schedule adhan notification (at prayer time). iOS plays the bundled
+      // adhan clip by filename; Android routes to the matching adhan channel.
       try {
+        const iosSound = ADHAN_IOS_SOUND[selectedAdhan]; // undefined for 'None' -> default
+        const androidChannel = ADHAN_ANDROID_CHANNEL[selectedAdhan] ?? 'prayer-adhan-default';
         const adhanId = await this.scheduleNotification({
           title: `${prayerName} Prayer Time`,
           body: 'Time for prayer',
           data: { type: 'adhan', prayer: prayerName, sound: selectedAdhan },
           trigger: prayerTime,
-          sound: Platform.OS === 'ios' ? selectedAdhan : undefined,
+          sound: Platform.OS === 'ios' ? iosSound : undefined,
+          channelId: Platform.OS === 'android' ? androidChannel : undefined,
         });
 
         scheduledNotifications.push({
@@ -575,12 +645,14 @@ class PrayerNotificationService {
     data: any;
     trigger: Date | number;
     sound?: string;
+    channelId?: string;
   }): Promise<string> {
     logger.debug('Scheduling notification', {
       title: config.title,
       type: config.data.type,
       prayer: config.data.prayer,
       hasSound: !!config.sound,
+      channelId: config.channelId,
     });
 
     try {
@@ -588,11 +660,12 @@ class PrayerNotificationService {
         title: config.title,
         body: config.body,
         data: config.data,
+        // iOS plays this sound directly; on Android the channel owns the sound.
         sound: config.sound || 'default',
         priority: Notifications.AndroidNotificationPriority.HIGH,
       };
 
-      const trigger = this.createTrigger(config.trigger);
+      const trigger = this.createTrigger(config.trigger, config.channelId);
 
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: notificationContent,
@@ -618,13 +691,19 @@ class PrayerNotificationService {
   /**
    * Create notification trigger from Date or seconds
    */
-  private createTrigger(trigger: Date | number): Notifications.NotificationTriggerInput {
+  private createTrigger(
+    trigger: Date | number,
+    channelId?: string
+  ): Notifications.NotificationTriggerInput {
+    const channel = channelId ? { channelId } : {};
+
     if (typeof trigger === 'number') {
-      logger.debug('Creating time interval trigger', { seconds: trigger });
+      logger.debug('Creating time interval trigger', { seconds: trigger, channelId });
       return {
         type: 'timeInterval',
         seconds: trigger,
         repeats: false,
+        ...channel,
       } as Notifications.TimeIntervalTriggerInput;
     }
 
@@ -636,12 +715,14 @@ class PrayerNotificationService {
       triggerTime: format(trigger, 'yyyy-MM-dd HH:mm'),
       secondsUntilTrigger,
       minutesUntilTrigger: Math.floor(secondsUntilTrigger / 60),
+      channelId,
     });
 
     return {
       type: 'timeInterval',
       seconds: secondsUntilTrigger,
       repeats: false,
+      ...channel,
     } as Notifications.TimeIntervalTriggerInput;
   }
 

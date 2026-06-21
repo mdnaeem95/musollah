@@ -18,10 +18,21 @@ export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null)
   const mutedNotifications = usePreferencesStore((state) => state.mutedNotifications);
   const reminderInterval = usePreferencesStore((state) => state.reminderInterval);
   const selectedAdhan = usePreferencesStore((state) => state.selectedAdhan);
+  const notificationsEnabled = usePreferencesStore((state) => state.notificationsEnabled);
 
   useEffect(() => {
     if (!prayerData) {
       logger.debug('No prayer data, skipping notifications');
+      return;
+    }
+
+    // Master switch off: clear everything and don't schedule.
+    if (!notificationsEnabled) {
+      logger.info('Notifications disabled by master toggle; cancelling all');
+      lastScheduledRef.current = null;
+      prayerNotificationService.cancelAllNotifications().catch((e) =>
+        logger.error('Failed to cancel notifications', e as Error)
+      );
       return;
     }
 
@@ -113,5 +124,5 @@ export const usePrayerNotifications = (prayerData: NormalizedPrayerTimes | null)
       mounted = false;
       subscription.remove();
     };
-  }, [prayerData?.date, mutedNotifications, reminderInterval, selectedAdhan]);
+  }, [prayerData?.date, mutedNotifications, reminderInterval, selectedAdhan, notificationsEnabled]);
 };

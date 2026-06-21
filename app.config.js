@@ -65,6 +65,18 @@ export default {
     "plugins": [
       "./plugins/withFmtConstevalFix",
       [
+        "expo-notifications",
+        {
+          // Bundles the adhan clips as notification sounds (iOS app bundle +
+          // Android res/raw). Referenced by filename in the scheduler. Clips are
+          // <30s (iOS notification-sound limit) IMA4 CAF.
+          "sounds": [
+            "./assets/adhans/adhan_ahmad.wav",
+            "./assets/adhans/adhan_mishary.wav"
+          ]
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "ios": {

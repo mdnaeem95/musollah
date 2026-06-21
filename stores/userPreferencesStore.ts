@@ -47,6 +47,8 @@ interface PreferencesState {
   reminderInterval: number;
   selectedAdhan: AdhanSelection;
   mutedNotifications: string[];
+  /** Master switch for all prayer notifications (default on). */
+  notificationsEnabled: boolean;
   /** When true (default), the highlight accent follows the live sky phase. */
   useSkyAccent: boolean;
 
@@ -60,6 +62,7 @@ interface PreferencesState {
   toggleTimeFormat: () => void;
   setSelectedAdhan: (adhan: AdhanSelection) => void;
   toggleNotificationForPrayer: (prayer: string) => void;
+  setNotificationsEnabled: (value: boolean) => void;
   setSkyAccent: (value: boolean) => void;
   resetPreferences: () => void;
 }
@@ -77,6 +80,7 @@ const initialState = {
   reminderInterval: 0,
   selectedAdhan: 'None' as AdhanSelection,
   mutedNotifications: [],
+  notificationsEnabled: true,
   useSkyAccent: true,
 };
 
@@ -191,6 +195,13 @@ export const usePreferencesStore = create<PreferencesState>()(
         set({ selectedAdhan });
       },
       
+      setNotificationsEnabled: (notificationsEnabled) => {
+        logger.info('Notifications master toggle changed', {
+          enabled: notificationsEnabled,
+        });
+        set({ notificationsEnabled });
+      },
+
       toggleNotificationForPrayer: (prayer) => {
         set((state) => {
           const isMuted = state.mutedNotifications.includes(prayer);
@@ -246,7 +257,7 @@ export const usePreferencesStore = create<PreferencesState>()(
           defaultStorage.delete(name);
         },
       })),
-      version: 2,
+      version: 3,
       // Migration logic
       migrate: (persistedState: any, version: number) => {
         if (version === 0) {
@@ -255,6 +266,10 @@ export const usePreferencesStore = create<PreferencesState>()(
         if (version < 2 && persistedState && persistedState.useSkyAccent === undefined) {
           logger.warn('Migrating preferences to v2: defaulting useSkyAccent=true');
           persistedState.useSkyAccent = true;
+        }
+        if (version < 3 && persistedState && persistedState.notificationsEnabled === undefined) {
+          logger.warn('Migrating preferences to v3: defaulting notificationsEnabled=true');
+          persistedState.notificationsEnabled = true;
         }
         return persistedState as PreferencesState;
       },
@@ -307,6 +322,10 @@ export const useTimeFormat = () => usePreferencesStore((state) => state.timeForm
 
 /** Whether the accent follows the live sky phase (vs the static theme accent). */
 export const useSkyAccentEnabled = () => usePreferencesStore((state) => state.useSkyAccent);
+
+/** Master switch for all prayer notifications. */
+export const useNotificationsEnabled = () =>
+  usePreferencesStore((state) => state.notificationsEnabled);
 
 // ============================================================================
 // UTILITY HOOKS
