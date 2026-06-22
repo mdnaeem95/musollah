@@ -14,7 +14,7 @@
 
 import React, { useEffect, useCallback, memo, useMemo, useState, useRef } from 'react';
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Text, Platform, Animated, Easing, FlatList, Dimensions } from 'react-native';
-import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, Easing as REasing } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTheme } from '../../../context/ThemeContext';
 import { FlashList } from '@shopify/flash-list';
@@ -57,9 +57,13 @@ import { enter } from '../../../utils';
 // it slides down so only a peek (handle + segmented control) shows, leaving the
 // map large. Drag (or tap) the notch to toggle.
 const SCREEN_H = Dimensions.get('window').height;
-const SHEET_HEIGHT = Math.round(SCREEN_H * 0.8);
+// Leave ~230px clear at the top so the EXPANDED sheet never reaches the search
+// bar overlay (status bar + search bar + margin), regardless of device size.
+const SHEET_HEIGHT = Math.round(SCREEN_H - 230);
 const SHEET_PEEK = 188; // visible height when collapsed
 const SHEET_COLLAPSED_Y = SHEET_HEIGHT - SHEET_PEEK;
+// Snappy, non-bouncy snap animation.
+const SHEET_SNAP = { duration: 240, easing: REasing.out(REasing.cubic) };
 
 // Layer order MUST match INDEX_TO_TYPE in useLocationsTab.
 const LOCATION_TYPES = ['All', 'Food', 'Musollahs', 'Mosques', 'Bidets'] as const;
@@ -740,13 +744,13 @@ export default function NearbyScreen() {
     })
     .onEnd((e) => {
       const expand = e.velocityY < -300 || (e.velocityY <= 300 && sheetY.value < SHEET_COLLAPSED_Y / 2);
-      sheetY.value = withSpring(expand ? 0 : SHEET_COLLAPSED_Y, { damping: 22, stiffness: 220 });
+      sheetY.value = withTiming(expand ? 0 : SHEET_COLLAPSED_Y, SHEET_SNAP);
     });
 
   const sheetTap = Gesture.Tap().onEnd(() => {
-    sheetY.value = withSpring(
+    sheetY.value = withTiming(
       sheetY.value > SHEET_COLLAPSED_Y / 2 ? 0 : SHEET_COLLAPSED_Y,
-      { damping: 22, stiffness: 220 }
+      SHEET_SNAP
     );
   });
 
