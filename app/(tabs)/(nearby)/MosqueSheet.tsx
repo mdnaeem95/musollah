@@ -342,6 +342,17 @@ export default function MosqueSheet({
           </Text>
         </MotiView>
 
+        {/* MUIS-registered badge — Singapore mosques are MUIS-administered */}
+        <MotiView
+          from={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={enter(0)}
+          style={styles.muisBadge}
+        >
+          <FontAwesome6 name="circle-check" size={12} color="#0EA5E9" solid />
+          <Text style={styles.muisBadgeText}>MUIS-registered mosque</Text>
+        </MotiView>
+
         {/* Distance Badge */}
         {distance !== null && <DistanceBadge distance={distance} theme={theme} />}
 
@@ -418,6 +429,22 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_400Regular',
     textAlign: 'center',
     marginBottom: SPACING.md,
+  },
+  muisBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#0EA5E915',
+    marginBottom: SPACING.md,
+  },
+  muisBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#0EA5E9',
   },
   distanceBadge: {
     flexDirection: 'row',
