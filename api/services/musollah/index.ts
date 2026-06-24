@@ -52,6 +52,7 @@ export interface BidetLocation {
   male: string;
   distance?: number;
   status?: 'Available' | 'Unavailable' | 'Unknown';
+  statusReason?: string; // shown when Unavailable (e.g. "Maintenance")
   lastUpdated?: number;
   // Distinct users who have confirmed this location ("still here"); drives the
   // community-verified badge and refreshes status freshness.
@@ -84,6 +85,7 @@ export interface MusollahLocation {
   directions: string;
   distance?: number;
   status?: 'Available' | 'Unavailable' | 'Unknown';
+  statusReason?: string; // shown when Unavailable (e.g. "Maintenance")
   lastUpdated?: number;
   // Distinct users who have confirmed this location ("still here"); drives the
   // community-verified badge and refreshes status freshness.
@@ -755,7 +757,8 @@ async function fetchAllMusollahs(): Promise<MusollahLocation[]> {
 async function updateLocationStatus(
   type: 'bidet' | 'musollah',
   id: string,
-  status: 'Available' | 'Unavailable' | 'Unknown'
+  status: 'Available' | 'Unavailable' | 'Unknown',
+  statusReason?: string
 ): Promise<void> {
   const startTime = performance.now();
   const collectionName = type === 'bidet' ? COLLECTIONS.bidets : COLLECTIONS.musollahs;
@@ -773,6 +776,7 @@ async function updateLocationStatus(
     await updateDoc(ref, {
       status,
       lastUpdated: Date.now(),
+      statusReason: status === 'Unavailable' ? (statusReason ?? '') : '',
     });
 
     const duration = Math.round(performance.now() - startTime);
@@ -1182,11 +1186,13 @@ export interface UpdateBidetStatusPayload {
   male?: string;      // Can be "Yes", "No", "Unknown", or location text
   female?: string;    // Can be "Yes", "No", "Unknown", or location text
   handicap?: string;  // Can be "Yes", "No", "Unknown", or location text
+  statusReason?: string; // why it's Unavailable (cleared otherwise)
 }
 
 export interface UpdateMusollahStatusPayload {
   id: string;
   status: 'Available' | 'Unavailable' | 'Unknown';
+  statusReason?: string; // why it's Unavailable (cleared otherwise)
   segregated?: AmenityStatus;
   airConditioned?: AmenityStatus;
   ablutionArea?: AmenityStatus;
@@ -1209,12 +1215,15 @@ export async function updateBidetStatus({
   male,
   female,
   handicap,
+  statusReason,
 }: UpdateBidetStatusPayload): Promise<void> {
   const startTime = performance.now();
 
   const updates: Record<string, any> = {
     status,
     lastUpdated: Date.now(),
+    // Only meaningful when Unavailable; cleared otherwise.
+    statusReason: status === 'Unavailable' ? (statusReason ?? '') : '',
   };
 
   if (male !== undefined) updates.Male = male;
@@ -1267,6 +1276,7 @@ export async function updateBidetStatus({
 export async function updateMusollahStatus({
   id,
   status,
+  statusReason,
   segregated,
   airConditioned,
   ablutionArea,
@@ -1279,6 +1289,8 @@ export async function updateMusollahStatus({
   const updates: Record<string, any> = {
     status,
     lastUpdated: Date.now(),
+    // Only meaningful when Unavailable; cleared otherwise.
+    statusReason: status === 'Unavailable' ? (statusReason ?? '') : '',
   };
 
   if (segregated !== undefined) updates.Segregated = segregated;
@@ -1341,11 +1353,13 @@ export function useUpdateLocationStatus() {
       type,
       id,
       status,
+      statusReason,
     }: {
       type: 'bidet' | 'musollah';
       id: string;
       status: 'Available' | 'Unavailable' | 'Unknown';
-    }) => updateLocationStatus(type, id, status),
+      statusReason?: string;
+    }) => updateLocationStatus(type, id, status, statusReason),
     onSuccess: (_, variables) => {
       logger.success('Location status mutation successful', {
         type: variables.type,

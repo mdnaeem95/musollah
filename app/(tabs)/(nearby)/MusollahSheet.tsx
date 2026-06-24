@@ -74,6 +74,7 @@ interface MusollahSheetProps {
 // Status Badge Component
 interface StatusBadgeProps {
   status: string;
+  reason?: string;
   lastUpdated: number | null;
   verified: boolean;
   stale: boolean;
@@ -81,7 +82,7 @@ interface StatusBadgeProps {
   isDarkMode: boolean;
 }
 
-const StatusBadge = ({ status, lastUpdated, verified, stale, theme, isDarkMode }: StatusBadgeProps) => {
+const StatusBadge = ({ status, reason, lastUpdated, verified, stale, theme, isDarkMode }: StatusBadgeProps) => {
   const getStatusInfo = () => {
     switch (status) {
       case 'Available':
@@ -115,6 +116,7 @@ const StatusBadge = ({ status, lastUpdated, verified, stale, theme, isDarkMode }
             <FontAwesome6 name={statusInfo.icon} size={16} color={statusInfo.color} />
             <Text style={[styles.statusText, { color: statusInfo.color }]}>
               {statusInfo.label}
+              {status === 'Unavailable' && reason ? ` · ${reason}` : ''}
             </Text>
           </View>
           {verified && (
@@ -409,6 +411,7 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
   // Handle status update from ReportStatusSheet
   const handleStatusUpdate = async (updates: {
     status: 'Available' | 'Unavailable' | 'Unknown';
+    statusReason?: string;
   }) => {
     if (!location) return;
 
@@ -418,6 +421,7 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
           type: 'musollah',
           id: location.id,
           status: updates.status,
+          statusReason: updates.statusReason,
         },
         {
           onSuccess: () => {
@@ -467,6 +471,7 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
             directions: data.Directions || '',
             coordinates: data.Coordinates || { latitude: 0, longitude: 0 },
             status: data.status || 'Unknown',
+            statusReason: data.statusReason || '',
             lastUpdated: data.lastUpdated || null,
             verifiedBy: data.verifiedBy || [],
             cleanlinessSum: data.cleanlinessSum || 0,
@@ -572,6 +577,7 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
           {/* Status Badge */}
           <StatusBadge
             status={location.status || 'Unknown'}
+            reason={location.statusReason}
             lastUpdated={location.lastUpdated!}
             verified={isLocationVerified(location.verifiedBy)}
             stale={isStatusStale(location.lastUpdated)}
@@ -755,6 +761,7 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
         onClose={() => setShowReportSheet(false)}
         locationId={location.id}
         currentStatus={location.status || 'Unknown'}
+        currentStatusReason={location.statusReason || ''}
         onStatusUpdate={handleStatusUpdate}
       />
 

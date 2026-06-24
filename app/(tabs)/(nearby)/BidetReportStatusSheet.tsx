@@ -52,13 +52,17 @@ interface ReportStatusSheetProps {
   currentMale?: 'Yes' | 'No' | 'Unknown' | string;  // Can be Yes/No or location text
   currentFemale?: 'Yes' | 'No' | 'Unknown' | string;
   currentHandicap?: 'Yes' | 'No' | 'Unknown' | string;
+  currentStatusReason?: string;
   onStatusUpdate: (updates: {
     status: 'Available' | 'Unavailable' | 'Unknown';
+    statusReason?: string;
     male?: 'Yes' | 'No' | 'Unknown' | string;  // Can send location text
     female?: 'Yes' | 'No' | 'Unknown' | string;
     handicap?: 'Yes' | 'No' | 'Unknown' | string;
   }) => void;
 }
+
+const UNAVAILABLE_REASONS = ['Maintenance', 'Temporarily closed', 'Out of order', 'Inaccessible', 'Other'];
 
 // Memoized Status Option Component
 const StatusOption = React.memo(({
@@ -218,6 +222,7 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
   type,
   locationId,
   currentStatus = 'Unknown',
+  currentStatusReason = '',
   currentMale = 'Unknown',
   currentFemale = 'Unknown',
   currentHandicap = 'Unknown',
@@ -233,6 +238,7 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
 
   // State
   const [selectedStatus, setSelectedStatus] = useState(currentStatus);
+  const [reason, setReason] = useState<string>(currentStatusReason);
   
   // For facility availability, default to 'Unknown' if current value is location text
   const [male, setMale] = useState<'Yes' | 'No' | 'Unknown'>(
@@ -265,14 +271,18 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
       
       return (
         selectedStatus !== currentStatus ||
+        (selectedStatus === 'Unavailable' && reason !== currentStatusReason) ||
         maleChanged ||
         femaleChanged ||
         handicapChanged
       );
     }
-    return selectedStatus !== currentStatus;
-  }, [selectedStatus, male, female, handicap, maleLocation, femaleLocation, handicapLocation, 
-      currentStatus, currentMale, currentFemale, currentHandicap, type]);
+    return (
+      selectedStatus !== currentStatus ||
+      (selectedStatus === 'Unavailable' && reason !== currentStatusReason)
+    );
+  }, [selectedStatus, reason, male, female, handicap, maleLocation, femaleLocation, handicapLocation,
+      currentStatus, currentStatusReason, currentMale, currentFemale, currentHandicap, type]);
 
   // Handle submit
   const handleSubmit = useCallback(async () => {
@@ -282,7 +292,10 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      const updates: any = { status: selectedStatus };
+      const updates: any = {
+        status: selectedStatus,
+        statusReason: selectedStatus === 'Unavailable' ? reason : '',
+      };
 
       if (type === 'bidet') {
         // For each facility, send location text if provided AND facility is "Yes"
@@ -310,7 +323,7 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
     } finally {
       setIsPending(false);
     }
-  }, [hasChanges, isPending, selectedStatus, male, female, handicap, 
+  }, [hasChanges, isPending, selectedStatus, reason, male, female, handicap,
       maleLocation, femaleLocation, handicapLocation, type, onStatusUpdate, onClose]);
 
   // Handle close
@@ -400,6 +413,37 @@ const BidetReportStatusSheet: React.FC<ReportStatusSheetProps> = ({
                 disabled={isPending}
               />
             </View>
+
+            {/* Reason — only when Unavailable */}
+            {selectedStatus === 'Unavailable' && (
+              <View style={styles.reasonWrap}>
+                <Text style={[styles.reasonLabel, { color: theme.colors.text.secondary }]}>
+                  Reason (optional)
+                </Text>
+                <View style={styles.reasonChips}>
+                  {UNAVAILABLE_REASONS.map((r) => {
+                    const active = reason === r;
+                    return (
+                      <TouchableOpacity
+                        key={r}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setReason(active ? '' : r);
+                        }}
+                        style={[
+                          styles.reasonChip,
+                          { backgroundColor: active ? '#ff6b6b' : (isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)') },
+                        ]}
+                      >
+                        <Text style={[styles.reasonChipText, { color: active ? '#fff' : theme.colors.text.secondary }]}>
+                          {r}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
 
             {/* Bidet-Specific Facilities Section */}
             {type === 'bidet' && (
@@ -691,6 +735,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: SPACING.md,
     marginBottom: SPACING.lg,
+  },
+  reasonWrap: {
+    marginBottom: SPACING.lg,
+  },
+  reasonLabel: {
+    fontSize: 13,
+    fontFamily: 'Outfit_500Medium',
+    marginBottom: SPACING.sm,
+  },
+  reasonChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+  },
+  reasonChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  reasonChipText: {
+    fontSize: 13,
+    fontFamily: 'Outfit_600SemiBold',
   },
 
   // Status Option

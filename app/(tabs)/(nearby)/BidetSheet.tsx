@@ -92,6 +92,7 @@ const normalizeGenderStatus = (value?: string | null): GenderStatus => {
  */
 interface StatusBadgeProps {
   status: string;
+  reason?: string;
   lastUpdated: number | null;
   verified: boolean;
   stale: boolean;
@@ -99,7 +100,7 @@ interface StatusBadgeProps {
   isDarkMode: boolean;
 }
 
-const StatusBadge = ({ status, lastUpdated, verified, stale, theme, isDarkMode }: StatusBadgeProps) => {
+const StatusBadge = ({ status, reason, lastUpdated, verified, stale, theme, isDarkMode }: StatusBadgeProps) => {
   const getStatusInfo = () => {
     switch (status) {
       case 'Available':
@@ -133,6 +134,7 @@ const StatusBadge = ({ status, lastUpdated, verified, stale, theme, isDarkMode }
             <FontAwesome6 name={statusInfo.icon} size={16} color={statusInfo.color} />
             <Text style={[styles.statusText, { color: statusInfo.color }]}>
               {statusInfo.label}
+              {status === 'Unavailable' && reason ? ` · ${reason}` : ''}
             </Text>
           </View>
           {verified && (
@@ -420,6 +422,7 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
   // Handle status update from ReportStatusSheet
   const handleStatusUpdate = async (updates: {
     status: 'Available' | 'Unavailable' | 'Unknown';
+    statusReason?: string;
     male?: string;
     female?: string;
     handicap?: string;
@@ -431,6 +434,7 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
         {
           id: location.id,
           status: updates.status,
+          statusReason: updates.statusReason,
           male: updates.male,
           female: updates.female,
           handicap: updates.handicap,
@@ -479,6 +483,7 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
             female: data.Female || 'Unknown',
             handicap: data.Handicap || 'Unknown',
             status: data.status || 'Unknown',
+            statusReason: data.statusReason || '',
             lastUpdated: data.lastUpdated || null,
             verifiedBy: data.verifiedBy || [],
             coordinates: data.Coordinates || { latitude: 0, longitude: 0 },
@@ -581,6 +586,7 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
           {/* Status Badge */}
           <StatusBadge
             status={location.status || 'Unknown'}
+            reason={location.statusReason}
             lastUpdated={location.lastUpdated!}
             verified={isLocationVerified(location.verifiedBy)}
             stale={isStatusStale(location.lastUpdated)}
@@ -762,6 +768,7 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
         type="bidet"
         locationId={location.id}
         currentStatus={location.status || 'Unknown'}
+        currentStatusReason={location.statusReason || ''}
         currentMale={location.male || 'Unknown'}        // Preserves "Level 4R"
         currentFemale={location.female || 'Unknown'}
         currentHandicap={location.handicap || 'Unknown'}

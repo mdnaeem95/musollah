@@ -58,8 +58,10 @@ interface MusollahReportStatusSheetProps {
   currentSlippers?: AmenityStatus;
   currentPrayerMats?: AmenityStatus;
   currentTelekung?: AmenityStatus;
+  currentStatusReason?: string;
   onStatusUpdate: (updates: {
     status: LocationStatus;
+    statusReason?: string;
     segregated?: AmenityStatus;
     airConditioned?: AmenityStatus;
     ablutionArea?: AmenityStatus;
@@ -68,6 +70,8 @@ interface MusollahReportStatusSheetProps {
     telekung?: AmenityStatus;
   }) => void;
 }
+
+const UNAVAILABLE_REASONS = ['Maintenance', 'Temporarily closed', 'Prayer in progress', 'Inaccessible', 'Other'];
 
 // ---------------------------------------------------------------------
 // Reusable StatusOption
@@ -201,6 +205,7 @@ const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
   onClose,
   locationId,
   currentStatus = 'Unknown',
+  currentStatusReason = '',
   currentSegregated = 'Unknown',
   currentAirConditioned = 'Unknown',
   currentAblutionArea = 'Unknown',
@@ -213,6 +218,7 @@ const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
 
   const [selectedStatus, setSelectedStatus] =
     useState<LocationStatus>(currentStatus);
+  const [reason, setReason] = useState<string>(currentStatusReason);
   const [segregated, setSegregated] =
     useState<AmenityStatus>(currentSegregated);
   const [airConditioned, setAirConditioned] =
@@ -228,6 +234,7 @@ const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
   const hasChanges = useMemo(
     () =>
       selectedStatus !== currentStatus ||
+      (selectedStatus === 'Unavailable' && reason !== currentStatusReason) ||
       segregated !== currentSegregated ||
       airConditioned !== currentAirConditioned ||
       ablutionArea !== currentAblutionArea ||
@@ -261,6 +268,7 @@ const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
     try {
       await onStatusUpdate({
         status: selectedStatus,
+        statusReason: selectedStatus === 'Unavailable' ? reason : '',
         segregated,
         airConditioned,
         ablutionArea,
@@ -391,6 +399,44 @@ const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
                 disabled={isPending}
               />
             </View>
+
+            {/* Reason — only when Unavailable */}
+            {selectedStatus === 'Unavailable' && (
+              <View style={styles.reasonWrap}>
+                <Text style={[styles.reasonLabel, { color: theme.colors.text.secondary }]}>
+                  Reason (optional)
+                </Text>
+                <View style={styles.reasonChips}>
+                  {UNAVAILABLE_REASONS.map((r) => {
+                    const active = reason === r;
+                    return (
+                      <TouchableOpacity
+                        key={r}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setReason(active ? '' : r);
+                        }}
+                        style={[
+                          styles.reasonChip,
+                          {
+                            backgroundColor: active ? '#ff6b6b' : (isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.reasonChipText,
+                            { color: active ? '#fff' : theme.colors.text.secondary },
+                          ]}
+                        >
+                          {r}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
 
             {/* Amenities */}
             <SectionHeader
@@ -827,6 +873,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: SPACING.md,
     marginBottom: SPACING.lg,
+  },
+  reasonWrap: {
+    marginBottom: SPACING.lg,
+  },
+  reasonLabel: {
+    fontSize: 13,
+    fontFamily: 'Outfit_500Medium',
+    marginBottom: SPACING.sm,
+  },
+  reasonChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+  },
+  reasonChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  reasonChipText: {
+    fontSize: 13,
+    fontFamily: 'Outfit_600SemiBold',
   },
   statusOption: {
     borderRadius: 14,
