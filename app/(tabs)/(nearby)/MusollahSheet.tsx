@@ -39,6 +39,7 @@ import {
 import { useAuthStore } from '../../../stores/useAuthStore';
 import SignInModal from '../../../components/SignInModal';
 import LocationPhotos from '../../../components/musollah/LocationPhotos';
+import { useIsFavorite, useLocationFavoritesStore } from '../../../stores/useLocationFavoritesStore';
 import Toast from 'react-native-toast-message';
 import { enter } from '../../../utils';
 
@@ -354,6 +355,9 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
 
   const { user } = useAuthStore();
 
+  const isFav = useIsFavorite('musollah', locationId ?? '');
+  const toggleFavorite = useLocationFavoritesStore((s) => s.toggleFavorite);
+
   // Mutation for updating location status
   const { mutate: updateStatus } = useUpdateLocationStatus();
   const { mutate: confirmStatus, isPending: isConfirming } = useConfirmLocationStatus();
@@ -566,12 +570,26 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
             animate={{ opacity: 1, translateY: 0 }}
             transition={enter(0)}
           >
-            <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-              {location.building}
-            </Text>
-            <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
-              {location.address}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.title, { color: theme.colors.text.primary }]}>
+                  {location.building}
+                </Text>
+                <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
+                  {location.address}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  toggleFavorite('musollah', location.id);
+                }}
+                hitSlop={10}
+                style={styles.favBtn}
+              >
+                <FontAwesome6 name="heart" size={20} color={isFav ? '#ef4444' : theme.colors.text.muted} solid={isFav} />
+              </TouchableOpacity>
+            </View>
           </MotiView>
 
           {/* Status Badge */}
@@ -817,13 +835,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontFamily: 'Outfit_700Bold',
-    textAlign: 'center',
     marginBottom: SPACING.xs,
+  },
+  favBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   subtitle: {
     fontSize: 15,
     fontFamily: 'Outfit_400Regular',
-    textAlign: 'center',
     marginBottom: SPACING.lg,
   },
 

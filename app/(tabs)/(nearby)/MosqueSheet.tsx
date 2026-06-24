@@ -35,6 +35,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../context/ThemeContext';
 import { createLogger } from '../../../services/logging/logger';
 import { MosqueLocation } from '../../../api/services/musollah';
+import { useIsFavorite, useLocationFavoritesStore } from '../../../stores/useLocationFavoritesStore';
 import { enter } from '../../../utils';
 
 // ===================================================================
@@ -218,6 +219,9 @@ export default function MosqueSheet({
   const sheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['45%', '75%'], []);
 
+  const isFav = useIsFavorite('mosque', location?.id ?? '');
+  const toggleFavorite = useLocationFavoritesStore((s) => s.toggleFavorite);
+
   // ===================================================================
   // EFFECTS
   // ===================================================================
@@ -316,6 +320,15 @@ export default function MosqueSheet({
           <Text style={[styles.title, { color: theme.colors.text.primary }]}>
             {location.building}
           </Text>
+          <TouchableOpacity
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              toggleFavorite('mosque', location.id);
+            }}
+            hitSlop={10}
+          >
+            <FontAwesome6 name="heart" size={20} color={isFav ? '#ef4444' : theme.colors.text.muted} solid={isFav} />
+          </TouchableOpacity>
         </MotiView>
 
         {/* Address */}

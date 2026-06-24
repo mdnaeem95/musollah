@@ -30,6 +30,7 @@ import { createLogger } from '../../../services/logging/logger';
 import { useLocationStore } from '../../../stores/useLocationStore';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useNearbyFocusStore, NearbyFocusKind } from '../../../stores/useNearbyFocusStore';
+import { useLocationFavoritesStore } from '../../../stores/useLocationFavoritesStore';
 import { useAccent } from '../../../hooks/useAccent';
 import { MosqueLocation, LocationUnion } from '../../../api/services/musollah';
 import { useFoodTab } from '../../../hooks/food/useFoodTab';
@@ -67,6 +68,13 @@ const SHEET_SNAP = { duration: 240, easing: REasing.out(REasing.cubic) };
 
 // Layer order MUST match INDEX_TO_TYPE in useLocationsTab.
 const LOCATION_TYPES = ['All', 'Food', 'Musollahs', 'Mosques', 'Bidets'] as const;
+
+// Facility layer -> favorite kind (food uses its own favourites, not here).
+const LAYER_FAV_KIND: Record<string, 'musollah' | 'mosque' | 'bidet'> = {
+  Musollahs: 'musollah',
+  Mosques: 'mosque',
+  Bidets: 'bidet',
+};
 
 const LOCATION_ICONS: Record<string, string> = {
   All: 'layer-group',
@@ -730,6 +738,7 @@ export default function NearbyScreen() {
   const { userLocation, fetchLocation, isLoading: locationLoading } = useLocationStore();
   const [isAddLocationSheetVisible, setIsAddLocationSheetVisible] = useState(false);
   const [showSignInModal, setShowSignInModal] = useState(false);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   // --- collapsible bottom sheet (collapsed by default; drag or tap the notch)
   const sheetY = useSharedValue(SHEET_COLLAPSED_Y);
@@ -918,9 +927,39 @@ export default function NearbyScreen() {
     ? foodMarkers
     : (filteredLocations as MapMarkerLike[]);
 
+  // --- Favourites filter (community-map locations only)
+  const locationFavorites = useLocationFavoritesStore((s) => s.favorites);
+  const favSet = useMemo(() => new Set(locationFavorites), [locationFavorites]);
+  const isFav = useCallback(
+    (kind: string | undefined, id: string) => !!kind && favSet.has(`${kind}:${id}`),
+    [favSet]
+  );
+
+  const markerLocationsShown = useMemo(() => {
+    if (!favoritesOnly) return markerLocations;
+    return markerLocations.filter((m) => isFav((m as any).kind ?? LAYER_FAV_KIND[locationType], m.id));
+  }, [favoritesOnly, markerLocations, isFav, locationType]);
+
+  const allListShown = useMemo(
+    () => (favoritesOnly ? allList.filter((i) => isFav(i.kind, i.id)) : allList),
+    [favoritesOnly, allList, isFav]
+  );
+  const filteredLocationsShown = useMemo(
+    () => (favoritesOnly ? filteredLocations.filter((l) => isFav(LAYER_FAV_KIND[locationType], l.id)) : filteredLocations),
+    [favoritesOnly, filteredLocations, isFav, locationType]
+  );
+  // Food keeps its own favourites elsewhere, so this filter hides it.
+  const foodSortedShown = favoritesOnly ? [] : foodSorted;
+
   const clusterColor = CLUSTER_COLORS[locationType] ?? accent;
 
-  const layerCount = isAll ? allList.length : isFood ? foodSorted.length : locationCount;
+  const layerCount = isAll
+    ? allListShown.length
+    : isFood
+    ? foodSortedShown.length
+    : favoritesOnly
+    ? filteredLocationsShown.length
+    : locationCount;
   const showLoading = isAll ? foodLoading || isLoading : isFood ? foodLoading : isLoading;
 
   // Calculate nearest distance for the active layer
@@ -1066,7 +1105,7 @@ export default function NearbyScreen() {
         <View style={styles.mapContainer}>
           <Map
             region={region}
-            markerLocations={markerLocations}
+            markerLocations={markerLocationsShown}
             onMarkerPress={handleMarkerPress}
             onAddLocationPress={handleOpenAddLocation}
             showAddButton={!isFood && !isAll}
@@ -1095,8 +1134,9 @@ export default function NearbyScreen() {
             from={{ opacity: 0, translateY: -20 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={enter(0)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
           >
-            <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/search')}>
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={0.85} onPress={() => router.push('/search')}>
               <BlurView
                 intensity={20}
                 tint={isDarkMode ? 'dark' : 'light'}
@@ -1113,6 +1153,25 @@ export default function NearbyScreen() {
                   Search food, musollahs, mosques…
                 </Text>
               </BlurView>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setFavoritesOnly((v) => !v);
+              }}
+              style={[styles.favToggle, {
+                backgroundColor: favoritesOnly ? accent : (isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.90)'),
+                borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+              }]}
+            >
+              <FontAwesome6
+                name="heart"
+                size={18}
+                color={favoritesOnly ? '#fff' : theme.colors.text.muted}
+                solid={favoritesOnly}
+              />
             </TouchableOpacity>
           </MotiView>
         </View>
@@ -1180,7 +1239,7 @@ export default function NearbyScreen() {
               />
             ) : isAll ? (
               <FlashList
-                data={allList}
+                data={allListShown}
                 renderItem={renderAllItem}
                 keyExtractor={allKeyExtractor}
                 contentContainerStyle={styles.flashListContent}
@@ -1189,7 +1248,7 @@ export default function NearbyScreen() {
               />
             ) : isFood ? (
               <FlashList
-                data={foodSorted}
+                data={foodSortedShown}
                 renderItem={renderFoodItem}
                 keyExtractor={keyExtractor}
                 ListHeaderComponent={foodListHeader}
@@ -1198,7 +1257,7 @@ export default function NearbyScreen() {
               />
             ) : (
               <FlashList
-                data={filteredLocations}
+                data={filteredLocationsShown}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 contentContainerStyle={styles.flashListContent}
@@ -1283,6 +1342,15 @@ const styles = StyleSheet.create({
     left: SPACING.xl,
     right: SPACING.xl,
     zIndex: 10,
+  },
+  favToggle: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   searchContainer: {
     flexDirection: 'row',
