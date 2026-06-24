@@ -65,6 +65,13 @@ export default {
     "plugins": [
       "./plugins/withFmtConstevalFix",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Rihlah lets you add photos of prayer spaces and bidets to help the community.",
+          "cameraPermission": "Rihlah lets you take photos of prayer spaces and bidets to help the community."
+        }
+      ],
+      [
         "expo-notifications",
         {
           // Bundles the adhan clips as notification sounds (iOS app bundle +

@@ -19,10 +19,11 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LocationObject } from 'expo-location';
-import { db } from '../../client/firebase';
+import { db, storageService } from '../../client/firebase';
 import { cache, TTL, cacheStorage } from '../../client/storage';
 import { logger } from '../../../services/logging/logger';
-import { addDoc, collection, doc, getDoc, getDocs, increment, limit, query as fsQuery, setDoc, updateDoc, writeBatch } from '@react-native-firebase/firestore';
+import { addDoc, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, increment, limit, query as fsQuery, setDoc, updateDoc, writeBatch } from '@react-native-firebase/firestore';
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from '@react-native-firebase/storage';
 
 // ============================================================================
 // TYPES
@@ -1573,6 +1574,168 @@ export function useUserRating(
       const data = snap.data();
       return { rating: (data?.rating as number) ?? 0, note: (data?.note as string) ?? '' };
     },
+  });
+}
+
+// ============================================================================
+// COMMUNITY PHOTOS
+// ============================================================================
+//
+// User-contributed photos for musollahs / bidets, stored at
+// `locations/{type}/{id}/{photoId}.jpg` in Storage with a metadata doc in the
+// location's `photos` subcollection. Moderation is flag-to-hide: a photo is
+// hidden once PHOTO_FLAG_THRESHOLD distinct users report it (no admin gate).
+
+export interface LocationPhoto {
+  id: string;
+  url: string;
+  storagePath: string;
+  uploadedBy: string;
+  uploadedAt: number;
+  flagCount: number;
+  flaggedBy: string[];
+  hidden: boolean;
+}
+
+const PHOTO_FLAG_THRESHOLD = 3;
+
+/** Upload an image and write its metadata doc. Returns the created photo. */
+export async function uploadLocationPhoto({
+  type,
+  id,
+  userId,
+  uri,
+}: {
+  type: RatingTargetType;
+  id: string;
+  userId: string;
+  uri: string;
+}): Promise<LocationPhoto> {
+  const colName = RATING_COLLECTION[type];
+  const photoId = `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  const path = `locations/${type}/${id}/${photoId}.jpg`;
+
+  try {
+    const fileRef = storageRef(storageService, path);
+    const blob = await (await fetch(uri)).blob();
+    await uploadBytes(fileRef, blob);
+    const url = await getDownloadURL(fileRef);
+
+    const photo: LocationPhoto = {
+      id: photoId,
+      url,
+      storagePath: path,
+      uploadedBy: userId,
+      uploadedAt: Date.now(),
+      flagCount: 0,
+      flaggedBy: [],
+      hidden: false,
+    };
+
+    const { id: _omit, ...docData } = photo;
+    await setDoc(doc(db, colName, id, 'photos', photoId), docData);
+
+    logger.success('Location photo uploaded', { type, id, photoId });
+    return photo;
+  } catch (error: any) {
+    logger.error('Failed to upload location photo', { error: error.message, type, id });
+    throw error;
+  }
+}
+
+/** Visible (non-hidden) photos for a location, newest first. */
+export async function fetchLocationPhotos(
+  type: RatingTargetType,
+  id: string
+): Promise<LocationPhoto[]> {
+  const colName = RATING_COLLECTION[type];
+  const snap = await getDocs(collection(db, colName, id, 'photos'));
+  const docs = snap.docs as any[];
+  return docs
+    .map((d): LocationPhoto => ({ id: d.id, ...(d.data() as Omit<LocationPhoto, 'id'>) }))
+    .filter((p) => !p.hidden)
+    .sort((a, b) => b.uploadedAt - a.uploadedAt);
+}
+
+export function useLocationPhotos(type: RatingTargetType, id: string | null) {
+  return useQuery<LocationPhoto[]>({
+    queryKey: ['musollah', 'photos', type, id],
+    enabled: !!id,
+    queryFn: () => fetchLocationPhotos(type, id as string),
+    staleTime: TTL.FIVE_MINUTES,
+  });
+}
+
+/** Report a photo. One flag per user; auto-hides at the threshold. */
+export async function flagLocationPhoto({
+  type,
+  id,
+  photoId,
+  userId,
+}: {
+  type: RatingTargetType;
+  id: string;
+  photoId: string;
+  userId: string;
+}): Promise<void> {
+  const photoRef = doc(db, RATING_COLLECTION[type], id, 'photos', photoId);
+  const snap = await getDoc(photoRef);
+  if (!snap.exists()) return;
+  const data = snap.data() as Omit<LocationPhoto, 'id'>;
+  if ((data.flaggedBy ?? []).includes(userId)) return; // already reported by this user
+  const nextCount = (data.flagCount ?? 0) + 1;
+  await updateDoc(photoRef, {
+    flaggedBy: arrayUnion(userId),
+    flagCount: increment(1),
+    hidden: nextCount >= PHOTO_FLAG_THRESHOLD,
+  });
+  logger.info('Location photo flagged', { type, id, photoId, nextCount });
+}
+
+/** Delete a photo (uploader only — enforced by the caller / Storage rules). */
+export async function deleteLocationPhoto({
+  type,
+  id,
+  photoId,
+  storagePath,
+}: {
+  type: RatingTargetType;
+  id: string;
+  photoId: string;
+  storagePath: string;
+}): Promise<void> {
+  await deleteDoc(doc(db, RATING_COLLECTION[type], id, 'photos', photoId));
+  try {
+    await deleteObject(storageRef(storageService, storagePath));
+  } catch (e: any) {
+    logger.warn('Photo doc deleted but storage object remove failed', { error: e?.message });
+  }
+}
+
+export function useUploadLocationPhoto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: uploadLocationPhoto,
+    onSuccess: (_, v) =>
+      queryClient.invalidateQueries({ queryKey: ['musollah', 'photos', v.type, v.id] }),
+  });
+}
+
+export function useFlagLocationPhoto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: flagLocationPhoto,
+    onSuccess: (_, v) =>
+      queryClient.invalidateQueries({ queryKey: ['musollah', 'photos', v.type, v.id] }),
+  });
+}
+
+export function useDeleteLocationPhoto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteLocationPhoto,
+    onSuccess: (_, v) =>
+      queryClient.invalidateQueries({ queryKey: ['musollah', 'photos', v.type, v.id] }),
   });
 }
 

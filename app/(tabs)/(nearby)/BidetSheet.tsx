@@ -34,6 +34,7 @@ import {
 } from '../../../api/services/musollah';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import SignInModal from '../../../components/SignInModal';
+import LocationPhotos from '../../../components/musollah/LocationPhotos';
 import Toast from 'react-native-toast-message';
 import { enter } from '../../../utils';
 
@@ -623,6 +624,15 @@ export default function BidetSheet({ onClose, visible, locationId }: BidetSheetP
               index={2}
               theme={theme}
               isDarkMode={isDarkMode}
+            />
+          </View>
+
+          {/* Community Photos */}
+          <View style={{ marginTop: 20 }}>
+            <LocationPhotos
+              type="bidet"
+              locationId={location.id}
+              onRequireSignIn={() => setShowSignIn(true)}
             />
           </View>
 

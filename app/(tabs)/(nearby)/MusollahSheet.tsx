@@ -35,6 +35,7 @@ import {
 } from '../../../api/services/musollah';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import SignInModal from '../../../components/SignInModal';
+import LocationPhotos from '../../../components/musollah/LocationPhotos';
 import Toast from 'react-native-toast-message';
 import { enter } from '../../../utils';
 
@@ -663,6 +664,15 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
               isDarkMode={isDarkMode}
             />
           )}
+
+          {/* Community Photos */}
+          <View style={{ marginTop: 20 }}>
+            <LocationPhotos
+              type="musollah"
+              locationId={location.id}
+              onRequireSignIn={() => setShowSignIn(true)}
+            />
+          </View>
 
           {/* Action Buttons */}
           <View style={styles.actionsContainer}>
