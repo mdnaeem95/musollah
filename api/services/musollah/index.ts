@@ -82,6 +82,7 @@ export interface MusollahLocation {
   slippers: string;
   prayerMats: string;
   telekung: string;
+  accessible: string; // wheelchair / step-free access
   directions: string;
   distance?: number;
   status?: 'Available' | 'Unavailable' | 'Unknown';
@@ -1198,6 +1199,7 @@ export interface UpdateMusollahStatusPayload {
   ablutionArea?: AmenityStatus;
   slippers?: AmenityStatus;
   prayerMats?: AmenityStatus;
+  accessible?: AmenityStatus;
   telekung?: AmenityStatus;
 }
 
@@ -1283,6 +1285,7 @@ export async function updateMusollahStatus({
   slippers,
   prayerMats,
   telekung,
+  accessible,
 }: UpdateMusollahStatusPayload): Promise<void> {
   const startTime = performance.now();
 
@@ -1299,6 +1302,7 @@ export async function updateMusollahStatus({
   if (slippers !== undefined) updates.Slippers = slippers;
   if (prayerMats !== undefined) updates.PrayerMats = prayerMats;
   if (telekung !== undefined) updates.Telekung = telekung;
+  if (accessible !== undefined) updates.Accessible = accessible;
 
   logger.debug('Updating musollah status', {
     id,

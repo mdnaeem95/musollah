@@ -13,7 +13,7 @@
  */
 
 import React, { useEffect, useCallback, memo, useMemo, useState, useRef } from 'react';
-import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Text, Platform, Animated, Easing, FlatList, Dimensions } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Text, Platform, Animated, Easing, FlatList, Dimensions, Modal, Switch } from 'react-native';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, Easing as REasing } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTheme } from '../../../context/ThemeContext';
@@ -32,7 +32,7 @@ import { useAuthStore } from '../../../stores/useAuthStore';
 import { useNearbyFocusStore, NearbyFocusKind } from '../../../stores/useNearbyFocusStore';
 import { useLocationFavoritesStore } from '../../../stores/useLocationFavoritesStore';
 import { useAccent } from '../../../hooks/useAccent';
-import { MosqueLocation, LocationUnion } from '../../../api/services/musollah';
+import { MosqueLocation, LocationUnion, isLocationVerified } from '../../../api/services/musollah';
 import { useFoodTab } from '../../../hooks/food/useFoodTab';
 import {
   useUserFavorites,
@@ -739,6 +739,8 @@ export default function NearbyScreen() {
   const [isAddLocationSheetVisible, setIsAddLocationSheetVisible] = useState(false);
   const [showSignInModal, setShowSignInModal] = useState(false);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [filters, setFilters] = useState({ verified: false, minRating: 0, accessible: false });
 
   // --- collapsible bottom sheet (collapsed by default; drag or tap the notch)
   const sheetY = useSharedValue(SHEET_COLLAPSED_Y);
@@ -927,7 +929,7 @@ export default function NearbyScreen() {
     ? foodMarkers
     : (filteredLocations as MapMarkerLike[]);
 
-  // --- Favourites filter (community-map locations only)
+  // --- Favourites + facility filters (community-map locations only)
   const locationFavorites = useLocationFavoritesStore((s) => s.favorites);
   const favSet = useMemo(() => new Set(locationFavorites), [locationFavorites]);
   const isFav = useCallback(
@@ -935,20 +937,47 @@ export default function NearbyScreen() {
     [favSet]
   );
 
-  const markerLocationsShown = useMemo(() => {
-    if (!favoritesOnly) return markerLocations;
-    return markerLocations.filter((m) => isFav((m as any).kind ?? LAYER_FAV_KIND[locationType], m.id));
-  }, [favoritesOnly, markerLocations, isFav, locationType]);
+  const filtersActive = filters.verified || filters.minRating > 0 || filters.accessible;
+  const anyFilter = favoritesOnly || filtersActive;
 
+  // `keep` decides whether a location passes the active favourites + facility
+  // filters. Facility filters (verified / rating / accessible) apply to
+  // musollah/mosque/bidet only; food passes through them.
+  const keep = useCallback(
+    (kind: string | undefined, raw: any): boolean => {
+      const k = kind ?? LAYER_FAV_KIND[locationType];
+      if (favoritesOnly && !isFav(k, raw.id)) return false;
+      if (filtersActive && k && k !== 'food') {
+        if (filters.verified && !isLocationVerified(raw.verifiedBy)) return false;
+        if (filters.minRating > 0) {
+          const c = raw.cleanlinessCount ?? 0;
+          const avg = c > 0 ? (raw.cleanlinessSum ?? 0) / c : 0;
+          if (avg < filters.minRating) return false;
+        }
+        if (filters.accessible) {
+          const v = String((k === 'bidet' ? raw.handicap : raw.accessible) ?? '').toLowerCase();
+          const acc = k === 'bidet' ? v !== '' && v !== 'no' && v !== 'unknown' : v === 'yes';
+          if (!acc) return false;
+        }
+      }
+      return true;
+    },
+    [favoritesOnly, isFav, filtersActive, filters, locationType]
+  );
+
+  const markerLocationsShown = useMemo(
+    () => (anyFilter ? markerLocations.filter((m) => keep((m as any).kind, m)) : markerLocations),
+    [anyFilter, markerLocations, keep]
+  );
   const allListShown = useMemo(
-    () => (favoritesOnly ? allList.filter((i) => isFav(i.kind, i.id)) : allList),
-    [favoritesOnly, allList, isFav]
+    () => (anyFilter ? allList.filter((i) => keep(i.kind, i.raw)) : allList),
+    [anyFilter, allList, keep]
   );
   const filteredLocationsShown = useMemo(
-    () => (favoritesOnly ? filteredLocations.filter((l) => isFav(LAYER_FAV_KIND[locationType], l.id)) : filteredLocations),
-    [favoritesOnly, filteredLocations, isFav, locationType]
+    () => (anyFilter ? filteredLocations.filter((l) => keep(LAYER_FAV_KIND[locationType], l)) : filteredLocations),
+    [anyFilter, filteredLocations, keep, locationType]
   );
-  // Food keeps its own favourites elsewhere, so this filter hides it.
+  // Food keeps its own favourites elsewhere, so favourites hides it.
   const foodSortedShown = favoritesOnly ? [] : foodSorted;
 
   const clusterColor = CLUSTER_COLORS[locationType] ?? accent;
@@ -957,7 +986,7 @@ export default function NearbyScreen() {
     ? allListShown.length
     : isFood
     ? foodSortedShown.length
-    : favoritesOnly
+    : anyFilter
     ? filteredLocationsShown.length
     : locationCount;
   const showLoading = isAll ? foodLoading || isLoading : isFood ? foodLoading : isLoading;
@@ -1173,6 +1202,24 @@ export default function NearbyScreen() {
                 solid={favoritesOnly}
               />
             </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setFilterModalVisible(true);
+              }}
+              style={[styles.favToggle, {
+                backgroundColor: filtersActive ? accent : (isDarkMode ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.90)'),
+                borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+              }]}
+            >
+              <FontAwesome6
+                name="sliders"
+                size={18}
+                color={filtersActive ? '#fff' : theme.colors.text.muted}
+              />
+            </TouchableOpacity>
           </MotiView>
         </View>
 
@@ -1298,6 +1345,91 @@ export default function NearbyScreen() {
 
       {/* Sign-in prompt for favouriting restaurants */}
       <SignInModal visible={showSignInModal} onClose={() => setShowSignInModal(false)} />
+
+      {/* Discovery filters */}
+      <Modal
+        visible={filterModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFilterModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.filterBackdrop}
+          activeOpacity={1}
+          onPress={() => setFilterModalVisible(false)}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <BlurView
+              intensity={30}
+              tint={isDarkMode ? 'dark' : 'light'}
+              style={[styles.filterCard, { backgroundColor: theme.colors.secondary }]}
+            >
+              <Text style={[styles.filterTitle, { color: theme.colors.text.primary }]}>Filters</Text>
+
+              {/* Verified */}
+              <View style={styles.filterRow}>
+                <Text style={[styles.filterLabel, { color: theme.colors.text.primary }]}>Community verified only</Text>
+                <Switch
+                  value={filters.verified}
+                  onValueChange={(v) => setFilters((f) => ({ ...f, verified: v }))}
+                  trackColor={{ false: theme.colors.muted, true: accent + '80' }}
+                  thumbColor={theme.colors.primary}
+                  ios_backgroundColor={theme.colors.muted}
+                />
+              </View>
+
+              {/* Accessible */}
+              <View style={styles.filterRow}>
+                <Text style={[styles.filterLabel, { color: theme.colors.text.primary }]}>Wheelchair accessible</Text>
+                <Switch
+                  value={filters.accessible}
+                  onValueChange={(v) => setFilters((f) => ({ ...f, accessible: v }))}
+                  trackColor={{ false: theme.colors.muted, true: accent + '80' }}
+                  thumbColor={theme.colors.primary}
+                  ios_backgroundColor={theme.colors.muted}
+                />
+              </View>
+
+              {/* Min rating */}
+              <Text style={[styles.filterLabel, { color: theme.colors.text.primary, marginTop: 8 }]}>Minimum rating</Text>
+              <View style={styles.filterChips}>
+                {[0, 3, 4].map((r) => {
+                  const active = filters.minRating === r;
+                  return (
+                    <TouchableOpacity
+                      key={r}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setFilters((f) => ({ ...f, minRating: r }));
+                      }}
+                      style={[styles.filterChip, { backgroundColor: active ? accent : (isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)') }]}
+                    >
+                      <Text style={[styles.filterChipText, { color: active ? '#fff' : theme.colors.text.secondary }]}>
+                        {r === 0 ? 'Any' : `${r}★+`}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <View style={styles.filterActions}>
+                <TouchableOpacity
+                  onPress={() => setFilters({ verified: false, minRating: 0, accessible: false })}
+                  style={styles.filterClear}
+                >
+                  <Text style={[styles.filterClearText, { color: theme.colors.text.secondary }]}>Clear</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setFilterModalVisible(false)}
+                  style={[styles.filterDone, { backgroundColor: accent }]}
+                >
+                  <Text style={styles.filterDoneText}>Done</Text>
+                </TouchableOpacity>
+              </View>
+            </BlurView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -1351,6 +1483,75 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     overflow: 'hidden',
+  },
+  filterBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 28,
+  },
+  filterCard: {
+    width: '100%',
+    borderRadius: 20,
+    padding: 20,
+    overflow: 'hidden',
+  },
+  filterTitle: {
+    fontSize: 18,
+    fontFamily: 'Outfit_700Bold',
+    marginBottom: 14,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  filterLabel: {
+    fontSize: 15,
+    fontFamily: 'Outfit_500Medium',
+  },
+  filterChips: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  filterChip: {
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 20,
+  },
+  filterChipText: {
+    fontSize: 14,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  filterActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 18,
+  },
+  filterClear: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  filterClearText: {
+    fontSize: 15,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  filterDone: {
+    flex: 1,
+    marginLeft: 12,
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  filterDoneText: {
+    color: '#fff',
+    fontSize: 15,
+    fontFamily: 'Outfit_700Bold',
   },
   searchContainer: {
     flexDirection: 'row',

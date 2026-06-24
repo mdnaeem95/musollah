@@ -29,7 +29,7 @@ import MusollahReportStatusSheet from './MusollahReportStatusSheet';
 import RateLocationSheet from './RateLocationSheet';
 import {
   MusollahLocation,
-  useUpdateLocationStatus,
+  useUpdateMusollahStatus,
   useUserRating,
   useSubmitCleanlinessRating,
   useConfirmLocationStatus,
@@ -359,7 +359,7 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
   const toggleFavorite = useLocationFavoritesStore((s) => s.toggleFavorite);
 
   // Mutation for updating location status
-  const { mutate: updateStatus } = useUpdateLocationStatus();
+  const { mutate: updateStatus } = useUpdateMusollahStatus();
   const { mutate: confirmStatus, isPending: isConfirming } = useConfirmLocationStatus();
 
   const handleConfirm = useCallback(() => {
@@ -412,20 +412,34 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
     [user, location, submitRating]
   );
 
-  // Handle status update from ReportStatusSheet
+  // Handle status update from ReportStatusSheet. Forwards the amenity edits too
+  // (they were previously dropped — only status was written).
   const handleStatusUpdate = async (updates: {
     status: 'Available' | 'Unavailable' | 'Unknown';
     statusReason?: string;
+    segregated?: any;
+    airConditioned?: any;
+    ablutionArea?: any;
+    slippers?: any;
+    prayerMats?: any;
+    telekung?: any;
+    accessible?: any;
   }) => {
     if (!location) return;
 
     try {
       updateStatus(
         {
-          type: 'musollah',
           id: location.id,
           status: updates.status,
           statusReason: updates.statusReason,
+          segregated: updates.segregated,
+          airConditioned: updates.airConditioned,
+          ablutionArea: updates.ablutionArea,
+          slippers: updates.slippers,
+          prayerMats: updates.prayerMats,
+          telekung: updates.telekung,
+          accessible: updates.accessible,
         },
         {
           onSuccess: () => {
@@ -472,6 +486,7 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
             slippers: data.Slippers || 'No',
             prayerMats: data.PrayerMats || 'No',
             telekung: data.Telekung || 'No',
+            accessible: data.Accessible || 'No',
             directions: data.Directions || '',
             coordinates: data.Coordinates || { latitude: 0, longitude: 0 },
             status: data.status || 'Unknown',
@@ -729,6 +744,18 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
                 index={5}
               />
             </View>
+
+            {/* Row 3: Accessibility */}
+            <View style={styles.amenityRow}>
+              <AmenityCard
+                icon="wheelchair"
+                label="Wheelchair"
+                available={location.accessible}
+                theme={theme}
+                isDarkMode={isDarkMode}
+                index={6}
+              />
+            </View>
           </View>
 
           {/* Directions Section */}
@@ -780,6 +807,13 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
         locationId={location.id}
         currentStatus={location.status || 'Unknown'}
         currentStatusReason={location.statusReason || ''}
+        currentSegregated={location.segregated as any}
+        currentAirConditioned={location.airConditioned as any}
+        currentAblutionArea={location.ablutionArea as any}
+        currentSlippers={location.slippers as any}
+        currentPrayerMats={location.prayerMats as any}
+        currentTelekung={location.telekung as any}
+        currentAccessible={location.accessible as any}
         onStatusUpdate={handleStatusUpdate}
       />
 

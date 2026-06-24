@@ -58,6 +58,7 @@ interface MusollahReportStatusSheetProps {
   currentSlippers?: AmenityStatus;
   currentPrayerMats?: AmenityStatus;
   currentTelekung?: AmenityStatus;
+  currentAccessible?: AmenityStatus;
   currentStatusReason?: string;
   onStatusUpdate: (updates: {
     status: LocationStatus;
@@ -68,6 +69,7 @@ interface MusollahReportStatusSheetProps {
     slippers?: AmenityStatus;
     prayerMats?: AmenityStatus;
     telekung?: AmenityStatus;
+    accessible?: AmenityStatus;
   }) => void;
 }
 
@@ -212,6 +214,7 @@ const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
   currentSlippers = 'Unknown',
   currentPrayerMats = 'Unknown',
   currentTelekung = 'Unknown',
+  currentAccessible = 'Unknown',
   onStatusUpdate,
 }) => {
   const { theme, isDarkMode } = useTheme();
@@ -229,6 +232,7 @@ const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
   const [prayerMats, setPrayerMats] =
     useState<AmenityStatus>(currentPrayerMats);
   const [telekung, setTelekung] = useState<AmenityStatus>(currentTelekung);
+  const [accessible, setAccessible] = useState<AmenityStatus>(currentAccessible);
   const [isPending, setIsPending] = useState(false);
 
   const hasChanges = useMemo(
@@ -240,10 +244,13 @@ const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
       ablutionArea !== currentAblutionArea ||
       slippers !== currentSlippers ||
       prayerMats !== currentPrayerMats ||
-      telekung !== currentTelekung,
+      telekung !== currentTelekung ||
+      accessible !== currentAccessible,
     [
       selectedStatus,
       currentStatus,
+      accessible,
+      currentAccessible,
       segregated,
       currentSegregated,
       airConditioned,
@@ -275,6 +282,7 @@ const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
         slippers,
         prayerMats,
         telekung,
+        accessible,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onClose();
@@ -296,6 +304,7 @@ const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
     slippers,
     prayerMats,
     telekung,
+    accessible,
   ]);
 
   const handleClose = useCallback(() => {
@@ -748,6 +757,30 @@ const MusollahReportStatusSheet: React.FC<MusollahReportStatusSheetProps> = ({
                   isDarkMode={isDarkMode}
                   index={20}
                   disabled={isPending}
+                />
+              </View>
+            </View>
+
+            {/* Wheelchair access */}
+            <View style={styles.facilityGroup}>
+              <View style={styles.facilityHeader}>
+                <FontAwesome6 name="wheelchair" size={16} color={theme.colors.text.secondary} />
+                <Text style={[styles.facilityLabel, { color: theme.colors.text.primary }]}>
+                  Wheelchair Accessible
+                </Text>
+              </View>
+              <View style={styles.optionsRow}>
+                <StatusOption
+                  label="Yes" value="Yes" isSelected={accessible === 'Yes'} onPress={setAccessible}
+                  theme={theme} isDarkMode={isDarkMode} index={21} disabled={isPending}
+                />
+                <StatusOption
+                  label="No" value="No" isSelected={accessible === 'No'} onPress={setAccessible}
+                  theme={theme} isDarkMode={isDarkMode} index={22} disabled={isPending}
+                />
+                <StatusOption
+                  label="Unknown" value="Unknown" isSelected={accessible === 'Unknown'} onPress={setAccessible}
+                  theme={theme} isDarkMode={isDarkMode} index={23} disabled={isPending}
                 />
               </View>
             </View>
