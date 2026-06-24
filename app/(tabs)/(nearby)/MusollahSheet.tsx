@@ -32,6 +32,9 @@ import {
   useUpdateLocationStatus,
   useUserRating,
   useSubmitCleanlinessRating,
+  useConfirmLocationStatus,
+  isLocationVerified,
+  isStatusStale,
 } from '../../../api/services/musollah';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import SignInModal from '../../../components/SignInModal';
@@ -72,11 +75,13 @@ interface MusollahSheetProps {
 interface StatusBadgeProps {
   status: string;
   lastUpdated: number | null;
+  verified: boolean;
+  stale: boolean;
   theme: any;
   isDarkMode: boolean;
 }
 
-const StatusBadge = ({ status, lastUpdated, theme, isDarkMode }: StatusBadgeProps) => {
+const StatusBadge = ({ status, lastUpdated, verified, stale, theme, isDarkMode }: StatusBadgeProps) => {
   const getStatusInfo = () => {
     switch (status) {
       case 'Available':
@@ -105,16 +110,26 @@ const StatusBadge = ({ status, lastUpdated, theme, isDarkMode }: StatusBadgeProp
           borderColor: isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
         }]}
       >
-        <View style={[styles.statusBadge, { backgroundColor: statusInfo.color + '15' }]}>
-          <FontAwesome6 name={statusInfo.icon} size={16} color={statusInfo.color} />
-          <Text style={[styles.statusText, { color: statusInfo.color }]}>
-            {statusInfo.label}
-          </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <View style={[styles.statusBadge, { backgroundColor: statusInfo.color + '15' }]}>
+            <FontAwesome6 name={statusInfo.icon} size={16} color={statusInfo.color} />
+            <Text style={[styles.statusText, { color: statusInfo.color }]}>
+              {statusInfo.label}
+            </Text>
+          </View>
+          {verified && (
+            <View style={[styles.verifiedBadge, { backgroundColor: '#0EA5E915' }]}>
+              <FontAwesome6 name="circle-check" size={11} color="#0EA5E9" solid />
+              <Text style={styles.verifiedText}>Community verified</Text>
+            </View>
+          )}
         </View>
 
         {lastUpdated && (
-          <Text style={[styles.lastUpdated, { color: theme.colors.text.muted }]}>
-            Updated {formatTimeAgo(lastUpdated)}
+          <Text style={[styles.lastUpdated, { color: stale ? '#F59E0B' : theme.colors.text.muted }]}>
+            {stale ? 'Last confirmed ' : 'Updated '}
+            {formatTimeAgo(lastUpdated)}
+            {stale ? ' · may be outdated' : ''}
           </Text>
         )}
       </BlurView>
@@ -339,6 +354,23 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
 
   // Mutation for updating location status
   const { mutate: updateStatus } = useUpdateLocationStatus();
+  const { mutate: confirmStatus, isPending: isConfirming } = useConfirmLocationStatus();
+
+  const handleConfirm = useCallback(() => {
+    if (!locationId) return;
+    if (!user) {
+      setShowSignIn(true);
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    confirmStatus(
+      { type: 'musollah', id: locationId, userId: user.uid },
+      {
+        onSuccess: () =>
+          Toast.show({ type: 'success', text1: 'Thanks!', text2: 'You helped keep this fresh.' }),
+      }
+    );
+  }, [locationId, user, confirmStatus]);
 
   // Cleanliness rating
   const { data: userRating } = useUserRating('musollah', locationId, user?.uid ?? null);
@@ -436,6 +468,7 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
             coordinates: data.Coordinates || { latitude: 0, longitude: 0 },
             status: data.status || 'Unknown',
             lastUpdated: data.lastUpdated || null,
+            verifiedBy: data.verifiedBy || [],
             cleanlinessSum: data.cleanlinessSum || 0,
             cleanlinessCount: data.cleanlinessCount || 0,
           };
@@ -540,9 +573,29 @@ export default function MusollahSheet({ onClose, visible, locationId }: Musollah
           <StatusBadge
             status={location.status || 'Unknown'}
             lastUpdated={location.lastUpdated!}
+            verified={isLocationVerified(location.verifiedBy)}
+            stale={isStatusStale(location.lastUpdated)}
             theme={theme}
             isDarkMode={isDarkMode}
           />
+
+          {/* Still here? — one-tap freshness confirmation */}
+          <TouchableOpacity
+            onPress={handleConfirm}
+            disabled={isConfirming}
+            activeOpacity={0.8}
+            style={[styles.confirmBtn, { borderColor: theme.colors.muted }]}
+          >
+            <FontAwesome6
+              name={isConfirming ? 'spinner' : 'circle-check'}
+              size={14}
+              color={theme.colors.text.success}
+            />
+            <Text style={[styles.confirmBtnText, { color: theme.colors.text.primary }]}>
+              Still here &amp; accurate?
+            </Text>
+            <Text style={[styles.confirmBtnCta, { color: theme.colors.text.success }]}>Confirm</Text>
+          </TouchableOpacity>
 
           {/* Cleanliness rating */}
           <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={enter(0)}>
@@ -797,6 +850,38 @@ const styles = StyleSheet.create({
   lastUpdated: {
     fontSize: 12,
     fontFamily: 'Outfit_400Regular',
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  verifiedText: {
+    fontSize: 11,
+    fontFamily: 'Outfit_600SemiBold',
+    color: '#0EA5E9',
+  },
+  confirmBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 10,
+  },
+  confirmBtnText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'Outfit_500Medium',
+  },
+  confirmBtnCta: {
+    fontSize: 13,
+    fontFamily: 'Outfit_700Bold',
   },
 
   // Cleanliness rating

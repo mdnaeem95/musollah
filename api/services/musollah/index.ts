@@ -53,6 +53,9 @@ export interface BidetLocation {
   distance?: number;
   status?: 'Available' | 'Unavailable' | 'Unknown';
   lastUpdated?: number;
+  // Distinct users who have confirmed this location ("still here"); drives the
+  // community-verified badge and refreshes status freshness.
+  verifiedBy?: string[];
   // Aggregated community cleanliness rating (sum / count of 1–5 ratings).
   cleanlinessSum?: number;
   cleanlinessCount?: number;
@@ -82,6 +85,9 @@ export interface MusollahLocation {
   distance?: number;
   status?: 'Available' | 'Unavailable' | 'Unknown';
   lastUpdated?: number;
+  // Distinct users who have confirmed this location ("still here"); drives the
+  // community-verified badge and refreshes status freshness.
+  verifiedBy?: string[];
   // Aggregated community cleanliness rating (sum / count of 1–5 ratings).
   cleanlinessSum?: number;
   cleanlinessCount?: number;
@@ -1574,6 +1580,60 @@ export function useUserRating(
       const data = snap.data();
       return { rating: (data?.rating as number) ?? 0, note: (data?.note as string) ?? '' };
     },
+  });
+}
+
+// ============================================================================
+// STATUS FRESHNESS & COMMUNITY VERIFICATION
+// ============================================================================
+
+/** A reported status older than this is treated as stale ("may be outdated"). */
+export const STATUS_STALE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+/** Distinct confirmations needed for the community-verified badge. */
+export const VERIFY_THRESHOLD = 3;
+
+export function isStatusStale(lastUpdated?: number | null): boolean {
+  if (!lastUpdated) return true;
+  return Date.now() - lastUpdated > STATUS_STALE_MS;
+}
+
+export function isLocationVerified(verifiedBy?: string[] | null): boolean {
+  return (verifiedBy?.length ?? 0) >= VERIFY_THRESHOLD;
+}
+
+/**
+ * One-tap "still here / still accurate" confirmation. Refreshes status freshness
+ * (lastUpdated) and records the user as a distinct confirmer (idempotent via
+ * arrayUnion) — enough distinct confirmers earns the verified badge.
+ */
+export async function confirmLocationStatus({
+  type,
+  id,
+  userId,
+}: {
+  type: RatingTargetType;
+  id: string;
+  userId: string;
+}): Promise<void> {
+  const colName = RATING_COLLECTION[type];
+  try {
+    await updateDoc(doc(db, colName, id), {
+      lastUpdated: Date.now(),
+      verifiedBy: arrayUnion(userId),
+    });
+    cache.clear(type === 'bidet' ? CACHE_KEYS.allBidets : CACHE_KEYS.allMusollahs);
+    logger.success('Location status confirmed', { type, id });
+  } catch (error: any) {
+    logger.error('Failed to confirm location status', { error: error.message, type, id });
+    throw error;
+  }
+}
+
+export function useConfirmLocationStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: confirmLocationStatus,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: MUSOLLAH_QUERY_KEYS.all }),
   });
 }
 
