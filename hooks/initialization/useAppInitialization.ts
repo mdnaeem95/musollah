@@ -19,7 +19,6 @@ import { Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBol
 import { Amiri_400Regular } from '@expo-google-fonts/amiri';
 import { cache } from '../../api/client/storage';
 import { useLocationStore } from '../../stores/useLocationStore';
-import { storage as mmkvStorage } from '../../api/client/storage';
 import { FontAwesome } from '@expo/vector-icons';
 import { DEFAULT_LOCATION, fetchDailyPrayerTimeFromFirebase, prayerTimeKeys } from '../../api/services/prayer';
 
@@ -42,12 +41,6 @@ export const useAppInit = (): InitState => {
   const queryClient = useQueryClient();
   const userLocation = useLocationStore((s) => s.userLocation);
   const fetchLocation = useLocationStore((s) => s.fetchLocation);
-
-  // ✅ Debug: Log MMKV keys
-  logger.debug('MMKV storage keys', { 
-    keys: mmkvStorage.getAllKeys(),
-    count: mmkvStorage.getAllKeys().length 
-  });
 
   // ==========================================================================
   // STEP 1: Font Loading
@@ -145,14 +138,14 @@ export const useAppInit = (): InitState => {
           return;
         }
 
-        logger.debug('Fetching fresh location (3s timeout)');
+        logger.debug('Fetching fresh location (2s timeout)');
 
         const loc = await Promise.race<LocationObject>([
           // fetchLocation() resolves void (it writes to the store); cast keeps
           // the existing runtime behavior while satisfying the race's type.
           fetchLocation() as unknown as Promise<LocationObject>,
           new Promise<LocationObject>((_, reject) =>
-            setTimeout(() => reject(new Error('Location timeout')), 3000)
+            setTimeout(() => reject(new Error('Location timeout')), 2000)
           ),
         ]);
 

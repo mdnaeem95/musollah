@@ -358,25 +358,32 @@ const SurahDetailScreen = () => {
     ayahNum: currentAyahIndex >= 0 ? currentAyahIndex + 1 : 0,
   }), [activeSurahNum, currentAyahIndex]);
 
-  // --- 604 page children (memoized so they only re-create when settings change)
+  // --- 604 page children. PagerView keeps every child mounted, so we only put a
+  // real MushafPage (which fetches its page) within a small window of the current
+  // page; the rest are cheap empty placeholders. Opening a surah used to mount
+  // 604 pages and fire 604 queries — now it's ~5.
+  const PAGE_WINDOW = 2;
   const pageViews = useMemo(() =>
     Array.from({ length: TOTAL_MUSHAF_PAGES }, (_, i) => {
       const pageNum = i + 1;
+      const near = Math.abs(pageNum - currentPage) <= PAGE_WINDOW;
       return (
         <View key={pageNum} style={{ flex: 1 }}>
-          <MushafPage
-            pageNumber={pageNum}
-            showTranslation={showTranslation}
-            accentColor={theme.colors.accent}
-            textPrimary={theme.colors.text.primary}
-            textSecondary={theme.colors.text.secondary}
-            isDarkMode={isDarkMode}
-            textSize={textSize}
-          />
+          {near && (
+            <MushafPage
+              pageNumber={pageNum}
+              showTranslation={showTranslation}
+              accentColor={theme.colors.accent}
+              textPrimary={theme.colors.text.primary}
+              textSecondary={theme.colors.text.secondary}
+              isDarkMode={isDarkMode}
+              textSize={textSize}
+            />
+          )}
         </View>
       );
     }),
-    [showTranslation, theme.colors.accent, theme.colors.text.primary, theme.colors.text.secondary, isDarkMode, textSize]
+    [currentPage, showTranslation, theme.colors.accent, theme.colors.text.primary, theme.colors.text.secondary, isDarkMode, textSize]
   );
 
   // ---- LOADING
