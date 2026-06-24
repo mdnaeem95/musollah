@@ -156,6 +156,11 @@ const REMINDER_CHANNEL = 'prayer-reminder';
 // Delivered but silent (quiet hours / per-prayer silent). Still visible in tray.
 const SILENT_CHANNEL = 'prayer-silent';
 
+// Notification category carrying the "Snooze" action button.
+const PRAYER_CATEGORY = 'prayer-alert';
+const SNOOZE_ACTION = 'snooze';
+const SNOOZE_MINUTES = 10;
+
 // iOS silently drops pending notifications beyond 64. Stay well under so the
 // last scheduled days never get dropped (and leave headroom for other local
 // notifications the app may post).
@@ -221,11 +226,54 @@ class PrayerNotificationService {
       });
 
       logger.debug('Notification handler configured');
+
+      // Register the "Snooze" action button and listen for taps on it.
+      await Notifications.setNotificationCategoryAsync(PRAYER_CATEGORY, [
+        {
+          identifier: SNOOZE_ACTION,
+          buttonTitle: `Snooze ${SNOOZE_MINUTES} min`,
+          options: { opensAppToForeground: false },
+        },
+      ]);
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        if (response.actionIdentifier === SNOOZE_ACTION) {
+          this.handleSnooze(response.notification.request.content.data ?? {});
+        }
+      });
+
       await this.requestPermissions();
-      
+
       logger.success('Prayer Notification Service initialized');
     } catch (error) {
       logger.error('Failed to initialize notification service', error as Error);
+    }
+  }
+
+  /** Re-fire a prayer alert SNOOZE_MINUTES from now, preserving its sound. */
+  private async handleSnooze(data: Record<string, any>) {
+    const prayer = data.prayer ?? 'Prayer';
+    const sound: string | undefined = data.sound;
+    const silent = sound === 'silent';
+    const iosSound = silent ? undefined : sound ? ADHAN_IOS_SOUND[sound] : undefined;
+    const androidChannel = silent
+      ? SILENT_CHANNEL
+      : sound
+      ? ADHAN_ANDROID_CHANNEL[sound] ?? REMINDER_CHANNEL
+      : REMINDER_CHANNEL;
+
+    try {
+      await this.scheduleNotification({
+        title: `${prayer} Prayer`,
+        body: `Snoozed reminder — time for ${prayer}.`,
+        data: { type: 'snooze', prayer, sound },
+        trigger: SNOOZE_MINUTES * 60,
+        sound: Platform.OS === 'ios' ? iosSound : undefined,
+        channelId: Platform.OS === 'android' ? androidChannel : undefined,
+        silent,
+      });
+      logger.info('Prayer alert snoozed', { prayer, minutes: SNOOZE_MINUTES });
+    } catch (e) {
+      logger.error('Failed to snooze prayer alert', e as Error);
     }
   }
 
@@ -715,6 +763,8 @@ class PrayerNotificationService {
         priority: config.silent
           ? Notifications.AndroidNotificationPriority.DEFAULT
           : Notifications.AndroidNotificationPriority.HIGH,
+        // Carries the "Snooze" action button.
+        categoryIdentifier: PRAYER_CATEGORY,
       };
 
       const trigger = this.createTrigger(config.trigger, config.channelId);
